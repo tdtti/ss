@@ -177,24 +177,41 @@
       display: none !important;
     }
 
-    .icon-nav-tab {
-      flex: 1 !important;
-      min-width: 72px !important;
-      padding: 8px 4px !important;
-      text-align: center !important;
-      color: #94a3b8 !important;
-      background: none !important;
-      border: none !important;
-      cursor: pointer !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 3px !important;
-      font-size: 0.68rem !important;
-      font-weight: 700 !important;
-      transition: all 0.2s ease !important;
-    }
+    /* FIX FOR ICON NAV TAB & NEW BADGE POSITIONING */
+.icon-nav-tab {
+  position: relative !important; /* Establishes anchor for absolute badge positioning */
+  flex: 1 !important;
+  min-width: 72px !important;
+  padding: 8px 4px !important;
+  text-align: center !important;
+  color: #94a3b8 !important;
+  background: none !important;
+  border: none !important;
+  cursor: pointer !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+}
+
+.badge-new {
+  position: absolute !important;
+  top: 3px !important;
+  right: 10px !important;
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  font-size: 0.58rem !important;
+  font-weight: 800 !important;
+  padding: 1px 5px !important;
+  border-radius: 10px !important;
+  line-height: 1 !important;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.8) !important;
+  animation: pulseNew 1.5s infinite !important;
+}
 
     .icon-nav-tab i {
       font-size: 1.15rem !important;
@@ -205,11 +222,7 @@
       background: #0284c7 !important;
     }
 
-    .badge-new {
-      position: absolute; top: 6px; right: 28%; background: #ef4444; color: white;
-      font-size: 0.6rem; font-weight: 800; padding: 1px 5px; border-radius: 8px;
-      animation: pulseNew 1.5s infinite;
-    }
+    
 
     @keyframes pulseNew { 0% { transform: scale(0.95); } 50% { transform: scale(1.15); } 100% { transform: scale(0.95); } }
 
@@ -1202,17 +1215,14 @@
         <div class="table-responsive">
           <table class="logs-table">
             <thead>
-              <tr>
-                <th>Status</th>
-                <th>Username</th>
-                <th>Class</th>
-                <th>Division</th>
-                <th>Role</th>
-                <th>Phone No</th>
-                <th>Last Active Time</th>
-                <th>Device Details</th>
-              </tr>
-            </thead>
+  <tr>
+    <th>Status</th>
+    <th>Username</th>
+    <th>Class & Division</th>
+    <th>Role</th>
+    <th>Last Active</th>
+  </tr>
+</thead>
             <tbody id="onlineUsersTableContainer">
               <tr><td colspan="8" style="text-align:center;">Loading online users...</td></tr>
             </tbody>
@@ -1231,17 +1241,16 @@
         <div style="width:100%; overflow-x:auto; overflow-y:auto; max-height:60vh; border:1px solid var(--border-color); border-radius:8px; -webkit-overflow-scrolling:touch; background:var(--card-bg);">
           <table class="logs-table" style="width:100%; min-width:750px; border-collapse:collapse; white-space:nowrap;">
             <thead>
-              <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
-                <th style="padding:10px;">Timestamp</th>
-                <th style="padding:10px;">Identifier</th>
-                <th style="padding:10px;">Role</th>
-                <th style="padding:10px;">Status</th>
-                <th style="padding:10px;">Login Time</th>
-                <th style="padding:10px;">Logout Time</th>
-                <th style="padding:10px;">Device Details</th>
-                <th style="padding:10px;">Action</th>
-              </tr>
-            </thead>
+  <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
+    <th style="padding:10px;">Timestamp</th>
+    <th style="padding:10px;">Identifier</th>
+    <th style="padding:10px;">Role</th>
+    <th style="padding:10px;">Status</th>
+    <th style="padding:10px;">Login</th>
+    <th style="padding:10px;">Logout</th>
+    <th style="padding:10px;">Action</th>
+  </tr>
+</thead>
             <tbody id="auditLogsContainer">
               <tr><td colspan="8" style="text-align:center; padding:15px;">Loading logs...</td></tr>
             </tbody>
@@ -1441,26 +1450,7 @@
 
     const ALL_SECTIONS = ["Introduction", "Notes", "Activities", "Docs & Videos", "Model Test"];
 
-    // NATIVE WEB AUDIO NOTIFICATION SOUND CHIME
-    function playNotificationSound() {
-      try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-        osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.12); // A5
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.4);
-      } catch(e) {}
-    }
+    
 
     function playQuizAudioEffect(isCorrect) {
       try {
@@ -1804,35 +1794,32 @@
     }
 
     function renderOnlineUsersTable(usersList) {
-      const container = document.getElementById("onlineUsersTableContainer");
-      if (!container) return;
+  const container = document.getElementById("onlineUsersTableContainer");
+  if (!container) return;
 
-      if (usersList.length === 0) {
-        container.innerHTML = `<tr><td colspan="8" style="text-align:center;">No users active currently.</td></tr>`;
-        return;
-      }
+  if (usersList.length === 0) {
+    container.innerHTML = `<tr><td colspan="5" style="text-align:center;">No users active currently.</td></tr>`;
+    return;
+  }
 
-      container.innerHTML = usersList.map(u => {
-        const isOnline = u.status === "online";
-        const studentName = u.name || u.displayName || u.username;
-        const statusBadge = isOnline
-          ? `<span class="pulse-green-dot"></span> <strong style="color:var(--accent-green);">Online</strong>`
-          : `<span style="width:8px; height:8px; background-color:#f97316; border-radius:50%; display:inline-block; margin-right:4px;"></span> <strong style="color:var(--accent-orange);">Inactive</strong>`;
+  container.innerHTML = usersList.map(u => {
+    const isOnline = u.status === "online";
+    const studentName = u.name || u.displayName || u.username;
+    const statusBadge = isOnline
+      ? `<span class="pulse-green-dot"></span> <strong style="color:var(--accent-green);">Online</strong>`
+      : `<span style="width:8px; height:8px; background-color:#f97316; border-radius:50%; display:inline-block; margin-right:4px;"></span> <strong style="color:var(--accent-orange);">Inactive</strong>`;
 
-        return `
-          <tr>
-            <td>${statusBadge}</td>
-            <td style="color:var(--primary); font-weight:700;">${studentName}</td>
-            <td>${u.userClass || '7'}</td>
-            <td>${u.userDivision || 'A'}</td>
-            <td><span style="font-weight:bold; color:${u.role === 'Admin' ? 'var(--accent-purple)' : 'var(--primary)'}">${u.role}</span></td>
-            <td>${u.phoneNo || 'N/A'}</td>
-            <td>${u.lastActive || '-'}</td>
-            <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis;">${u.device || '-'}</td>
-          </tr>
-        `;
-      }).join('');
-    }
+    return `
+      <tr>
+        <td>${statusBadge}</td>
+        <td style="color:var(--primary); font-weight:700;">${studentName}</td>
+        <td>Class ${u.userClass || '7'} - ${u.userDivision || 'A'}</td>
+        <td><span style="font-weight:bold; color:${u.role === 'Admin' ? 'var(--accent-purple)' : 'var(--primary)'}">${u.role}</span></td>
+        <td>${u.lastActive || '-'}</td>
+      </tr>
+    `;
+  }).join('');
+}
 
     function setupRealtimeMessagesListener() {
   db.collection("messages").orderBy("timestamp", "desc").onSnapshot(snapshot => {
@@ -2134,47 +2121,46 @@
     }
 
     async function fetchAuditLogs() {
-      showProgressLoader();
-      const snap = await db.collection("logs").orderBy("timestamp", "desc").get();
-      hideProgressLoader();
+  showProgressLoader();
+  const snap = await db.collection("logs").orderBy("timestamp", "desc").get();
+  hideProgressLoader();
 
-      const container = document.getElementById("auditLogsContainer");
-      if (snap.empty) {
-        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px;">No logs available.</td></tr>`;
-        return;
-      }
+  const container = document.getElementById("auditLogsContainer");
+  if (snap.empty) {
+    container.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:15px;">No logs available.</td></tr>`;
+    return;
+  }
 
-      container.innerHTML = snap.docs.map(doc => {
-        const l = doc.data();
-        const docId = doc.id;
-        const isFailed = l.status === "Failed";
-        const isActive = !isFailed && (l.logoutTime === "-" || !l.logoutTime || l.logoutTime.trim() === "" || l.status === "Success");
-        
-        let logoutDisplay = l.logoutTime;
-        if (isFailed) {
-          logoutDisplay = `<span style="color:var(--accent-red); font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> ${l.logoutTime || 'Incorrect Credentials'}</span>`;
-        } else if (isActive) {
-          logoutDisplay = `<span style="color:var(--accent-green); font-weight:700;"><i class="fa-solid fa-circle" style="font-size:0.5rem; vertical-align:middle;"></i> Active Login</span>`;
-        }
-
-        return `
-          <tr>
-            <td style="padding:8px 10px;">${l.timestamp}</td>
-            <td style="padding:8px 10px;"><strong>${l.identifier}</strong></td>
-            <td style="padding:8px 10px;">${l.role}</td>
-            <td style="padding:8px 10px;"><span style="color:${isFailed ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight:bold;">${l.status}</span></td>
-            <td style="padding:8px 10px;">${l.loginTime}</td>
-            <td style="padding:8px 10px;">${logoutDisplay}</td>
-            <td style="padding:8px 10px; font-weight:700; color:var(--primary);">${l.device || 'Unknown Device'}</td>
-            <td style="padding:8px 10px;">
-              <button class="btn-msg-del" onclick="deleteSingleAuditLog('${docId}')" title="Delete Log Entry">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+  container.innerHTML = snap.docs.map(doc => {
+    const l = doc.data();
+    const docId = doc.id;
+    const isFailed = l.status === "Failed";
+    const isActive = !isFailed && (l.logoutTime === "-" || !l.logoutTime || l.logoutTime.trim() === "" || l.status === "Success");
+    
+    let logoutDisplay = l.logoutTime;
+    if (isFailed) {
+      logoutDisplay = `<span style="color:var(--accent-red); font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> ${l.logoutTime || 'Incorrect Credentials'}</span>`;
+    } else if (isActive) {
+      logoutDisplay = `<span style="color:var(--accent-green); font-weight:700;"><i class="fa-solid fa-circle" style="font-size:0.5rem; vertical-align:middle;"></i> Active Login</span>`;
     }
+
+    return `
+      <tr>
+        <td style="padding:8px 10px;">${l.timestamp}</td>
+        <td style="padding:8px 10px;"><strong>${l.identifier}</strong></td>
+        <td style="padding:8px 10px;">${l.role}</td>
+        <td style="padding:8px 10px;"><span style="color:${isFailed ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight:bold;">${l.status}</span></td>
+        <td style="padding:8px 10px;">${l.loginTime}</td>
+        <td style="padding:8px 10px;">${logoutDisplay}</td>
+        <td style="padding:8px 10px;">
+          <button class="btn-msg-del" onclick="deleteSingleAuditLog('${docId}')" title="Delete Log Entry">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
 
     function deleteSingleAuditLog(logId) {
       openCustomConfirmModal(
@@ -4622,7 +4608,7 @@ ${activeUnitDetailsText.join('\n\n')}
     return;
   }
 
-  // 1. Group Messages by Student or Category
+  // 1. Group Messages by Student or Broadcast
   const groups = {};
   const broadcastKey = "📢 ALL STUDENTS (BROADCASTS)";
 
@@ -4632,40 +4618,57 @@ ${activeUnitDetailsText.join('\n\n')}
     if (m.receiver === "ALL") {
       groupKey = broadcastKey;
     } else if (m.sender !== "Admin" && m.sender !== "System") {
-      groupKey = m.sender; // Student Username
+      groupKey = m.sender;
     } else if (m.receiver !== "Admin" && m.receiver !== "ALL") {
-      groupKey = m.receiver; // Target Student Username
+      groupKey = m.receiver;
     }
 
     if (!groups[groupKey]) groups[groupKey] = [];
     groups[groupKey].push(m);
   });
 
-  // 2. Sort Group Keys (Broadcasts first, then alphabetical student names)
-  const groupKeys = Object.keys(groups).sort((a, b) => {
-    if (a === broadcastKey) return -1;
-    if (b === broadcastKey) return 1;
-    return a.localeCompare(b);
+  // 2. Sort messages inside each group so LATEST MESSAGE IS ALWAYS FIRST [0]
+  Object.keys(groups).forEach(key => {
+    groups[key].sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
   });
 
-  // 3. Render Grouped Accordions
-  feedContainer.innerHTML = groupKeys.map(studentName => {
+  // 3. Sort Student Groups by the timestamp of their LATEST message (Newest Student Activity Top)
+  const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
+    if (a === broadcastKey) return -1;
+    if (b === broadcastKey) return 1;
+
+    const latestTimeA = new Date(groups[a][0].timestamp || 0).getTime();
+    const latestTimeB = new Date(groups[b][0].timestamp || 0).getTime();
+    return latestTimeB - latestTimeA; // Latest student message group at top
+  });
+
+  // 4. Render Grouped Accordions
+  feedContainer.innerHTML = sortedGroupKeys.map(studentName => {
     const msgList = groups[studentName];
     const isBroadcastGroup = studentName === broadcastKey;
-    const msgCount = msgList.length;
+    const totalMsgs = msgList.length;
+
+    // Latest Message (Index 0)
+    const latestMsg = msgList[0];
+    const olderMsgs = msgList.slice(1); // Remaining older messages
+
+    const latestMsgHTML = buildMsgCardHTMLWithCheckbox(latestMsg);
+    const olderMsgsHTML = olderMsgs.map(m => buildMsgCardHTMLWithCheckbox(m)).join('');
 
     const groupHeaderTitle = isBroadcastGroup 
       ? broadcastKey 
-      : `<i class="fa-solid fa-user-graduate" style="color:var(--primary);"></i> <strong>${studentName}</strong> (${msgCount} Messages/Logs)`;
-
-    const msgCardsHTML = msgList.map(m => buildMsgCardHTMLWithCheckbox(m)).join('');
+      : `<i class="fa-solid fa-user-graduate" style="color:var(--primary);"></i> <strong>${studentName}</strong>`;
 
     return `
-      <div class="msg-group-card" style="margin-bottom:10px; border:1px solid var(--border-color); border-radius:8px; overflow:hidden; background:var(--card-bg);">
+      <div class="msg-group-card" style="margin-bottom:12px; border:1px solid var(--border-color); border-radius:8px; overflow:hidden; background:var(--card-bg); box-shadow:0 2px 6px rgba(0,0,0,0.04);">
         <!-- GROUP ACCORDION HEADER -->
         <div onclick="this.nextElementSibling.classList.toggle('hidden')" 
              style="background:rgba(2,132,199,0.08); padding:10px 14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color);">
-          <span style="font-size:0.88rem; font-weight:700; color:var(--primary);">${groupHeaderTitle}</span>
+          <div>
+            <span style="font-size:0.88rem; font-weight:700; color:var(--primary);">${groupHeaderTitle}</span>
+            <span style="font-size:0.72rem; color:#64748b; margin-left:8px;">(${totalMsgs} total | Latest: ${latestMsg.timestamp})</span>
+          </div>
+          
           <div style="display:flex; align-items:center; gap:8px;">
             ${!isBroadcastGroup ? `
               <button class="btn-quick-reply" onclick="event.stopPropagation(); quickReplyToStudent('${studentName}')">
@@ -4676,9 +4679,30 @@ ${activeUnitDetailsText.join('\n\n')}
           </div>
         </div>
 
-        <!-- GROUP MESSAGES CONTAINER (OPEN BY DEFAULT) -->
+        <!-- MESSAGES CONTAINER -->
         <div style="padding:10px; display:flex; flex-direction:column; gap:8px;">
-          ${msgCardsHTML}
+          <!-- 1. ALWAYS DISPLAY LATEST MESSAGE FIRST -->
+          <div style="border-left:3px solid var(--primary); padding-left:4px;">
+            <span style="font-size:0.68rem; font-weight:800; color:var(--primary); text-transform:uppercase; margin-bottom:2px; display:block;">
+              ⚡ Latest Message:
+            </span>
+            ${latestMsgHTML}
+          </div>
+
+          <!-- 2. COLLAPSIBLE OLDER MESSAGES (HIDDEN INITIALLY, SHOWN AT TOP FOLLOWING LATEST WHEN EXPANDED) -->
+          ${olderMsgs.length > 0 ? `
+            <div class="hidden" style="margin-top:6px; border-top:1px dashed var(--border-color); padding-top:8px; display:flex; flex-direction:column; gap:8px;">
+              <span style="font-size:0.68rem; font-weight:800; color:#64748b; text-transform:uppercase;">
+                📜 Older Messages History (${olderMsgs.length}):
+              </span>
+              ${olderMsgsHTML}
+            </div>
+            
+            <button onclick="this.previousElementSibling.classList.toggle('hidden'); this.innerText = this.previousElementSibling.classList.contains('hidden') ? '▼ Show ${olderMsgs.length} Older Messages' : '▲ Hide Older Messages';" 
+                    style="background:#f1f5f9; color:#0369a1; border:1px solid #bae6fd; font-size:0.75rem; padding:4px 10px; border-radius:6px; cursor:pointer; width:100%; margin-top:4px; font-weight:600;">
+              ▼ Show ${olderMsgs.length} Older Messages
+            </button>
+          ` : ''}
         </div>
       </div>
     `;
@@ -4782,32 +4806,135 @@ function buildMsgCardHTMLWithCheckbox(m) {
       window.open("https://gemini.google.com/", "_blank");
     }
 
-    function showPresenceToast(message, type) {
-      const container = document.getElementById("presenceToastContainer");
-      if (!container) return;
+    // --- HIGH-AUDIBILITY WEB AUDIO SYNTHESIZER ENGINE --- //
+let globalAudioCtx = null;
 
-      const toast = document.createElement("div");
-      toast.style.cssText = `
-        background: ${type === 'join' ? '#16a34a' : '#dc2626'};
-        color: white;
-        padding: 8px 14px;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 0.85rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        animation: slideInToast 0.3s ease, fadeOutToast 0.5s ease 3.5s forwards;
-        pointer-events: auto;
-      `;
+function getAudioContext() {
+  if (!globalAudioCtx) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) globalAudioCtx = new AudioCtx();
+  }
+  if (globalAudioCtx && globalAudioCtx.state === 'suspended') {
+    globalAudioCtx.resume();
+  }
+  return globalAudioCtx;
+}
 
-      const icon = type === 'join' ? 'fa-circle-check' : 'fa-right-from-bracket';
-      toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
-      container.appendChild(toast);
+// Ensure Audio Context unlocks on first user tap
+window.addEventListener('click', () => { getAudioContext(); }, { once: true });
+window.addEventListener('touchstart', () => { getAudioContext(); }, { once: true });
 
-      setTimeout(() => toast.remove(), 4000);
-    }
+// 1. Clearly Audible Loud Notification Sound (E5 -> A5 -> C6 Chime)
+function playNotificationSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    
+    osc.frequency.setValueAtTime(659.25, now);        // E5
+    osc.frequency.setValueAtTime(880.00, now + 0.10); // A5
+    osc.frequency.setValueAtTime(1046.50, now + 0.20);// C6
+    
+    gain.gain.setValueAtTime(0.55, now); // Loud volume
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 0.55);
+  } catch(e) {}
+}
+
+// 2. Clearly Audible Student Join Sound (Ascending C5 -> E5 -> G5)
+function playJoinSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    
+    osc.frequency.setValueAtTime(523.25, now);        // C5
+    osc.frequency.setValueAtTime(659.25, now + 0.10); // E5
+    osc.frequency.setValueAtTime(783.99, now + 0.20); // G5
+    
+    gain.gain.setValueAtTime(0.50, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 0.45);
+  } catch(e) {}
+}
+
+// 3. Clearly Audible Student Inactive / Leave Sound (Descending A4 -> D4)
+function playLeaveSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    
+    osc.frequency.setValueAtTime(440.00, now);        // A4
+    osc.frequency.setValueAtTime(293.66, now + 0.12); // D4
+    
+    gain.gain.setValueAtTime(0.45, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.40);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 0.40);
+  } catch(e) {}
+}
+
+// Updated Toast Handler with Sound Triggers
+function showPresenceToast(message, type) {
+  const container = document.getElementById("presenceToastContainer");
+  if (!container) return;
+
+  // Play Audible Cues
+  if (type === 'join') {
+    playJoinSound();
+  } else if (type === 'leave') {
+    playLeaveSound();
+  }
+
+  const toast = document.createElement("div");
+  toast.style.cssText = `
+    background: ${type === 'join' ? '#16a34a' : '#dc2626'};
+    color: white;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: slideInToast 0.3s ease, fadeOutToast 0.5s ease 3.5s forwards;
+    pointer-events: auto;
+  `;
+
+  const icon = type === 'join' ? 'fa-circle-check' : 'fa-right-from-bracket';
+  toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => toast.remove(), 4000);
+}
 
     function generateDefaultPassword(username) {
       if (!username) return "Usr@123";
@@ -5050,149 +5177,178 @@ function buildMsgCardHTMLWithCheckbox(m) {
     }
 
     async function fetchAdminQuizResults() {
-      showProgressLoader();
-      try {
-        const usersSnap = await db.collection("users").where("role", "==", "Student").get();
-        const resultsSnap = await db.collection("quiz_results").get();
-        const progressSnap = await db.collection("progress").where("sectionId", "==", "Model Test").get();
-        hideProgressLoader();
+  showProgressLoader();
+  try {
+    const usersSnap = await db.collection("users").where("role", "==", "Student").get();
+    const resultsSnap = await db.collection("quiz_results").get();
+    const progressSnap = await db.collection("progress").where("sectionId", "==", "Model Test").get();
+    hideProgressLoader();
 
-        const container = document.getElementById("quizResultsContainerUI");
-        if (usersSnap.empty) {
-          container.innerHTML = `<p style="color:#888; text-align:center;">No students registered in the system.</p>`;
-          return;
-        }
+    const container = document.getElementById("quizResultsContainerUI");
+    if (usersSnap.empty) {
+      container.innerHTML = `<p style="color:#888; text-align:center;">No students registered in the system.</p>`;
+      return;
+    }
 
-        const resultsByStudent = {};
+    const resultsByStudent = {};
 
-        resultsSnap.docs.forEach(doc => {
-          const r = doc.data();
-          r.id = doc.id;
-          if (!resultsByStudent[r.username]) resultsByStudent[r.username] = [];
-          resultsByStudent[r.username].push(r);
+    resultsSnap.docs.forEach(doc => {
+      const r = doc.data();
+      r.id = doc.id;
+      if (!resultsByStudent[r.username]) resultsByStudent[r.username] = [];
+      resultsByStudent[r.username].push(r);
+    });
+
+    progressSnap.docs.forEach(doc => {
+      const p = doc.data();
+      if (!resultsByStudent[p.username]) resultsByStudent[p.username] = [];
+
+      const alreadyExists = resultsByStudent[p.username].some(
+        r => String(r.chapterId) === String(p.chapterId) && r.timestamp === p.timestamp
+      );
+
+      if (!alreadyExists) {
+        resultsByStudent[p.username].push({
+          id: doc.id,
+          username: p.username,
+          chapterId: String(p.chapterId),
+          chapterTitle: CHAPTERS[parseInt(p.chapterId) - 1] || `Chapter ${p.chapterId}`,
+          scorePct: "Completed",
+          correctCount: "✓",
+          totalQs: "✓",
+          timestamp: p.timestamp || "Prior Session",
+          breakdown: [],
+          isLegacy: true
         });
+      }
+    });
 
-        progressSnap.docs.forEach(doc => {
-          const p = doc.data();
-          if (!resultsByStudent[p.username]) resultsByStudent[p.username] = [];
+    let studentList = usersSnap.docs.map(doc => {
+      const u = doc.data();
+      const attempts = resultsByStudent[u.username] || [];
+      attempts.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
-          const alreadyExists = resultsByStudent[p.username].some(
-            r => String(r.chapterId) === String(p.chapterId) && r.timestamp === p.timestamp
-          );
+      const hasAttended = attempts.length > 0;
+      const lastAttended = hasAttended ? attempts[0].timestamp : "Not Attended Yet";
+      const lastEpoch = hasAttended ? new Date(attempts[0].timestamp || 0).getTime() : 0;
 
-          if (!alreadyExists) {
-            resultsByStudent[p.username].push({
-              id: doc.id,
-              username: p.username,
-              chapterId: String(p.chapterId),
-              chapterTitle: CHAPTERS[parseInt(p.chapterId) - 1] || `Chapter ${p.chapterId}`,
-              scorePct: "Completed",
-              correctCount: "✓",
-              totalQs: "✓",
-              timestamp: p.timestamp || "Prior Session",
-              breakdown: [],
-              isLegacy: true
-            });
-          }
-        });
+      return {
+        username: u.username,
+        userClass: u.userClass || "7",
+        userDivision: u.userDivision || "A",
+        phoneNo: u.phoneNo || "N/A",
+        attempts: attempts,
+        hasAttended: hasAttended,
+        lastAttended: lastAttended,
+        lastEpoch: lastEpoch
+      };
+    });
 
-        let studentList = usersSnap.docs.map(doc => {
-          const u = doc.data();
-          const attempts = resultsByStudent[u.username] || [];
-          attempts.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+    studentList.sort((a, b) => {
+      if (b.lastEpoch !== a.lastEpoch) {
+        return b.lastEpoch - a.lastEpoch;
+      }
+      return a.username.localeCompare(b.username);
+    });
 
-          const hasAttended = attempts.length > 0;
-          const lastAttended = hasAttended ? attempts[0].timestamp : "Not Attended Yet";
-          const lastEpoch = hasAttended ? new Date(attempts[0].timestamp || 0).getTime() : 0;
+    container.innerHTML = studentList.map(s => {
+      let attemptsHTML = '';
 
-          return {
-            username: u.username,
-            userClass: u.userClass || "7",
-            userDivision: u.userDivision || "A",
-            phoneNo: u.phoneNo || "N/A",
-            attempts: attempts,
-            hasAttended: hasAttended,
-            lastAttended: lastAttended,
-            lastEpoch: lastEpoch
-          };
-        });
+      if (s.hasAttended) {
+        attemptsHTML = s.attempts.map((r) => {
+          const isLegacy = r.isLegacy;
+          const scorePct = r.scorePct;
+          const isPassed = isLegacy || (typeof scorePct === 'number' && scorePct >= 50);
 
-        studentList.sort((a, b) => {
-          if (b.lastEpoch !== a.lastEpoch) {
-            return b.lastEpoch - a.lastEpoch;
-          }
-          return a.username.localeCompare(b.username);
-        });
-
-        container.innerHTML = studentList.map(s => {
-          let attemptsHTML = '';
-
-          if (s.hasAttended) {
-            attemptsHTML = s.attempts.map((r) => {
-  const isLegacy = r.isLegacy;
-  const scorePct = r.scorePct;
-  const isPassed = isLegacy || (typeof scorePct === 'number' && scorePct >= 50);
-
-  return `
-    <div style="margin-top:8px; padding:10px; background:#ffffff; border:1px solid var(--border-color); border-radius:6px; border-left:4px solid ${isPassed ? '#16a34a' : '#dc2626'};">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-        <div>
-          <strong style="color:var(--text); font-size:0.88rem;">📘 ${r.chapterTitle || 'Chapter ' + r.chapterId}</strong>
-          <div style="font-size:0.75rem; color:#64748b;">🕒 Attended: ${r.timestamp}</div>
-        </div>
-
-        <div style="display:flex; align-items:center; gap:6px;">
-          <span style="background:${isPassed ? '#dcfce7' : '#fee2e2'}; color:${isPassed ? '#166534' : '#991b1b'}; padding:3px 8px; border-radius:10px; font-weight:700; font-size:0.8rem;">
-            ${isLegacy ? '✓ Completed' : `Score: ${scorePct}% (${r.correctCount}/${r.totalQs})`}
-          </span>
-          <button onclick="this.parentElement.parentElement.nextElementSibling.classList.toggle('hidden');" style="width:auto; padding:4px 8px; font-size:0.72rem; background:var(--primary);">
-            <i class="fa-solid fa-list"></i> Details
-          </button>
-          <!-- ADMIN ONLY DELETE EXAM ATTEMPT BUTTON -->
-          <button onclick="deleteSingleQuizResult('${r.id}', '${r.isLegacy ? 'progress' : 'quiz_results'}')" style="width:auto; padding:4px 8px; font-size:0.72rem; background:var(--accent-red);" title="Delete Exam Result">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="hidden" style="margin-top:8px; border-top:1px dashed var(--border-color); padding-top:6px;">
-        <h5 style="margin:0 0 4px 0; color:var(--primary); font-size:0.8rem;"><i class="fa-solid fa-square-check"></i> Answer Breakdown:</h5>
-        <!-- Breakdown content -->
-      </div>
-    </div>
-  `;
-}).join('');
-          } else {
-            attemptsHTML = `<p style="font-size:0.8rem; color:#94a3b8; margin:6px 0 0 0;">⏳ Student has not attended any model test exams yet.</p>`;
-          }
+          // FULL ANSWER BREAKDOWN GENERATOR
+          const questionsHTML = (r.breakdown && r.breakdown.length > 0) ? r.breakdown.map((qObj, idx) => `
+            <div style="margin-top:8px; padding:8px; background:var(--bg); border:1px solid var(--border-color); border-radius:6px; font-size:0.83rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <strong>Q${idx + 1}: ${qObj.q}</strong>
+                <span style="font-weight:bold; font-size:0.75rem; color:${qObj.isCorrect ? '#16a34a' : '#dc2626'};">
+                  ${qObj.isCorrect ? '✓ Correct' : '❌ Incorrect'}
+                </span>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:4px; font-size:0.78rem;">
+                <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'A' ? (qObj.correct === 'A' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'A' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
+                  <strong>A:</strong> ${qObj.optA} ${qObj.userChoice === 'A' ? '👤(Student Answer)' : ''}
+                </div>
+                <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'B' ? (qObj.correct === 'B' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'B' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
+                  <strong>B:</strong> ${qObj.optB} ${qObj.userChoice === 'B' ? '👤(Student Answer)' : ''}
+                </div>
+                <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'C' ? (qObj.correct === 'C' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'C' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
+                  <strong>C:</strong> ${qObj.optC} ${qObj.userChoice === 'C' ? '👤(Student Answer)' : ''}
+                </div>
+                <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'D' ? (qObj.correct === 'D' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'D' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
+                  <strong>D:</strong> ${qObj.optD} ${qObj.userChoice === 'D' ? '👤(Student Answer)' : ''}
+                </div>
+              </div>
+              <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">
+                Correct Answer: <strong style="color:#16a34a;">Option ${qObj.correct}</strong> | Student Answer: <strong>Option ${qObj.userChoice}</strong>
+              </div>
+            </div>
+          `).join('') : `<p style="font-size:0.78rem; color:#64748b; margin:4px 0;">Prior activity log entry. Detailed breakdown is available for new quiz attempts.</p>`;
 
           return `
-            <div class="item-card quiz-result-card" style="border-top:3px solid ${s.hasAttended ? 'var(--primary)' : '#cbd5e1'};">
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="margin-top:8px; padding:10px; background:#ffffff; border:1px solid var(--border-color); border-radius:6px; border-left:4px solid ${isPassed ? '#16a34a' : '#dc2626'};">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
                 <div>
-                  <strong style="font-size:1rem; color:var(--primary);">${s.username}</strong>
-                  <span style="font-size:0.8rem; color:#64748b; margin-left:6px;">(Class ${s.userClass}-${s.userDivision})</span>
-                  <div style="font-size:0.75rem; color:#64748b;">📞 Phone: ${s.phoneNo}</div>
+                  <strong style="color:var(--text); font-size:0.88rem;">📘 ${r.chapterTitle || 'Chapter ' + r.chapterId}</strong>
+                  <div style="font-size:0.75rem; color:#64748b;">🕒 Attended: ${r.timestamp}</div>
                 </div>
 
-                <div style="text-align:right;">
-                  <span style="background:${s.hasAttended ? '#e0f2fe' : '#f1f5f9'}; color:${s.hasAttended ? '#0369a1' : '#64748b'}; padding:4px 10px; border-radius:12px; font-weight:700; font-size:0.78rem; display:inline-block;">
-                    ${s.hasAttended ? `📅 Last Attended: ${s.lastAttended}` : '⏳ Not Attended Yet'}
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <span style="background:${isPassed ? '#dcfce7' : '#fee2e2'}; color:${isPassed ? '#166534' : '#991b1b'}; padding:3px 8px; border-radius:10px; font-weight:700; font-size:0.8rem;">
+                    ${isLegacy ? '✓ Completed' : `Score: ${scorePct}% (${r.correctCount}/${r.totalQs})`}
                   </span>
-                  ${s.hasAttended ? `<div style="font-size:0.75rem; font-weight:bold; color:var(--accent-green); margin-top:2px;">Total Exams Taken: ${s.attempts.length}</div>` : ''}
+                  <button onclick="this.parentElement.parentElement.nextElementSibling.classList.toggle('hidden');" style="width:auto; padding:4px 8px; font-size:0.72rem; background:var(--primary);">
+                    <i class="fa-solid fa-list"></i> Details
+                  </button>
+                  <button onclick="deleteSingleQuizResult('${r.id}', '${r.isLegacy ? 'progress' : 'quiz_results'}')" style="width:auto; padding:4px 8px; font-size:0.72rem; background:var(--accent-red);" title="Delete Exam Result">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
                 </div>
               </div>
 
-              <div style="margin-top:10px; border-top:1px solid var(--border-color); padding-top:8px;">
-                ${attemptsHTML}
+              <div class="hidden" style="margin-top:8px; border-top:1px dashed var(--border-color); padding-top:6px;">
+                <h5 style="margin:0 0 4px 0; color:var(--primary); font-size:0.8rem;"><i class="fa-solid fa-square-check"></i> Answer Breakdown:</h5>
+                ${questionsHTML}
               </div>
             </div>
           `;
         }).join('');
-      } catch(e) {
-        hideProgressLoader();
+      } else {
+        attemptsHTML = `<p style="font-size:0.8rem; color:#94a3b8; margin:6px 0 0 0;">⏳ Student has not attended any model test exams yet.</p>`;
       }
-    }
+
+      return `
+        <div class="item-card quiz-result-card" style="border-top:3px solid ${s.hasAttended ? 'var(--primary)' : '#cbd5e1'};">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <strong style="font-size:1rem; color:var(--primary);">${s.username}</strong>
+              <span style="font-size:0.8rem; color:#64748b; margin-left:6px;">(Class ${s.userClass}-${s.userDivision})</span>
+              <div style="font-size:0.75rem; color:#64748b;">📞 Phone: ${s.phoneNo}</div>
+            </div>
+
+            <div style="text-align:right;">
+              <span style="background:${s.hasAttended ? '#e0f2fe' : '#f1f5f9'}; color:${s.hasAttended ? '#0369a1' : '#64748b'}; padding:4px 10px; border-radius:12px; font-weight:700; font-size:0.78rem; display:inline-block;">
+                ${s.hasAttended ? `📅 Last Attended: ${s.lastAttended}` : '⏳ Not Attended Yet'}
+              </span>
+              ${s.hasAttended ? `<div style="font-size:0.75rem; font-weight:bold; color:var(--accent-green); margin-top:2px;">Total Exams Taken: ${s.attempts.length}</div>` : ''}
+            </div>
+          </div>
+
+          <div style="margin-top:10px; border-top:1px solid var(--border-color); padding-top:8px;">
+            ${attemptsHTML}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+  } catch(e) {
+    hideProgressLoader();
+  }
+}
 
     function filterQuizResultsLive(searchTerm) {
       const term = searchTerm.toLowerCase().trim();
@@ -5877,12 +6033,13 @@ function buildMsgCardHTMLWithCheckbox(m) {
               <a href="tel:${s.phoneNo}" style="background:#0284c7; color:white; padding:6px 12px; border-radius:20px; text-decoration:none; font-size:0.8rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
                 <i class="fa-solid fa-phone"></i> Call
               </a>
-              <a href="https://wa.me/${phoneFormatted}" target="_blank" style="background:#25D366; color:white; padding:6px 12px; border-radius:20px; text-decoration:none; font-size:0.8rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
-                <i class="fa-brands fa-whatsapp"></i> WhatsApp
-              </a>
+              <button onclick="sendWhatsAppDetailedReport('${s.username}', '${s.phoneNo || ''}', '${s.userClass || '7'}', '${s.userDivision || 'A'}')" 
+        style="background:#25D366; color:white; padding:6px 12px; border-radius:20px; border:none; font-size:0.8rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+  <i class="fa-brands fa-whatsapp"></i> 
+</button>
             ` : ''}
             <button onclick="this.parentElement.parentElement.nextElementSibling.classList.toggle('hidden');" style="width:auto; padding:6px 12px; font-size:0.8rem; background:var(--primary);">
-              <i class="fa-solid fa-address-card"></i> View Full Folio
+              <i class="fa-solid fa-address-card"></i> PortFolio
             </button>
           </div>
         </div>
@@ -6127,6 +6284,96 @@ function deleteSingleQuizResult(resultId, collectionName) {
   );
 }
 
+async function sendWhatsAppDetailedReport(username, phoneNo, cls, div) {
+  if (!phoneNo || phoneNo.trim() === "0000000000" || phoneNo.trim() === "") {
+    return showInlineMsg("editorInlineMsg", "Student phone number not available!", "error");
+  }
+
+  let cleanPhone = phoneNo.replace(/\D/g, '');
+  if (cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
+
+  showProgressLoader();
+  const progressSnap = await db.collection("progress").where("username", "==", username).get();
+  const quizSnap = await db.collection("quiz_results").where("username", "==", username).get();
+  await fetchStudentAssessmentsMap();
+  hideProgressLoader();
+
+  const evalData = studentAssessmentsMap[username] || {};
+  const nbStatusMap = evalData.unitNotebookStatus || {};
+
+  const chSectionMap = {};
+  progressSnap.docs.forEach(doc => {
+    const p = doc.data();
+    const c = parseInt(p.chapterId);
+    if (!chSectionMap[c]) chSectionMap[c] = new Set();
+    chSectionMap[c].add(p.sectionId);
+  });
+
+  let activeUnitsList = [];
+  for (let c = 1; c <= 12; c++) {
+    if (unitStatusMap[c] !== false) activeUnitsList.push(c);
+  }
+
+  let totalActiveUnits = activeUnitsList.length;
+  let totalSectionsCompletedByStudent = 0;
+  let activeUnitDetailsText = [];
+
+  activeUnitsList.forEach(c => {
+    const doneSecsSet = chSectionMap[c] || new Set();
+    totalSectionsCompletedByStudent += doneSecsSet.size;
+
+    let sectionBreakdownText = ALL_SECTIONS.map(secName => {
+      const isDone = doneSecsSet.has(secName);
+      return `${secName}: ${isDone ? '✅ COMPLETE' : '❌ INCOMPLETE'}`;
+    }).join('\n  ├ ');
+
+    const unitNbStatus = nbStatusMap[c] || 'INCOMPLETE';
+
+    activeUnitDetailsText.push(`*Unit ${c}: ${CHAPTERS[c-1]}*\n  ├ Notebook Notes: ${unitNbStatus === 'COMPLETE' ? '✅ COMPLETE' : '❌ INCOMPLETE'}\n  ├ ${sectionBreakdownText}`);
+  });
+
+  const m1 = calculateScoreGrade(evalData.m1Score);
+  const t1 = calculateScoreGrade(evalData.t1Score);
+  const m2 = calculateScoreGrade(evalData.m2Score);
+  const t2 = calculateScoreGrade(evalData.t2Score);
+  const fn = calculateScoreGrade(evalData.finalScore);
+
+  let quizHistoryText = quizSnap.docs.map(doc => {
+    const q = doc.data();
+    return `• ${q.chapterTitle || 'Chapter ' + q.chapterId}: ${q.scorePct}% (${q.correctCount}/${q.totalQs})`;
+  }).join('\n');
+
+  const msg = `*TDTTI SS 7 Progression Report*
+Student Name: ${username}
+Class: ${cls} - Division: ${div}
+Phone: ${phoneNo}
+
+*COMPLETED BY CONCERNED STUDENT:*
+• Total Active Units Available: ${totalActiveUnits}
+• Total Completed Sections: ${totalSectionsCompletedByStudent} / ${totalActiveUnits * 5}
+
+*ACADEMIC REMARKS:*
+• Notebook General: ${evalData.notebook || 'Pending'}
+• Reading Capability: ${evalData.reading || 'Pending'}
+• Class Attention: ${evalData.classAttention || 'Pending'}
+
+*EXAM PERFORMANCE & GRADES:*
+• 1st Mid Term: ${evalData.m1Score || '-'} (${m1.pct}% - Grade ${m1.grade})
+• 1st Term (Onam): ${evalData.t1Score || '-'} (${t1.pct}% - Grade ${t1.grade})
+• 2nd Mid Term: ${evalData.m2Score || '-'} (${m2.pct}% - Grade ${m2.grade})
+• 2nd Term Exam: ${evalData.t2Score || '-'} (${t2.pct}% - Grade ${t2.grade})
+• Final Exam: ${evalData.finalScore || '-'} (${fn.pct}% - Grade ${fn.grade})
+
+*MODEL TEST HISTORY:*
+${quizHistoryText || 'No model tests taken yet.'}
+
+*UNIT-WISE BREAKDOWN:*
+${activeUnitDetailsText.join('\n\n')}
+
+*SS(7) | TDTTI THURAVOOR*`;
+
+  window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+}
 
   </script>
 </body>
