@@ -2751,6 +2751,8 @@ https://tdschoolnews.in/`;
 
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
+
+
     async function handleCSVUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -6461,96 +6463,7 @@ function deleteSingleQuizResult(resultId, collectionName) {
   );
 }
 
-async function sendWhatsAppDetailedReport(username, phoneNo, cls, div) {
-  if (!phoneNo || phoneNo.trim() === "0000000000" || phoneNo.trim() === "") {
-    return showInlineMsg("editorInlineMsg", "Student phone number not available!", "error");
-  }
 
-  let cleanPhone = phoneNo.replace(/\D/g, '');
-  if (cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
-
-  showProgressLoader();
-  const progressSnap = await db.collection("progress").where("username", "==", username).get();
-  const quizSnap = await db.collection("quiz_results").where("username", "==", username).get();
-  await fetchStudentAssessmentsMap();
-  hideProgressLoader();
-
-  const evalData = studentAssessmentsMap[username] || {};
-  const nbStatusMap = evalData.unitNotebookStatus || {};
-
-  const chSectionMap = {};
-  progressSnap.docs.forEach(doc => {
-    const p = doc.data();
-    const c = parseInt(p.chapterId);
-    if (!chSectionMap[c]) chSectionMap[c] = new Set();
-    chSectionMap[c].add(p.sectionId);
-  });
-
-  let activeUnitsList = [];
-  for (let c = 1; c <= 12; c++) {
-    if (unitStatusMap[c] !== false) activeUnitsList.push(c);
-  }
-
-  let totalActiveUnits = activeUnitsList.length;
-  let totalSectionsCompletedByStudent = 0;
-  let activeUnitDetailsText = [];
-
-  activeUnitsList.forEach(c => {
-    const doneSecsSet = chSectionMap[c] || new Set();
-    totalSectionsCompletedByStudent += doneSecsSet.size;
-
-    let sectionBreakdownText = ALL_SECTIONS.map(secName => {
-      const isDone = doneSecsSet.has(secName);
-      return `${secName}: ${isDone ? '✅ COMPLETE' : '❌ INCOMPLETE'}`;
-    }).join('\n  ├ ');
-
-    const unitNbStatus = nbStatusMap[c] || 'INCOMPLETE';
-
-    activeUnitDetailsText.push(`*Unit ${c}: ${CHAPTERS[c-1]}*\n  ├ Notebook Notes: ${unitNbStatus === 'COMPLETE' ? '✅ COMPLETE' : '❌ INCOMPLETE'}\n  ├ ${sectionBreakdownText}`);
-  });
-
-  const m1 = calculateScoreGrade(evalData.m1Score);
-  const t1 = calculateScoreGrade(evalData.t1Score);
-  const m2 = calculateScoreGrade(evalData.m2Score);
-  const t2 = calculateScoreGrade(evalData.t2Score);
-  const fn = calculateScoreGrade(evalData.finalScore);
-
-  let quizHistoryText = quizSnap.docs.map(doc => {
-    const q = doc.data();
-    return `• ${q.chapterTitle || 'Chapter ' + q.chapterId}: ${q.scorePct}% (${q.correctCount}/${q.totalQs})`;
-  }).join('\n');
-
-  const msg = `*TDTTI SS 7 Progression Report*
-Student Name: ${username}
-Class: ${cls} - Division: ${div}
-Phone: ${phoneNo}
-
-*COMPLETED BY CONCERNED STUDENT:*
-• Total Active Units Available: ${totalActiveUnits}
-• Total Completed Sections: ${totalSectionsCompletedByStudent} / ${totalActiveUnits * 5}
-
-*ACADEMIC REMARKS:*
-• Notebook General: ${evalData.notebook || 'Pending'}
-• Reading Capability: ${evalData.reading || 'Pending'}
-• Class Attention: ${evalData.classAttention || 'Pending'}
-
-*EXAM PERFORMANCE & GRADES:*
-• 1st Mid Term: ${evalData.m1Score || '-'} (${m1.pct}% - Grade ${m1.grade})
-• 1st Term (Onam): ${evalData.t1Score || '-'} (${t1.pct}% - Grade ${t1.grade})
-• 2nd Mid Term: ${evalData.m2Score || '-'} (${m2.pct}% - Grade ${m2.grade})
-• 2nd Term Exam: ${evalData.t2Score || '-'} (${t2.pct}% - Grade ${t2.grade})
-• Final Exam: ${evalData.finalScore || '-'} (${fn.pct}% - Grade ${fn.grade})
-
-*MODEL TEST HISTORY:*
-${quizHistoryText || 'No model tests taken yet.'}
-
-*UNIT-WISE BREAKDOWN:*
-${activeUnitDetailsText.join('\n\n')}
-
-*SS(7) | TDTTI THURAVOOR*`;
-
-  window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-}
 
 // Calculates friendly relative time (e.g., 'Just now', '15min ago', '10hr ago', '3d ago')
 function formatTimePeriodAgo(epochMs) {
