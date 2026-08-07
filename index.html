@@ -1151,18 +1151,37 @@
         <div class="table-responsive">
           <table class="logs-table">
             <thead>
-              <tr>
-                <th>Class</th>
-                <th>Division</th>
-                <th>Phone No</th>
-                <th>Student Name</th>
-                <th>Username</th>
-                <th>Password</th>
-                <th>Role</th>
-                <th>First Login?</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+  <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
+    <th onclick="sortUsersTable(0)" style="cursor:pointer; user-select:none; padding:10px; width:50px;" title="Click to sort by S.No.">
+      S.No. <i class="fa-solid fa-sort user-sort-icon"></i>
+    </th>
+    <th onclick="sortUsersTable(1)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Class">
+      Class <i class="fa-solid fa-sort user-sort-icon"></i>
+    </th>
+    <th onclick="sortUsersTable(2)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Division">
+      Division <i class="fa-solid fa-sort user-sort-icon"></i>
+    </th>
+    <th onclick="sortUsersTable(3)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Phone No">
+      Phone No <i class="fa-solid fa-sort user-sort-icon"></i>
+    </th>
+    <th onclick="sortUsersTable(4)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Student Name">
+      Student Name <i class="fa-solid fa-sort user-sort-icon"></i>
+    </th>
+    <th onclick="sortUsersTable(5)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Username">
+      Username <i class="fa-solid fa-sort user-sort-icon"></i>
+    </th>
+    <th onclick="sortUsersTable(6)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Password">
+      Password <i class="fa-solid fa-sort user-sort-icon"></i>
+    </th>
+    <th onclick="sortUsersTable(7)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Role">
+      Role <i class="fa-solid fa-sort user-sort-icon"></i>
+    </th>
+    <th onclick="sortUsersTable(8)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by First Login">
+      First Login? <i class="fa-solid fa-sort user-sort-icon"></i>
+    </th>
+    <th style="padding:10px;">Actions</th>
+  </tr>
+</thead>
             <tbody id="usersTableContainer">
               <tr><td colspan="9" style="text-align:center;">Loading users...</td></tr>
             </tbody>
@@ -1890,7 +1909,8 @@ Class: ${cls} - Division: ${div}
 
 Please log into TDTTI VII SS portal to complete your pending Social Science units and model tests.
 
-*SS(7) | TDTTI THURAVOOR*`;
+*SS(7) | TDTTI THURAVOOR*
+https://tdschoolnews.in/`;
 
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
@@ -2475,9 +2495,10 @@ function deleteSelectedAuditLogs() {
                   <span style="font-size:0.8rem; font-weight:bold; color:${u.fullyCompletedChaptersCount >= 6 ? 'var(--accent-green)' : 'var(--accent-orange)'}">
                     ${u.fullyCompletedChaptersCount}/12 Fully Completed Units (${u.totalCompletedSectionsCount} Sections)
                   </span>
-                  <button onclick="sendWhatsAppDetailedReport('${u.username}', '${u.phoneNo || ''}', '${u.userClass || '7'}', '${u.userDivision || 'A'}')" style="background:#25D366; color:white; width:auto; padding:4px 10px; font-size:0.75rem;">
-                    <i class="fa-brands fa-whatsapp"></i> Report
-                  </button>
+                  <button onclick="sendWhatsAppDetailedReport('${u.username}', '${u.phoneNo || ''}', '${u.userClass || '7'}', '${u.userDivision || 'A'}')" 
+        style="background:#25D366; color:white; width:auto; padding:4px 10px; font-size:0.75rem; border:none; border-radius:4px; cursor:pointer;">
+  <i class="fa-brands fa-whatsapp"></i> Report
+</button>
                   <button onclick="toggleStudentTrackerDetails('${u.username}')" style="width:auto; padding:4px 10px; font-size:0.75rem; background:var(--primary);">
                     <i class="fa-solid fa-list"></i> Details
                   </button>
@@ -2649,6 +2670,7 @@ function deleteSelectedAuditLogs() {
 
   showProgressLoader();
   const progressSnap = await db.collection("progress").where("username", "==", username).get();
+  const quizSnap = await db.collection("quiz_results").where("username", "==", username).get();
   await fetchStudentAssessmentsMap();
   hideProgressLoader();
 
@@ -2692,6 +2714,11 @@ function deleteSelectedAuditLogs() {
   const t2 = calculateScoreGrade(evalData.t2Score);
   const fn = calculateScoreGrade(evalData.finalScore);
 
+  let quizHistoryText = quizSnap.docs.map(doc => {
+    const q = doc.data();
+    return `• ${q.chapterTitle || 'Chapter ' + q.chapterId}: ${q.scorePct}% (${q.correctCount}/${q.totalQs})`;
+  }).join('\n');
+
   const msg = `*TDTTI SS 7 Progression Report*
 Student Name: ${username}
 Class: ${cls} - Division: ${div}
@@ -2707,20 +2734,23 @@ Phone: ${phoneNo}
 • Class Attention: ${evalData.classAttention || 'Pending'}
 
 *EXAM PERFORMANCE & GRADES:*
-• 1st Mid Term: ${evalData.m1Score || '-'} (${m1.pct}% - Grade ${m1.grade})
-• 1st Term (Onam): ${evalData.t1Score || '-'} (${t1.pct}% - Grade ${t1.grade})
-• 2nd Mid Term: ${evalData.m2Score || '-'} (${m2.pct}% - Grade ${m2.grade})
-• 2nd Term Exam: ${evalData.t2Score || '-'} (${t2.pct}% - Grade ${t2.grade})
-• Final Exam: ${evalData.finalScore || '-'} (${fn.pct}% - Grade ${fn.grade})
+• 1st Mid Term: ${evalData.m1Score || '-'} (${m1.pct} - Grade ${m1.grade})
+• 1st Term (Onam): ${evalData.t1Score || '-'} (${t1.pct} - Grade ${t1.grade})
+• 2nd Mid Term: ${evalData.m2Score || '-'} (${m2.pct} - Grade ${m2.grade})
+• 2nd Term Exam: ${evalData.t2Score || '-'} (${t2.pct} - Grade ${t2.grade})
+• Final Exam: ${evalData.finalScore || '-'} (${fn.pct} - Grade ${fn.grade})
 
-*Unit-Wise Breakdown:*
+*MODEL TEST HISTORY:*
+${quizHistoryText || 'No model tests taken yet.'}
+
+*UNIT-WISE BREAKDOWN:*
 ${activeUnitDetailsText.join('\n\n')}
 
-*SS(7) | TDTTI THURAVOOR*`;
+*SS(7) | TDTTI THURAVOOR*
+https://tdschoolnews.in/`;
 
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
-
     async function handleCSVUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -2853,42 +2883,50 @@ ${activeUnitDetailsText.join('\n\n')}
     }
 
     async function fetchAdminUsers() {
-      showProgressLoader();
-      const snap = await db.collection("users").get();
-      hideProgressLoader();
+  showProgressLoader();
+  const snap = await db.collection("users").get();
+  hideProgressLoader();
 
-      const container = document.getElementById("usersTableContainer");
-      if (snap.empty) {
-        container.innerHTML = `<tr><td colspan="9" style="text-align:center;">No users found.</td></tr>`;
-        return;
-      }
+  const container = document.getElementById("usersTableContainer");
+  if (snap.empty) {
+    container.innerHTML = `<tr><td colspan="10" style="text-align:center;">No users found.</td></tr>`;
+    return;
+  }
 
-      container.innerHTML = snap.docs.map(doc => {
-        const u = doc.data();
-        const studentName = u.name || u.username;
+  let serialNo = 1; // Serial Number Counter
 
-        return `
-          <tr>
-            <td>${u.userClass || '7'}</td>
-            <td>${u.userDivision || 'A'}</td>
-            <td>${u.phoneNo || '-'}</td>
-            <td style="color:var(--primary); font-weight:700;">${studentName}</td>
-            <td>${u.username}</td>
-            <td>${u.password}</td>
-            <td><span style="font-weight:bold; color:${u.role === 'Admin' ? 'var(--accent-purple)' : 'var(--primary)'}">${u.role}</span></td>
-            <td>${u.isFirstLogin ? 'Yes' : 'No'}</td>
-            <td style="display:flex; gap:6px;">
-              <button onclick="editUserUI('${u.userClass}', '${u.userDivision}', '${u.phoneNo}', '${studentName.replace(/'/g, "\\'")}', '${u.username}', '${u.password}', '${u.role}')" style="width:auto; padding:2px 6px; font-size:0.7rem; background:var(--primary);" title="Edit User">
-                <i class="fa-solid fa-pen"></i>
-              </button>
-              <button onclick="deleteUserRecord('${u.username}')" style="width:auto; padding:2px 6px; font-size:0.7rem; background:var(--accent-red);" title="Delete User">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
+  container.innerHTML = snap.docs.map(doc => {
+    const u = doc.data();
+    const studentName = u.name || u.username;
+
+    return `
+      <tr>
+        <td style="font-weight:700; color:#64748b; text-align:center;">${serialNo++}</td>
+        <td>${u.userClass || '7'}</td>
+        <td>${u.userDivision || 'A'}</td>
+        <td>${u.phoneNo || '-'}</td>
+        <td style="color:var(--primary); font-weight:700;">${studentName}</td>
+        <td>${u.username}</td>
+        <td>${u.password}</td>
+        <td><span style="font-weight:bold; color:${u.role === 'Admin' ? 'var(--accent-purple)' : 'var(--primary)'}">${u.role}</span></td>
+        <td>${u.isFirstLogin ? 'Yes' : 'No'}</td>
+        <td style="display:flex; gap:6px;">
+          <button onclick="editUserUI('${u.userClass}', '${u.userDivision}', '${u.phoneNo}', '${studentName.replace(/'/g, "\\'")}', '${u.username}', '${u.password}', '${u.role}')" style="width:auto; padding:2px 6px; font-size:0.7rem; background:var(--primary);" title="Edit User">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button onclick="deleteUserRecord('${u.username}')" style="width:auto; padding:2px 6px; font-size:0.7rem; background:var(--accent-red);" title="Delete User">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Re-apply active column sort if set
+  if (typeof usersTableSortCol !== 'undefined' && usersTableSortCol !== -1) {
+    sortUsersTable(usersTableSortCol);
+  }
+}
 
     function editUserUI(cls, div, phone, name, username, pass, role) {
       document.getElementById("userFormHeading").innerText = `Edit User (${name})`;
@@ -6529,6 +6567,55 @@ function formatTimePeriodAgo(epochMs) {
   if (diffHours < 24) return `${diffHours}hr ago`;
   return `${diffDays}d ago`;
 }
+
+// --- USERS TABLE FULL COLUMN SORTING ENGINE --- //
+let usersTableSortCol = -1;
+let usersTableSortAsc = true;
+
+function sortUsersTable(colIdx) {
+  const container = document.getElementById("usersTableContainer");
+  if (!container) return;
+
+  const rows = Array.from(container.querySelectorAll("tr"));
+  if (rows.length <= 1) return;
+
+  if (usersTableSortCol === colIdx) {
+    usersTableSortAsc = !usersTableSortAsc;
+  } else {
+    usersTableSortCol = colIdx;
+    usersTableSortAsc = true;
+  }
+
+  const icons = document.querySelectorAll("#adminTab-users .user-sort-icon");
+  icons.forEach((icon, idx) => {
+    if (idx === colIdx) {
+      icon.className = usersTableSortAsc ? "fa-solid fa-sort-up" : "fa-solid fa-sort-down";
+      icon.style.color = "#38bdf8";
+    } else {
+      icon.className = "fa-solid fa-sort";
+      icon.style.color = "inherit";
+    }
+  });
+
+  rows.sort((rowA, rowB) => {
+    const cellA = rowA.children[colIdx] ? rowA.children[colIdx].innerText.trim() : "";
+    const cellB = rowB.children[colIdx] ? rowB.children[colIdx].innerText.trim() : "";
+
+    const numA = parseFloat(cellA.replace(/\D/g, ''));
+    const numB = parseFloat(cellB.replace(/\D/g, ''));
+    const isNumA = !isNaN(numA) && cellA.replace(/\D/g, '').length > 0;
+    const isNumB = !isNaN(numB) && cellB.replace(/\D/g, '').length > 0;
+
+    if (isNumA && isNumB) {
+      return usersTableSortAsc ? numA - numB : numB - numA;
+    }
+
+    return usersTableSortAsc ? cellA.toLowerCase().localeCompare(cellB.toLowerCase()) : cellB.toLowerCase().localeCompare(cellA.toLowerCase());
+  });
+
+  rows.sort((rowA, rowB) => container.appendChild(rowA));
+}
+
 
   </script>
 </body>
