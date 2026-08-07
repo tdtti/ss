@@ -1215,12 +1215,14 @@
         <div class="table-responsive">
           <table class="logs-table">
             <thead>
-  <tr>
-    <th>Status</th>
-    <th>Username</th>
-    <th>Class & Division</th>
-    <th>Role</th>
-    <th>Last Active</th>
+  <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
+    <th style="padding:10px; width:40px;">S.No.</th>
+    <th style="padding:10px;">Status & Time Period</th>
+    <th style="padding:10px;">User Name</th>
+    <th style="padding:10px;">Class & Division</th>
+    <th style="padding:10px;">Role</th>
+    <th style="padding:10px;">Last Active Time</th>
+    <th style="padding:10px;">Action</th>
   </tr>
 </thead>
             <tbody id="onlineUsersTableContainer">
@@ -1231,32 +1233,39 @@
       </div>
 
       <div id="adminTab-logs" class="admin-tab-content hidden" style="padding:15px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <h4 style="margin:0;"><i class="fa-solid fa-shield-cat"></i> System Audit Logs</h4>
-          <button onclick="deleteAllAuditLogs()" style="width:auto; padding:6px 10px; background:var(--accent-red);" title="Delete All Audit Logs">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
-        </div>
-        
-        <div style="width:100%; overflow-x:auto; overflow-y:auto; max-height:60vh; border:1px solid var(--border-color); border-radius:8px; -webkit-overflow-scrolling:touch; background:var(--card-bg);">
-          <table class="logs-table" style="width:100%; min-width:750px; border-collapse:collapse; white-space:nowrap;">
-            <thead>
-  <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
-    <th style="padding:10px;">Timestamp</th>
-    <th style="padding:10px;">Identifier</th>
-    <th style="padding:10px;">Role</th>
-    <th style="padding:10px;">Status</th>
-    <th style="padding:10px;">Login</th>
-    <th style="padding:10px;">Logout</th>
-    <th style="padding:10px;">Action</th>
-  </tr>
-</thead>
-            <tbody id="auditLogsContainer">
-              <tr><td colspan="8" style="text-align:center; padding:15px;">Loading logs...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <h4 style="margin:0;"><i class="fa-solid fa-shield-cat"></i> System Audit Logs</h4>
+    
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button id="btnBulkDeleteLogs" class="btn-msg-del hidden" onclick="deleteSelectedAuditLogs()" style="padding:5px 12px; font-size:0.78rem;">
+        <i class="fa-solid fa-trash"></i> Delete Selected (<span id="bulkDelLogsCount">0</span>)
+      </button>
+      <button onclick="deleteAllAuditLogs()" style="width:auto; padding:6px 10px; background:var(--accent-red);" title="Delete All Audit Logs">
+        <i class="fa-solid fa-trash-can"></i> Clear All
+      </button>
+    </div>
+  </div>
+  
+  <div style="width:100%; overflow-x:auto; overflow-y:auto; max-height:60vh; border:1px solid var(--border-color); border-radius:8px; -webkit-overflow-scrolling:touch; background:var(--card-bg);">
+    <table class="logs-table" style="width:100%; min-width:750px; border-collapse:collapse; white-space:nowrap;">
+      <thead>
+        <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
+          <th style="padding:10px; width:30px;"><input type="checkbox" id="chkSelectAllLogs" onchange="toggleSelectAllAuditLogs(this)" style="width:auto; margin:0;"></th>
+          <th style="padding:10px;">Timestamp</th>
+          <th style="padding:10px;">Identifier</th>
+          <th style="padding:10px;">Role</th>
+          <th style="padding:10px;">Status</th>
+          <th style="padding:10px;">Login Time</th>
+          <th style="padding:10px;">Logout Time</th>
+          <th style="padding:10px;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="auditLogsContainer">
+        <tr><td colspan="8" style="text-align:center; padding:15px;">Loading logs...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
       <div id="adminTab-medialib" class="admin-tab-content hidden" style="padding:15px;">
         <div style="background:var(--card-bg); border:1px solid var(--border-color); padding:10px; border-radius:8px; margin-bottom:15px; display:flex; gap:10px; align-items:center; justify-content:center;">
@@ -1737,88 +1746,153 @@
     let isPresenceInitialLoad = true;
 
     function setupOnlinePresenceListener() {
-      db.collection("online_presence").onSnapshot(snapshot => {
-        let currentOnlineMap = {};
-        let onlineUsersList = [];
-        const now = Date.now();
+  db.collection("online_presence").onSnapshot(async snapshot => {
+    let currentOnlineMap = {};
+    const now = Date.now();
 
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const isRecentlyActive = (now - (data.lastActiveEpoch || 0) < 90000);
-          
-          if (isRecentlyActive && data.status !== "offline") {
-            const studentName = data.name || data.username;
-            currentOnlineMap[data.username] = { status: data.status, name: studentName };
-            onlineUsersList.push({ ...data, displayName: studentName });
-          }
-        });
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      // Active threshold: Activity within last 90 seconds
+      const isRecentlyActive = (now - (data.lastActiveEpoch || 0) < 90000);
+      currentOnlineMap[data.username] = {
+        ...data,
+        isRecentlyActive: isRecentlyActive && data.status === "online"
+      };
+    });
 
-        if (!isPresenceInitialLoad && currentUser) {
-          Object.keys(currentOnlineMap).forEach(uname => {
-            const newObj = currentOnlineMap[uname];
-            const oldObj = previousPresenceMap[uname];
-            const studentName = newObj.name;
+    // 1. Fetch ALL Registered Users (Students + Admin)
+    const usersSnap = await db.collection("users").get();
+    
+    let allUsersList = usersSnap.docs.map(doc => {
+      const u = doc.data();
+      const liveData = currentOnlineMap[u.username] || {};
+      const isActive = liveData.isRecentlyActive;
+      const lastEpoch = liveData.lastActiveEpoch || 0;
 
-            if (uname !== currentUser.username) {
-              if (!oldObj && newObj.status === "online") {
-                showPresenceToast(`${studentName} Joined`, 'join');
-              } else if (oldObj && oldObj.status === "inactive" && newObj.status === "online") {
-                showPresenceToast(`${studentName} Joined`, 'join');
-              } else if (oldObj && oldObj.status === "online" && newObj.status === "inactive") {
-                showPresenceToast(`${studentName} Inactive`, 'leave');
-              }
-            }
-          });
+      return {
+        username: u.username,
+        name: u.name || u.username,
+        userClass: u.userClass || (u.role === 'Admin' ? 'Admin' : '7'),
+        userDivision: u.userDivision || (u.role === 'Admin' ? 'Staff' : 'A'),
+        role: u.role || 'Student',
+        phoneNo: u.phoneNo || '',
+        lastActive: liveData.lastActive || 'Prior Session',
+        lastActiveEpoch: lastEpoch,
+        status: isActive ? "Active" : "Inactive",
+        timeAgoStr: formatTimePeriodAgo(lastEpoch)
+      };
+    });
 
-          Object.keys(previousPresenceMap).forEach(uname => {
-            if (!currentOnlineMap[uname] && uname !== currentUser.username) {
-              const studentName = previousPresenceMap[uname].name;
-              showPresenceToast(`${studentName} Inactive`, 'leave');
-            }
-          });
-        }
+    // 2. SORTING HIERARCHY: ACTIVE FIRST -> CLASSWISE (7A, 7B, Admin) -> ALPHABETICAL NAME
+    allUsersList.sort((a, b) => {
+      // Priority 1: Active Users at the top
+      if (a.status !== b.status) {
+        return a.status === "Active" ? -1 : 1;
+      }
+      // Priority 2: Classwise Breakdown
+      const classKeyA = `${a.userClass}-${a.userDivision}`.toUpperCase();
+      const classKeyB = `${b.userClass}-${b.userDivision}`.toUpperCase();
 
-        previousPresenceMap = currentOnlineMap;
-        isPresenceInitialLoad = false;
+      if (classKeyA !== classKeyB) {
+        return classKeyA.localeCompare(classKeyB);
+      }
 
-        const onlineCount = onlineUsersList.filter(u => u.status === 'online').length;
-        const el1 = document.getElementById("statOnlineCount");
-        if (el1) el1.innerText = onlineCount;
-        const el2 = document.getElementById("statStudentOnlineCount");
-        if (el2) el2.innerText = onlineCount;
+      // Priority 3: Student Name Alphabetical
+      return a.name.localeCompare(b.name);
+    });
 
-        if (currentUser && currentUser.role === "Admin") {
-          renderOnlineUsersTable(onlineUsersList);
-        }
-      });
+    // 3. Update Dashboard Counters
+    const activeCount = allUsersList.filter(u => u.status === 'Active' && u.role === 'Student').length;
+    const el1 = document.getElementById("statOnlineCount");
+    if (el1) el1.innerText = activeCount;
+    const el2 = document.getElementById("statStudentOnlineCount");
+    if (el2) el2.innerText = activeCount;
+
+    // 4. Render Table for Admin
+    if (currentUser && currentUser.role === "Admin") {
+      renderOnlineUsersTable(allUsersList);
     }
+  });
+}
 
-    function renderOnlineUsersTable(usersList) {
+function renderOnlineUsersTable(usersList) {
   const container = document.getElementById("onlineUsersTableContainer");
   if (!container) return;
 
   if (usersList.length === 0) {
-    container.innerHTML = `<tr><td colspan="5" style="text-align:center;">No users active currently.</td></tr>`;
+    container.innerHTML = `<tr><td colspan="7" style="text-align:center;">No users registered yet.</td></tr>`;
     return;
   }
 
+  let currentGroupHeader = "";
+  let serialNo = 1;
+
   container.innerHTML = usersList.map(u => {
-    const isOnline = u.status === "online";
-    const studentName = u.name || u.displayName || u.username;
-    const statusBadge = isOnline
-      ? `<span class="pulse-green-dot"></span> <strong style="color:var(--accent-green);">Online</strong>`
-      : `<span style="width:8px; height:8px; background-color:#f97316; border-radius:50%; display:inline-block; margin-right:4px;"></span> <strong style="color:var(--accent-orange);">Inactive</strong>`;
+    const classGroupKey = `${u.status === 'Active' ? '🟢 ACTIVE' : '⚪ INACTIVE'} - Class ${u.userClass} (${u.userDivision})`;
+    let groupHeaderRow = "";
+
+    // Insert Section Header for Active/Inactive + Classwise Split
+    if (classGroupKey !== currentGroupHeader) {
+      currentGroupHeader = classGroupKey;
+      const bg = u.status === "Active" ? "#dcfce7" : "#f1f5f9";
+      const color = u.status === "Active" ? "#166534" : "#475569";
+
+      groupHeaderRow = `
+        <tr style="background:${bg}; font-weight:bold; color:${color};">
+          <td colspan="7" style="padding:8px 10px; font-size:0.82rem; border-bottom:1px solid #cbd5e1;">
+            ${classGroupKey}
+          </td>
+        </tr>
+      `;
+    }
+
+    const isActive = u.status === "Active";
+    const statusBadge = isActive
+      ? `<span class="pulse-green-dot"></span> <strong style="color:var(--accent-green);">Active (${u.timeAgoStr})</strong>`
+      : `<span style="width:8px; height:8px; background-color:#f97316; border-radius:50%; display:inline-block; margin-right:4px;"></span> <strong style="color:var(--accent-orange);">Inactive (${u.timeAgoStr})</strong>`;
+
+    const cleanPhone = (u.phoneNo || '').replace(/\D/g, '');
 
     return `
+      ${groupHeaderRow}
       <tr>
+        <td style="font-weight:700; color:#64748b; text-align:center;">${serialNo++}</td>
         <td>${statusBadge}</td>
-        <td style="color:var(--primary); font-weight:700;">${studentName}</td>
-        <td>Class ${u.userClass || '7'} - ${u.userDivision || 'A'}</td>
+        <td style="color:var(--primary); font-weight:700;">${u.name}</td>
+        <td>Class ${u.userClass} - Division ${u.userDivision}</td>
         <td><span style="font-weight:bold; color:${u.role === 'Admin' ? 'var(--accent-purple)' : 'var(--primary)'}">${u.role}</span></td>
-        <td>${u.lastActive || '-'}</td>
+        <td>${u.lastActive}</td>
+        <td>
+          ${cleanPhone ? `
+            <button onclick="sendWhatsAppPresenceAlert('${u.name}', '${u.phoneNo}', '${u.userClass}', '${u.userDivision}', '${u.status}', '${u.timeAgoStr}', '${u.lastActive}')" 
+                    style="background:#25D366; color:white; border:none; padding:4px 8px; border-radius:15px; font-size:0.72rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+              <i class="fa-brands fa-whatsapp"></i> Alert
+            </button>
+          ` : '<span style="color:#94a3b8; font-size:0.72rem;">No Phone</span>'}
+        </td>
       </tr>
     `;
   }).join('');
+}
+
+// WhatsApp Presence Direct Alert Handler
+function sendWhatsAppPresenceAlert(name, phoneNo, cls, div, status, timeAgo, lastActive) {
+  let cleanPhone = phoneNo.replace(/\D/g, '');
+  if (cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
+
+  const msg = `*TDTTI SS 7 Live Presence Alert*
+User Name: ${name}
+Class: ${cls} - Division: ${div}
+
+*Status:* ${status === 'Active' ? '🟢 Active Online' : '🔴 Inactive'}
+*Time Period:* ${timeAgo}
+*Last Active Time:* ${lastActive}
+
+Please log into TDTTI VII SS portal to complete your pending Social Science units and model tests.
+
+*SS(7) | TDTTI THURAVOOR*`;
+
+  window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
     function setupRealtimeMessagesListener() {
@@ -2127,7 +2201,8 @@
 
   const container = document.getElementById("auditLogsContainer");
   if (snap.empty) {
-    container.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:15px;">No logs available.</td></tr>`;
+    container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px;">No logs available.</td></tr>`;
+    updateBulkDeleteLogsState();
     return;
   }
 
@@ -2146,6 +2221,7 @@
 
     return `
       <tr>
+        <td style="padding:8px 10px;"><input type="checkbox" class="log-select-chk" value="${docId}" onchange="updateBulkDeleteLogsState()" style="width:auto; margin:0;"></td>
         <td style="padding:8px 10px;">${l.timestamp}</td>
         <td style="padding:8px 10px;"><strong>${l.identifier}</strong></td>
         <td style="padding:8px 10px;">${l.role}</td>
@@ -2160,8 +2236,51 @@
       </tr>
     `;
   }).join('');
+
+  updateBulkDeleteLogsState();
 }
 
+function toggleSelectAllAuditLogs(chkEl) {
+  const checkBoxes = document.querySelectorAll('.log-select-chk');
+  checkBoxes.forEach(chk => chk.checked = chkEl.checked);
+  updateBulkDeleteLogsState();
+}
+
+function updateBulkDeleteLogsState() {
+  const checkedBoxes = document.querySelectorAll('.log-select-chk:checked');
+  const count = checkedBoxes.length;
+  const btn = document.getElementById("btnBulkDeleteLogs");
+  const countSpan = document.getElementById("bulkDelLogsCount");
+
+  if (count > 0) {
+    if (btn) btn.classList.remove("hidden");
+    if (countSpan) countSpan.innerText = count;
+  } else {
+    if (btn) btn.classList.add("hidden");
+  }
+}
+
+function deleteSelectedAuditLogs() {
+  const checkedBoxes = document.querySelectorAll('.log-select-chk:checked');
+  const ids = Array.from(checkedBoxes).map(chk => chk.value);
+
+  if (ids.length === 0) return;
+
+  openCustomConfirmModal(
+    "Delete Selected Audit Logs",
+    `Permanently delete ${ids.length} selected log entries?`,
+    async () => {
+      showProgressLoader();
+      const batch = db.batch();
+      ids.forEach(id => batch.delete(db.collection("logs").doc(id)));
+      await batch.commit();
+      hideProgressLoader();
+
+      showPresenceToast(`${ids.length} Audit logs deleted!`, "join");
+      fetchAuditLogs();
+    }
+  );
+}
     function deleteSingleAuditLog(logId) {
       openCustomConfirmModal(
         "Delete Audit Log",
@@ -4975,7 +5094,7 @@ function showPresenceToast(message, type) {
 
       stopReadAloud();
       await updatePresenceStatus("offline");
-      await recordAuditLog(username, role, "Auto Logout (3m Inactivity)", "-", formatDateTimeStrict(), navigator.userAgent);
+      await recordAuditLog(username, role, "Auto Logout", "-", formatDateTimeStrict(), navigator.userAgent);
 
       localStorage.removeItem("scert_user_session");
       currentUser = null;
@@ -5671,21 +5790,22 @@ function showPresenceToast(message, type) {
     // ==========================================
 
     function calculateScoreGrade(score) {
-      if (score === null || score === undefined || score === '' || isNaN(score)) return { pct: 0, grade: 'E' };
-      const numScore = parseFloat(score);
-      let pct = Math.round((numScore / 100) * 100); // Out of 100 max
-      if (numScore <= 50) pct = Math.round((numScore / 50) * 100); // Handles 50 mark exams
-      if (numScore > 100) pct = 100;
+  if (score === null || score === undefined || score === '' || score === 'Brewing☕' || isNaN(score)) {
+    return { pct: '-', grade: '-' };
+  }
 
-      let grade = 'E';
-      if (pct >= 80) grade = 'A';
-      else if (pct >= 60) grade = 'B';
-      else if (pct >= 41) grade = 'C';
-      else if (pct >= 30) grade = 'D';
-      else grade = 'E';
+  const numScore = parseFloat(score);
+  const pct = Math.round(numScore); // Score out of 100
 
-      return { pct, grade };
-    }
+  let grade = 'E';
+  if (pct >= 80) grade = 'A';
+  else if (pct >= 60) grade = 'B';
+  else if (pct >= 41) grade = 'C';
+  else if (pct >= 30) grade = 'D';
+  else grade = 'E';
+
+  return { pct: `${pct}%`, grade: grade };
+}
 
     async function fetchStudentAssessmentsMap() {
       try {
@@ -5726,7 +5846,6 @@ function showPresenceToast(message, type) {
   let students = usersSnap.docs.map(d => d.data());
   students = sortStudentsClasswiseAndAlphabetical(students);
 
-  // Identify Active Units
   let activeUnits = [];
   for (let c = 1; c <= 12; c++) {
     if (unitStatusMap[c] !== false) activeUnits.push(c);
@@ -5750,13 +5869,13 @@ function showPresenceToast(message, type) {
     const evalData = studentAssessmentsMap[s.username] || {};
     const nbStatusMap = evalData.unitNotebookStatus || {};
 
-    // Generate Diligence Select Inputs for Active Units
     let diligenceInputsHTML = activeUnits.map(c => `
       <div style="background:#f8fafc; padding:6px; border:1px solid #cbd5e1; border-radius:6px;">
         <label style="font-size:0.7rem; font-weight:700;">Unit ${c} (${CHAPTERS[c-1]}):</label>
         <select id="eval_unit_nb_${s.username}_${c}" style="margin:2px 0 0 0; padding:4px; font-size:0.75rem;">
-          <option value="INCOMPLETE" ${nbStatusMap[c] === 'INCOMPLETE' ? 'selected' : ''}>❌ INCOMPLETE</option>
+          <option value="Brewing☕" ${(!nbStatusMap[c] || nbStatusMap[c] === 'Brewing☕') ? 'selected' : ''}>Brewing☕</option>
           <option value="COMPLETE" ${nbStatusMap[c] === 'COMPLETE' ? 'selected' : ''}>✅ COMPLETE</option>
+          <option value="INCOMPLETE" ${nbStatusMap[c] === 'INCOMPLETE' ? 'selected' : ''}>❌ INCOMPLETE</option>
         </select>
       </div>
     `).join('');
@@ -5773,6 +5892,7 @@ function showPresenceToast(message, type) {
           <div>
             <label style="font-size:0.75rem; font-weight:700;">Notebook General Status:</label>
             <select id="eval_nb_${s.username}">
+              <option value="Brewing☕" ${(!evalData.notebook || evalData.notebook === 'Brewing☕') ? 'selected' : ''}>Brewing☕</option>
               <option value="NEED IMPROVEMENT" ${evalData.notebook === 'NEED IMPROVEMENT' ? 'selected' : ''}>NEED IMPROVEMENT</option>
               <option value="AVG" ${evalData.notebook === 'AVG' ? 'selected' : ''}>AVG</option>
               <option value="GOOD" ${evalData.notebook === 'GOOD' ? 'selected' : ''}>GOOD</option>
@@ -5784,6 +5904,7 @@ function showPresenceToast(message, type) {
           <div>
             <label style="font-size:0.75rem; font-weight:700;">Reading Capability:</label>
             <select id="eval_rd_${s.username}">
+              <option value="Brewing☕" ${(!evalData.reading || evalData.reading === 'Brewing☕') ? 'selected' : ''}>Brewing☕</option>
               <option value="NEED IMPROVEMENT" ${evalData.reading === 'NEED IMPROVEMENT' ? 'selected' : ''}>NEED IMPROVEMENT</option>
               <option value="AVG" ${evalData.reading === 'AVG' ? 'selected' : ''}>AVG</option>
               <option value="GOOD" ${evalData.reading === 'GOOD' ? 'selected' : ''}>GOOD</option>
@@ -5795,6 +5916,7 @@ function showPresenceToast(message, type) {
           <div>
             <label style="font-size:0.75rem; font-weight:700;">Class Attention:</label>
             <select id="eval_ca_${s.username}">
+              <option value="Brewing☕" ${(!evalData.classAttention || evalData.classAttention === 'Brewing☕') ? 'selected' : ''}>Brewing☕</option>
               <option value="GOOD" ${evalData.classAttention === 'GOOD' ? 'selected' : ''}>GOOD</option>
               <option value="VERY GOOD" ${evalData.classAttention === 'VERY GOOD' ? 'selected' : ''}>VERY GOOD</option>
               <option value="EXCELLENT" ${evalData.classAttention === 'EXCELLENT' ? 'selected' : ''}>EXCELLENT</option>
@@ -5803,7 +5925,6 @@ function showPresenceToast(message, type) {
           </div>
         </div>
 
-        <!-- NEW DILIGENCE STATUS SECTION FOR ACTIVE UNITS -->
         <h5 style="margin:12px 0 6px 0; color:var(--primary);"><i class="fa-solid fa-book-bookmark"></i> Notebook Diligence Status (Active Units Notes):</h5>
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:8px; margin-bottom:12px;">
           ${diligenceInputsHTML || '<p style="font-size:0.8rem; color:#888;">No active units enabled.</p>'}
@@ -5814,31 +5935,31 @@ function showPresenceToast(message, type) {
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px;">
           <div>
             <label style="font-size:0.72rem; font-weight:700;">1st Mid Term (Score):</label>
-            <input type="number" id="eval_m1_${s.username}" value="${evalData.m1Score || ''}" placeholder="Score" oninput="calculateLiveGradeUI('${s.username}', 'm1')">
+            <input type="text" id="eval_m1_${s.username}" value="${evalData.m1Score || 'Brewing☕'}" placeholder="Score / Brewing☕" oninput="calculateLiveGradeUI('${s.username}', 'm1')">
             <div id="eval_m1_res_${s.username}" style="font-size:0.72rem; font-weight:bold; margin-top:2px;">-</div>
           </div>
 
           <div>
             <label style="font-size:0.72rem; font-weight:700;">1st Term Exam (Onam):</label>
-            <input type="number" id="eval_t1_${s.username}" value="${evalData.t1Score || ''}" placeholder="Score" oninput="calculateLiveGradeUI('${s.username}', 't1')">
+            <input type="text" id="eval_t1_${s.username}" value="${evalData.t1Score || 'Brewing☕'}" placeholder="Score / Brewing☕" oninput="calculateLiveGradeUI('${s.username}', 't1')">
             <div id="eval_t1_res_${s.username}" style="font-size:0.72rem; font-weight:bold; margin-top:2px;">-</div>
           </div>
 
           <div>
             <label style="font-size:0.72rem; font-weight:700;">2nd Mid Term (Score):</label>
-            <input type="number" id="eval_m2_${s.username}" value="${evalData.m2Score || ''}" placeholder="Score" oninput="calculateLiveGradeUI('${s.username}', 'm2')">
+            <input type="text" id="eval_m2_${s.username}" value="${evalData.m2Score || 'Brewing☕'}" placeholder="Score / Brewing☕" oninput="calculateLiveGradeUI('${s.username}', 'm2')">
             <div id="eval_m2_res_${s.username}" style="font-size:0.72rem; font-weight:bold; margin-top:2px;">-</div>
           </div>
 
           <div>
             <label style="font-size:0.72rem; font-weight:700;">2nd Term Exam:</label>
-            <input type="number" id="eval_t2_${s.username}" value="${evalData.t2Score || ''}" placeholder="Score" oninput="calculateLiveGradeUI('${s.username}', 't2')">
+            <input type="text" id="eval_t2_${s.username}" value="${evalData.t2Score || 'Brewing☕'}" placeholder="Score / Brewing☕" oninput="calculateLiveGradeUI('${s.username}', 't2')">
             <div id="eval_t2_res_${s.username}" style="font-size:0.72rem; font-weight:bold; margin-top:2px;">-</div>
           </div>
 
           <div>
             <label style="font-size:0.72rem; font-weight:700;">Final Exam (Score):</label>
-            <input type="number" id="eval_fn_${s.username}" value="${evalData.finalScore || ''}" placeholder="Score" oninput="calculateLiveGradeUI('${s.username}', 'fn')">
+            <input type="text" id="eval_fn_${s.username}" value="${evalData.finalScore || 'Brewing☕'}" placeholder="Score / Brewing☕" oninput="calculateLiveGradeUI('${s.username}', 'fn')">
             <div id="eval_fn_res_${s.username}" style="font-size:0.72rem; font-weight:bold; margin-top:2px;">-</div>
           </div>
         </div>
@@ -5847,6 +5968,24 @@ function showPresenceToast(message, type) {
       </div>
     `;
   }).join('');
+
+  // Initial calculation trigger for loaded values
+  students.forEach(s => {
+    ['m1', 't1', 'm2', 't2', 'fn'].forEach(prefix => calculateLiveGradeUI(s.username, prefix));
+  });
+}
+
+function calculateLiveGradeUI(username, fieldPrefix) {
+  const val = document.getElementById(`eval_${fieldPrefix}_${username}`).value.trim();
+  const resEl = document.getElementById(`eval_${fieldPrefix}_res_${username}`);
+  if (!resEl) return;
+
+  const { pct, grade } = calculateScoreGrade(val);
+  if (pct === '-' || grade === '-') {
+    resEl.innerHTML = `<span style="color:#64748b; font-weight:normal;">Score: Brewing☕ (Percentage: - | Grade: -)</span>`;
+  } else {
+    resEl.innerHTML = `<span class="grade-badge grade-${grade}">Grade: ${grade} (${pct})</span>`;
+  }
 }
 
     function calculateLiveGradeUI(username, fieldPrefix) {
@@ -6373,6 +6512,22 @@ ${activeUnitDetailsText.join('\n\n')}
 *SS(7) | TDTTI THURAVOOR*`;
 
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// Calculates friendly relative time (e.g., 'Just now', '15min ago', '10hr ago', '3d ago')
+function formatTimePeriodAgo(epochMs) {
+  if (!epochMs || isNaN(epochMs) || epochMs === 0) return "Prior Session";
+  const now = Date.now();
+  const diffMs = now - epochMs;
+
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 2) return "Just now";
+  if (diffMins < 60) return `${diffMins}min ago`;
+  if (diffHours < 24) return `${diffHours}hr ago`;
+  return `${diffDays}d ago`;
 }
 
   </script>
