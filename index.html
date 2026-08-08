@@ -818,8 +818,8 @@
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
         <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg8JiVmEpr0ghbXQ1Z2Mk-5ZFi1lKNN0f9Eygw999ZF7-Sa4OyQRrhXU646M9kpwRa0Gr5dISn2pGtD_xD-ZEbarFZLrnMquwiMvtGw2U151LH7Jckv2gaRkWJ_CtSbzVM_i1dT-JZb4QeCkLbtyrzczfUnKfP33vi21IPIGHMWhD4SkJQ/s1600/Logo2.png" style="width:36px !important; height:36px !important; margin:0 !important; object-fit:contain;" alt="App Icon">
         <div>
-          <h4 style="margin:0; font-size:1rem; font-weight:700; color:white;">Install App for Offline Study</h4>
-          <p style="margin:2px 0 0 0; font-size:0.78rem; opacity:0.9;">Study TDTTI VII SS lessons anytime without internet connection!</p>
+          <h4 style="margin:0; font-size:1rem; font-weight:700; color:white;">Install App for Online Study</h4>
+          <p style="margin:2px 0 0 0; font-size:0.78rem; opacity:0.9;">Study TDTTI VII SS LESSONS ANYTIME !</p>
         </div>
       </div>
 
@@ -1056,24 +1056,31 @@
 
         <div class="feed-box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <h5 style="margin:0;"><i class="fa-solid fa-stream"></i> All Messages & Activity Logs</h5>
+            <h5 style="margin:0; font-size:0.92rem; color:var(--primary);"><i class="fa-solid fa-comments"></i> All Messages & Activity Logs</h5>
             
-            <div style="display:flex; gap:6px; align-items:center;">
-              <label id="lblSelectAll" class="hidden" style="font-size:0.72rem; font-weight:600; cursor:pointer;">
-                <input type="checkbox" id="chkSelectAllMsgs" onchange="toggleSelectAllMessages(this)" style="width:auto; margin:0;"> Select All
-              </label>
-              <button id="btnBulkDelete" class="btn-msg-del hidden" onclick="deleteSelectedMessages()">
-                <i class="fa-solid fa-trash"></i> Delete (<span id="bulkDelCount">0</span>)
+            <!-- Long Press Selection Bar (Appears on Tap & Hold) -->
+            <div id="longPressSelectionBar" class="hidden" style="display:flex; gap:6px; align-items:center;">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--accent-red);">
+                Selected (<span id="longPressCount">0</span>)
+              </span>
+              <button onclick="deleteLongPressedMessages()" class="btn-msg-del" style="padding:3px 8px; font-size:0.75rem;">
+                <i class="fa-solid fa-trash"></i> Delete
+              </button>
+              <button onclick="clearMsgSelections()" style="width:auto; padding:3px 8px; font-size:0.75rem; background:#64748b; color:white; margin:0; border:none; border-radius:4px;">
+                Cancel
               </button>
             </div>
           </div>
 
-          <div class="filter-btn-group">
+          <!-- Filter Group (Student Messages button removed as requested) -->
+          <div class="filter-btn-group" style="margin-bottom:12px;">
             <button class="filter-btn active" onclick="filterAdminFeed('ALL', this)">All Messages</button>
-            <button class="filter-btn" onclick="filterAdminFeed('STUDENT', this)">Student Messages</button>
             <button class="filter-btn" onclick="filterAdminFeed('SYSTEM', this)">Activity Logs</button>
           </div>
-          <div id="notificationFeed" class="notification-feed"><p style="color:#94a3b8; font-size:0.8rem; text-align:center;">Loading messages...</p></div>
+
+          <p style="font-size:0.72rem; color:#64748b; margin:-6px 0 10px 0;">💡 <i>Tip: Tap to view/read message. Tap & Hold card to select for deletion.</i></p>
+
+          <div id="notificationFeed" class="notification-feed"><p style="color:#94a3b8; font-size:0.8rem; text-align:center;">Loading mobile message feed...</p></div>
         </div>
       </div>
 
@@ -1149,41 +1156,23 @@
         </div>
 
         <div class="table-responsive">
-          <table class="logs-table">
+          <table class="logs-table" id="adminUsersMainTable">
             <thead>
-  <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
-    <th onclick="sortUsersTable(0)" style="cursor:pointer; user-select:none; padding:10px; width:50px;" title="Click to sort by S.No.">
-      S.No. <i class="fa-solid fa-sort user-sort-icon"></i>
-    </th>
-    <th onclick="sortUsersTable(1)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Class">
-      Class <i class="fa-solid fa-sort user-sort-icon"></i>
-    </th>
-    <th onclick="sortUsersTable(2)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Division">
-      Division <i class="fa-solid fa-sort user-sort-icon"></i>
-    </th>
-    <th onclick="sortUsersTable(3)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Phone No">
-      Phone No <i class="fa-solid fa-sort user-sort-icon"></i>
-    </th>
-    <th onclick="sortUsersTable(4)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Student Name">
-      Student Name <i class="fa-solid fa-sort user-sort-icon"></i>
-    </th>
-    <th onclick="sortUsersTable(5)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Username">
-      Username <i class="fa-solid fa-sort user-sort-icon"></i>
-    </th>
-    <th onclick="sortUsersTable(6)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Password">
-      Password <i class="fa-solid fa-sort user-sort-icon"></i>
-    </th>
-    <th onclick="sortUsersTable(7)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by Role">
-      Role <i class="fa-solid fa-sort user-sort-icon"></i>
-    </th>
-    <th onclick="sortUsersTable(8)" style="cursor:pointer; user-select:none; padding:10px;" title="Click to sort by First Login">
-      First Login? <i class="fa-solid fa-sort user-sort-icon"></i>
-    </th>
-    <th style="padding:10px;">Actions</th>
-  </tr>
-</thead>
+              <tr style="cursor:pointer; user-select:none;">
+                <th onclick="sortUsersTable('sno')" style="width:50px; text-align:center;">S.No. </th>
+                <th onclick="sortUsersTable('userClass')">Class </th>
+                <th onclick="sortUsersTable('userDivision')">Division </th>
+                <th onclick="sortUsersTable('phoneNo')">Phone No </th>
+                <th onclick="sortUsersTable('name')">Student Name </th>
+                <th onclick="sortUsersTable('username')">Username </th>
+                <th onclick="sortUsersTable('password')">Password </th>
+                <th onclick="sortUsersTable('role')">Role</th>
+                <th onclick="sortUsersTable('isFirstLogin')">First Login? </th>
+                <th style="cursor:default;">Actions</th>
+              </tr>
+            </thead>
             <tbody id="usersTableContainer">
-              <tr><td colspan="9" style="text-align:center;">Loading users...</td></tr>
+              <tr><td colspan="10" style="text-align:center;">Loading users...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1223,31 +1212,45 @@
         </div>
       </div>
 
+      <!-- LIVE ONLINE USERS MONITOR -->
       <div id="adminTab-online" class="admin-tab-content hidden" style="padding:15px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <div>
             <h4 style="margin:0; color:var(--primary);"><i class="fa-solid fa-signal" style="color:var(--accent-green);"></i> Live Online Users Monitor</h4>
-            <p style="font-size:0.8rem; color:#64748b; margin:2px 0 0 0;">Real-time list of currently active users, class details, and device details.</p>
+            <p style="font-size:0.8rem; color:#64748b; margin:2px 0 0 0;">Real-time list of currently active online users.</p>
           </div>
         </div>
 
+        <!-- MAIN USERS TABLE (ACTIVE FIRST) -->
         <div class="table-responsive">
           <table class="logs-table">
             <thead>
-  <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
-    <th style="padding:10px; width:40px;">S.No.</th>
-    <th style="padding:10px;">Status & Time Period</th>
-    <th style="padding:10px;">User Name</th>
-    <th style="padding:10px;">Class & Division</th>
-    <th style="padding:10px;">Role</th>
-    <th style="padding:10px;">Last Active Time</th>
-    <th style="padding:10px;">Action</th>
-  </tr>
-</thead>
+              <tr>
+                <th style="width:50px; text-align:center;">S.No.</th>
+                <th>Status</th>
+                <th>User / Student Name</th>
+                <th>Class & Division</th>
+                <th>Role</th>
+                <th>Last Active Time</th>
+                <th>Duration / State</th>
+              </tr>
+            </thead>
             <tbody id="onlineUsersTableContainer">
-              <tr><td colspan="8" style="text-align:center;">Loading online users...</td></tr>
+              <tr><td colspan="7" style="text-align:center;">Loading user presence data...</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- SEPARATE CLASSWISE BREAKDOWN SECTION -->
+        <div style="margin-top:25px;">
+          <h4 style="margin:0 0 4px 0; color:var(--primary); border-bottom:2px solid var(--primary); padding-bottom:4px;">
+            <i class="fa-solid fa-sitemap"></i> Classwise Student Presence Breakdown (Alphabetical Order)
+          </h4>
+          <p style="font-size:0.8rem; color:#64748b; margin:0 0 12px 0;">Classwise grouped list with individual serial numbers and direct WhatsApp presence alerts.</p>
+
+          <div id="classwisePresenceContainer">
+            <p style="color:#888; text-align:center;">Loading classwise breakdown...</p>
+          </div>
         </div>
       </div>
 
@@ -1764,156 +1767,243 @@
     let previousPresenceMap = {};
     let isPresenceInitialLoad = true;
 
+    // Helper function to convert last active epoch into human readable time elapsed string
+    function getTimeElapsedString(lastActiveEpoch, isOnline) {
+      if (isOnline) return "Active Now";
+      if (!lastActiveEpoch) return "Never logged in";
+
+      const diffMs = Date.now() - lastActiveEpoch;
+      const mins = Math.floor(diffMs / (1000 * 60));
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (mins < 1) return "since < 1 min ago";
+      if (mins < 60) return `since ${mins} min ago`;
+      if (hours < 24) return `since ${hours} hr ago`;
+      return `since ${days} day${days > 1 ? 's' : ''} ago`;
+    }
+
     function setupOnlinePresenceListener() {
-  db.collection("online_presence").onSnapshot(async snapshot => {
-    let currentOnlineMap = {};
-    const now = Date.now();
+      // Listen to both presence and user documents for live updates
+      db.collection("online_presence").onSnapshot(async (presenceSnap) => {
+        let presenceMap = {};
+        let activeToastsMap = {};
+        const now = Date.now();
 
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      // Active threshold: Activity within last 90 seconds
-      const isRecentlyActive = (now - (data.lastActiveEpoch || 0) < 90000);
-      currentOnlineMap[data.username] = {
-        ...data,
-        isRecentlyActive: isRecentlyActive && data.status === "online"
-      };
-    });
+        presenceSnap.forEach(doc => {
+          presenceMap[doc.id] = doc.data();
+        });
 
-    // 1. Fetch ALL Registered Users (Students + Admin)
-    const usersSnap = await db.collection("users").get();
-    
-    let allUsersList = usersSnap.docs.map(doc => {
-      const u = doc.data();
-      const liveData = currentOnlineMap[u.username] || {};
-      const isActive = liveData.isRecentlyActive;
-      const lastEpoch = liveData.lastActiveEpoch || 0;
+        // Fetch all registered users to ensure everyone with login success is shown
+        try {
+          const usersSnap = await db.collection("users").get();
+          let allUsersList = [];
 
-      return {
-        username: u.username,
-        name: u.name || u.username,
-        userClass: u.userClass || (u.role === 'Admin' ? 'Admin' : '7'),
-        userDivision: u.userDivision || (u.role === 'Admin' ? 'Staff' : 'A'),
-        role: u.role || 'Student',
-        phoneNo: u.phoneNo || '',
-        lastActive: liveData.lastActive || 'Prior Session',
-        lastActiveEpoch: lastEpoch,
-        status: isActive ? "Active" : "Inactive",
-        timeAgoStr: formatTimePeriodAgo(lastEpoch)
-      };
-    });
+          usersSnap.forEach(doc => {
+            const u = doc.data();
+            const p = presenceMap[u.username] || {};
 
-    // 2. SORTING HIERARCHY: ACTIVE FIRST -> CLASSWISE (7A, 7B, Admin) -> ALPHABETICAL NAME
-    allUsersList.sort((a, b) => {
-      // Priority 1: Active Users at the top
-      if (a.status !== b.status) {
-        return a.status === "Active" ? -1 : 1;
-      }
-      // Priority 2: Classwise Breakdown
-      const classKeyA = `${a.userClass}-${a.userDivision}`.toUpperCase();
-      const classKeyB = `${b.userClass}-${b.userDivision}`.toUpperCase();
+            const lastActiveEpoch = p.lastActiveEpoch || 0;
+            const isRecentlyActive = (now - lastActiveEpoch) < 90000;
+            const isOnline = isRecentlyActive && (p.status === "online");
 
-      if (classKeyA !== classKeyB) {
-        return classKeyA.localeCompare(classKeyB);
-      }
+            const studentName = u.name || p.name || u.username;
 
-      // Priority 3: Student Name Alphabetical
-      return a.name.localeCompare(b.name);
-    });
+            if (isOnline) {
+              activeToastsMap[u.username] = { status: 'online', name: studentName };
+            }
 
-    // 3. Update Dashboard Counters
-    const activeCount = allUsersList.filter(u => u.status === 'Active' && u.role === 'Student').length;
-    const el1 = document.getElementById("statOnlineCount");
-    if (el1) el1.innerText = activeCount;
-    const el2 = document.getElementById("statStudentOnlineCount");
-    if (el2) el2.innerText = activeCount;
+            allUsersList.push({
+              username: u.username,
+              name: studentName,
+              userClass: u.userClass || p.userClass || '7',
+              userDivision: u.userDivision || p.userDivision || 'A',
+              role: u.role || p.role || 'Student',
+              phoneNo: u.phoneNo || p.phoneNo || '',
+              status: isOnline ? 'online' : 'inactive',
+              isOnline: isOnline,
+              lastActive: p.lastActive || '-',
+              lastActiveEpoch: lastActiveEpoch,
+              device: p.device || 'N/A'
+            });
+          });
 
-    // 4. Render Table for Admin
-    if (currentUser && currentUser.role === "Admin") {
-      renderOnlineUsersTable(allUsersList);
-    }
-  });
-}
+          // Live Presence Toasts logic
+          if (!isPresenceInitialLoad && currentUser) {
+            Object.keys(activeToastsMap).forEach(uname => {
+              if (!previousPresenceMap[uname] && uname !== currentUser.username) {
+                showPresenceToast(`${activeToastsMap[uname].name} Joined`, 'join');
+              }
+            });
 
-function renderOnlineUsersTable(usersList) {
-  const container = document.getElementById("onlineUsersTableContainer");
-  if (!container) return;
+            Object.keys(previousPresenceMap).forEach(uname => {
+              if (!activeToastsMap[uname] && uname !== currentUser.username) {
+                showPresenceToast(`${previousPresenceMap[uname].name} Inactive`, 'leave');
+              }
+            });
+          }
 
-  if (usersList.length === 0) {
-    container.innerHTML = `<tr><td colspan="7" style="text-align:center;">No users registered yet.</td></tr>`;
-    return;
-  }
+          previousPresenceMap = activeToastsMap;
+          isPresenceInitialLoad = false;
 
-  let currentGroupHeader = "";
-  let serialNo = 1;
+          // Update header online counts
+          const totalOnlineCount = allUsersList.filter(u => u.isOnline).length;
+          const el1 = document.getElementById("statOnlineCount");
+          if (el1) el1.innerText = totalOnlineCount;
+          const el2 = document.getElementById("statStudentOnlineCount");
+          if (el2) el2.innerText = totalOnlineCount;
 
-  container.innerHTML = usersList.map(u => {
-    const classGroupKey = `${u.status === 'Active' ? '🟢 ACTIVE' : '⚪ INACTIVE'} - Class ${u.userClass} (${u.userDivision})`;
-    let groupHeaderRow = "";
-
-    // Insert Section Header for Active/Inactive + Classwise Split
-    if (classGroupKey !== currentGroupHeader) {
-      currentGroupHeader = classGroupKey;
-      const bg = u.status === "Active" ? "#dcfce7" : "#f1f5f9";
-      const color = u.status === "Active" ? "#166534" : "#475569";
-
-      groupHeaderRow = `
-        <tr style="background:${bg}; font-weight:bold; color:${color};">
-          <td colspan="7" style="padding:8px 10px; font-size:0.82rem; border-bottom:1px solid #cbd5e1;">
-            ${classGroupKey}
-          </td>
-        </tr>
-      `;
+          if (currentUser && currentUser.role === "Admin") {
+            renderOnlineUsersTable(allUsersList);
+            renderClasswisePresenceBreakdown(allUsersList);
+          }
+        } catch(e) {
+          console.error("Error loading presence user list:", e);
+        }
+      });
     }
 
-    const isActive = u.status === "Active";
-    const statusBadge = isActive
-      ? `<span class="pulse-green-dot"></span> <strong style="color:var(--accent-green);">Active (${u.timeAgoStr})</strong>`
-      : `<span style="width:8px; height:8px; background-color:#f97316; border-radius:50%; display:inline-block; margin-right:4px;"></span> <strong style="color:var(--accent-orange);">Inactive (${u.timeAgoStr})</strong>`;
+    // 1. RENDER MAIN USER MONITOR TABLE (Active Users Top, with S.No)
+    // 1. RENDER MAIN USER MONITOR TABLE (Active Users Only, with S.No)
+    function renderOnlineUsersTable(allUsersList) {
+      const container = document.getElementById("onlineUsersTableContainer");
+      if (!container) return;
 
-    const cleanPhone = (u.phoneNo || '').replace(/\D/g, '');
+      // Filter to keep ONLY currently active users
+      const activeUsersOnly = allUsersList.filter(u => u.isOnline);
 
-    return `
-      ${groupHeaderRow}
-      <tr>
-        <td style="font-weight:700; color:#64748b; text-align:center;">${serialNo++}</td>
-        <td>${statusBadge}</td>
-        <td style="color:var(--primary); font-weight:700;">${u.name}</td>
-        <td>Class ${u.userClass} - Division ${u.userDivision}</td>
-        <td><span style="font-weight:bold; color:${u.role === 'Admin' ? 'var(--accent-purple)' : 'var(--primary)'}">${u.role}</span></td>
-        <td>${u.lastActive}</td>
-        <td>
-          ${cleanPhone ? `
-            <button onclick="sendWhatsAppPresenceAlert('${u.name}', '${u.phoneNo}', '${u.userClass}', '${u.userDivision}', '${u.status}', '${u.timeAgoStr}', '${u.lastActive}')" 
-                    style="background:#25D366; color:white; border:none; padding:4px 8px; border-radius:15px; font-size:0.72rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
-              <i class="fa-brands fa-whatsapp"></i> Alert
-            </button>
-          ` : '<span style="color:#94a3b8; font-size:0.72rem;">No Phone</span>'}
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
+      if (activeUsersOnly.length === 0) {
+        container.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:15px; color:#64748b;">No users currently active online.</td></tr>`;
+        return;
+      }
 
-// WhatsApp Presence Direct Alert Handler
-function sendWhatsAppPresenceAlert(name, phoneNo, cls, div, status, timeAgo, lastActive) {
-  let cleanPhone = phoneNo.replace(/\D/g, '');
-  if (cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
+      // Sort active users by most recent activity time
+      activeUsersOnly.sort((a, b) => b.lastActiveEpoch - a.lastActiveEpoch);
 
-  const msg = `*TDTTI SS 7 Live Presence Alert*
-User Name: ${name}
+      let sno = 1;
+      container.innerHTML = activeUsersOnly.map(u => {
+        const timeElapsedStr = getTimeElapsedString(u.lastActiveEpoch, u.isOnline);
+        const statusBadge = `<span class="pulse-green-dot"></span> <strong style="color:var(--accent-green);">Active</strong>`;
+
+        return `
+          <tr>
+            <td style="text-align:center; font-weight:bold; color:var(--primary);">${sno++}</td>
+            <td>${statusBadge}</td>
+            <td style="color:var(--primary); font-weight:700;">${u.name}</td>
+            <td>Class ${u.userClass} - ${u.userDivision}</td>
+            <td><span style="font-weight:bold; color:${u.role === 'Admin' ? 'var(--accent-purple)' : 'var(--primary)'}">${u.role}</span></td>
+            <td>${u.lastActive}</td>
+            <td><strong style="color:var(--accent-green); font-size:0.8rem;">${timeElapsedStr}</strong></td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 2. RENDER SEPARATE CLASSWISE BREAKDOWN (Alphabetical Order, Separate S.No, WhatsApp Action)
+    function renderClasswisePresenceBreakdown(allUsersList) {
+      const container = document.getElementById("classwisePresenceContainer");
+      if (!container) return;
+
+      // Filter only students for classwise breakdown
+      const students = allUsersList.filter(u => u.role === 'Student');
+
+      if (students.length === 0) {
+        container.innerHTML = `<p style="color:#888; text-align:center;">No student user records found.</p>`;
+        return;
+      }
+
+      // Group students by Class and Division
+      const classGroups = {};
+      students.forEach(s => {
+        const classKey = `Class ${s.userClass || '7'}${s.userDivision || 'A'}`;
+        if (!classGroups[classKey]) classGroups[classKey] = [];
+        classGroups[classKey].push(s);
+      });
+
+      // Sort class keys (e.g. Class 7A, Class 7B...)
+      const sortedClassKeys = Object.keys(classGroups).sort();
+
+      container.innerHTML = sortedClassKeys.map(classKey => {
+        const studentList = classGroups[classKey];
+
+        // Sort students ALPHABETICALLY within each class
+        studentList.sort((a, b) => a.name.localeCompare(b.name));
+
+        let serialNo = 1;
+        const rowsHTML = studentList.map(s => {
+          const timeElapsedStr = getTimeElapsedString(s.lastActiveEpoch, s.isOnline);
+          const statusText = s.isOnline ? 'ACTIVE NOW' : `INACTIVE (${timeElapsedStr})`;
+          const badgeBg = s.isOnline ? '#dcfce7' : '#fee2e2';
+          const badgeColor = s.isOnline ? '#166534' : '#991b1b';
+
+          return `
+            <tr>
+              <td style="text-align:center; font-weight:bold; color:var(--primary);">${serialNo++}</td>
+              <td style="font-weight:700; color:var(--text);">${s.name}</td>
+              <td>${s.phoneNo || 'N/A'}</td>
+              <td>
+                <span style="background:${badgeBg}; color:${badgeColor}; padding:2px 8px; border-radius:10px; font-weight:700; font-size:0.75rem;">
+                  ${s.isOnline ? '🟢 Active' : '🔴 Inactive'}
+                </span>
+              </td>
+              <td><span style="font-size:0.78rem; font-weight:600; color:#64748b;">${timeElapsedStr}</span></td>
+              <td>${s.lastActive}</td>
+              <td>
+                <button onclick="sendPresenceWhatsAppAlert('${s.name}', '${s.phoneNo}', '${s.userClass}', '${s.userDivision}', '${statusText}', '${s.lastActive}')" 
+                        style="background:#25D366; color:white; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+                  <i class="fa-brands fa-whatsapp"></i> Alert
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        return `
+          <div style="margin-bottom:18px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; padding:12px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+            <h5 style="margin:0 0 8px 0; color:var(--primary); font-size:0.92rem;"><i class="fa-solid fa-users"></i> ${classKey} (${studentList.length} Students)</h5>
+            <div class="table-responsive">
+              <table class="logs-table">
+                <thead>
+                  <tr>
+                    <th style="width:40px; text-align:center;">S.No.</th>
+                    <th>Student Name</th>
+                    <th>Phone Number</th>
+                    <th>Presence Status</th>
+                    <th>Duration State</th>
+                    <th>Last Active Time</th>
+                    <th>WhatsApp Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHTML}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // WhatsApp Alert Trigger for Presence Status
+    function sendPresenceWhatsAppAlert(studentName, phoneNo, cls, div, statusText, lastActiveTime) {
+      if (!phoneNo || phoneNo.trim() === "0000000000" || phoneNo.trim() === "") {
+        return showPresenceToast("Phone number not available for student!", "leave");
+      }
+
+      let cleanPhone = phoneNo.replace(/\D/g, '');
+      if (cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
+
+      const msg = `*TDTTI SS 7 Online Activity Alert*
+Student Name: ${studentName}
 Class: ${cls} - Division: ${div}
+Current Status: ${statusText}
+Last Active Recorded: ${lastActiveTime}
 
-*Status:* ${status === 'Active' ? '🟢 Active Online' : '🔴 Inactive'}
-*Time Period:* ${timeAgo}
-*Last Active Time:* ${lastActive}
+*TDTTI SS 7 | Thuravoor*
+JOIN NOW :  https://tdschoolnews.in/`;
 
-Please log into TDTTI VII SS portal to complete your pending Social Science units and model tests.
-
-*SS(7) | TDTTI THURAVOOR*
-https://tdschoolnews.in/`;
-
-  window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-}
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
 
     function setupRealtimeMessagesListener() {
   db.collection("messages").orderBy("timestamp", "desc").onSnapshot(snapshot => {
@@ -1953,19 +2043,19 @@ https://tdschoolnews.in/`;
     }
 
     if (currentUser.role === "Admin") {
-      const dot = document.getElementById("adminNewMsgDot");
-      if (hasUnread && dot) dot.classList.remove('hidden');
-      renderAdminFeed(allMessagesCache);
-      document.getElementById("statTotalMsgs").innerText = allMessagesCache.length;
-      document.getElementById("statActivityCount").innerText = allMessagesCache.filter(m => m.message.includes("Completed") || m.message.includes("Quiz")).length;
-    } else {
-      const dot = document.getElementById("studentNewMsgDot");
-      if (hasUnread && dot) dot.classList.remove('hidden');
-      renderStudentFeed(allMessagesCache);
-      document.getElementById("statStudentAnnounce").innerText = allMessagesCache.filter(m => m.receiver === "ALL").length;
-      document.getElementById("statStudentDirect").innerText = allMessagesCache.filter(m => m.sender === "Admin" && m.receiver.toLowerCase() === currentUser.username.toLowerCase()).length;
-      document.getElementById("statStudentCompleted").innerText = allMessagesCache.filter(m => m.message.includes("Completed") || m.message.includes("Quiz")).length;
-    }
+        const dot = document.getElementById("adminNewMsgDot");
+        if (hasUnread && dot) dot.classList.remove('hidden');
+        renderAdminFeed(allMessagesCache);
+        document.getElementById("statTotalMsgs").innerText = allMessagesCache.length;
+        document.getElementById("statActivityCount").innerText = allMessagesCache.filter(m => m.message.includes("Completed") || m.message.includes("completed") || m.message.includes("Successfully") || m.message.includes("Quiz")).length;
+      } else {
+        const dot = document.getElementById("studentNewMsgDot");
+        if (hasUnread && dot) dot.classList.remove('hidden');
+        renderStudentFeed(allMessagesCache);
+        document.getElementById("statStudentAnnounce").innerText = allMessagesCache.filter(m => m.receiver === "ALL").length;
+        document.getElementById("statStudentDirect").innerText = allMessagesCache.filter(m => m.sender === "Admin" && m.receiver.toLowerCase() === currentUser.username.toLowerCase()).length;
+        document.getElementById("statStudentCompleted").innerText = allMessagesCache.filter(m => m.message.includes("Completed") || m.message.includes("completed") || m.message.includes("Successfully") || m.message.includes("Quiz")).length;
+      }
   });
 }
 
@@ -2301,6 +2391,7 @@ function deleteSelectedAuditLogs() {
     }
   );
 }
+
     function deleteSingleAuditLog(logId) {
       openCustomConfirmModal(
         "Delete Audit Log",
@@ -2440,6 +2531,7 @@ function deleteSelectedAuditLogs() {
           return a.username.localeCompare(b.username);
         });
 
+        let sno = 1;
         container.innerHTML = studentsList.map(u => {
           const userProg = u.userProg;
           let chPills = '';
@@ -2487,7 +2579,7 @@ function deleteSelectedAuditLogs() {
             <div class="item-card tracker-student-card">
               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                 <div>
-                  <strong style="font-size:0.95rem; color:var(--primary);">${u.name || u.username}</strong>
+                  <strong style="font-size:0.95rem; color:var(--primary);">S.No.${sno++} | ${u.name || u.username}</strong>
                   <span style="font-size:0.8rem; color:#64748b; margin-left:6px;">(Class ${u.userClass || '7'}-${u.userDivision || 'A'})</span>
                   <div style="font-size:0.75rem; color:#64748b;">📞 Phone: ${u.phoneNo || 'N/A'}</div>
                 </div>
@@ -2495,10 +2587,9 @@ function deleteSelectedAuditLogs() {
                   <span style="font-size:0.8rem; font-weight:bold; color:${u.fullyCompletedChaptersCount >= 6 ? 'var(--accent-green)' : 'var(--accent-orange)'}">
                     ${u.fullyCompletedChaptersCount}/12 Fully Completed Units (${u.totalCompletedSectionsCount} Sections)
                   </span>
-                  <button onclick="sendWhatsAppDetailedReport('${u.username}', '${u.phoneNo || ''}', '${u.userClass || '7'}', '${u.userDivision || 'A'}')" 
-        style="background:#25D366; color:white; width:auto; padding:4px 10px; font-size:0.75rem; border:none; border-radius:4px; cursor:pointer;">
-  <i class="fa-brands fa-whatsapp"></i> Report
-</button>
+                  <button onclick="sendWhatsAppDetailedReport('${u.username}', '${u.phoneNo || ''}', '${u.userClass || '7'}', '${u.userDivision || 'A'}')" style="background:#25D366; color:white; width:auto; padding:4px 10px; font-size:0.75rem;">
+                    <i class="fa-brands fa-whatsapp"></i> Report
+                  </button>
                   <button onclick="toggleStudentTrackerDetails('${u.username}')" style="width:auto; padding:4px 10px; font-size:0.75rem; background:var(--primary);">
                     <i class="fa-solid fa-list"></i> Details
                   </button>
@@ -2670,7 +2761,6 @@ function deleteSelectedAuditLogs() {
 
   showProgressLoader();
   const progressSnap = await db.collection("progress").where("username", "==", username).get();
-  const quizSnap = await db.collection("quiz_results").where("username", "==", username).get();
   await fetchStudentAssessmentsMap();
   hideProgressLoader();
 
@@ -2714,11 +2804,6 @@ function deleteSelectedAuditLogs() {
   const t2 = calculateScoreGrade(evalData.t2Score);
   const fn = calculateScoreGrade(evalData.finalScore);
 
-  let quizHistoryText = quizSnap.docs.map(doc => {
-    const q = doc.data();
-    return `• ${q.chapterTitle || 'Chapter ' + q.chapterId}: ${q.scorePct}% (${q.correctCount}/${q.totalQs})`;
-  }).join('\n');
-
   const msg = `*TDTTI SS 7 Progression Report*
 Student Name: ${username}
 Class: ${cls} - Division: ${div}
@@ -2734,24 +2819,21 @@ Phone: ${phoneNo}
 • Class Attention: ${evalData.classAttention || 'Pending'}
 
 *EXAM PERFORMANCE & GRADES:*
-• 1st Mid Term: ${evalData.m1Score || '-'} (${m1.pct} - Grade ${m1.grade})
-• 1st Term (Onam): ${evalData.t1Score || '-'} (${t1.pct} - Grade ${t1.grade})
-• 2nd Mid Term: ${evalData.m2Score || '-'} (${m2.pct} - Grade ${m2.grade})
-• 2nd Term Exam: ${evalData.t2Score || '-'} (${t2.pct} - Grade ${t2.grade})
-• Final Exam: ${evalData.finalScore || '-'} (${fn.pct} - Grade ${fn.grade})
+• 1st Mid Term: ${evalData.m1Score || '-'} (${m1.pct}% - Grade ${m1.grade})
+• 1st Term (Onam): ${evalData.t1Score || '-'} (${t1.pct}% - Grade ${t1.grade})
+• 2nd Mid Term: ${evalData.m2Score || '-'} (${m2.pct}% - Grade ${m2.grade})
+• 2nd Term Exam: ${evalData.t2Score || '-'} (${t2.pct}% - Grade ${t2.grade})
+• Final Exam: ${evalData.finalScore || '-'} (${fn.pct}% - Grade ${fn.grade})
 
-*MODEL TEST HISTORY:*
-${quizHistoryText || 'No model tests taken yet.'}
-
-*UNIT-WISE BREAKDOWN:*
+*Unit-Wise Breakdown:*
 ${activeUnitDetailsText.join('\n\n')}
 
 *SS(7) | TDTTI THURAVOOR*
+JOIN NOW
 https://tdschoolnews.in/`;
 
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
-
 
     async function handleCSVUpload(event) {
       const file = event.target.files[0];
@@ -2884,51 +2966,92 @@ https://tdschoolnews.in/`;
       reader.readAsText(file);
     }
 
+    let allAdminUsersCache = [];
+    let currentUsersSortField = 'name';
+    let currentUsersSortAsc = true;
+
     async function fetchAdminUsers() {
-  showProgressLoader();
-  const snap = await db.collection("users").get();
-  hideProgressLoader();
+      showProgressLoader();
+      const snap = await db.collection("users").get();
+      hideProgressLoader();
 
-  const container = document.getElementById("usersTableContainer");
-  if (snap.empty) {
-    container.innerHTML = `<tr><td colspan="10" style="text-align:center;">No users found.</td></tr>`;
-    return;
-  }
+      const container = document.getElementById("usersTableContainer");
+      if (snap.empty) {
+        container.innerHTML = `<tr><td colspan="10" style="text-align:center;">No users found.</td></tr>`;
+        return;
+      }
 
-  let serialNo = 1; // Serial Number Counter
+      allAdminUsersCache = snap.docs.map(doc => {
+        const u = doc.data();
+        return {
+          ...u,
+          name: u.name || u.username,
+          userClass: u.userClass || '7',
+          userDivision: u.userDivision || 'A',
+          phoneNo: u.phoneNo || '-',
+          isFirstLoginStr: u.isFirstLogin ? 'Yes' : 'No'
+        };
+      });
 
-  container.innerHTML = snap.docs.map(doc => {
-    const u = doc.data();
-    const studentName = u.name || u.username;
+      renderUsersTableBody();
+    }
 
-    return `
-      <tr>
-        <td style="font-weight:700; color:#64748b; text-align:center;">${serialNo++}</td>
-        <td>${u.userClass || '7'}</td>
-        <td>${u.userDivision || 'A'}</td>
-        <td>${u.phoneNo || '-'}</td>
-        <td style="color:var(--primary); font-weight:700;">${studentName}</td>
-        <td>${u.username}</td>
-        <td>${u.password}</td>
-        <td><span style="font-weight:bold; color:${u.role === 'Admin' ? 'var(--accent-purple)' : 'var(--primary)'}">${u.role}</span></td>
-        <td>${u.isFirstLogin ? 'Yes' : 'No'}</td>
-        <td style="display:flex; gap:6px;">
-          <button onclick="editUserUI('${u.userClass}', '${u.userDivision}', '${u.phoneNo}', '${studentName.replace(/'/g, "\\'")}', '${u.username}', '${u.password}', '${u.role}')" style="width:auto; padding:2px 6px; font-size:0.7rem; background:var(--primary);" title="Edit User">
-            <i class="fa-solid fa-pen"></i>
-          </button>
-          <button onclick="deleteUserRecord('${u.username}')" style="width:auto; padding:2px 6px; font-size:0.7rem; background:var(--accent-red);" title="Delete User">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `;
-  }).join('');
+    // Function to handle header clicks and sort users dynamically
+    function sortUsersTable(field) {
+      if (field === 'sno') {
+        allAdminUsersCache.reverse();
+      } else {
+        if (currentUsersSortField === field) {
+          currentUsersSortAsc = !currentUsersSortAsc;
+        } else {
+          currentUsersSortField = field;
+          currentUsersSortAsc = true;
+        }
 
-  // Re-apply active column sort if set
-  if (typeof usersTableSortCol !== 'undefined' && usersTableSortCol !== -1) {
-    sortUsersTable(usersTableSortCol);
-  }
-}
+        allAdminUsersCache.sort((a, b) => {
+          let valA = (a[field] || '').toString().toLowerCase();
+          let valB = (b[field] || '').toString().toLowerCase();
+
+          if (valA < valB) return currentUsersSortAsc ? -1 : 1;
+          if (valA > valB) return currentUsersSortAsc ? 1 : -1;
+          return 0;
+        });
+      }
+
+      renderUsersTableBody();
+    }
+
+    function renderUsersTableBody() {
+      const container = document.getElementById("usersTableContainer");
+      if (!container) return;
+
+      let sno = 1;
+      container.innerHTML = allAdminUsersCache.map(u => {
+        const studentName = u.name;
+
+        return `
+          <tr>
+            <td style="text-align:center; font-weight:bold; color:var(--primary);">${sno++}</td>
+            <td>${u.userClass}</td>
+            <td>${u.userDivision}</td>
+            <td>${u.phoneNo}</td>
+            <td style="color:var(--primary); font-weight:700;">${studentName}</td>
+            <td>${u.username}</td>
+            <td>${u.password}</td>
+            <td><span style="font-weight:bold; color:${u.role === 'Admin' ? 'var(--accent-purple)' : 'var(--primary)'}">${u.role}</span></td>
+            <td>${u.isFirstLoginStr}</td>
+            <td style="display:flex; gap:6px;">
+              <button onclick="editUserUI('${u.userClass}', '${u.userDivision}', '${u.phoneNo}', '${studentName.replace(/'/g, "\\'")}', '${u.username}', '${u.password}', '${u.role}')" style="width:auto; padding:2px 6px; font-size:0.7rem; background:var(--primary);" title="Edit User">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button onclick="deleteUserRecord('${u.username}')" style="width:auto; padding:2px 6px; font-size:0.7rem; background:var(--accent-red);" title="Delete User">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
 
     function editUserUI(cls, div, phone, name, username, pass, role) {
       document.getElementById("userFormHeading").innerText = `Edit User (${name})`;
@@ -4670,7 +4793,9 @@ https://tdschoolnews.in/`;
         status: "Completed", 
         timestamp: formatDateTimeStrict()
       });
-      await sendSystemNotification(currentUser.username, `You successfully completed ${fullTaskLabel}`);
+      
+      // Send clean formatted notification
+      await sendSystemNotification(currentUser.username, `Successfully completed ${fullTaskLabel}`);
       hideProgressLoader();
 
       showPresenceToast(`Completed ${sectionName}! Loading next section...`, "join");
@@ -4695,12 +4820,30 @@ https://tdschoolnews.in/`;
       }, 1000);
     }
 
+    // Global text cleaner to sanitize both past database logs and new messages
+    function formatCleanMessageText(msgText) {
+      if (!msgText) return "";
+      let text = msgText;
+      
+      // Clean up all variations of duplicated "Completed You successfully completed..."
+      text = text.replace(/^Completed\s+You\s+successfully\s+completed\s+/i, "Successfully completed ");
+      text = text.replace(/^Completed\s+You\s+completed\s+/i, "Successfully completed ");
+      text = text.replace(/^Completed\s+Successfully\s+completed\s+/i, "Successfully completed ");
+      text = text.replace(/^Completed\s+You\s+/i, "Successfully completed ");
+      text = text.replace(/^You\s+successfully\s+completed\s+/i, "Successfully completed ");
+      
+      return text;
+    }
+
     async function sendSystemNotification(receiver, msgText) {
+      const cleanText = formatCleanMessageText(msgText);
+
       await db.collection("messages").add({
-        sender: "System", receiver: receiver, message: msgText, timestamp: formatDateTimeStrict(), read: false
+        sender: "System", receiver: receiver, message: cleanText, timestamp: formatDateTimeStrict(), read: false
       });
+
       await db.collection("messages").add({
-        sender: receiver, receiver: "Admin", message: `Completed ${msgText}`, timestamp: formatDateTimeStrict(), read: false
+        sender: receiver, receiver: "Admin", message: cleanText, timestamp: formatDateTimeStrict(), read: false
       });
     }
 
@@ -4757,156 +4900,252 @@ https://tdschoolnews.in/`;
       document.getElementById("studentMsgBody").value = "";
     }
 
-    function renderAdminFeed(messages) {
-  const feedContainer = document.getElementById("notificationFeed");
-  if (!feedContainer) return;
+    // Helper to calculate relative time elapsed string (e.g., 0 min ago, 12 min ago, 2 hr ago)
+    function getRelativeTimeAgo(timestampStr) {
+      if (!timestampStr || timestampStr === '-') return "Just now";
+      
+      // Parse DD/MM/YYYY HH:MM:SS format
+      const parts = timestampStr.split(" ");
+      if (parts.length < 2) return "Just now";
+      const dateParts = parts[0].split("/");
+      const timeParts = parts[1].split(":");
 
-  if (!messages || messages.length === 0) {
-    feedContainer.innerHTML = `<p style="color:#94a3b8; font-size:0.8rem; text-align:center;">No notifications or messages available.</p>`;
-    updateBulkDeleteState();
-    return;
-  }
+      if (dateParts.length < 3 || timeParts.length < 3) return "Just now";
 
-  // 1. Group Messages by Student or Broadcast
-  const groups = {};
-  const broadcastKey = "📢 ALL STUDENTS (BROADCASTS)";
+      const d = new Date(dateParts[2], dateParts[1] - 1, dateParts[0], timeParts[0], timeParts[1], timeParts[2]);
+      const diffMs = Date.now() - d.getTime();
 
-  messages.forEach(m => {
-    let groupKey = broadcastKey;
+      if (isNaN(diffMs) || diffMs < 0) return "0 min ago";
 
-    if (m.receiver === "ALL") {
-      groupKey = broadcastKey;
-    } else if (m.sender !== "Admin" && m.sender !== "System") {
-      groupKey = m.sender;
-    } else if (m.receiver !== "Admin" && m.receiver !== "ALL") {
-      groupKey = m.receiver;
+      const mins = Math.floor(diffMs / (1000 * 60));
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      if (mins < 1) return "0 min ago";
+      if (mins < 60) return `${mins} min ago`;
+      if (hours < 24) return `${hours} hr ago`;
+      return `${days} d ago`;
     }
 
-    if (!groups[groupKey]) groups[groupKey] = [];
-    groups[groupKey].push(m);
-  });
+    // Tap and Hold (Long Press) Selection state
+    let selectedMsgIds = new Set();
+    let longPressTimer = null;
 
-  // 2. Sort messages inside each group so LATEST MESSAGE IS ALWAYS FIRST [0]
-  Object.keys(groups).forEach(key => {
-    groups[key].sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
-  });
+    function handleMsgCardTouchStart(msgId, cardEl) {
+      longPressTimer = setTimeout(() => {
+        toggleMsgCardSelection(msgId, cardEl);
+      }, 500); // 500ms long press duration
+    }
 
-  // 3. Sort Student Groups by the timestamp of their LATEST message (Newest Student Activity Top)
-  const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
-    if (a === broadcastKey) return -1;
-    if (b === broadcastKey) return 1;
+    function handleMsgCardTouchEnd() {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    }
 
-    const latestTimeA = new Date(groups[a][0].timestamp || 0).getTime();
-    const latestTimeB = new Date(groups[b][0].timestamp || 0).getTime();
-    return latestTimeB - latestTimeA; // Latest student message group at top
-  });
+    function toggleMsgCardSelection(msgId, cardEl) {
+      if (selectedMsgIds.has(msgId)) {
+        selectedMsgIds.delete(msgId);
+        cardEl.style.outline = "none";
+      } else {
+        selectedMsgIds.add(msgId);
+        cardEl.style.outline = "2px solid #ef4444";
+        cardEl.style.outlineOffset = "-2px";
+      }
 
-  // 4. Render Grouped Accordions
-  feedContainer.innerHTML = sortedGroupKeys.map(studentName => {
-    const msgList = groups[studentName];
-    const isBroadcastGroup = studentName === broadcastKey;
-    const totalMsgs = msgList.length;
+      const bar = document.getElementById("longPressSelectionBar");
+      const countSpan = document.getElementById("longPressCount");
 
-    // Latest Message (Index 0)
-    const latestMsg = msgList[0];
-    const olderMsgs = msgList.slice(1); // Remaining older messages
+      if (selectedMsgIds.size > 0) {
+        if (bar) bar.classList.remove("hidden");
+        if (countSpan) countSpan.innerText = selectedMsgIds.size;
+      } else {
+        if (bar) bar.classList.add("hidden");
+      }
+    }
 
-    const latestMsgHTML = buildMsgCardHTMLWithCheckbox(latestMsg);
-    const olderMsgsHTML = olderMsgs.map(m => buildMsgCardHTMLWithCheckbox(m)).join('');
+    function clearMsgSelections() {
+      selectedMsgIds.clear();
+      const bar = document.getElementById("longPressSelectionBar");
+      if (bar) bar.classList.add("hidden");
+      document.querySelectorAll(".msg-card").forEach(c => {
+        c.style.outline = "none";
+      });
+    }
 
-    const groupHeaderTitle = isBroadcastGroup 
-      ? broadcastKey 
-      : `<i class="fa-solid fa-user-graduate" style="color:var(--primary);"></i> <strong>${studentName}</strong>`;
+    function deleteLongPressedMessages() {
+      if (selectedMsgIds.size === 0) return;
 
-    return `
-      <div class="msg-group-card" style="margin-bottom:12px; border:1px solid var(--border-color); border-radius:8px; overflow:hidden; background:var(--card-bg); box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-        <!-- GROUP ACCORDION HEADER -->
-        <div onclick="this.nextElementSibling.classList.toggle('hidden')" 
-             style="background:rgba(2,132,199,0.08); padding:10px 14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color);">
-          <div>
-            <span style="font-size:0.88rem; font-weight:700; color:var(--primary);">${groupHeaderTitle}</span>
-            <span style="font-size:0.72rem; color:#64748b; margin-left:8px;">(${totalMsgs} total | Latest: ${latestMsg.timestamp})</span>
+      const ids = Array.from(selectedMsgIds);
+      openCustomConfirmModal(
+        "Delete Selected Messages",
+        `Delete ${ids.length} selected messages?`,
+        async () => {
+          showProgressLoader();
+          const batch = db.batch();
+          ids.forEach(id => batch.delete(db.collection("messages").doc(id)));
+          await batch.commit();
+          hideProgressLoader();
+
+          clearMsgSelections();
+          showPresenceToast(`${ids.length} messages deleted!`, "join");
+        }
+      );
+    }
+
+    // Mark message as read in Firestore when opened/tapped
+    async function markSingleMessageAsRead(msgId) {
+      if (!msgId) return;
+      try {
+        await db.collection("messages").doc(msgId).update({ read: true });
+      } catch(e) {}
+    }
+
+    // MAIN RENDERER FOR MOBILE MESSAGE MANAGER
+    function renderAdminFeed(messages) {
+      const feedContainer = document.getElementById("notificationFeed");
+      if (!feedContainer) return;
+
+      if (!messages || messages.length === 0) {
+        feedContainer.innerHTML = `<p style="color:#94a3b8; font-size:0.88rem; text-align:center; padding:15px;">No messages or activity logs available.</p>`;
+        return;
+      }
+
+      // Group messages by student or broadcast
+      const groups = {};
+      const broadcastKey = "📢 BROADCAST ANNOUNCEMENTS";
+
+      messages.forEach(m => {
+        let groupKey = broadcastKey;
+
+        if (m.receiver === "ALL") {
+          groupKey = broadcastKey;
+        } else if (m.sender !== "Admin" && m.sender !== "System") {
+          groupKey = m.sender;
+        } else if (m.receiver !== "Admin" && m.receiver !== "ALL") {
+          groupKey = m.receiver;
+        }
+
+        if (!groups[groupKey]) groups[groupKey] = [];
+        groups[groupKey].push(m);
+      });
+
+      // Sort messages inside each group so LATEST MESSAGE IS FIRST [0]
+      Object.keys(groups).forEach(key => {
+        groups[key].sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+      });
+
+      // Sort groups by latest message timestamp (Newest student activity top)
+      const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
+        if (a === broadcastKey) return -1;
+        if (b === broadcastKey) return 1;
+
+        const latestTimeA = new Date(groups[a][0].timestamp || 0).getTime();
+        const latestTimeB = new Date(groups[b][0].timestamp || 0).getTime();
+        return latestTimeB - latestTimeA;
+      });
+
+      feedContainer.innerHTML = sortedGroupKeys.map(studentName => {
+        const msgList = groups[studentName];
+        const isBroadcastGroup = studentName === broadcastKey;
+
+        // Latest Message (Top item)
+        const latestMsg = msgList[0];
+        const hasUnreadInGroup = msgList.some(m => !m.read && m.sender !== "Admin");
+        const relativeTimeStr = getRelativeTimeAgo(latestMsg.timestamp);
+
+        const olderMsgs = msgList.slice(1);
+
+        const latestCardHTML = buildMobileMsgCardHTML(latestMsg, true);
+        const olderCardsHTML = olderMsgs.map(m => buildMobileMsgCardHTML(m, false)).join('');
+
+        return `
+          <div class="msg-group-card" style="margin-bottom:10px; border:1px solid var(--border-color); border-radius:10px; overflow:hidden; background:var(--card-bg); box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+            <!-- MOBILE THREAD HEADER -->
+            <div onclick="this.nextElementSibling.classList.toggle('hidden'); markSingleMessageAsRead('${latestMsg.id}');" 
+                 style="background:${hasUnreadInGroup ? 'rgba(2,132,199,0.12)' : 'rgba(241,245,249,0.8)'}; padding:10px 12px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid ${isBroadcastGroup ? 'fa-bullhorn' : 'fa-circle-user'}" style="font-size:1.1rem; color:var(--primary);"></i>
+                <div>
+                  <strong style="font-size:0.88rem; color:var(--text);">${studentName}</strong>
+                  <span style="font-size:0.72rem; color:#64748b; margin-left:6px;">(${relativeTimeStr})</span>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:6px;">
+                ${hasUnreadInGroup ? `<span class="badge-new" style="position:static !important; animation:none !important;">NEW</span>` : ''}
+                ${!isBroadcastGroup ? `
+                  <button class="btn-quick-reply" onclick="event.stopPropagation(); quickReplyToStudent('${studentName}')">
+                    <i class="fa-solid fa-reply"></i> Reply
+                  </button>
+                ` : ''}
+                <i class="fa-solid fa-chevron-down" style="font-size:0.75rem; color:#64748b;"></i>
+              </div>
+            </div>
+
+            <!-- THREAD CONTENT LIST -->
+            <div style="padding:8px; display:flex; flex-direction:column; gap:6px;">
+              ${latestCardHTML}
+
+              ${olderMsgs.length > 0 ? `
+                <div class="hidden" style="margin-top:4px; border-top:1px dashed var(--border-color); padding-top:6px; display:flex; flex-direction:column; gap:6px;">
+                  ${olderCardsHTML}
+                </div>
+                <button onclick="this.previousElementSibling.classList.toggle('hidden'); this.innerText = this.previousElementSibling.classList.contains('hidden') ? '▼ Show ${olderMsgs.length} Older Messages' : '▲ Hide History';" 
+                        style="background:#f1f5f9; color:#0369a1; border:1px solid #bae6fd; font-size:0.72rem; padding:4px 8px; border-radius:6px; cursor:pointer; width:100%; margin-top:2px; font-weight:600;">
+                  ▼ Show ${olderMsgs.length} Older Messages
+                </button>
+              ` : ''}
+            </div>
           </div>
+        `;
+      }).join('');
+    }
+
+    // Helper to build single clean mobile card with Read/Unread Color Changes & Tap/Hold
+    function buildMobileMsgCardHTML(m, isLatest) {
+      const isUnread = !m.read && m.sender !== "Admin";
+      const isSystem = m.message.includes("completed") || m.message.includes("Quiz") || m.message.includes("Successfully");
+      const relativeTime = getRelativeTimeAgo(m.timestamp);
+
+      // Distinct Read vs Unread Background/Border Color
+      const bg = isUnread ? '#eff6ff' : 'var(--card-bg)';
+      const border = isUnread ? '1px solid #93c5fd' : '1px solid var(--border-color)';
+      const leftAccent = isUnread ? '3px solid #2563eb' : (isSystem ? '3px solid #16a34a' : '3px solid #94a3b8');
+
+      return `
+        <div class="msg-card" id="msg-card-${m.id}" 
+             style="background:${bg}; border:${border}; border-left:${leftAccent}; border-radius:6px; padding:8px 10px; position:relative;"
+             onmousedown="handleMsgCardTouchStart('${m.id}', this)"
+             onmouseup="handleMsgCardTouchEnd()"
+             ontouchstart="handleMsgCardTouchStart('${m.id}', this)"
+             ontouchend="handleMsgCardTouchEnd()"
+             onclick="markSingleMessageAsRead('${m.id}')">
           
-          <div style="display:flex; align-items:center; gap:8px;">
-            ${!isBroadcastGroup ? `
-              <button class="btn-quick-reply" onclick="event.stopPropagation(); quickReplyToStudent('${studentName}')">
-                <i class="fa-solid fa-reply"></i> Reply
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
+            <span style="font-size:0.78rem; font-weight:700; color:var(--primary);">
+              ${m.sender} ${isUnread && isLatest ? '<span class="badge-new" style="position:static !important; display:inline-block; margin-left:4px;">NEW</span>' : ''}
+            </span>
+            <span style="font-size:0.7rem; font-weight:600; color:#64748b;">${relativeTime}</span>
+          </div>
+
+          <div class="msg-body" style="font-size:0.85rem; color:var(--text); margin:2px 0; line-height:1.35;">
+            ${formatCleanMessageText(m.message)}
+          </div>
+
+          <div style="font-size:0.68rem; color:#94a3b8; display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+            <span>To: ${m.receiver}</span>
+            ${currentUser && currentUser.role === "Admin" ? `
+              <button class="btn-msg-del" onclick="event.stopPropagation(); deleteSingleMessage('${m.id}')" style="padding:1px 5px; font-size:0.68rem;">
+                <i class="fa-solid fa-trash"></i>
               </button>
             ` : ''}
-            <i class="fa-solid fa-chevron-down" style="font-size:0.8rem; color:#64748b;"></i>
           </div>
         </div>
+      `;
+    }
 
-        <!-- MESSAGES CONTAINER -->
-        <div style="padding:10px; display:flex; flex-direction:column; gap:8px;">
-          <!-- 1. ALWAYS DISPLAY LATEST MESSAGE FIRST -->
-          <div style="border-left:3px solid var(--primary); padding-left:4px;">
-            <span style="font-size:0.68rem; font-weight:800; color:var(--primary); text-transform:uppercase; margin-bottom:2px; display:block;">
-              ⚡ Latest Message:
-            </span>
-            ${latestMsgHTML}
-          </div>
-
-          <!-- 2. COLLAPSIBLE OLDER MESSAGES (HIDDEN INITIALLY, SHOWN AT TOP FOLLOWING LATEST WHEN EXPANDED) -->
-          ${olderMsgs.length > 0 ? `
-            <div class="hidden" style="margin-top:6px; border-top:1px dashed var(--border-color); padding-top:8px; display:flex; flex-direction:column; gap:8px;">
-              <span style="font-size:0.68rem; font-weight:800; color:#64748b; text-transform:uppercase;">
-                📜 Older Messages History (${olderMsgs.length}):
-              </span>
-              ${olderMsgsHTML}
-            </div>
-            
-            <button onclick="this.previousElementSibling.classList.toggle('hidden'); this.innerText = this.previousElementSibling.classList.contains('hidden') ? '▼ Show ${olderMsgs.length} Older Messages' : '▲ Hide Older Messages';" 
-                    style="background:#f1f5f9; color:#0369a1; border:1px solid #bae6fd; font-size:0.75rem; padding:4px 10px; border-radius:6px; cursor:pointer; width:100%; margin-top:4px; font-weight:600;">
-              ▼ Show ${olderMsgs.length} Older Messages
-            </button>
-          ` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  updateBulkDeleteState();
-}
-
-// Helper to build message card with optional checkbox for bulk delete
-function buildMsgCardHTMLWithCheckbox(m) {
-  const isBroadcast = m.receiver === "ALL";
-  const isSystem = m.message.includes("Completed") || m.message.includes("Quiz");
-
-  let badgeText = "Direct"; let badgeClass = "direct";
-  let icon = '<i class="fa-solid fa-comment" style="color:var(--primary)"></i>';
-
-  if (isBroadcast) { badgeText = "Broadcast"; badgeClass = "broadcast"; icon = '<i class="fa-solid fa-bullhorn" style="color:var(--accent-purple)"></i>'; }
-  else if (isSystem) { badgeText = "Activity"; badgeClass = "system"; icon = '<i class="fa-solid fa-circle-check" style="color:var(--accent-green)"></i>'; }
-  else if (currentUser.role === "Admin" && m.sender !== "Admin") {
-    badgeText = "Student"; badgeClass = "student"; icon = '<i class="fa-solid fa-circle-user" style="color:var(--accent-green)"></i>';
-  }
-
-  const showReplyBtn = currentUser.role === "Admin" && m.sender !== "Admin" && m.sender !== "System";
-  const showDeleteBtn = currentUser && currentUser.role === "Admin";
-
-  return `
-    <div class="msg-card">
-      <div class="msg-header">
-        <span style="display:flex; align-items:center; gap:6px;">
-          ${showDeleteBtn ? `<input type="checkbox" class="msg-select-chk" value="${m.id}" onchange="updateBulkDeleteState()" style="width:auto; margin:0;">` : ''}
-          ${icon} <strong>${m.sender}</strong>
-        </span>
-        <span class="msg-badge ${badgeClass}">${badgeText}</span>
-      </div>
-      <div class="msg-body" style="padding-left: ${showDeleteBtn ? '22px' : '0'};">${m.message}</div>
-      <div class="msg-footer">
-        <span>To: <strong>${m.receiver}</strong> | ${m.timestamp}</span>
-        <span style="display:flex; gap:4px; align-items:center;">
-          ${showReplyBtn ? `<button class="btn-quick-reply" onclick="quickReplyToStudent('${m.sender}')"><i class="fa-solid fa-reply"></i> Reply</button>` : ''}
-          ${showDeleteBtn ? `<button class="btn-msg-del" onclick="deleteSingleMessage('${m.id}')" title="Delete Message"><i class="fa-solid fa-trash"></i></button>` : ''}
-        </span>
-      </div>
-    </div>
-  `;
-}
 
     function filterAdminFeed(filterType, btnEl) {
       document.querySelectorAll('#adminTab-messages .filter-btn').forEach(b => b.classList.remove('active'));
@@ -5134,7 +5373,7 @@ function showPresenceToast(message, type) {
 
       stopReadAloud();
       await updatePresenceStatus("offline");
-      await recordAuditLog(username, role, "Auto Logout", "-", formatDateTimeStrict(), navigator.userAgent);
+      await recordAuditLog(username, role, "Auto Logout (3m Inactivity)", "-", formatDateTimeStrict(), navigator.userAgent);
 
       localStorage.removeItem("scert_user_session");
       currentUser = null;
@@ -5335,179 +5574,179 @@ function showPresenceToast(message, type) {
       } catch(e) {}
     }
 
-    async function fetchAdminQuizResults() {
-  showProgressLoader();
-  try {
-    const usersSnap = await db.collection("users").where("role", "==", "Student").get();
-    const resultsSnap = await db.collection("quiz_results").get();
-    const progressSnap = await db.collection("progress").where("sectionId", "==", "Model Test").get();
-    hideProgressLoader();
+   async function fetchAdminQuizResults() {
+      showProgressLoader();
+      try {
+        const usersSnap = await db.collection("users").where("role", "==", "Student").get();
+        const resultsSnap = await db.collection("quiz_results").get();
+        const progressSnap = await db.collection("progress").where("sectionId", "==", "Model Test").get();
+        hideProgressLoader();
 
-    const container = document.getElementById("quizResultsContainerUI");
-    if (usersSnap.empty) {
-      container.innerHTML = `<p style="color:#888; text-align:center;">No students registered in the system.</p>`;
-      return;
-    }
+        const container = document.getElementById("quizResultsContainerUI");
+        if (usersSnap.empty) {
+          container.innerHTML = `<p style="color:#888; text-align:center;">No students registered in the system.</p>`;
+          return;
+        }
 
-    const resultsByStudent = {};
+        const resultsByStudent = {};
 
-    resultsSnap.docs.forEach(doc => {
-      const r = doc.data();
-      r.id = doc.id;
-      if (!resultsByStudent[r.username]) resultsByStudent[r.username] = [];
-      resultsByStudent[r.username].push(r);
-    });
-
-    progressSnap.docs.forEach(doc => {
-      const p = doc.data();
-      if (!resultsByStudent[p.username]) resultsByStudent[p.username] = [];
-
-      const alreadyExists = resultsByStudent[p.username].some(
-        r => String(r.chapterId) === String(p.chapterId) && r.timestamp === p.timestamp
-      );
-
-      if (!alreadyExists) {
-        resultsByStudent[p.username].push({
-          id: doc.id,
-          username: p.username,
-          chapterId: String(p.chapterId),
-          chapterTitle: CHAPTERS[parseInt(p.chapterId) - 1] || `Chapter ${p.chapterId}`,
-          scorePct: "Completed",
-          correctCount: "✓",
-          totalQs: "✓",
-          timestamp: p.timestamp || "Prior Session",
-          breakdown: [],
-          isLegacy: true
+        resultsSnap.docs.forEach(doc => {
+          const r = doc.data();
+          r.id = doc.id;
+          if (!resultsByStudent[r.username]) resultsByStudent[r.username] = [];
+          resultsByStudent[r.username].push(r);
         });
-      }
-    });
 
-    let studentList = usersSnap.docs.map(doc => {
-      const u = doc.data();
-      const attempts = resultsByStudent[u.username] || [];
-      attempts.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+        progressSnap.docs.forEach(doc => {
+          const p = doc.data();
+          if (!resultsByStudent[p.username]) resultsByStudent[p.username] = [];
 
-      const hasAttended = attempts.length > 0;
-      const lastAttended = hasAttended ? attempts[0].timestamp : "Not Attended Yet";
-      const lastEpoch = hasAttended ? new Date(attempts[0].timestamp || 0).getTime() : 0;
+          const alreadyExists = resultsByStudent[p.username].some(
+            r => String(r.chapterId) === String(p.chapterId) && r.timestamp === p.timestamp
+          );
 
-      return {
-        username: u.username,
-        userClass: u.userClass || "7",
-        userDivision: u.userDivision || "A",
-        phoneNo: u.phoneNo || "N/A",
-        attempts: attempts,
-        hasAttended: hasAttended,
-        lastAttended: lastAttended,
-        lastEpoch: lastEpoch
-      };
-    });
+          if (!alreadyExists) {
+            resultsByStudent[p.username].push({
+              id: doc.id,
+              username: p.username,
+              chapterId: String(p.chapterId),
+              chapterTitle: CHAPTERS[parseInt(p.chapterId) - 1] || `Chapter ${p.chapterId}`,
+              scorePct: "Completed",
+              correctCount: "✓",
+              totalQs: "✓",
+              timestamp: p.timestamp || "Prior Session",
+              breakdown: [],
+              isLegacy: true
+            });
+          }
+        });
 
-    studentList.sort((a, b) => {
-      if (b.lastEpoch !== a.lastEpoch) {
-        return b.lastEpoch - a.lastEpoch;
-      }
-      return a.username.localeCompare(b.username);
-    });
+        let studentList = usersSnap.docs.map(doc => {
+          const u = doc.data();
+          const attempts = resultsByStudent[u.username] || [];
+          attempts.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
 
-    container.innerHTML = studentList.map(s => {
-      let attemptsHTML = '';
+          const hasAttended = attempts.length > 0;
+          const lastAttended = hasAttended ? attempts[0].timestamp : "Not Attended Yet";
+          const lastEpoch = hasAttended ? new Date(attempts[0].timestamp || 0).getTime() : 0;
 
-      if (s.hasAttended) {
-        attemptsHTML = s.attempts.map((r) => {
-          const isLegacy = r.isLegacy;
-          const scorePct = r.scorePct;
-          const isPassed = isLegacy || (typeof scorePct === 'number' && scorePct >= 50);
+          return {
+            username: u.username,
+            userClass: u.userClass || "7",
+            userDivision: u.userDivision || "A",
+            phoneNo: u.phoneNo || "N/A",
+            attempts: attempts,
+            hasAttended: hasAttended,
+            lastAttended: lastAttended,
+            lastEpoch: lastEpoch
+          };
+        });
 
-          // FULL ANSWER BREAKDOWN GENERATOR
-          const questionsHTML = (r.breakdown && r.breakdown.length > 0) ? r.breakdown.map((qObj, idx) => `
-            <div style="margin-top:8px; padding:8px; background:var(--bg); border:1px solid var(--border-color); border-radius:6px; font-size:0.83rem;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                <strong>Q${idx + 1}: ${qObj.q}</strong>
-                <span style="font-weight:bold; font-size:0.75rem; color:${qObj.isCorrect ? '#16a34a' : '#dc2626'};">
-                  ${qObj.isCorrect ? '✓ Correct' : '❌ Incorrect'}
-                </span>
-              </div>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:4px; font-size:0.78rem;">
-                <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'A' ? (qObj.correct === 'A' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'A' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
-                  <strong>A:</strong> ${qObj.optA} ${qObj.userChoice === 'A' ? '👤(Student Answer)' : ''}
+        studentList.sort((a, b) => {
+          if (b.lastEpoch !== a.lastEpoch) {
+            return b.lastEpoch - a.lastEpoch;
+          }
+          return a.username.localeCompare(b.username);
+        });
+
+        let sno = 1;
+        container.innerHTML = studentList.map(s => {
+          let attemptsHTML = '';
+
+          if (s.hasAttended) {
+            attemptsHTML = s.attempts.map((r) => {
+              const isLegacy = r.isLegacy;
+              const scorePct = r.scorePct;
+              const isPassed = isLegacy || (typeof scorePct === 'number' && scorePct >= 50);
+
+              const questionsHTML = (r.breakdown && r.breakdown.length > 0) ? r.breakdown.map((qObj, idx) => `
+                <div style="margin-top:8px; padding:8px; background:var(--bg); border:1px solid var(--border-color); border-radius:6px; font-size:0.83rem;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <strong>Q${idx + 1}: ${qObj.q}</strong>
+                    <span style="font-weight:bold; font-size:0.75rem; color:${qObj.isCorrect ? '#16a34a' : '#dc2626'};">
+                      ${qObj.isCorrect ? '✓ Correct' : '❌ Incorrect'}
+                    </span>
+                  </div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; margin-top:4px; font-size:0.78rem;">
+                    <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'A' ? (qObj.correct === 'A' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'A' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
+                      <strong>A:</strong> ${qObj.optA} ${qObj.userChoice === 'A' ? '👤(Student Answer)' : ''}
+                    </div>
+                    <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'B' ? (qObj.correct === 'B' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'B' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
+                      <strong>B:</strong> ${qObj.optB} ${qObj.userChoice === 'B' ? '👤(Student Answer)' : ''}
+                    </div>
+                    <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'C' ? (qObj.correct === 'C' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'C' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
+                      <strong>C:</strong> ${qObj.optC} ${qObj.userChoice === 'C' ? '👤(Student Answer)' : ''}
+                    </div>
+                    <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'D' ? (qObj.correct === 'D' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'D' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
+                      <strong>D:</strong> ${qObj.optD} ${qObj.userChoice === 'D' ? '👤(Student Answer)' : ''}
+                    </div>
+                  </div>
+                  <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">
+                    Correct Answer: <strong style="color:#16a34a;">Option ${qObj.correct}</strong> | Student Answer: <strong>Option ${qObj.userChoice}</strong>
+                  </div>
                 </div>
-                <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'B' ? (qObj.correct === 'B' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'B' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
-                  <strong>B:</strong> ${qObj.optB} ${qObj.userChoice === 'B' ? '👤(Student Answer)' : ''}
+              `).join('') : `<p style="font-size:0.78rem; color:#64748b; margin:4px 0;">Prior activity log entry. Detailed breakdown is available for new quiz attempts.</p>`;
+
+              return `
+                <div style="margin-top:8px; padding:10px; background:#ffffff; border:1px solid var(--border-color); border-radius:6px; border-left:4px solid ${isPassed ? '#16a34a' : '#dc2626'};">
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                    <div>
+                      <strong style="color:var(--text); font-size:0.88rem;">📘 ${r.chapterTitle || 'Chapter ' + r.chapterId}</strong>
+                      <div style="font-size:0.75rem; color:#64748b;">🕒 Attended: ${r.timestamp}</div>
+                    </div>
+
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <span style="background:${isPassed ? '#dcfce7' : '#fee2e2'}; color:${isPassed ? '#166534' : '#991b1b'}; padding:3px 8px; border-radius:10px; font-weight:700; font-size:0.8rem;">
+                        ${isLegacy ? '✓ Completed' : `Score: ${scorePct}% (${r.correctCount}/${r.totalQs})`}
+                      </span>
+                      <button onclick="this.parentElement.parentElement.nextElementSibling.classList.toggle('hidden');" style="width:auto; padding:4px 8px; font-size:0.72rem; background:var(--primary);">
+                        <i class="fa-solid fa-list"></i> Details
+                      </button>
+                      <button onclick="deleteSingleQuizResult('${r.id}', '${r.isLegacy ? 'progress' : 'quiz_results'}')" style="width:auto; padding:4px 8px; font-size:0.72rem; background:var(--accent-red);" title="Delete Exam Result">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="hidden" style="margin-top:8px; border-top:1px dashed var(--border-color); padding-top:6px;">
+                    <h5 style="margin:0 0 4px 0; color:var(--primary); font-size:0.8rem;"><i class="fa-solid fa-square-check"></i> Answer Breakdown:</h5>
+                    ${questionsHTML}
+                  </div>
                 </div>
-                <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'C' ? (qObj.correct === 'C' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'C' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
-                  <strong>C:</strong> ${qObj.optC} ${qObj.userChoice === 'C' ? '👤(Student Answer)' : ''}
-                </div>
-                <div style="padding:4px 8px; border-radius:4px; background:${qObj.userChoice === 'D' ? (qObj.correct === 'D' ? '#dcfce7' : '#fee2e2') : '#f1f5f9'}; border:${qObj.correct === 'D' ? '2px solid #16a34a' : '1px solid #cbd5e1'};">
-                  <strong>D:</strong> ${qObj.optD} ${qObj.userChoice === 'D' ? '👤(Student Answer)' : ''}
-                </div>
-              </div>
-              <div style="font-size:0.75rem; color:#64748b; margin-top:4px;">
-                Correct Answer: <strong style="color:#16a34a;">Option ${qObj.correct}</strong> | Student Answer: <strong>Option ${qObj.userChoice}</strong>
-              </div>
-            </div>
-          `).join('') : `<p style="font-size:0.78rem; color:#64748b; margin:4px 0;">Prior activity log entry. Detailed breakdown is available for new quiz attempts.</p>`;
+              `;
+            }).join('');
+          } else {
+            attemptsHTML = `<p style="font-size:0.8rem; color:#94a3b8; margin:6px 0 0 0;">⏳ Student has not attended any model test exams yet.</p>`;
+          }
 
           return `
-            <div style="margin-top:8px; padding:10px; background:#ffffff; border:1px solid var(--border-color); border-radius:6px; border-left:4px solid ${isPassed ? '#16a34a' : '#dc2626'};">
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <div class="item-card quiz-result-card" style="border-top:3px solid ${s.hasAttended ? 'var(--primary)' : '#cbd5e1'};">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
                 <div>
-                  <strong style="color:var(--text); font-size:0.88rem;">📘 ${r.chapterTitle || 'Chapter ' + r.chapterId}</strong>
-                  <div style="font-size:0.75rem; color:#64748b;">🕒 Attended: ${r.timestamp}</div>
+                  <strong style="font-size:1rem; color:var(--primary);">S.No.${sno++} | ${s.username}</strong>
+                  <span style="font-size:0.8rem; color:#64748b; margin-left:6px;">(Class ${s.userClass}-${s.userDivision})</span>
+                  <div style="font-size:0.75rem; color:#64748b;">📞 Phone: ${s.phoneNo}</div>
                 </div>
 
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <span style="background:${isPassed ? '#dcfce7' : '#fee2e2'}; color:${isPassed ? '#166534' : '#991b1b'}; padding:3px 8px; border-radius:10px; font-weight:700; font-size:0.8rem;">
-                    ${isLegacy ? '✓ Completed' : `Score: ${scorePct}% (${r.correctCount}/${r.totalQs})`}
+                <div style="text-align:right;">
+                  <span style="background:${s.hasAttended ? '#e0f2fe' : '#f1f5f9'}; color:${s.hasAttended ? '#0369a1' : '#64748b'}; padding:4px 10px; border-radius:12px; font-weight:700; font-size:0.78rem; display:inline-block;">
+                    ${s.hasAttended ? `📅 Last Attended: ${s.lastAttended}` : '⏳ Not Attended Yet'}
                   </span>
-                  <button onclick="this.parentElement.parentElement.nextElementSibling.classList.toggle('hidden');" style="width:auto; padding:4px 8px; font-size:0.72rem; background:var(--primary);">
-                    <i class="fa-solid fa-list"></i> Details
-                  </button>
-                  <button onclick="deleteSingleQuizResult('${r.id}', '${r.isLegacy ? 'progress' : 'quiz_results'}')" style="width:auto; padding:4px 8px; font-size:0.72rem; background:var(--accent-red);" title="Delete Exam Result">
-                    <i class="fa-solid fa-trash"></i>
-                  </button>
+                  ${s.hasAttended ? `<div style="font-size:0.75rem; font-weight:bold; color:var(--accent-green); margin-top:2px;">Total Exams Taken: ${s.attempts.length}</div>` : ''}
                 </div>
               </div>
 
-              <div class="hidden" style="margin-top:8px; border-top:1px dashed var(--border-color); padding-top:6px;">
-                <h5 style="margin:0 0 4px 0; color:var(--primary); font-size:0.8rem;"><i class="fa-solid fa-square-check"></i> Answer Breakdown:</h5>
-                ${questionsHTML}
+              <div style="margin-top:10px; border-top:1px solid var(--border-color); padding-top:8px;">
+                ${attemptsHTML}
               </div>
             </div>
           `;
         }).join('');
-      } else {
-        attemptsHTML = `<p style="font-size:0.8rem; color:#94a3b8; margin:6px 0 0 0;">⏳ Student has not attended any model test exams yet.</p>`;
+
+      } catch(e) {
+        hideProgressLoader();
       }
-
-      return `
-        <div class="item-card quiz-result-card" style="border-top:3px solid ${s.hasAttended ? 'var(--primary)' : '#cbd5e1'};">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <div>
-              <strong style="font-size:1rem; color:var(--primary);">${s.username}</strong>
-              <span style="font-size:0.8rem; color:#64748b; margin-left:6px;">(Class ${s.userClass}-${s.userDivision})</span>
-              <div style="font-size:0.75rem; color:#64748b;">📞 Phone: ${s.phoneNo}</div>
-            </div>
-
-            <div style="text-align:right;">
-              <span style="background:${s.hasAttended ? '#e0f2fe' : '#f1f5f9'}; color:${s.hasAttended ? '#0369a1' : '#64748b'}; padding:4px 10px; border-radius:12px; font-weight:700; font-size:0.78rem; display:inline-block;">
-                ${s.hasAttended ? `📅 Last Attended: ${s.lastAttended}` : '⏳ Not Attended Yet'}
-              </span>
-              ${s.hasAttended ? `<div style="font-size:0.75rem; font-weight:bold; color:var(--accent-green); margin-top:2px;">Total Exams Taken: ${s.attempts.length}</div>` : ''}
-            </div>
-          </div>
-
-          <div style="margin-top:10px; border-top:1px solid var(--border-color); padding-top:8px;">
-            ${attemptsHTML}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-  } catch(e) {
-    hideProgressLoader();
-  }
-}
+    }
 
     function filterQuizResultsLive(searchTerm) {
       const term = searchTerm.toLowerCase().trim();
@@ -5930,7 +6169,7 @@ function showPresenceToast(message, type) {
       <div class="hidden" style="background:#ffffff; border:1px solid var(--border-color); border-top:none; border-radius:0 0 8px 8px; padding:12px; margin-bottom:10px;">
         <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
           <div>
-            <label style="font-size:0.75rem; font-weight:700;">Notebook General Status:</label>
+            <label style="font-size:0.75rem; font-weight:700;">Composition :</label>
             <select id="eval_nb_${s.username}">
               <option value="Brewing☕" ${(!evalData.notebook || evalData.notebook === 'Brewing☕') ? 'selected' : ''}>Brewing☕</option>
               <option value="NEED IMPROVEMENT" ${evalData.notebook === 'NEED IMPROVEMENT' ? 'selected' : ''}>NEED IMPROVEMENT</option>
@@ -5942,7 +6181,7 @@ function showPresenceToast(message, type) {
           </div>
 
           <div>
-            <label style="font-size:0.75rem; font-weight:700;">Reading Capability:</label>
+            <label style="font-size:0.75rem; font-weight:700;">Literacy :</label>
             <select id="eval_rd_${s.username}">
               <option value="Brewing☕" ${(!evalData.reading || evalData.reading === 'Brewing☕') ? 'selected' : ''}>Brewing☕</option>
               <option value="NEED IMPROVEMENT" ${evalData.reading === 'NEED IMPROVEMENT' ? 'selected' : ''}>NEED IMPROVEMENT</option>
@@ -5954,7 +6193,7 @@ function showPresenceToast(message, type) {
           </div>
 
           <div>
-            <label style="font-size:0.75rem; font-weight:700;">Class Attention:</label>
+            <label style="font-size:0.75rem; font-weight:700;">Focus :</label>
             <select id="eval_ca_${s.username}">
               <option value="Brewing☕" ${(!evalData.classAttention || evalData.classAttention === 'Brewing☕') ? 'selected' : ''}>Brewing☕</option>
               <option value="GOOD" ${evalData.classAttention === 'GOOD' ? 'selected' : ''}>GOOD</option>
@@ -5965,28 +6204,28 @@ function showPresenceToast(message, type) {
           </div>
         </div>
 
-        <h5 style="margin:12px 0 6px 0; color:var(--primary);"><i class="fa-solid fa-book-bookmark"></i> Notebook Diligence Status (Active Units Notes):</h5>
+        <h5 style="margin:12px 0 6px 0; color:var(--primary);"><i class="fa-solid fa-book-bookmark"></i> Diligence :</h5>
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:8px; margin-bottom:12px;">
           ${diligenceInputsHTML || '<p style="font-size:0.8rem; color:#888;">No active units enabled.</p>'}
         </div>
 
-        <h5 style="margin:12px 0 6px 0; color:var(--primary);"><i class="fa-solid fa-file-pen"></i> Term Examination Marks & Auto-Grade Generator:</h5>
+        <h5 style="margin:12px 0 6px 0; color:var(--primary);"><i class="fa-solid fa-file-pen"></i> Term Examination :</h5>
         
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px;">
           <div>
-            <label style="font-size:0.72rem; font-weight:700;">1st Mid Term (Score):</label>
+            <label style="font-size:0.72rem; font-weight:700;">1st Mid Term :</label>
             <input type="text" id="eval_m1_${s.username}" value="${evalData.m1Score || 'Brewing☕'}" placeholder="Score / Brewing☕" oninput="calculateLiveGradeUI('${s.username}', 'm1')">
             <div id="eval_m1_res_${s.username}" style="font-size:0.72rem; font-weight:bold; margin-top:2px;">-</div>
           </div>
 
           <div>
-            <label style="font-size:0.72rem; font-weight:700;">1st Term Exam (Onam):</label>
+            <label style="font-size:0.72rem; font-weight:700;">1st Term Exam :</label>
             <input type="text" id="eval_t1_${s.username}" value="${evalData.t1Score || 'Brewing☕'}" placeholder="Score / Brewing☕" oninput="calculateLiveGradeUI('${s.username}', 't1')">
             <div id="eval_t1_res_${s.username}" style="font-size:0.72rem; font-weight:bold; margin-top:2px;">-</div>
           </div>
 
           <div>
-            <label style="font-size:0.72rem; font-weight:700;">2nd Mid Term (Score):</label>
+            <label style="font-size:0.72rem; font-weight:700;">2nd Mid Term :</label>
             <input type="text" id="eval_m2_${s.username}" value="${evalData.m2Score || 'Brewing☕'}" placeholder="Score / Brewing☕" oninput="calculateLiveGradeUI('${s.username}', 'm2')">
             <div id="eval_m2_res_${s.username}" style="font-size:0.72rem; font-weight:bold; margin-top:2px;">-</div>
           </div>
@@ -5998,7 +6237,7 @@ function showPresenceToast(message, type) {
           </div>
 
           <div>
-            <label style="font-size:0.72rem; font-weight:700;">Final Exam (Score):</label>
+            <label style="font-size:0.72rem; font-weight:700;">Annual Term :</label>
             <input type="text" id="eval_fn_${s.username}" value="${evalData.finalScore || 'Brewing☕'}" placeholder="Score / Brewing☕" oninput="calculateLiveGradeUI('${s.username}', 'fn')">
             <div id="eval_fn_res_${s.username}" style="font-size:0.72rem; font-weight:bold; margin-top:2px;">-</div>
           </div>
@@ -6027,20 +6266,6 @@ function calculateLiveGradeUI(username, fieldPrefix) {
     resEl.innerHTML = `<span class="grade-badge grade-${grade}">Grade: ${grade} (${pct})</span>`;
   }
 }
-
-    function calculateLiveGradeUI(username, fieldPrefix) {
-      const val = document.getElementById(`eval_${fieldPrefix}_${username}`).value;
-      const resEl = document.getElementById(`eval_${fieldPrefix}_res_${username}`);
-      if (!resEl) return;
-
-      if (val === '') {
-        resEl.innerText = '-';
-        return;
-      }
-
-      const { pct, grade } = calculateScoreGrade(val);
-      resEl.innerHTML = `<span class="grade-badge grade-${grade}">Grade: ${grade} (${pct}%)</span>`;
-    }
 
     async function saveStudentAssessmentData(username) {
   // Extract Diligence status for all active units
@@ -6178,7 +6403,7 @@ function calculateLiveGradeUI(username, fieldPrefix) {
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:0.8rem;">
             <strong>Unit ${c}: ${CHAPTERS[c-1]}</strong>
             <span style="font-weight:bold; color:${nbStatus === 'COMPLETE' ? '#16a34a' : '#dc2626'}; font-size:0.75rem;">
-              Notebook: ${nbStatus}
+              Diligence : ${nbStatus}
             </span>
           </div>
           <div style="display:flex; gap:4px; flex-wrap:wrap;">
@@ -6225,9 +6450,9 @@ function calculateLiveGradeUI(username, fieldPrefix) {
 
         <div class="hidden" style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:10px;">
           <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; background:#f0f9ff; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.82rem;">
-            <div><strong>Notebook General:</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.notebook || 'Not Set'}</span></div>
-            <div><strong>Reading:</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.reading || 'Not Set'}</span></div>
-            <div><strong>Class Attention:</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.classAttention || 'Not Set'}</span></div>
+            <div><strong>Composition :</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.notebook || 'Not Set'}</span></div>
+            <div><strong>Literacy :</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.reading || 'Not Set'}</span></div>
+            <div><strong>Focus :</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.classAttention || 'Not Set'}</span></div>
           </div>
 
           <h5 style="margin:8px 0 4px 0; color:var(--primary);"><i class="fa-solid fa-chart-column"></i> Term Examinations Performance:</h5>
@@ -6242,33 +6467,33 @@ function calculateLiveGradeUI(username, fieldPrefix) {
             </thead>
             <tbody>
               <tr>
-                <td>1st Mid Term Exam</td>
+                <td>1st Mid Term </td>
                 <td>${evalData.m1Score || '-'}</td>
-                <td>${m1.pct}%</td>
+                <td>${m1.pct}</td>
                 <td><span class="grade-badge grade-${m1.grade}">${m1.grade}</span></td>
               </tr>
               <tr>
-                <td>1st Term Exam (Onam)</td>
+                <td>1st Term Exam </td>
                 <td>${evalData.t1Score || '-'}</td>
-                <td>${t1.pct}%</td>
+                <td>${t1.pct}</td>
                 <td><span class="grade-badge grade-${t1.grade}">${t1.grade}</span></td>
               </tr>
               <tr>
-                <td>2nd Mid Term Exam</td>
+                <td>2nd Mid Term </td>
                 <td>${evalData.m2Score || '-'}</td>
-                <td>${m2.pct}%</td>
+                <td>${m2.pct}</td>
                 <td><span class="grade-badge grade-${m2.grade}">${m2.grade}</span></td>
               </tr>
               <tr>
-                <td>2nd Term Exam</td>
+                <td>2nd Term </td>
                 <td>${evalData.t2Score || '-'}</td>
-                <td>${t2.pct}%</td>
+                <td>${t2.pct}</td>
                 <td><span class="grade-badge grade-${t2.grade}">${t2.grade}</span></td>
               </tr>
               <tr>
-                <td>Final Exam</td>
+                <td>Annual Exam</td>
                 <td>${evalData.finalScore || '-'}</td>
-                <td>${fn.pct}%</td>
+                <td>${fn.pct}</td>
                 <td><span class="grade-badge grade-${fn.grade}">${fn.grade}</span></td>
               </tr>
             </tbody>
@@ -6351,7 +6576,7 @@ function calculateLiveGradeUI(username, fieldPrefix) {
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:0.8rem;">
           <strong>Unit ${c}: ${CHAPTERS[c-1]}</strong>
           <span style="font-weight:bold; color:${nbStatus === 'COMPLETE' ? '#16a34a' : '#dc2626'}; font-size:0.75rem;">
-            Notebook: ${nbStatus}
+            Diligence: ${nbStatus}
           </span>
         </div>
         <div style="display:flex; gap:4px; flex-wrap:wrap;">
@@ -6463,70 +6688,97 @@ function deleteSingleQuizResult(resultId, collectionName) {
   );
 }
 
-
-
-// Calculates friendly relative time (e.g., 'Just now', '15min ago', '10hr ago', '3d ago')
-function formatTimePeriodAgo(epochMs) {
-  if (!epochMs || isNaN(epochMs) || epochMs === 0) return "Prior Session";
-  const now = Date.now();
-  const diffMs = now - epochMs;
-
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 2) return "Just now";
-  if (diffMins < 60) return `${diffMins}min ago`;
-  if (diffHours < 24) return `${diffHours}hr ago`;
-  return `${diffDays}d ago`;
-}
-
-// --- USERS TABLE FULL COLUMN SORTING ENGINE --- //
-let usersTableSortCol = -1;
-let usersTableSortAsc = true;
-
-function sortUsersTable(colIdx) {
-  const container = document.getElementById("usersTableContainer");
-  if (!container) return;
-
-  const rows = Array.from(container.querySelectorAll("tr"));
-  if (rows.length <= 1) return;
-
-  if (usersTableSortCol === colIdx) {
-    usersTableSortAsc = !usersTableSortAsc;
-  } else {
-    usersTableSortCol = colIdx;
-    usersTableSortAsc = true;
+async function sendWhatsAppDetailedReport(username, phoneNo, cls, div) {
+  if (!phoneNo || phoneNo.trim() === "0000000000" || phoneNo.trim() === "") {
+    return showInlineMsg("editorInlineMsg", "Student phone number not available!", "error");
   }
 
-  const icons = document.querySelectorAll("#adminTab-users .user-sort-icon");
-  icons.forEach((icon, idx) => {
-    if (idx === colIdx) {
-      icon.className = usersTableSortAsc ? "fa-solid fa-sort-up" : "fa-solid fa-sort-down";
-      icon.style.color = "#38bdf8";
-    } else {
-      icon.className = "fa-solid fa-sort";
-      icon.style.color = "inherit";
-    }
+  let cleanPhone = phoneNo.replace(/\D/g, '');
+  if (cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
+
+  showProgressLoader();
+  const progressSnap = await db.collection("progress").where("username", "==", username).get();
+  const quizSnap = await db.collection("quiz_results").where("username", "==", username).get();
+  await fetchStudentAssessmentsMap();
+  hideProgressLoader();
+
+  const evalData = studentAssessmentsMap[username] || {};
+  const nbStatusMap = evalData.unitNotebookStatus || {};
+
+  const chSectionMap = {};
+  progressSnap.docs.forEach(doc => {
+    const p = doc.data();
+    const c = parseInt(p.chapterId);
+    if (!chSectionMap[c]) chSectionMap[c] = new Set();
+    chSectionMap[c].add(p.sectionId);
   });
 
-  rows.sort((rowA, rowB) => {
-    const cellA = rowA.children[colIdx] ? rowA.children[colIdx].innerText.trim() : "";
-    const cellB = rowB.children[colIdx] ? rowB.children[colIdx].innerText.trim() : "";
+  let activeUnitsList = [];
+  for (let c = 1; c <= 12; c++) {
+    if (unitStatusMap[c] !== false) activeUnitsList.push(c);
+  }
 
-    const numA = parseFloat(cellA.replace(/\D/g, ''));
-    const numB = parseFloat(cellB.replace(/\D/g, ''));
-    const isNumA = !isNaN(numA) && cellA.replace(/\D/g, '').length > 0;
-    const isNumB = !isNaN(numB) && cellB.replace(/\D/g, '').length > 0;
+  let totalActiveUnits = activeUnitsList.length;
+  let totalSectionsCompletedByStudent = 0;
+  let activeUnitDetailsText = [];
 
-    if (isNumA && isNumB) {
-      return usersTableSortAsc ? numA - numB : numB - numA;
-    }
+  activeUnitsList.forEach(c => {
+    const doneSecsSet = chSectionMap[c] || new Set();
+    totalSectionsCompletedByStudent += doneSecsSet.size;
 
-    return usersTableSortAsc ? cellA.toLowerCase().localeCompare(cellB.toLowerCase()) : cellB.toLowerCase().localeCompare(cellA.toLowerCase());
+    let sectionBreakdownText = ALL_SECTIONS.map(secName => {
+      const isDone = doneSecsSet.has(secName);
+      return `${secName}: ${isDone ? '✅ COMPLETE' : '❌ INCOMPLETE'}`;
+    }).join('\n  ├ ');
+
+    const unitNbStatus = nbStatusMap[c] || 'INCOMPLETE';
+
+    activeUnitDetailsText.push(`*Unit ${c}: ${CHAPTERS[c-1]}*\n  ├ Notebook Notes: ${unitNbStatus === 'COMPLETE' ? '✅ COMPLETE' : '❌ INCOMPLETE'}\n  ├ ${sectionBreakdownText}`);
   });
 
-  rows.sort((rowA, rowB) => container.appendChild(rowA));
+  const m1 = calculateScoreGrade(evalData.m1Score);
+  const t1 = calculateScoreGrade(evalData.t1Score);
+  const m2 = calculateScoreGrade(evalData.m2Score);
+  const t2 = calculateScoreGrade(evalData.t2Score);
+  const fn = calculateScoreGrade(evalData.finalScore);
+
+  let quizHistoryText = quizSnap.docs.map(doc => {
+    const q = doc.data();
+    return `• ${q.chapterTitle || 'Chapter ' + q.chapterId}: ${q.scorePct}% (${q.correctCount}/${q.totalQs})`;
+  }).join('\n');
+
+  const msg = `*TDTTI SS 7 Progression Report*
+Student Name: ${username}
+Class: ${cls} - Division: ${div}
+Phone: ${phoneNo}
+
+*COMPLETED BY CONCERNED STUDENT:*
+• Total Active Units Available: ${totalActiveUnits}
+• Total Completed Sections: ${totalSectionsCompletedByStudent} / ${totalActiveUnits * 5}
+
+*ACADEMIC REMARKS:*
+• Composition : ${evalData.notebook || 'Pending'}
+• Diligence: ${evalData.reading || 'Pending'}
+• Focus : ${evalData.classAttention || 'Pending'}
+
+*EXAM PERFORMANCE & GRADES:*
+• 1st Mid Term: ${evalData.m1Score || '-'} (${m1.pct}% - Grade ${m1.grade})
+• 1st Term (Onam): ${evalData.t1Score || '-'} (${t1.pct}% - Grade ${t1.grade})
+• 2nd Mid Term: ${evalData.m2Score || '-'} (${m2.pct}% - Grade ${m2.grade})
+• 2nd Term Exam: ${evalData.t2Score || '-'} (${t2.pct}% - Grade ${t2.grade})
+• Annaul Term Exam: ${evalData.finalScore || '-'} (${fn.pct}% - Grade ${fn.grade})
+
+*MODEL TEST HISTORY:*
+${quizHistoryText || 'No model tests taken yet.'}
+
+*UNIT-WISE BREAKDOWN:*
+${activeUnitDetailsText.join('\n\n')}
+
+*SS(7) | TDTTI THURAVOOR*
+JOIN NOW
+https://tdschoolnews.in/`;
+
+  window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 
