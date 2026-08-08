@@ -2765,13 +2765,10 @@ function deleteSelectedAuditLogs() {
   if (cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
 
   showProgressLoader();
-  const userDoc = await db.collection("users").doc(username).get();
   const progressSnap = await db.collection("progress").where("username", "==", username).get();
-  const quizSnap = await db.collection("quiz_results").where("username", "==", username).get();
   await fetchStudentAssessmentsMap();
   hideProgressLoader();
 
-  const userPass = userDoc.exists ? (userDoc.data().password || '*****') : '*****';
   const evalData = studentAssessmentsMap[username] || {};
   const nbStatusMap = evalData.unitNotebookStatus || {};
 
@@ -2801,76 +2798,48 @@ function deleteSelectedAuditLogs() {
       return `${secName}: ${isDone ? '✅ COMPLETE' : '❌ INCOMPLETE'}`;
     }).join('\n  ├ ');
 
-    const unitNbStatus = nbStatusMap[c] || 'Brewing☕';
-    let nbDisplay = '☕ Brewing☕';
-    if (unitNbStatus === 'COMPLETE') nbDisplay = '✅ COMPLETE';
-    if (unitNbStatus === 'INCOMPLETE') nbDisplay = '❌ INCOMPLETE';
+    const unitNbStatus = nbStatusMap[c] || 'INCOMPLETE';
 
-    activeUnitDetailsText.push(`Unit ${c}: ${CHAPTERS[c-1]}\n  ├ Notebook Notes: ${nbDisplay}\n  ├ ${sectionBreakdownText}`);
+    activeUnitDetailsText.push(`*Unit ${c}: ${CHAPTERS[c-1]}*\n  ├ Notebook Notes: ${unitNbStatus === 'COMPLETE' ? '✅ COMPLETE' : '❌ INCOMPLETE'}\n  ├ ${sectionBreakdownText}`);
   });
 
-  // Helper to format score row
-  function formatExamRow(label, rawVal) {
-    if (!rawVal || rawVal === 'Brewing☕' || rawVal.trim() === '') {
-      return `* ${label}: Brewing☕`;
-    }
-    const res = calculateScoreGrade(rawVal);
-    if (res.pct === '-' || res.grade === '-') {
-      return `* ${label}: ${rawVal}`;
-    }
-    return `* ${label}: ${rawVal} (${res.pct} - Grade ${res.grade})`;
-  }
+  const m1 = calculateScoreGrade(evalData.m1Score);
+  const t1 = calculateScoreGrade(evalData.t1Score);
+  const m2 = calculateScoreGrade(evalData.m2Score);
+  const t2 = calculateScoreGrade(evalData.t2Score);
+  const fn = calculateScoreGrade(evalData.finalScore);
 
-  const m1Text = formatExamRow("1st Mid Term", evalData.m1Score);
-  const t1Text = formatExamRow("1st Term (Onam)", evalData.t1Score);
-  const m2Text = formatExamRow("2nd Mid Term", evalData.m2Score);
-  const t2Text = formatExamRow("2nd Term Exam", evalData.t2Score);
-  const fnText = formatExamRow("Annaul Term Exam", evalData.finalScore);
-
-  let quizIndex = 1;
-  let quizHistoryText = quizSnap.docs.map(doc => {
-    const q = doc.data();
-    return `* ${quizIndex++}. ${q.chapterTitle || 'Chapter ' + q.chapterId}: ${q.scorePct}% (${q.correctCount}/${q.totalQs})`;
-  }).join('\n');
-
-  const compRemark = (evalData.notebook && evalData.notebook !== 'Pending') ? evalData.notebook : 'Brewing☕';
-  const diligRemark = (evalData.reading && evalData.reading !== 'Pending') ? evalData.reading : 'Brewing☕';
-  const focusRemark = (evalData.classAttention && evalData.classAttention !== 'Pending') ? evalData.classAttention : 'Brewing☕';
-
-  const msg = `TDTTI SS 7 Progression Report
+  const msg = `*TDTTI SS 7 Progression Report*
 Student Name: ${username}
 Class: ${cls} - Division: ${div}
 Phone: ${phoneNo}
 
-COMPLETED BY CONCERNED STUDENT:
-* Total Active Units Available: ${totalActiveUnits}
-* Total Completed Sections: ${totalSectionsCompletedByStudent} / ${totalActiveUnits * 5}
+*COMPLETED BY CONCERNED STUDENT:*
+• Total Active Units Available: ${totalActiveUnits}
+• Total Completed Sections: ${totalSectionsCompletedByStudent} / ${totalActiveUnits * 5}
 
-ACADEMIC REMARKS:
-* Composition : ${compRemark}
-* Diligence: ${diligRemark}
-* Focus : ${focusRemark}
+*ACADEMIC REMARKS:*
+• Notebook General: ${evalData.notebook || 'Pending'}
+• Reading Capability: ${evalData.reading || 'Pending'}
+• Class Attention: ${evalData.classAttention || 'Pending'}
 
-EXAM PERFORMANCE & GRADES:
-${m1Text}
-${t1Text}
-${m2Text}
-${t2Text}
-${fnText}
+*EXAM PERFORMANCE & GRADES:*
+• 1st Mid Term: ${evalData.m1Score || '-'} (${m1.pct}% - Grade ${m1.grade})
+• 1st Term (Onam): ${evalData.t1Score || '-'} (${t1.pct}% - Grade ${t1.grade})
+• 2nd Mid Term: ${evalData.m2Score || '-'} (${m2.pct}% - Grade ${m2.grade})
+• 2nd Term Exam: ${evalData.t2Score || '-'} (${t2.pct}% - Grade ${t2.grade})
+• Final Exam: ${evalData.finalScore || '-'} (${fn.pct}% - Grade ${fn.grade})
 
-MODEL TEST HISTORY:
-${quizHistoryText || '* No model tests taken yet.'}
-
-UNIT-WISE BREAKDOWN:
+*Unit-Wise Breakdown:*
 ${activeUnitDetailsText.join('\n\n')}
 
 SS(7) | TDTTI THURAVOOR
-*JOIN NOW*
+JOIN NOW
 https://tdschoolnews.in/
 
 Login Credentials
 User Name : ${username}
-Password : ${userPass}`;
+Password : ${studentPassword}`;
 
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
@@ -6488,11 +6457,10 @@ function calculateLiveGradeUI(username, fieldPrefix) {
           </div>
         </div>
 
-        <div class="hidden" style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:10px;">
-          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; background:#f0f9ff; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.82rem;">
-            <div><strong>Composition :</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.notebook || 'Not Set'}</span></div>
-            <div><strong>Literacy :</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.reading || 'Not Set'}</span></div>
-            <div><strong>Focus :</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.classAttention || 'Not Set'}</span></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; background:#f0f9ff; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.82rem;">
+            <div><strong>Composition :</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.notebook || 'Brewing☕'}</span></div>
+            <div><strong>Diligence:</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.reading || 'Brewing☕'}</span></div>
+            <div><strong>Focus :</strong> <span style="color:var(--primary); font-weight:bold;">${evalData.classAttention || 'Brewing☕'}</span></div>
           </div>
 
           <h5 style="margin:8px 0 4px 0; color:var(--primary);"><i class="fa-solid fa-chart-column"></i> Term Examinations Performance:</h5>
@@ -6737,10 +6705,15 @@ async function sendWhatsAppDetailedReport(username, phoneNo, cls, div) {
   if (cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
 
   showProgressLoader();
+  const userDoc = await db.collection("users").doc(username).get();
   const progressSnap = await db.collection("progress").where("username", "==", username).get();
   const quizSnap = await db.collection("quiz_results").where("username", "==", username).get();
   await fetchStudentAssessmentsMap();
   hideProgressLoader();
+
+  const uData = userDoc.exists ? userDoc.data() : {};
+  const studentName = uData.name || username;
+  const studentPassword = uData.password || '*****';
 
   const evalData = studentAssessmentsMap[username] || {};
   const nbStatusMap = evalData.unitNotebookStatus || {};
@@ -6771,61 +6744,72 @@ async function sendWhatsAppDetailedReport(username, phoneNo, cls, div) {
       return `${secName}: ${isDone ? '✅ COMPLETE' : '❌ INCOMPLETE'}`;
     }).join('\n  ├ ');
 
-    const unitNbStatus = nbStatusMap[c] || 'INCOMPLETE';
+    const unitNbRaw = nbStatusMap[c] || 'Brewing☕';
+    let unitNbStatus = '☕ Brewing☕';
+    if (unitNbRaw === 'COMPLETE') unitNbStatus = '✅ COMPLETE';
+    if (unitNbRaw === 'INCOMPLETE') unitNbStatus = '❌ INCOMPLETE';
+    if (unitNbRaw.includes('Brewing')) unitNbStatus = '☕ Brewing☕';
 
-    activeUnitDetailsText.push(`*Unit ${c}: ${CHAPTERS[c-1]}*\n  ├ Notebook Notes: ${unitNbStatus === 'COMPLETE' ? '✅ COMPLETE' : '❌ INCOMPLETE'}\n  ├ ${sectionBreakdownText}`);
+    activeUnitDetailsText.push(`Unit ${c}: ${CHAPTERS[c-1]}\n  ├ Notebook Notes: ${unitNbStatus}\n  ├ ${sectionBreakdownText}`);
   });
 
-  const m1 = calculateScoreGrade(evalData.m1Score);
-  const t1 = calculateScoreGrade(evalData.t1Score);
-  const m2 = calculateScoreGrade(evalData.m2Score);
-  const t2 = calculateScoreGrade(evalData.t2Score);
-  const fn = calculateScoreGrade(evalData.finalScore);
+  function formatExamScoreString(scoreVal) {
+    if (!scoreVal || scoreVal === 'Brewing☕' || scoreVal === '-' || scoreVal.trim() === '') {
+      return 'Brewing☕';
+    }
+    const res = calculateScoreGrade(scoreVal);
+    if (res.pct === '-') return scoreVal;
+    return `${scoreVal} (${res.pct} - Grade ${res.grade})`;
+  }
+
+  let m1Str = formatExamScoreString(evalData.m1Score);
+  let t1Str = formatExamScoreString(evalData.t1Score);
+  let m2Str = formatExamScoreString(evalData.m2Score);
+  let t2Str = formatExamScoreString(evalData.t2Score);
+  let fnStr = formatExamScoreString(evalData.finalScore);
 
   let quizHistoryText = quizSnap.docs.map(doc => {
     const q = doc.data();
-    return `• ${q.chapterTitle || 'Chapter ' + q.chapterId}: ${q.scorePct}% (${q.correctCount}/${q.totalQs})`;
+    return `* ${q.chapterTitle || 'Chapter ' + q.chapterId}: ${q.scorePct}% (${q.correctCount}/${q.totalQs})`;
   }).join('\n');
 
-  const msg = `*TDTTI SS 7 Progression Report*
-Student Name: ${username}
+  const msg = `TDTTI SS 7 Progression Report
+Student Name: ${studentName}
 Class: ${cls} - Division: ${div}
 Phone: ${phoneNo}
 
-*COMPLETED BY CONCERNED STUDENT:*
-• Total Active Units Available: ${totalActiveUnits}
-• Total Completed Sections: ${totalSectionsCompletedByStudent} / ${totalActiveUnits * 5}
+COMPLETED BY CONCERNED STUDENT:
+* Total Active Units Available: ${totalActiveUnits}
+* Total Completed Sections: ${totalSectionsCompletedByStudent} / ${totalActiveUnits * 5}
 
-*ACADEMIC REMARKS:*
-• Composition : ${evalData.notebook || 'Pending'}
-• Diligence: ${evalData.reading || 'Pending'}
-• Focus : ${evalData.classAttention || 'Pending'}
+ACADEMIC REMARKS:
+* Composition : ${evalData.notebook || 'Brewing☕'}
+* Diligence: ${evalData.reading || 'Brewing☕'}
+* Focus : ${evalData.classAttention || 'Brewing☕'}
 
-*EXAM PERFORMANCE & GRADES:*
-• 1st Mid Term: ${evalData.m1Score || '-'} (${m1.pct}% - Grade ${m1.grade})
-• 1st Term (Onam): ${evalData.t1Score || '-'} (${t1.pct}% - Grade ${t1.grade})
-• 2nd Mid Term: ${evalData.m2Score || '-'} (${m2.pct}% - Grade ${m2.grade})
-• 2nd Term Exam: ${evalData.t2Score || '-'} (${t2.pct}% - Grade ${t2.grade})
-• Annaul Term Exam: ${evalData.finalScore || '-'} (${fn.pct}% - Grade ${fn.grade})
+EXAM PERFORMANCE & GRADES:
+* 1st Mid Term: ${m1Str}
+* 1st Term (Onam): ${t1Str}
+* 2nd Mid Term: ${m2Str}
+* 2nd Term Exam: ${t2Str}
+* Annaul Term Exam: ${fnStr}
 
-*MODEL TEST HISTORY:*
-${quizHistoryText || 'No model tests taken yet.'}
+MODEL TEST HISTORY:
+${quizHistoryText || '* No model tests taken yet.'}
 
-*UNIT-WISE BREAKDOWN:*
+UNIT-WISE BREAKDOWN:
 ${activeUnitDetailsText.join('\n\n')}
 
 SS(7) | TDTTI THURAVOOR
-*JOIN NOW*
+JOIN NOW
 https://tdschoolnews.in/
 
 Login Credentials
 User Name : ${username}
-Password : ${userPass}`;
+Password : ${studentPassword}`;
 
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
-
-
   </script>
 </body>
 </html>
