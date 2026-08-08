@@ -1815,6 +1815,7 @@
 
             allUsersList.push({
               username: u.username,
+              password: u.password || '*****',
               name: studentName,
               userClass: u.userClass || p.userClass || '7',
               userDivision: u.userDivision || p.userDivision || 'A',
@@ -1949,10 +1950,10 @@
               <td><span style="font-size:0.78rem; font-weight:600; color:#64748b;">${timeElapsedStr}</span></td>
               <td>${s.lastActive}</td>
               <td>
-                <button onclick="sendPresenceWhatsAppAlert('${s.name}', '${s.phoneNo}', '${s.userClass}', '${s.userDivision}', '${statusText}', '${s.lastActive}')" 
-                        style="background:#25D366; color:white; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
-                  <i class="fa-brands fa-whatsapp"></i> Alert
-                </button>
+                <button onclick="sendPresenceWhatsAppAlert('${s.name.replace(/'/g, "\\'")}', '${s.phoneNo}', '${s.userClass}', '${s.userDivision}', '${statusText}', '${s.lastActive}', '${s.username}', '${s.password}')" 
+        style="background:#25D366; color:white; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
+  <i class="fa-brands fa-whatsapp"></i> Alert
+</button>
               </td>
             </tr>
           `;
@@ -1985,7 +1986,7 @@
     }
 
     // WhatsApp Alert Trigger for Presence Status
-    function sendPresenceWhatsAppAlert(studentName, phoneNo, cls, div, statusText, lastActiveTime) {
+    function sendPresenceWhatsAppAlert(studentName, phoneNo, cls, div, statusText, lastActiveTime, username, password) {
       if (!phoneNo || phoneNo.trim() === "0000000000" || phoneNo.trim() === "") {
         return showPresenceToast("Phone number not available for student!", "leave");
       }
@@ -2000,7 +2001,11 @@ Current Status: ${statusText}
 Last Active Recorded: ${lastActiveTime}
 
 *TDTTI SS 7 | Thuravoor*
-JOIN NOW :  https://tdschoolnews.in/`;
+JOIN NOW : https://tdschoolnews.in/
+
+Login Credentials
+User Name : ${username || 'N/A'}
+Password : ${password || 'N/A'}`;
 
       window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
     }
