@@ -836,11 +836,7 @@
       </div>
     </div>
 
-    <!-- GLOBAL SEARCH BAR -->
-    <div class="search-box-bar">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="globalSearchInput" placeholder="Search key concepts, historical events, notes across all chapters..." onkeyup="filterChapterContent(this.value)">
-    </div>
+    
 
     <!-- ADMIN PANEL -->
     <div id="adminPanel" class="dashboard-panel-card hidden">
@@ -1213,95 +1209,80 @@
       </div>
 
       <!-- LIVE ONLINE USERS MONITOR -->
-      <div id="adminTab-online" class="admin-tab-content hidden" style="padding:15px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <div>
-            <h4 style="margin:0; color:var(--primary);"><i class="fa-solid fa-signal" style="color:var(--accent-green);"></i> Live Online Users Monitor</h4>
-            <p style="font-size:0.8rem; color:#64748b; margin:2px 0 0 0;">Real-time list of currently active online users.</p>
+      <div id="adminTab-online" class="admin-tab-content hidden" style="padding: 15px; width: 100%;">
+        <!-- Section 1: Active Online Users Stream -->
+        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <h4 style="margin:0; color:var(--primary); font-size:1rem; font-weight:700;">
+                <i class="fa-solid fa-signal" style="color:var(--accent-green);"></i> 
+              </h4>
+              
+            </div>
+            <span style="background:#dcfce7; color:#166534; font-size:0.75rem; font-weight:700; padding:4px 12px; border-radius:20px;">
+              Live Stream
+            </span>
+          </div>
+
+          <div id="onlineUsersTableContainer" style="width: 100%; display: flex; flex-direction: column; gap: 8px;">
+            <p style="color:#888; text-align:center; padding:15px;">Loading active users...</p>
           </div>
         </div>
 
-        <!-- MAIN USERS TABLE (ACTIVE FIRST) -->
-        <div class="table-responsive">
-          <table class="logs-table">
-            <thead>
-              <tr>
-                <th style="width:50px; text-align:center;">S.No.</th>
-                <th>Status</th>
-                <th>User / Student Name</th>
-                <th>Class & Division</th>
-                <th>Role</th>
-                <th>Last Active Time</th>
-                <th>Duration / State</th>
-              </tr>
-            </thead>
-            <tbody id="onlineUsersTableContainer">
-              <tr><td colspan="7" style="text-align:center;">Loading user presence data...</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <!-- Section 2: Classwise Student Presence Breakdown Stream -->
+        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+          <div style="margin-bottom:14px;">
+            <h4 style="margin:0; color:var(--primary); font-size:1rem; font-weight:700;">
+              
+          </div>
 
-        <!-- SEPARATE CLASSWISE BREAKDOWN SECTION -->
-        <div style="margin-top:25px;">
-          <h4 style="margin:0 0 4px 0; color:var(--primary); border-bottom:2px solid var(--primary); padding-bottom:4px;">
-            <i class="fa-solid fa-sitemap"></i> Classwise Student Presence Breakdown (Alphabetical Order)
-          </h4>
-          <p style="font-size:0.8rem; color:#64748b; margin:0 0 12px 0;">Classwise grouped list with individual serial numbers and direct WhatsApp presence alerts.</p>
-
-          <div id="classwisePresenceContainer">
-            <p style="color:#888; text-align:center;">Loading classwise breakdown...</p>
+          <div id="classwisePresenceContainer" style="width: 100%;">
+            <p style="color:#888; text-align:center; padding:15px;">Loading classwise breakdown...</p>
           </div>
         </div>
       </div>
 
-      <div id="adminTab-logs" class="admin-tab-content hidden" style="padding:15px;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-    <h4 style="margin:0;"><i class="fa-solid fa-shield-cat"></i> System Audit Logs</h4>
-    
-    <div style="display:flex; gap:8px; align-items:center;">
-      <button id="btnBulkDeleteLogs" class="btn-msg-del hidden" onclick="deleteSelectedAuditLogs()" style="padding:5px 12px; font-size:0.78rem;">
-        <i class="fa-solid fa-trash"></i> Delete Selected (<span id="bulkDelLogsCount">0</span>)
-      </button>
-      <button onclick="deleteAllAuditLogs()" style="width:auto; padding:6px 10px; background:var(--accent-red);" title="Delete All Audit Logs">
-        <i class="fa-solid fa-trash-can"></i> Clear All
-      </button>
-    </div>
-  </div>
+      <div id="adminTab-logs" class="admin-tab-content hidden" style="padding:15px; width:100%;">
+        <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+          
+          <!-- Header Controls -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
+            <div>
+              <h4 style="margin:0; font-size:1rem; color:var(--primary); font-weight:700;">
+                <i class="fa-solid fa-shield-cat"></i> System Audit Logs Stream
+              </h4>
+              <p style="font-size:0.78rem; color:#64748b; margin:2px 0 0 0;">Real-time authentication activity, login attempts, and system events.</p>
+            </div>
+            
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button id="btnBulkDeleteLogs" class="btn-msg-del hidden" onclick="deleteSelectedAuditLogs()" style="padding:6px 12px; font-size:0.78rem;">
+                <i class="fa-solid fa-trash"></i> Delete Selected (<span id="bulkDelLogsCount">0</span>)
+              </button>
+              <button onclick="deleteAllAuditLogs()" style="width:auto; padding:6px 12px; background:var(--accent-red); font-size:0.78rem;" title="Delete All Audit Logs">
+                <i class="fa-solid fa-trash-can"></i> Clear All Logs
+              </button>
+            </div>
+          </div>
 
-  
-  <!-- FAILED LOGINS ASSISTANCE ALERT CARD -->
-  <div id="failedLoginsAlertCard" style="margin-bottom:15px; background:#fff3e6; border:1px solid #ffaa5b; padding:12px; border-radius:8px; display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-      <h5 style="margin:0; color:#d97706; font-size:0.9rem;">
-        <i class="fa-solid fa-triangle-exclamation"></i> Users Needing Login Assistance (Failed Logins)
-      </h5>
-      <button onclick="clearAllFailedAlerts()" style="background:#dc2626; color:white; padding:3px 8px; border-radius:12px; font-size:0.72rem; border:none; cursor:pointer; width:auto; margin:0;" title="Clear all failed alerts">
-        <i class="fa-solid fa-trash-can"></i> Clear All Alerts
-      </button>
-    </div>
-    <div id="failedLoginsAlertList" style="display:flex; flex-direction:column; gap:6px;"></div>
-  </div>
-  
-  <div style="width:100%; overflow-x:auto; overflow-y:auto; max-height:60vh; border:1px solid var(--border-color); border-radius:8px; -webkit-overflow-scrolling:touch; background:var(--card-bg);">
-    <table class="logs-table" style="width:100%; min-width:750px; border-collapse:collapse; white-space:nowrap;">
-      <thead>
-        <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
-          <th style="padding:10px; width:30px;"><input type="checkbox" id="chkSelectAllLogs" onchange="toggleSelectAllAuditLogs(this)" style="width:auto; margin:0;"></th>
-          <th style="padding:10px;">Timestamp</th>
-          <th style="padding:10px;">Identifier</th>
-          <th style="padding:10px;">Role</th>
-          <th style="padding:10px;">Status</th>
-          <th style="padding:10px;">Login Time</th>
-          <th style="padding:10px;">Logout Time</th>
-          <th style="padding:10px;">Action</th>
-        </tr>
-      </thead>
-      <tbody id="auditLogsContainer">
-        <tr><td colspan="8" style="text-align:center; padding:15px;">Loading logs...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+          <!-- FAILED LOGINS ASSISTANCE ALERT CARD -->
+          <div id="failedLoginsAlertCard" style="margin-bottom:15px; background:#fff3e6; border:1px solid #ffaa5b; padding:14px; border-radius:10px; display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h5 style="margin:0; color:#d97706; font-size:0.9rem; font-weight:700;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Users Needing Login Assistance (Failed Logins)
+              </h5>
+              <button onclick="clearAllFailedAlerts()" style="background:#dc2626; color:white; padding:4px 10px; border-radius:12px; font-size:0.72rem; border:none; cursor:pointer; width:auto; margin:0;" title="Clear all failed alerts">
+                <i class="fa-solid fa-trash-can"></i> Clear All Alerts
+              </button>
+            </div>
+            <div id="failedLoginsAlertList" style="display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
+
+          <!-- AUDIT LOGS STREAM LIST -->
+          <div id="auditLogsContainer" style="width:100%; display:flex; flex-direction:column; gap:6px;">
+            <p style="color:#888; text-align:center; padding:15px;">Loading logs stream...</p>
+          </div>
+        </div>
+      </div>
 
       <div id="adminTab-medialib" class="admin-tab-content hidden" style="padding:15px;">
         <div style="background:var(--card-bg); border:1px solid var(--border-color); padding:10px; border-radius:8px; margin-bottom:15px; display:flex; gap:10px; align-items:center; justify-content:center;">
@@ -1878,56 +1859,71 @@
       });
     }
 
-    // 1. RENDER MAIN USER MONITOR TABLE (Active Users Top, with S.No)
-    // 1. RENDER MAIN USER MONITOR TABLE (Active Users Only, with S.No)
+    // 1. RENDER MAIN USER MONITOR STREAM (100% Width Modern Stream)
     function renderOnlineUsersTable(allUsersList) {
       const container = document.getElementById("onlineUsersTableContainer");
       if (!container) return;
 
-      // Filter to keep ONLY currently active users
       const activeUsersOnly = allUsersList.filter(u => u.isOnline);
 
       if (activeUsersOnly.length === 0) {
-        container.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:15px; color:#64748b;">No users currently active online.</td></tr>`;
+        container.innerHTML = `<div style="text-align:center; padding:20px; color:#64748b; background:rgba(2, 132, 199, 0.02); border-radius:10px; border:1px dashed var(--border-color); font-size:0.85rem;">No users currently active online.</div>`;
         return;
       }
 
-      // Sort active users by most recent activity time
       activeUsersOnly.sort((a, b) => b.lastActiveEpoch - a.lastActiveEpoch);
 
-      let sno = 1;
-      container.innerHTML = activeUsersOnly.map(u => {
+      container.innerHTML = activeUsersOnly.map((u, idx) => {
         const timeElapsedStr = getTimeElapsedString(u.lastActiveEpoch, u.isOnline);
-        const statusBadge = `<span class="pulse-green-dot"></span> <strong style="color:var(--accent-green);">Active</strong>`;
+        const detailId = `active-user-detail-${idx}`;
 
         return `
-          <tr>
-            <td style="text-align:center; font-weight:bold; color:var(--primary);">${sno++}</td>
-            <td>${statusBadge}</td>
-            <td style="color:var(--primary); font-weight:700;">${u.name}</td>
-            <td>Class ${u.userClass} - ${u.userDivision}</td>
-            <td><span style="font-weight:bold; color:${u.role === 'Admin' ? 'var(--accent-purple)' : 'var(--primary)'}">${u.role}</span></td>
-            <td>${u.lastActive}</td>
-            <td><strong style="color:var(--accent-green); font-size:0.8rem;">${timeElapsedStr}</strong></td>
-          </tr>
+          <div style="width:100%; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:10px 14px; box-shadow:0 2px 5px rgba(0,0,0,0.02); transition:all 0.2s ease;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;" onclick="document.getElementById('${detailId}').classList.toggle('hidden')">
+              
+              <!-- Left: LED + Icon + Name + Role Badge -->
+              <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:0;">
+                <span style="width:10px; height:10px; background-color:#22c55e; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 8px #22c55e, 0 0 12px #22c55e;" title="Active"></span>
+                <i class="fa-solid fa-circle-user" style="font-size:1.3rem; color:var(--primary); flex-shrink:0;"></i>
+                <div style="display:flex; align-items:center; gap:8px; min-width:0; flex-wrap:wrap;">
+                  <strong style="font-size:0.88rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${u.name}</strong>
+                  <span style="font-size:0.7rem; font-weight:700; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:12px;">Class ${u.userClass}-${u.userDivision}</span>
+                  <span style="font-size:0.7rem; font-weight:700; background:${u.role === 'Admin' ? '#f3e8ff' : '#f1f5f9'}; color:${u.role === 'Admin' ? '#9333ea' : '#64748b'}; padding:2px 8px; border-radius:12px;">${u.role}</span>
+                </div>
+              </div>
+
+              <!-- Right: Last Active Time + Expand Chevron -->
+              <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                <span style="font-size:0.75rem; font-weight:600; color:#64748b;">${u.lastActive}</span>
+                <i class="fa-solid fa-chevron-down" style="font-size:0.75rem; color:#94a3b8;"></i>
+              </div>
+            </div>
+
+            <!-- COLLAPSIBLE DETAILS (100% Width Modern Grid) -->
+            <div id="${detailId}" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color); display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:10px; font-size:0.78rem; background:rgba(2, 132, 199, 0.02); padding:10px; border-radius:8px;">
+              <div><strong style="color:var(--primary);">Class & Division:</strong> Class ${u.userClass} - ${u.userDivision}</div>
+              <div><strong style="color:var(--primary);">Role:</strong> ${u.role}</div>
+              <div><strong style="color:var(--primary);">Duration State:</strong> ${timeElapsedStr}</div>
+              <div><strong style="color:var(--primary);">Last Active:</strong> ${u.lastActive}</div>
+              <div><strong style="color:var(--primary);">Device / Agent:</strong> ${u.device || 'N/A'}</div>
+            </div>
+          </div>
         `;
       }).join('');
     }
 
-    // 2. RENDER SEPARATE CLASSWISE BREAKDOWN (Alphabetical Order, Separate S.No, WhatsApp Action)
+    // 2. RENDER CLASSWISE BREAKDOWN STREAM (100% Width Modern Stream)
     function renderClasswisePresenceBreakdown(allUsersList) {
       const container = document.getElementById("classwisePresenceContainer");
       if (!container) return;
 
-      // Filter only students for classwise breakdown
       const students = allUsersList.filter(u => u.role === 'Student');
 
       if (students.length === 0) {
-        container.innerHTML = `<p style="color:#888; text-align:center;">No student user records found.</p>`;
+        container.innerHTML = `<p style="color:#888; text-align:center; padding:15px;">No student user records found.</p>`;
         return;
       }
 
-      // Group students by Class and Division
       const classGroups = {};
       students.forEach(s => {
         const classKey = `Class ${s.userClass || '7'}${s.userDivision || 'A'}`;
@@ -1935,69 +1931,206 @@
         classGroups[classKey].push(s);
       });
 
-      // Sort class keys (e.g. Class 7A, Class 7B...)
       const sortedClassKeys = Object.keys(classGroups).sort();
 
-      container.innerHTML = sortedClassKeys.map(classKey => {
+      container.innerHTML = sortedClassKeys.map((classKey, groupIdx) => {
         const studentList = classGroups[classKey];
-
-        // Sort students ALPHABETICALLY within each class
         studentList.sort((a, b) => a.name.localeCompare(b.name));
 
-        let serialNo = 1;
-        const rowsHTML = studentList.map(s => {
+        const cardsHTML = studentList.map((s, sIdx) => {
           const timeElapsedStr = getTimeElapsedString(s.lastActiveEpoch, s.isOnline);
           const statusText = s.isOnline ? 'ACTIVE NOW' : `INACTIVE (${timeElapsedStr})`;
-          const badgeBg = s.isOnline ? '#dcfce7' : '#fee2e2';
-          const badgeColor = s.isOnline ? '#166534' : '#991b1b';
+          const detailId = `cls-user-detail-${groupIdx}-${sIdx}`;
+
+          const ledBulb = s.isOnline
+            ? `<span style="width:10px; height:10px; background-color:#22c55e; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 8px #22c55e, 0 0 12px #22c55e;" title="Active"></span>`
+            : `<span style="width:10px; height:10px; background-color:#ef4444; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 6px #ef4444;" title="Inactive"></span>`;
 
           return `
-            <tr>
-              <td style="text-align:center; font-weight:bold; color:var(--primary);">${serialNo++}</td>
-              <td style="font-weight:700; color:var(--text);">${s.name}</td>
-              <td>${s.phoneNo || 'N/A'}</td>
-              <td>
-                <span style="background:${badgeBg}; color:${badgeColor}; padding:2px 8px; border-radius:10px; font-weight:700; font-size:0.75rem;">
-                  ${s.isOnline ? '🟢 Active' : '🔴 Inactive'}
-                </span>
-              </td>
-              <td><span style="font-size:0.78rem; font-weight:600; color:#64748b;">${timeElapsedStr}</span></td>
-              <td>${s.lastActive}</td>
-              <td>
-                <button onclick="sendPresenceWhatsAppAlert('${s.name.replace(/'/g, "\\'")}', '${s.phoneNo}', '${s.userClass}', '${s.userDivision}', '${statusText}', '${s.lastActive}', '${s.username}', '${s.password}')" 
-        style="background:#25D366; color:white; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700; display:inline-flex; align-items:center; gap:4px;">
-  <i class="fa-brands fa-whatsapp"></i> Alert
-</button>
-              </td>
-            </tr>
+            <div style="width:100%; background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; padding:10px 14px; margin-bottom:6px; box-shadow:0 1px 3px rgba(0,0,0,0.02); transition:all 0.15s ease;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                
+                <!-- Left: LED + Icon + Name (Clickable to Expand) -->
+                <div style="display:flex; align-items:center; gap:10px; cursor:pointer; flex:1; min-width:0;" onclick="document.getElementById('${detailId}').classList.toggle('hidden')">
+                  ${ledBulb}
+                  <i class="fa-solid fa-user-graduate" style="font-size:1.1rem; color:var(--primary); flex-shrink:0;"></i>
+                  <strong style="font-size:0.88rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${s.name}</strong>
+                  <span style="font-size:0.7rem; font-weight:600; padding:2px 8px; border-radius:10px; background:${s.isOnline ? '#dcfce7' : '#fee2e2'}; color:${s.isOnline ? '#166534' : '#991b1b'};">
+                    ${s.isOnline ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+
+                <!-- Right: Last Active Time + WhatsApp Logo Button Only -->
+                <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
+                  <span style="font-size:0.75rem; color:#64748b; font-weight:500;">${s.lastActive}</span>
+                  
+                  <button onclick="event.stopPropagation(); sendPresenceWhatsAppAlert('${s.name.replace(/'/g, "\\'")}', '${s.phoneNo}', '${s.userClass}', '${s.userDivision}', '${statusText}', '${s.lastActive}', '${s.username}', '${s.password}')" 
+                          style="background:none; border:none; padding:0; margin:0; cursor:pointer; display:inline-flex; align-items:center;" title="Send WhatsApp Alert">
+                    <i class="fa-brands fa-whatsapp" style="font-size:1.4rem; color:#25D366; transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- COLLAPSIBLE DETAILS (100% Width Modern Grid) -->
+              <div id="${detailId}" class="hidden" style="margin-top:8px; padding-top:8px; border-top:1px dashed var(--border-color); display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:8px; font-size:0.78rem; background:rgba(2, 132, 199, 0.02); padding:10px; border-radius:6px;">
+                <div><strong style="color:var(--primary);">Phone Number:</strong> ${s.phoneNo || 'N/A'}</div>
+                <div><strong style="color:var(--primary);">Status State:</strong> ${statusText}</div>
+                <div><strong style="color:var(--primary);">Class & Division:</strong> Class ${s.userClass || '7'} - ${s.userDivision || 'A'}</div>
+                <div><strong style="color:var(--primary);">Username:</strong> ${s.username}</div>
+              </div>
+            </div>
           `;
         }).join('');
 
         return `
-          <div style="margin-bottom:18px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:8px; padding:12px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-            <h5 style="margin:0 0 8px 0; color:var(--primary); font-size:0.92rem;"><i class="fa-solid fa-users"></i> ${classKey} (${studentList.length} Students)</h5>
-            <div class="table-responsive">
-              <table class="logs-table">
-                <thead>
-                  <tr>
-                    <th style="width:40px; text-align:center;">S.No.</th>
-                    <th>Student Name</th>
-                    <th>Phone Number</th>
-                    <th>Presence Status</th>
-                    <th>Duration State</th>
-                    <th>Last Active Time</th>
-                    <th>WhatsApp Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${rowsHTML}
-                </tbody>
-              </table>
+          <div style="width:100%; margin-bottom:18px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:14px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
+              <h5 style="margin:0; color:var(--primary); font-size:0.92rem; font-weight:700;">
+                <i class="fa-solid fa-users"></i> ${classKey}
+              </h5>
+              <span style="font-size:0.75rem; font-weight:700; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px;">
+                ${studentList.length} Students
+              </span>
+            </div>
+            <div style="width:100%;">
+              ${cardsHTML}
             </div>
           </div>
         `;
       }).join('');
     }
+
+    // 3. RENDER SYSTEM AUDIT LOGS STREAM (100% Width Modern Stream)
+    async function fetchAuditLogs() {
+      showProgressLoader();
+      const snap = await db.collection("logs").orderBy("timestamp", "desc").get();
+      hideProgressLoader();
+
+      const container = document.getElementById("auditLogsContainer");
+      if (snap.empty) {
+        container.innerHTML = `<div style="text-align:center; padding:20px; color:#64748b; background:rgba(2, 132, 199, 0.02); border-radius:10px; border:1px dashed var(--border-color); font-size:0.85rem;">No system audit logs available.</div>`;
+        updateBulkDeleteLogsState();
+        return;
+      }
+
+      // Count consecutive failures per typed identifier
+      const failureCounts = {};
+      const latestFailuresMap = {};
+
+      snap.docs.forEach(doc => {
+        const l = doc.data();
+        if (l.status === "Failed") {
+          const id = l.identifier || "Unknown";
+          failureCounts[id] = (failureCounts[id] || 0) + 1;
+          if (!latestFailuresMap[id]) {
+            latestFailuresMap[id] = l;
+          }
+        }
+      });
+
+      // Render Login Assistance Banner for Admin
+      const alertCard = document.getElementById("failedLoginsAlertCard");
+      const alertList = document.getElementById("failedLoginsAlertList");
+
+      const needyUserIds = Object.keys(failureCounts).filter(id => failureCounts[id] >= 1);
+
+      if (needyUserIds.length > 0 && alertCard && alertList) {
+        alertCard.style.display = "block";
+        alertList.innerHTML = needyUserIds.map(id => {
+          const count = failureCounts[id];
+          const lastFail = latestFailuresMap[id];
+          const isRegisteredUser = lastFail.logoutTime === "Incorrect Password";
+
+          const statusLabel = isRegisteredUser 
+            ? `<span style="color:#16a34a; font-weight:bold;">LISTED (User Exists)</span>`
+            : `<span style="color:#dc2626; font-weight:bold;">UNLISTED / TYPO (User Not Found)</span>`;
+
+          return `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; padding:8px 12px; border-radius:8px; font-size:0.8rem; border:1px solid #fed7aa; flex-wrap:wrap; gap:8px;">
+              <div>
+                <strong>Typed Username: "${id}"</strong> — Failed ${count} times (${statusLabel})
+                <div style="font-size:0.72rem; color:#64748b;">Reason: ${lastFail.logoutTime} | Last Attempt: ${lastFail.timestamp}</div>
+              </div>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <button onclick="helpUserLoginCredentials('${id.replace(/'/g, "\\'")}', ${isRegisteredUser})" style="background:#25D366; color:white; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;">
+                  <i class="fa-brands fa-whatsapp"></i> Assist
+                </button>
+                <button onclick="deleteFailedAlertItem('${id.replace(/'/g, "\\'")}')" style="background:#ef4444; color:white; padding:4px 8px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;" title="Delete alert item">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else if (alertCard) {
+        alertCard.style.display = "none";
+      }
+
+      // Render Logs Stream (100% Width Modern Row Style)
+      container.innerHTML = snap.docs.map((doc, idx) => {
+        const l = doc.data();
+        const docId = doc.id;
+        const isFailed = l.status === "Failed";
+        const detailId = `audit-log-detail-${idx}`;
+        const isRegisteredFail = isFailed && l.logoutTime === "Incorrect Password";
+
+        // Glowing LED Bulb
+        const ledBulb = isFailed
+          ? `<span style="width:10px; height:10px; background-color:#ef4444; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 6px #ef4444;" title="Failed"></span>`
+          : `<span style="width:10px; height:10px; background-color:#22c55e; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 8px #22c55e, 0 0 12px #22c55e;" title="Success"></span>`;
+
+        return `
+          <div style="width:100%; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.02); transition:all 0.15s ease; ${isFailed ? 'border-left:4px solid #ef4444;' : 'border-left:4px solid #22c55e;'}">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+              
+              <!-- Left: Checkbox + LED + Icon + Identifier + Status Badge -->
+              <div style="display:flex; align-items:center; gap:10px; cursor:pointer; flex:1; min-width:0;" onclick="document.getElementById('${detailId}').classList.toggle('hidden')">
+                <input type="checkbox" class="log-select-chk" value="${docId}" onclick="event.stopPropagation()" onchange="updateBulkDeleteLogsState()" style="width:auto; margin:0;">
+                ${ledBulb}
+                <i class="fa-solid ${isFailed ? 'fa-user-xmark' : 'fa-user-check'}" style="font-size:1.1rem; color:${isFailed ? '#dc2626' : 'var(--primary)'}; flex-shrink:0;"></i>
+                
+                <div style="display:flex; align-items:center; gap:8px; min-width:0; flex-wrap:wrap;">
+                  <strong style="font-size:0.88rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${l.identifier}</strong>
+                  <span style="font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px; background:${isFailed ? '#fee2e2' : '#dcfce7'}; color:${isFailed ? '#991b1b' : '#166534'};">
+                    ${l.status}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Right: Timestamp & Action Buttons -->
+              <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
+                <span style="font-size:0.75rem; color:#64748b; font-weight:500;">${l.timestamp}</span>
+                
+                ${isFailed ? `
+                  <button onclick="event.stopPropagation(); helpUserLoginCredentials('${(l.identifier || '').replace(/'/g, "\\'")}', ${isRegisteredFail})" 
+                          style="background:none; border:none; padding:0; margin:0; cursor:pointer; display:inline-flex; align-items:center;" title="WhatsApp Assist">
+                    <i class="fa-brands fa-whatsapp" style="font-size:1.3rem; color:#25D366; transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"></i>
+                  </button>
+                ` : ''}
+
+                <button class="btn-msg-del" onclick="event.stopPropagation(); deleteSingleAuditLog('${docId}')" title="Delete Log Entry" style="padding:3px 7px; font-size:0.7rem; border-radius:4px;">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- COLLAPSIBLE DETAILS (100% Width Modern Grid) -->
+            <div id="${detailId}" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color); display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:8px; font-size:0.78rem; background:rgba(2, 132, 199, 0.02); padding:10px; border-radius:6px;">
+              <div><strong style="color:var(--primary);">User Identifier:</strong> ${l.identifier}</div>
+              <div><strong style="color:var(--primary);">Role:</strong> ${l.role || 'Student'}</div>
+              <div><strong style="color:var(--primary);">Status:</strong> <span style="color:${isFailed ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight:bold;">${l.status}</span></div>
+              <div><strong style="color:var(--primary);">Login Time:</strong> ${l.loginTime || '-'}</div>
+              <div><strong style="color:var(--primary);">Logout / Reason:</strong> ${l.logoutTime || '-'}</div>
+              <div><strong style="color:var(--primary);">Device:</strong> ${l.device || 'N/A'}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      updateBulkDeleteLogsState();
+    }
+
+    
 
     // WhatsApp Alert Trigger for Presence Status
     function sendPresenceWhatsAppAlert(studentName, phoneNo, cls, div, statusText, lastActiveTime, username, password) {
@@ -2323,125 +2456,7 @@ Password : ${password || 'N/A'}`;
       );
     }
 
-    async function fetchAuditLogs() {
-      showProgressLoader();
-      const snap = await db.collection("logs").orderBy("timestamp", "desc").get();
-      hideProgressLoader();
-
-      const container = document.getElementById("auditLogsContainer");
-      if (snap.empty) {
-        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px;">No logs available.</td></tr>`;
-        updateBulkDeleteLogsState();
-        return;
-      }
-
-      // Count consecutive failures per typed identifier
-      const failureCounts = {};
-      const latestFailuresMap = {};
-
-      snap.docs.forEach(doc => {
-        const l = doc.data();
-        if (l.status === "Failed") {
-          const id = l.identifier || "Unknown";
-          failureCounts[id] = (failureCounts[id] || 0) + 1;
-          if (!latestFailuresMap[id]) {
-            latestFailuresMap[id] = l;
-          }
-        }
-      });
-
-      // Render Login Assistance Banner for Admin
-      const alertCard = document.getElementById("failedLoginsAlertCard");
-      const alertList = document.getElementById("failedLoginsAlertList");
-
-      const needyUserIds = Object.keys(failureCounts).filter(id => failureCounts[id] >= 1);
-
-      if (needyUserIds.length > 0 && alertCard && alertList) {
-        alertCard.style.display = "block";
-        alertList.innerHTML = needyUserIds.map(id => {
-          const count = failureCounts[id];
-          const lastFail = latestFailuresMap[id];
-          const isRegisteredUser = lastFail.logoutTime === "Incorrect Password";
-
-          const statusLabel = isRegisteredUser 
-            ? `<span style="color:#16a34a; font-weight:bold;">LISTED (User Exists)</span>`
-            : `<span style="color:#dc2626; font-weight:bold;">UNLISTED / TYPO (User Not Found)</span>`;
-
-          return `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; padding:6px 10px; border-radius:6px; font-size:0.8rem; border:1px solid #fed7aa;">
-              <div>
-                <strong>Typed Username: "${id}"</strong> — Failed ${count} times (${statusLabel})
-                <div style="font-size:0.72rem; color:#64748b;">Reason: ${lastFail.logoutTime} | Last Attempt: ${lastFail.timestamp}</div>
-              </div>
-              <div style="display:flex; gap:6px; align-items:center;">
-                <button onclick="helpUserLoginCredentials('${id.replace(/'/g, "\\'")}', ${isRegisteredUser})" style="background:#25D366; color:white; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;">
-                  <i class="fa-brands fa-whatsapp"></i> Assist
-                </button>
-                <button onclick="deleteFailedAlertItem('${id.replace(/'/g, "\\'")}')" style="background:#ef4444; color:white; padding:4px 8px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;" title="Delete alert item">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
-              </div>
-            </div>
-          `;
-        }).join('');
-      } else if (alertCard) {
-        alertCard.style.display = "none";
-      }
-
-      // Render Logs Table
-      container.innerHTML = snap.docs.map(doc => {
-        const l = doc.data();
-        const docId = doc.id;
-        const isFailed = l.status === "Failed";
-        const isActive = !isFailed && (l.logoutTime === "-" || !l.logoutTime || l.logoutTime.trim() === "" || l.status === "Success");
-        
-        let logoutDisplay = l.logoutTime;
-        const failCount = failureCounts[l.identifier] || 0;
-
-        if (isFailed) {
-          const isRegistered = l.logoutTime === "Incorrect Password";
-          logoutDisplay = `
-            <span style="color:var(--accent-red); font-weight:700;">
-              <i class="fa-solid fa-circle-exclamation"></i> ${l.logoutTime || 'Incorrect Credentials'}
-            </span>
-            ${failCount > 1 ? `<span style="background:#fee2e2; color:#dc2626; padding:1px 6px; border-radius:8px; font-size:0.68rem; margin-left:4px; font-weight:bold;">${failCount} Failures</span>` : ''}
-          `;
-        } else if (isActive) {
-          logoutDisplay = `<span style="color:var(--accent-green); font-weight:700;"><i class="fa-solid fa-circle" style="font-size:0.5rem; vertical-align:middle;"></i> Active Login</span>`;
-        }
-
-        const isRegisteredFail = isFailed && l.logoutTime === "Incorrect Password";
-        const isTypoFail = isFailed && l.logoutTime === "Incorrect User Name";
-
-        return `
-          <tr style="${isFailed ? 'background:rgba(239,68,68,0.04);' : ''}">
-            <td style="padding:8px 10px;"><input type="checkbox" class="log-select-chk" value="${docId}" onchange="updateBulkDeleteLogsState()" style="width:auto; margin:0;"></td>
-            <td style="padding:8px 10px;">${l.timestamp}</td>
-            <td style="padding:8px 10px;">
-              <strong>${l.identifier}</strong>
-              ${isRegisteredFail ? '<span style="color:#16a34a; font-size:0.7rem; display:block;">✓ Listed Student</span>' : ''}
-              ${isTypoFail ? '<span style="color:#dc2626; font-size:0.7rem; display:block;">❌ Unlisted / Typo</span>' : ''}
-            </td>
-            <td style="padding:8px 10px;">${l.role}</td>
-            <td style="padding:8px 10px;"><span style="color:${isFailed ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight:bold;">${l.status}</span></td>
-            <td style="padding:8px 10px;">${l.loginTime}</td>
-            <td style="padding:8px 10px;">${logoutDisplay}</td>
-            <td style="padding:8px 10px; display:flex; gap:4px; align-items:center;">
-              ${isFailed ? `
-                <button onclick="helpUserLoginCredentials('${(l.identifier || '').replace(/'/g, "\\'")}', ${isRegisteredFail})" style="background:#25D366; color:white; padding:2px 8px; font-size:0.7rem; border-radius:4px; border:none; cursor:pointer;" title="Send credentials via WhatsApp">
-                  <i class="fa-brands fa-whatsapp"></i> Assist
-                </button>
-              ` : ''}
-              <button class="btn-msg-del" onclick="deleteSingleAuditLog('${docId}')" title="Delete Log Entry">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      updateBulkDeleteLogsState();
-    }
+    
 
 function toggleSelectAllAuditLogs(chkEl) {
   const checkBoxes = document.querySelectorAll('.log-select-chk');
