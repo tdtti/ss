@@ -1318,19 +1318,19 @@
     <div id="studentPanel" class="dashboard-panel-card hidden">
       <div class="icon-nav-bar">
         <button class="icon-nav-tab active" title="12 Units Overview" onclick="switchStudentTab('units', this)">
-          <i class="fa-solid fa-book-bookmark"></i>
+          <i class="fa-solid fa-book-bookmark"></i>UNITS
         </button>
         <button class="icon-nav-tab" title="Saved Revision Notes" onclick="switchStudentTab('bookmarks', this)">
-          <i class="fa-solid fa-star"></i>
+          <i class="fa-solid fa-star"></i>SAVED NOTES
         </button>
         <button class="icon-nav-tab" title="My Overall Profile Folio" onclick="switchStudentTab('profilefolio', this)">
-          <i class="fa-solid fa-id-card"></i>
+          <i class="fa-solid fa-id-card"></i>MY PROFILE
         </button>
         <button class="icon-nav-tab" title="Notification & Message Center" onclick="switchStudentTab('messages', this)">
-          <i class="fa-solid fa-bell"></i> <span id="studentNewMsgDot" class="badge-new hidden">NEW</span>
+          <i class="fa-solid fa-bell"></i>NOTIFY <span id="studentNewMsgDot" class="badge-new hidden">NEW</span>
         </button>
         <button class="icon-nav-tab" title="Refresh App Data" onclick="refreshAppData()">
-          <i class="fa-solid fa-rotate"></i>
+          <i class="fa-solid fa-rotate"></i>REFRESH
         </button>
       </div>
 
@@ -5262,80 +5262,103 @@ function getAudioContext() {
 window.addEventListener('click', () => { getAudioContext(); }, { once: true });
 window.addEventListener('touchstart', () => { getAudioContext(); }, { once: true });
 
-// 1. Clearly Audible Loud Notification Sound (E5 -> A5 -> C6 Chime)
+// 1. Smooth, Clear & Elegant Glass Bell Notification Chime
 function playNotificationSound() {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
-    
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    
-    osc.frequency.setValueAtTime(659.25, now);        // E5
-    osc.frequency.setValueAtTime(880.00, now + 0.10); // A5
-    osc.frequency.setValueAtTime(1046.50, now + 0.20);// C6
-    
-    gain.gain.setValueAtTime(0.55, now); // Loud volume
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc.start(now);
-    osc.stop(now + 0.55);
+
+    // Harmonious A5 (880Hz) to E6 (1318.5Hz) soft dual chime
+    const notes = [
+      { freq: 880.00,  time: now,        duration: 0.40 }, // Soft base note
+      { freq: 1318.51, time: now + 0.07, duration: 0.50 }  // High crystal note
+    ];
+
+    notes.forEach(note => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(note.freq, note.time);
+
+      // Smooth attack envelope (15ms) to eliminate harsh clicks/pops
+      gain.gain.setValueAtTime(0.001, note.time);
+      gain.gain.linearRampToValueAtTime(0.30, note.time + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, note.time + note.duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(note.time);
+      osc.stop(note.time + note.duration);
+    });
   } catch(e) {}
 }
 
-// 2. Clearly Audible Student Join Sound (Ascending C5 -> E5 -> G5)
+// 2. Smooth, Warm & Clear Student Join Sound (G5 -> C6 Soft Welcome)
 function playJoinSound() {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
-    
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    
-    osc.frequency.setValueAtTime(523.25, now);        // C5
-    osc.frequency.setValueAtTime(659.25, now + 0.10); // E5
-    osc.frequency.setValueAtTime(783.99, now + 0.20); // G5
-    
-    gain.gain.setValueAtTime(0.50, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc.start(now);
-    osc.stop(now + 0.45);
+
+    const notes = [
+      { freq: 783.99,  time: now,        duration: 0.30 }, // G5 (Warm tone)
+      { freq: 1046.50, time: now + 0.06, duration: 0.40 }  // C6 (Bright welcome)
+    ];
+
+    notes.forEach(note => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(note.freq, note.time);
+
+      // Soft 10ms attack ramp for a smooth, click-free entry
+      gain.gain.setValueAtTime(0.001, note.time);
+      gain.gain.linearRampToValueAtTime(0.28, note.time + 0.010);
+      gain.gain.exponentialRampToValueAtTime(0.0001, note.time + note.duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(note.time);
+      osc.stop(note.time + note.duration);
+    });
   } catch(e) {}
 }
 
-// 3. Clearly Audible Student Inactive / Leave Sound (Descending A4 -> D4)
+// 3. Smooth, Subtle & Clear Student Inactive / Leave Sound (E5 -> A4 Soft Descent)
 function playLeaveSound() {
   try {
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime;
-    
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sawtooth';
-    
-    osc.frequency.setValueAtTime(440.00, now);        // A4
-    osc.frequency.setValueAtTime(293.66, now + 0.12); // D4
-    
-    gain.gain.setValueAtTime(0.45, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.40);
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc.start(now);
-    osc.stop(now + 0.40);
+
+    const notes = [
+      { freq: 659.25, time: now,        duration: 0.25 }, // E5 (Higher gentle note)
+      { freq: 440.00, time: now + 0.07, duration: 0.35 }  // A4 (Lower soft note)
+    ];
+
+    notes.forEach(note => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(note.freq, note.time);
+
+      // Soft 12ms attack ramp for a smooth, click-free entry
+      gain.gain.setValueAtTime(0.001, note.time);
+      gain.gain.linearRampToValueAtTime(0.22, note.time + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, note.time + note.duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(note.time);
+      osc.stop(note.time + note.duration);
+    });
   } catch(e) {}
 }
 
