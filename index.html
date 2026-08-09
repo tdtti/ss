@@ -1209,78 +1209,70 @@
       </div>
 
       <!-- LIVE ONLINE USERS MONITOR -->
-      <div id="adminTab-online" class="admin-tab-content hidden" style="padding: 15px; width: 100%;">
-        <!-- Section 1: Active Online Users Stream -->
-        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-            <div>
-              <h4 style="margin:0; color:var(--primary); font-size:1rem; font-weight:700;">
-                <i class="fa-solid fa-signal" style="color:var(--accent-green);"></i> 
-              </h4>
-              
-            </div>
-            <span style="background:#dcfce7; color:#166534; font-size:0.75rem; font-weight:700; padding:4px 12px; border-radius:20px;">
-              Live Stream
-            </span>
+      <div id="adminTab-online" class="admin-tab-content hidden" style="padding:15px; width:100%; box-sizing:border-box;">
+        
+        <!-- Section 1: Active Online Users Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+          <div>
+            <h4 style="margin:0; color:var(--primary); font-size:1rem; font-weight:700;">
+              <i class="fa-solid fa-signal" style="color:var(--accent-green);"></i> Live Active Users Stream
+            </h4>
+            <p style="font-size:0.78rem; color:#64748b; margin:2px 0 0 0;">Real-time stream of users currently active online.</p>
           </div>
-
-          <div id="onlineUsersTableContainer" style="width: 100%; display: flex; flex-direction: column; gap: 8px;">
-            <p style="color:#888; text-align:center; padding:15px;">Loading active users...</p>
-          </div>
+          <span style="background:#dcfce7; color:#166534; font-size:0.75rem; font-weight:700; padding:3px 10px; border-radius:20px;">
+            Live Stream
+          </span>
         </div>
 
-        <!-- Section 2: Classwise Student Presence Breakdown Stream -->
-        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-          <div style="margin-bottom:14px;">
-            <h4 style="margin:0; color:var(--primary); font-size:1rem; font-weight:700;">
-              
-          </div>
+        <!-- Stream List directly rendered here -->
+        <div id="onlineUsersTableContainer" style="width:100%; display:flex; flex-direction:column; gap:8px; margin-bottom:20px;">
+          <p style="color:#888; text-align:center; padding:10px;">Loading active users...</p>
+        </div>
 
-          <div id="classwisePresenceContainer" style="width: 100%;">
-            <p style="color:#888; text-align:center; padding:15px;">Loading classwise breakdown...</p>
-          </div>
+        
+
+        <!-- Classwise list directly rendered here -->
+        <div id="classwisePresenceContainer" style="width:100%;">
+          <p style="color:#888; text-align:center; padding:10px;">Loading classwise breakdown...</p>
         </div>
       </div>
 
-      <div id="adminTab-logs" class="admin-tab-content hidden" style="padding:15px; width:100%;">
-        <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-          
-          <!-- Header Controls -->
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
-            <div>
-              <h4 style="margin:0; font-size:1rem; color:var(--primary); font-weight:700;">
-                <i class="fa-solid fa-shield-cat"></i> System Audit Logs Stream
-              </h4>
-              <p style="font-size:0.78rem; color:#64748b; margin:2px 0 0 0;">Real-time authentication activity, login attempts, and system events.</p>
-            </div>
+      <div id="adminTab-logs" class="admin-tab-content hidden" style="padding:15px; width:100%; box-sizing:border-box;">
+        <!-- Header Controls -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
+          <div>
+            <h4 style="margin:0; font-size:1rem; color:var(--primary); font-weight:700;">
+              <i class="fa-solid fa-shield-cat"></i>
+            </h4>
             
-            <div style="display:flex; gap:8px; align-items:center;">
-              <button id="btnBulkDeleteLogs" class="btn-msg-del hidden" onclick="deleteSelectedAuditLogs()" style="padding:6px 12px; font-size:0.78rem;">
-                <i class="fa-solid fa-trash"></i> Delete Selected (<span id="bulkDelLogsCount">0</span>)
-              </button>
-              <button onclick="deleteAllAuditLogs()" style="width:auto; padding:6px 12px; background:var(--accent-red); font-size:0.78rem;" title="Delete All Audit Logs">
-                <i class="fa-solid fa-trash-can"></i> Clear All Logs
-              </button>
-            </div>
           </div>
+          
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button id="btnBulkDeleteLogs" class="btn-msg-del hidden" onclick="deleteSelectedAuditLogs()" style="padding:6px 12px; font-size:0.78rem;">
+              <i class="fa-solid fa-trash"></i> Delete Selected (<span id="bulkDelLogsCount">0</span>)
+            </button>
+            <button onclick="deleteAllAuditLogs()" style="width:auto; padding:6px 12px; background:var(--accent-red); font-size:0.78rem;" title="Delete All Audit Logs">
+              <i class="fa-solid fa-trash-can"></i> Clear All Logs
+            </button>
+          </div>
+        </div>
 
-          <!-- FAILED LOGINS ASSISTANCE ALERT CARD -->
-          <div id="failedLoginsAlertCard" style="margin-bottom:15px; background:#fff3e6; border:1px solid #ffaa5b; padding:14px; border-radius:10px; display:none;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-              <h5 style="margin:0; color:#d97706; font-size:0.9rem; font-weight:700;">
-                <i class="fa-solid fa-triangle-exclamation"></i> Users Needing Login Assistance (Failed Logins)
-              </h5>
-              <button onclick="clearAllFailedAlerts()" style="background:#dc2626; color:white; padding:4px 10px; border-radius:12px; font-size:0.72rem; border:none; cursor:pointer; width:auto; margin:0;" title="Clear all failed alerts">
-                <i class="fa-solid fa-trash-can"></i> Clear All Alerts
-              </button>
-            </div>
-            <div id="failedLoginsAlertList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        <!-- FAILED LOGINS ASSISTANCE ALERT CARD -->
+        <div id="failedLoginsAlertCard" style="margin-bottom:15px; background:#fff3e6; border:1px solid #ffaa5b; padding:12px; border-radius:10px; display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h5 style="margin:0; color:#d97706; font-size:0.9rem; font-weight:700;">
+              <i class="fa-solid fa-triangle-exclamation"></i> Users Needing Login Assistance (Failed Logins)
+            </h5>
+            <button onclick="clearAllFailedAlerts()" style="background:#dc2626; color:white; padding:4px 10px; border-radius:12px; font-size:0.72rem; border:none; cursor:pointer; width:auto; margin:0;" title="Clear all failed alerts">
+              <i class="fa-solid fa-trash-can"></i> Clear All Alerts
+            </button>
           </div>
+          <div id="failedLoginsAlertList" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
 
-          <!-- AUDIT LOGS STREAM LIST -->
-          <div id="auditLogsContainer" style="width:100%; display:flex; flex-direction:column; gap:6px;">
-            <p style="color:#888; text-align:center; padding:15px;">Loading logs stream...</p>
-          </div>
+        <!-- AUDIT LOGS STREAM LIST directly rendered here -->
+        <div id="auditLogsContainer" style="width:100%; display:flex; flex-direction:column; gap:6px;">
+          <p style="color:#888; text-align:center; padding:10px;">Loading logs stream...</p>
         </div>
       </div>
 
@@ -1994,12 +1986,12 @@
         }).join('');
 
         return `
-          <div style="width:100%; box-sizing:border-box; margin-bottom:18px; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:12px 14px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid var(--border-color); padding-bottom:6px;">
-              <h5 style="margin:0; color:var(--primary); font-size:0.92rem; font-weight:700;">
+          <div style="width:100%; margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid var(--border-color); padding-bottom:4px;">
+              <h5 style="margin:0; color:var(--primary); font-size:0.9rem; font-weight:700;">
                 <i class="fa-solid fa-users"></i> ${classKey}
               </h5>
-              <span style="font-size:0.75rem; font-weight:700; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px;">
+              <span style="font-size:0.72rem; font-weight:700; color:#64748b; background:#f1f5f9; padding:2px 8px; border-radius:12px;">
                 ${studentList.length} Students
               </span>
             </div>
