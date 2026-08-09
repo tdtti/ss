@@ -1765,7 +1765,7 @@
     // Helper function to convert last active epoch into human readable time elapsed string
     function getTimeElapsedString(lastActiveEpoch, isOnline) {
       if (isOnline) return "Active Now";
-      if (!lastActiveEpoch) return "Never logged in";
+      if (!lastActiveEpoch) return "Never";
 
       const diffMs = Date.now() - lastActiveEpoch;
       const mins = Math.floor(diffMs / (1000 * 60));
@@ -1897,7 +1897,7 @@
               <!-- Right Group: Relative Time Badge + Expand Arrow -->
               <div style="display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0;">
                 <span style="font-size:0.72rem; font-weight:700; color:var(--accent-green); background:#dcfce7; padding:3px 10px; border-radius:12px; white-space:nowrap;">
-                  Last Active: ${lastActiveDisplay}
+                  ${lastActiveDisplay}
                 </span>
                 <i class="fa-solid fa-chevron-down" style="font-size:0.75rem; color:#94a3b8;"></i>
               </div>
@@ -1971,7 +1971,7 @@
                 <!-- Right: Relative Time + WhatsApp Icon Button -->
                 <div style="display:flex; align-items:center; gap:10px; margin-left:auto; flex-shrink:0;">
                   <span style="font-size:0.73rem; color:${s.isOnline ? '#16a34a' : '#64748b'}; font-weight:600;">
-                    Last Active: ${lastActiveDisplay}
+                    ${lastActiveDisplay}
                   </span>
                   
                   <button onclick="event.stopPropagation(); sendPresenceWhatsAppAlert('${s.name.replace(/'/g, "\\'")}', '${s.phoneNo}', '${s.userClass}', '${s.userDivision}', '${statusText}', '${s.lastActive}', '${s.username}', '${s.password}')" 
@@ -7113,14 +7113,14 @@ JOIN NOW : https://tdschoolnews.in/
       );
     }
 
-// Helper function to format Last Active time into relative format (e.g. 1min ago, NOT logined yet)
+// Helper function to format Last Active time into relative format (e.g. 1min ago, Never)
     function formatLastActiveRelative(lastActiveEpoch, lastActiveStr) {
-      if (!lastActiveEpoch || !lastActiveStr || lastActiveStr === '-' || lastActiveStr === 'Never logged in') {
-        return "NOT logined yet";
+      if (!lastActiveEpoch || !lastActiveStr || lastActiveStr === '-' || lastActiveStr === 'Never') {
+        return "Never";
       }
 
       const diffMs = Date.now() - lastActiveEpoch;
-      if (isNaN(diffMs) || diffMs < 0) return "NOT logined yet";
+      if (isNaN(diffMs) || diffMs < 0) return "Never";
 
       const mins = Math.floor(diffMs / (1000 * 60));
       const hours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -7132,14 +7132,14 @@ JOIN NOW : https://tdschoolnews.in/
       return `${days}d ago`;
     }    
 
-// Helper function to format Last Active time into relative format (e.g. 1min ago, NOT logined yet)
+// Helper function to format Last Active time into relative format (e.g. 1min ago, Never)
     function formatLastActiveRelative(lastActiveEpoch, lastActiveStr) {
-      if (!lastActiveEpoch || !lastActiveStr || lastActiveStr === '-' || lastActiveStr === 'Never logged in') {
-        return "NOT logined yet";
+      if (!lastActiveEpoch || !lastActiveStr || lastActiveStr === '-' || lastActiveStr === 'Never') {
+        return "Never";
       }
 
       const diffMs = Date.now() - lastActiveEpoch;
-      if (isNaN(diffMs) || diffMs < 0) return "NOT logined yet";
+      if (isNaN(diffMs) || diffMs < 0) return "Never";
 
       const mins = Math.floor(diffMs / (1000 * 60));
       const hours = Math.floor(diffMs / (1000 * 60 * 60));
