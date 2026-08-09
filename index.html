@@ -1150,7 +1150,6 @@
             <button id="btnCancelUserEdit" onclick="cancelUserEdit()" class="hidden" style="background:#64748b; width:auto;">Cancel</button>
           </div>
         </div>
-        
 
         <div style="margin-bottom:10px;">
           <input type="text" id="userTableSearchInput" placeholder="🔍 Search users instantly by name, class, division, or phone..." onkeyup="filterUsersTableLive(this.value)" style="border:2px solid var(--primary); border-radius:20px; padding-left:15px;">
@@ -1255,57 +1254,54 @@
         </div>
       </div>
 
-      <!-- SYSTEM AUDIT LOGS (TOUCH & TAP) -->
-      <!-- SYSTEM AUDIT LOGS (TOUCH & TAP) -->
       <div id="adminTab-logs" class="admin-tab-content hidden" style="padding:15px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <div>
-            <h4 style="margin:0;"><i class="fa-solid fa-shield-cat"></i> System Audit Logs</h4>
-            <p style="font-size:0.75rem; color:#64748b; margin:2px 0 0 0;">💡 <i>Tap any log row to select/deselect for bulk deletion.</i></p>
-          </div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <h4 style="margin:0;"><i class="fa-solid fa-shield-cat"></i> System Audit Logs</h4>
+    
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button id="btnBulkDeleteLogs" class="btn-msg-del hidden" onclick="deleteSelectedAuditLogs()" style="padding:5px 12px; font-size:0.78rem;">
+        <i class="fa-solid fa-trash"></i> Delete Selected (<span id="bulkDelLogsCount">0</span>)
+      </button>
+      <button onclick="deleteAllAuditLogs()" style="width:auto; padding:6px 10px; background:var(--accent-red);" title="Delete All Audit Logs">
+        <i class="fa-solid fa-trash-can"></i> Clear All
+      </button>
+    </div>
+  </div>
 
-          <div style="display:flex; gap:8px; align-items:center;">
-            <div id="logSelectionActions" class="hidden" style="display:flex; gap:6px; align-items:center;">
-              <button id="btnBulkDeleteLogs" class="btn-msg-del" onclick="deleteSelectedAuditLogs()" style="padding:5px 12px; font-size:0.78rem;">
-                <i class="fa-solid fa-trash"></i> Delete Selected (<span id="bulkDelLogsCount">0</span>)
-              </button>
-              <button onclick="clearAuditLogSelections()" style="width:auto; padding:5px 10px; background:#64748b; color:white; font-size:0.78rem; border:none; border-radius:4px; cursor:pointer;">
-                Cancel
-              </button>
-            </div>
-            <button onclick="deleteAllAuditLogs()" style="width:auto; padding:6px 10px; background:var(--accent-red); font-size:0.78rem;" title="Delete All Audit Logs">
-              <i class="fa-solid fa-trash-can"></i> Clear All
-            </button>
-          </div>
-        </div>
-
-        <!-- FAILED LOGINS ASSISTANCE ALERT CARD -->
-        <div id="failedLoginsAlertCard" style="margin-bottom:15px; background:#fff3e6; border:1px solid #ffaa5b; padding:12px; border-radius:8px; display:none;">
-          <h5 style="margin:0 0 6px 0; color:#d97706; font-size:0.9rem;">
-            <i class="fa-solid fa-triangle-exclamation"></i> Users Needing Login Assistance (Consecutive Failures)
-          </h5>
-          <div id="failedLoginsAlertList" style="display:flex; flex-direction:column; gap:6px;"></div>
-        </div>
-
-        <div style="width:100%; overflow-x:auto; overflow-y:auto; max-height:60vh; border:1px solid var(--border-color); border-radius:8px; -webkit-overflow-scrolling:touch; background:var(--card-bg);">
-          <table class="logs-table" style="width:100%; min-width:700px; border-collapse:collapse; white-space:nowrap;">
-            <thead>
-              <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
-                <th style="padding:10px;">Timestamp</th>
-                <th style="padding:10px;">Identifier</th>
-                <th style="padding:10px;">Role</th>
-                <th style="padding:10px;">Status</th>
-                <th style="padding:10px;">Login Time</th>
-                <th style="padding:10px;">Logout Time</th>
-                <th style="padding:10px; text-align:center;">Action</th>
-              </tr>
-            </thead>
-            <tbody id="auditLogsContainer">
-              <tr><td colspan="7" style="text-align:center; padding:15px;">Loading logs...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+  
+  <!-- FAILED LOGINS ASSISTANCE ALERT CARD -->
+  <div id="failedLoginsAlertCard" style="margin-bottom:15px; background:#fff3e6; border:1px solid #ffaa5b; padding:12px; border-radius:8px; display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <h5 style="margin:0; color:#d97706; font-size:0.9rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Users Needing Login Assistance (Consecutive Failures)
+      </h5>
+      <button onclick="clearAllFailedAlerts()" style="background:#dc2626; color:white; padding:3px 8px; border-radius:12px; font-size:0.72rem; border:none; cursor:pointer; width:auto; margin:0;" title="Clear all failed alerts">
+        <i class="fa-solid fa-trash-can"></i> Clear All Alerts
+      </button>
+    </div>
+    <div id="failedLoginsAlertList" style="display:flex; flex-direction:column; gap:6px;"></div>
+  </div>
+  
+  <div style="width:100%; overflow-x:auto; overflow-y:auto; max-height:60vh; border:1px solid var(--border-color); border-radius:8px; -webkit-overflow-scrolling:touch; background:var(--card-bg);">
+    <table class="logs-table" style="width:100%; min-width:750px; border-collapse:collapse; white-space:nowrap;">
+      <thead>
+        <tr style="position:sticky; top:0; background:#0f172a; color:white; z-index:10;">
+          <th style="padding:10px; width:30px;"><input type="checkbox" id="chkSelectAllLogs" onchange="toggleSelectAllAuditLogs(this)" style="width:auto; margin:0;"></th>
+          <th style="padding:10px;">Timestamp</th>
+          <th style="padding:10px;">Identifier</th>
+          <th style="padding:10px;">Role</th>
+          <th style="padding:10px;">Status</th>
+          <th style="padding:10px;">Login Time</th>
+          <th style="padding:10px;">Logout Time</th>
+          <th style="padding:10px;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="auditLogsContainer">
+        <tr><td colspan="8" style="text-align:center; padding:15px;">Loading logs...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
       <div id="adminTab-medialib" class="admin-tab-content hidden" style="padding:15px;">
         <div style="background:var(--card-bg); border:1px solid var(--border-color); padding:10px; border-radius:8px; margin-bottom:15px; display:flex; gap:10px; align-items:center; justify-content:center;">
@@ -2327,71 +2323,6 @@ Password : ${password || 'N/A'}`;
       );
     }
 
-    let selectedAuditLogIds = new Set();
-
-    function clearAuditLogSelections() {
-      selectedAuditLogIds.clear();
-      updateAuditLogSelectionBarUI();
-      document.querySelectorAll(".audit-log-row").forEach(row => {
-        row.style.background = row.getAttribute("data-default-bg") || "";
-        row.style.outline = "none";
-      });
-    }
-
-    function toggleAuditLogRowSelection(rowEl, docId, event) {
-      // Prevent selection toggle if user tapped directly on a button or icon
-      if (event && (event.target.tagName === 'BUTTON' || event.target.tagName === 'I' || event.target.closest('button'))) {
-        return;
-      }
-
-      if (selectedAuditLogIds.has(docId)) {
-        selectedAuditLogIds.delete(docId);
-        rowEl.style.background = rowEl.getAttribute("data-default-bg") || "";
-        rowEl.style.outline = "none";
-      } else {
-        selectedAuditLogIds.add(docId);
-        rowEl.style.background = "rgba(239, 68, 68, 0.15)";
-        rowEl.style.outline = "2px solid #ef4444";
-        rowEl.style.outlineOffset = "-2px";
-      }
-
-      updateAuditLogSelectionBarUI();
-    }
-
-    function updateAuditLogSelectionBarUI() {
-      const actionsBar = document.getElementById("logSelectionActions");
-      const countSpan = document.getElementById("bulkDelLogsCount");
-      const count = selectedAuditLogIds.size;
-
-      if (count > 0) {
-        if (actionsBar) actionsBar.classList.remove("hidden");
-        if (countSpan) countSpan.innerText = count;
-      } else {
-        if (actionsBar) actionsBar.classList.add("hidden");
-      }
-    }
-
-    async function deleteSelectedAuditLogs() {
-      if (selectedAuditLogIds.size === 0) return;
-
-      const ids = Array.from(selectedAuditLogIds);
-      openCustomConfirmModal(
-        "Delete Selected Audit Logs",
-        `Permanently delete ${ids.length} selected log entries?`,
-        async () => {
-          showProgressLoader();
-          const batch = db.batch();
-          ids.forEach(id => batch.delete(db.collection("logs").doc(id)));
-          await batch.commit();
-          hideProgressLoader();
-
-          clearAuditLogSelections();
-          showPresenceToast(`${ids.length} Audit logs deleted!`, "join");
-          fetchAuditLogs();
-        }
-      );
-    }
-
     async function fetchAuditLogs() {
       showProgressLoader();
       const snap = await db.collection("logs").orderBy("timestamp", "desc").get();
@@ -2399,8 +2330,8 @@ Password : ${password || 'N/A'}`;
 
       const container = document.getElementById("auditLogsContainer");
       if (snap.empty) {
-        container.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:15px;">No logs available.</td></tr>`;
-        clearAuditLogSelections();
+        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px;">No logs available.</td></tr>`;
+        updateBulkDeleteLogsState();
         return;
       }
 
@@ -2442,9 +2373,12 @@ Password : ${password || 'N/A'}`;
                 <strong>Typed Username: "${id}"</strong> — Failed ${count} times (${statusLabel})
                 <div style="font-size:0.72rem; color:#64748b;">Reason: ${lastFail.logoutTime} | Last Attempt: ${lastFail.timestamp}</div>
               </div>
-              <div>
+              <div style="display:flex; gap:6px; align-items:center;">
                 <button onclick="helpUserLoginCredentials('${id.replace(/'/g, "\\'")}', ${isRegisteredUser})" style="background:#25D366; color:white; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;">
-                  <i class="fa-brands fa-whatsapp"></i> Assist Student
+                  <i class="fa-brands fa-whatsapp"></i> Assist
+                </button>
+                <button onclick="deleteFailedAlertItem('${id.replace(/'/g, "\\'")}')" style="background:#ef4444; color:white; padding:4px 8px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;" title="Delete alert item">
+                  <i class="fa-solid fa-trash"></i>
                 </button>
               </div>
             </div>
@@ -2454,7 +2388,7 @@ Password : ${password || 'N/A'}`;
         alertCard.style.display = "none";
       }
 
-      // Render Logs Table with Touch & Tap Selection (No Checkboxes)
+      // Render Logs Table
       container.innerHTML = snap.docs.map(doc => {
         const l = doc.data();
         const docId = doc.id;
@@ -2465,6 +2399,7 @@ Password : ${password || 'N/A'}`;
         const failCount = failureCounts[l.identifier] || 0;
 
         if (isFailed) {
+          const isRegistered = l.logoutTime === "Incorrect Password";
           logoutDisplay = `
             <span style="color:var(--accent-red); font-weight:700;">
               <i class="fa-solid fa-circle-exclamation"></i> ${l.logoutTime || 'Incorrect Credentials'}
@@ -2477,14 +2412,10 @@ Password : ${password || 'N/A'}`;
 
         const isRegisteredFail = isFailed && l.logoutTime === "Incorrect Password";
         const isTypoFail = isFailed && l.logoutTime === "Incorrect User Name";
-        const isSelected = selectedAuditLogIds.has(docId);
-        const defaultBg = isFailed ? "rgba(239,68,68,0.04)" : "";
 
         return `
-          <tr class="audit-log-row" 
-              data-default-bg="${defaultBg}"
-              style="background:${isSelected ? 'rgba(239, 68, 68, 0.15)' : defaultBg}; ${isSelected ? 'outline: 2px solid #ef4444; outline-offset: -2px;' : ''} cursor:pointer;"
-              onclick="toggleAuditLogRowSelection(this, '${docId}', event)">
+          <tr style="${isFailed ? 'background:rgba(239,68,68,0.04);' : ''}">
+            <td style="padding:8px 10px;"><input type="checkbox" class="log-select-chk" value="${docId}" onchange="updateBulkDeleteLogsState()" style="width:auto; margin:0;"></td>
             <td style="padding:8px 10px;">${l.timestamp}</td>
             <td style="padding:8px 10px;">
               <strong>${l.identifier}</strong>
@@ -2495,28 +2426,42 @@ Password : ${password || 'N/A'}`;
             <td style="padding:8px 10px;"><span style="color:${isFailed ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight:bold;">${l.status}</span></td>
             <td style="padding:8px 10px;">${l.loginTime}</td>
             <td style="padding:8px 10px;">${logoutDisplay}</td>
-            <td style="padding:8px 10px; text-align:center;">
-              <div style="display:inline-flex; gap:4px; align-items:center;">
-                ${isFailed ? `
-                  <button onclick="event.stopPropagation(); helpUserLoginCredentials('${(l.identifier || '').replace(/'/g, "\\'")}', ${isRegisteredFail})" style="background:#25D366; color:white; padding:2px 8px; font-size:0.7rem; border-radius:4px; border:none; cursor:pointer;" title="Send credentials via WhatsApp">
-                    <i class="fa-brands fa-whatsapp"></i> Assist
-                  </button>
-                ` : ''}
-                <button class="btn-msg-del" onclick="event.stopPropagation(); deleteSingleAuditLog('${docId}')" title="Delete Log Entry">
-                  <i class="fa-solid fa-trash"></i>
+            <td style="padding:8px 10px; display:flex; gap:4px; align-items:center;">
+              ${isFailed ? `
+                <button onclick="helpUserLoginCredentials('${(l.identifier || '').replace(/'/g, "\\'")}', ${isRegisteredFail})" style="background:#25D366; color:white; padding:2px 8px; font-size:0.7rem; border-radius:4px; border:none; cursor:pointer;" title="Send credentials via WhatsApp">
+                  <i class="fa-brands fa-whatsapp"></i> Assist
                 </button>
-              </div>
+              ` : ''}
+              <button class="btn-msg-del" onclick="deleteSingleAuditLog('${docId}')" title="Delete Log Entry">
+                <i class="fa-solid fa-trash"></i>
+              </button>
             </td>
           </tr>
         `;
       }).join('');
 
-      updateAuditLogSelectionBarUI();
+      updateBulkDeleteLogsState();
     }
 
+function toggleSelectAllAuditLogs(chkEl) {
+  const checkBoxes = document.querySelectorAll('.log-select-chk');
+  checkBoxes.forEach(chk => chk.checked = chkEl.checked);
+  updateBulkDeleteLogsState();
+}
 
+function updateBulkDeleteLogsState() {
+  const checkedBoxes = document.querySelectorAll('.log-select-chk:checked');
+  const count = checkedBoxes.length;
+  const btn = document.getElementById("btnBulkDeleteLogs");
+  const countSpan = document.getElementById("bulkDelLogsCount");
 
-
+  if (count > 0) {
+    if (btn) btn.classList.remove("hidden");
+    if (countSpan) countSpan.innerText = count;
+  } else {
+    if (btn) btn.classList.add("hidden");
+  }
+}
 
 function deleteSelectedAuditLogs() {
   const checkedBoxes = document.querySelectorAll('.log-select-chk:checked');
@@ -7009,7 +6954,6 @@ Password : ${studentPassword}`;
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-
 // Admin Assistance Helper for Stuck / Failed Login Users
     async function helpUserLoginCredentials(typedIdentifier, isRegistered) {
       showProgressLoader();
@@ -7087,43 +7031,61 @@ JOIN NOW : https://tdschoolnews.in/
         console.error("Error finding user credentials:", e);
       }
     }
-
-let logLongPressTimer = null;
-
-    function handleAuditLogTouchStart(rowEl, docId) {
-      logLongPressTimer = setTimeout(() => {
-        toggleAuditLogRowSelectionById(rowEl, docId, true);
-      }, 500); // 500ms long press duration
-    }
-
-    function handleAuditLogTouchEnd() {
-      if (logLongPressTimer) {
-        clearTimeout(logLongPressTimer);
-        logLongPressTimer = null;
-      }
-    }
-
-    function toggleAuditLogRowSelection(rowEl, docId, event) {
-      // Prevent toggling if user directly clicked a button or input
-      if (event && (event.target.tagName === 'BUTTON' || event.target.tagName === 'I' || event.target.tagName === 'INPUT' || event.target.closest('button'))) {
-        return;
-      }
-      toggleAuditLogRowSelectionById(rowEl, docId);
-    }
-
-    function toggleAuditLogRowSelectionById(rowEl, docId, isLongPress = false) {
-      const chk = rowEl.querySelector('.log-select-chk');
-      if (chk) {
-        chk.checked = !chk.checked;
-        if (chk.checked) {
-          rowEl.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
-        } else {
-          rowEl.style.backgroundColor = "";
+    
+// Delete single alert item from Top Banner (clears failed logs for that username)
+    function deleteFailedAlertItem(identifier) {
+      openCustomConfirmModal(
+        "Delete Alert Item",
+        `Remove login failure alert for "${identifier}"?`,
+        async () => {
+          showProgressLoader();
+          try {
+            const snap = await db.collection("logs").where("identifier", "==", identifier).get();
+            if (!snap.empty) {
+              const batch = db.batch();
+              snap.docs.forEach(doc => {
+                if (doc.data().status === "Failed") {
+                  batch.delete(doc.ref);
+                }
+              });
+              await batch.commit();
+            }
+            hideProgressLoader();
+            showPresenceToast(`Alert for "${identifier}" deleted!`, "join");
+            fetchAuditLogs(); // Refresh banner and logs
+          } catch(e) {
+            hideProgressLoader();
+            showPresenceToast("Error deleting alert item", "leave");
+          }
         }
-        updateBulkDeleteLogsState();
-      }
+      );
     }
 
+    // Delete all failed alert items at once
+    function clearAllFailedAlerts() {
+      openCustomConfirmModal(
+        "Clear All Alerts",
+        "Delete all failed login alerts from the top banner?",
+        async () => {
+          showProgressLoader();
+          try {
+            const snap = await db.collection("logs").where("status", "==", "Failed").get();
+            if (!snap.empty) {
+              const batch = db.batch();
+              snap.docs.forEach(doc => batch.delete(doc.ref));
+              await batch.commit();
+            }
+            hideProgressLoader();
+            showPresenceToast("All failed alerts cleared!", "join");
+            fetchAuditLogs(); // Refresh banner and logs
+          } catch(e) {
+            hideProgressLoader();
+            showPresenceToast("Error clearing alerts", "leave");
+          }
+        }
+      );
+    }
+    
   </script>
 </body>
 </html>
