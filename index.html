@@ -1273,7 +1273,7 @@
   <div id="failedLoginsAlertCard" style="margin-bottom:15px; background:#fff3e6; border:1px solid #ffaa5b; padding:12px; border-radius:8px; display:none;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
       <h5 style="margin:0; color:#d97706; font-size:0.9rem;">
-        <i class="fa-solid fa-triangle-exclamation"></i> Users Needing Login Assistance (Consecutive Failures)
+        <i class="fa-solid fa-triangle-exclamation"></i> Users Needing Login Assistance (Failed Logins)
       </h5>
       <button onclick="clearAllFailedAlerts()" style="background:#dc2626; color:white; padding:3px 8px; border-radius:12px; font-size:0.72rem; border:none; cursor:pointer; width:auto; margin:0;" title="Clear all failed alerts">
         <i class="fa-solid fa-trash-can"></i> Clear All Alerts
@@ -2354,7 +2354,7 @@ Password : ${password || 'N/A'}`;
       const alertCard = document.getElementById("failedLoginsAlertCard");
       const alertList = document.getElementById("failedLoginsAlertList");
 
-      const needyUserIds = Object.keys(failureCounts).filter(id => failureCounts[id] >= 2);
+      const needyUserIds = Object.keys(failureCounts).filter(id => failureCounts[id] >= 1);
 
       if (needyUserIds.length > 0 && alertCard && alertList) {
         alertCard.style.display = "block";
@@ -7085,7 +7085,7 @@ JOIN NOW : https://tdschoolnews.in/
         }
       );
     }
-    
+
   </script>
 </body>
 </html>
