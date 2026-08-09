@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>TDTTI SS 7 Progression Report</title>
+  <title>TDTTI SS 7 ONLINE PORTAL</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- Firebase Web SDK v9 -->
@@ -1406,9 +1406,9 @@
 
     (function injectPWAManifest() {
       const manifestData = {
-        name: "TDTTI SS 7 Progression Report",
+        name: "TDTTI SS 7 ONLINE PORTAL",
         short_name: "TDTTI SS 7",
-        description: "TDTTI SS 7 Progression Report E-Book Portal",
+        description: "TDTTI SS 7 ONLINE PORTAL",
         start_url: "./",
         display: "standalone",
         background_color: "#ffffff",
@@ -1430,7 +1430,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('TDTTI SS PWA Service Worker Registered Successfully!'))
+          .then(() => console.log('TDTTI SS Registered Successfully!'))
           .catch((err) => {
             console.warn('PWA ServiceWorker Note: Ensure sw.js is uploaded to your root folder.');
           });
@@ -2837,7 +2837,7 @@ function deleteSelectedAuditLogs() {
   const diligRemark = (evalData.reading && evalData.reading !== 'Pending') ? evalData.reading : 'Brewing☕';
   const focusRemark = (evalData.classAttention && evalData.classAttention !== 'Pending') ? evalData.classAttention : 'Brewing☕';
 
-  const msg = `TDTTI SS 7 Progression Report
+  const msg = `TDTTI SS 7 ONLINE PORTAL
 Student Name: ${username}
 Class: ${cls} - Division: ${div}
 Phone: ${phoneNo}
@@ -6830,7 +6830,7 @@ async function sendWhatsAppDetailedReport(username, phoneNo, cls, div) {
     return `* ${q.chapterTitle || 'Chapter ' + q.chapterId}: ${q.scorePct}% (${q.correctCount}/${q.totalQs})`;
   }).join('\n');
 
-  const msg = `TDTTI SS 7 Progression Report
+  const msg = `TDTTI SS 7 ONLINE PORTAL
 Student Name: ${studentName}
 Class: ${cls} - Division: ${div}
 Phone: ${phoneNo}
