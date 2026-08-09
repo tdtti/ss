@@ -1150,6 +1150,7 @@
             <button id="btnCancelUserEdit" onclick="cancelUserEdit()" class="hidden" style="background:#64748b; width:auto;">Cancel</button>
           </div>
         </div>
+        
 
         <div style="margin-bottom:10px;">
           <input type="text" id="userTableSearchInput" placeholder="🔍 Search users instantly by name, class, division, or phone..." onkeyup="filterUsersTableLive(this.value)" style="border:2px solid var(--primary); border-radius:20px; padding-left:15px;">
@@ -1266,6 +1267,14 @@
         <i class="fa-solid fa-trash-can"></i> Clear All
       </button>
     </div>
+  </div>
+
+  <!-- FAILED LOGINS ASSISTANCE ALERT CARD -->
+  <div id="failedLoginsAlertCard" style="margin-bottom:15px; background:#fff3e6; border:1px solid #ffaa5b; padding:12px; border-radius:8px; display:none;">
+    <h5 style="margin:0 0 6px 0; color:#d97706; font-size:0.9rem;">
+      <i class="fa-solid fa-triangle-exclamation"></i> Users Needing Login Assistance (Consecutive Failures)
+    </h5>
+    <div id="failedLoginsAlertList" style="display:flex; flex-direction:column; gap:6px;"></div>
   </div>
   
   <div style="width:100%; overflow-x:auto; overflow-y:auto; max-height:60vh; border:1px solid var(--border-color); border-radius:8px; -webkit-overflow-scrolling:touch; background:var(--card-bg);">
@@ -2310,50 +2319,121 @@ Password : ${password || 'N/A'}`;
     }
 
     async function fetchAuditLogs() {
-  showProgressLoader();
-  const snap = await db.collection("logs").orderBy("timestamp", "desc").get();
-  hideProgressLoader();
+      showProgressLoader();
+      const snap = await db.collection("logs").orderBy("timestamp", "desc").get();
+      hideProgressLoader();
 
-  const container = document.getElementById("auditLogsContainer");
-  if (snap.empty) {
-    container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px;">No logs available.</td></tr>`;
-    updateBulkDeleteLogsState();
-    return;
-  }
+      const container = document.getElementById("auditLogsContainer");
+      if (snap.empty) {
+        container.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:15px;">No logs available.</td></tr>`;
+        updateBulkDeleteLogsState();
+        return;
+      }
 
-  container.innerHTML = snap.docs.map(doc => {
-    const l = doc.data();
-    const docId = doc.id;
-    const isFailed = l.status === "Failed";
-    const isActive = !isFailed && (l.logoutTime === "-" || !l.logoutTime || l.logoutTime.trim() === "" || l.status === "Success");
-    
-    let logoutDisplay = l.logoutTime;
-    if (isFailed) {
-      logoutDisplay = `<span style="color:var(--accent-red); font-weight:700;"><i class="fa-solid fa-circle-exclamation"></i> ${l.logoutTime || 'Incorrect Credentials'}</span>`;
-    } else if (isActive) {
-      logoutDisplay = `<span style="color:var(--accent-green); font-weight:700;"><i class="fa-solid fa-circle" style="font-size:0.5rem; vertical-align:middle;"></i> Active Login</span>`;
+      // Count consecutive failures per typed identifier
+      const failureCounts = {};
+      const latestFailuresMap = {};
+
+      snap.docs.forEach(doc => {
+        const l = doc.data();
+        if (l.status === "Failed") {
+          const id = l.identifier || "Unknown";
+          failureCounts[id] = (failureCounts[id] || 0) + 1;
+          if (!latestFailuresMap[id]) {
+            latestFailuresMap[id] = l;
+          }
+        }
+      });
+
+      // Render Login Assistance Banner for Admin
+      const alertCard = document.getElementById("failedLoginsAlertCard");
+      const alertList = document.getElementById("failedLoginsAlertList");
+
+      const needyUserIds = Object.keys(failureCounts).filter(id => failureCounts[id] >= 2);
+
+      if (needyUserIds.length > 0 && alertCard && alertList) {
+        alertCard.style.display = "block";
+        alertList.innerHTML = needyUserIds.map(id => {
+          const count = failureCounts[id];
+          const lastFail = latestFailuresMap[id];
+          const isRegisteredUser = lastFail.logoutTime === "Incorrect Password";
+
+          const statusLabel = isRegisteredUser 
+            ? `<span style="color:#16a34a; font-weight:bold;">LISTED (User Exists)</span>`
+            : `<span style="color:#dc2626; font-weight:bold;">UNLISTED / TYPO (User Not Found)</span>`;
+
+          return `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; padding:6px 10px; border-radius:6px; font-size:0.8rem; border:1px solid #fed7aa;">
+              <div>
+                <strong>Typed Username: "${id}"</strong> — Failed ${count} times (${statusLabel})
+                <div style="font-size:0.72rem; color:#64748b;">Reason: ${lastFail.logoutTime} | Last Attempt: ${lastFail.timestamp}</div>
+              </div>
+              <div>
+                <button onclick="helpUserLoginCredentials('${id.replace(/'/g, "\\'")}', ${isRegisteredUser})" style="background:#25D366; color:white; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;">
+                  <i class="fa-brands fa-whatsapp"></i> Assist Student
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else if (alertCard) {
+        alertCard.style.display = "none";
+      }
+
+      // Render Logs Table
+      container.innerHTML = snap.docs.map(doc => {
+        const l = doc.data();
+        const docId = doc.id;
+        const isFailed = l.status === "Failed";
+        const isActive = !isFailed && (l.logoutTime === "-" || !l.logoutTime || l.logoutTime.trim() === "" || l.status === "Success");
+        
+        let logoutDisplay = l.logoutTime;
+        const failCount = failureCounts[l.identifier] || 0;
+
+        if (isFailed) {
+          const isRegistered = l.logoutTime === "Incorrect Password";
+          logoutDisplay = `
+            <span style="color:var(--accent-red); font-weight:700;">
+              <i class="fa-solid fa-circle-exclamation"></i> ${l.logoutTime || 'Incorrect Credentials'}
+            </span>
+            ${failCount > 1 ? `<span style="background:#fee2e2; color:#dc2626; padding:1px 6px; border-radius:8px; font-size:0.68rem; margin-left:4px; font-weight:bold;">${failCount} Failures</span>` : ''}
+          `;
+        } else if (isActive) {
+          logoutDisplay = `<span style="color:var(--accent-green); font-weight:700;"><i class="fa-solid fa-circle" style="font-size:0.5rem; vertical-align:middle;"></i> Active Login</span>`;
+        }
+
+        const isRegisteredFail = isFailed && l.logoutTime === "Incorrect Password";
+        const isTypoFail = isFailed && l.logoutTime === "Incorrect User Name";
+
+        return `
+          <tr style="${isFailed ? 'background:rgba(239,68,68,0.04);' : ''}">
+            <td style="padding:8px 10px;"><input type="checkbox" class="log-select-chk" value="${docId}" onchange="updateBulkDeleteLogsState()" style="width:auto; margin:0;"></td>
+            <td style="padding:8px 10px;">${l.timestamp}</td>
+            <td style="padding:8px 10px;">
+              <strong>${l.identifier}</strong>
+              ${isRegisteredFail ? '<span style="color:#16a34a; font-size:0.7rem; display:block;">✓ Listed Student</span>' : ''}
+              ${isTypoFail ? '<span style="color:#dc2626; font-size:0.7rem; display:block;">❌ Unlisted / Typo</span>' : ''}
+            </td>
+            <td style="padding:8px 10px;">${l.role}</td>
+            <td style="padding:8px 10px;"><span style="color:${isFailed ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight:bold;">${l.status}</span></td>
+            <td style="padding:8px 10px;">${l.loginTime}</td>
+            <td style="padding:8px 10px;">${logoutDisplay}</td>
+            <td style="padding:8px 10px; display:flex; gap:4px; align-items:center;">
+              ${isFailed ? `
+                <button onclick="helpUserLoginCredentials('${(l.identifier || '').replace(/'/g, "\\'")}', ${isRegisteredFail})" style="background:#25D366; color:white; padding:2px 8px; font-size:0.7rem; border-radius:4px; border:none; cursor:pointer;" title="Send credentials via WhatsApp">
+                  <i class="fa-brands fa-whatsapp"></i> Assist
+                </button>
+              ` : ''}
+              <button class="btn-msg-del" onclick="deleteSingleAuditLog('${docId}')" title="Delete Log Entry">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      updateBulkDeleteLogsState();
     }
-
-    return `
-      <tr>
-        <td style="padding:8px 10px;"><input type="checkbox" class="log-select-chk" value="${docId}" onchange="updateBulkDeleteLogsState()" style="width:auto; margin:0;"></td>
-        <td style="padding:8px 10px;">${l.timestamp}</td>
-        <td style="padding:8px 10px;"><strong>${l.identifier}</strong></td>
-        <td style="padding:8px 10px;">${l.role}</td>
-        <td style="padding:8px 10px;"><span style="color:${isFailed ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight:bold;">${l.status}</span></td>
-        <td style="padding:8px 10px;">${l.loginTime}</td>
-        <td style="padding:8px 10px;">${logoutDisplay}</td>
-        <td style="padding:8px 10px;">
-          <button class="btn-msg-del" onclick="deleteSingleAuditLog('${docId}')" title="Delete Log Entry">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-
-  updateBulkDeleteLogsState();
-}
 
 function toggleSelectAllAuditLogs(chkEl) {
   const checkBoxes = document.querySelectorAll('.log-select-chk');
@@ -6867,6 +6947,84 @@ Password : ${studentPassword}`;
 }
 
 
+// Admin Assistance Helper for Stuck / Failed Login Users
+    async function helpUserLoginCredentials(typedIdentifier, isRegistered) {
+      showProgressLoader();
+
+      try {
+        let userDoc = null;
+        let targetUser = null;
+
+        if (isRegistered) {
+          // Direct fetch registered user doc
+          const doc = await db.collection("users").doc(typedIdentifier).get();
+          if (doc.exists) targetUser = doc.data();
+        } else {
+          // Unlisted/Typo: Search users collection by partial match or phone
+          const usersSnap = await db.collection("users").get();
+          const cleanTyped = typedIdentifier.toLowerCase().trim();
+
+          usersSnap.docs.forEach(d => {
+            const u = d.data();
+            const uname = (u.username || '').toLowerCase();
+            const officialName = (u.name || '').toLowerCase();
+
+            if (uname.includes(cleanTyped) || cleanTyped.includes(uname) || officialName.includes(cleanTyped)) {
+              targetUser = u;
+            }
+          });
+        }
+
+        hideProgressLoader();
+
+        if (!targetUser) {
+          // Prompt Admin to search or enter student name
+          const searchPrompt = prompt(`No exact match found for "${typedIdentifier}". Please enter the Student's actual name to search credentials:`);
+          if (!searchPrompt) return;
+
+          showProgressLoader();
+          const usersSnap = await db.collection("users").get();
+          hideProgressLoader();
+
+          usersSnap.docs.forEach(d => {
+            const u = d.data();
+            if ((u.name || u.username).toLowerCase().includes(searchPrompt.toLowerCase())) {
+              targetUser = u;
+            }
+          });
+        }
+
+        if (targetUser) {
+          const phoneNo = targetUser.phoneNo || '';
+          if (!phoneNo || phoneNo === '0000000000') {
+            alert(`Student found (${targetUser.name || targetUser.username}), but phone number is not available.\n\nCredentials:\nUser Name: ${targetUser.username}\nPassword: ${targetUser.password}`);
+            return;
+          }
+
+          let cleanPhone = phoneNo.replace(/\D/g, '');
+          if (cleanPhone.length === 10) cleanPhone = "91" + cleanPhone;
+
+          const msg = `*TDTTI SS 7 Login Assistance*
+Hello ${targetUser.name || targetUser.username},
+
+Here are your correct login credentials for the E-Book Portal:
+
+User Name : ${targetUser.username}
+Password : ${targetUser.password}
+
+JOIN NOW : https://tdschoolnews.in/
+*TDTTI SS 7 | Thuravoor*`;
+
+          window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+        } else {
+          showPresenceToast(`Student "${typedIdentifier}" not found in registered users.`, "leave");
+        }
+      } catch(e) {
+        hideProgressLoader();
+        console.error("Error finding user credentials:", e);
+      }
+    }
+    
   </script>
 </body>
 </html>
