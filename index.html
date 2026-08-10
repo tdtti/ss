@@ -1633,10 +1633,12 @@
           } else {
             recordAuditLog(usernameInput, uData.role || "Student", "Failed", formatDateTimeStrict(), "Incorrect Password", deviceStr);
             showInlineMsg("loginInlineMsg", "Invalid Username or Password!", "error");
+            showPresenceToast(`${usernameInput} Failed to Login`, 'leave');
           }
         } else {
           recordAuditLog(usernameInput, "Unknown", "Failed", formatDateTimeStrict(), "Incorrect User Name", deviceStr);
           showInlineMsg("loginInlineMsg", "User not found!", "error");
+          showPresenceToast(`${usernameInput} Failed to Login`, 'leave');
         }
       } catch(e) {
         hideProgressLoader();
@@ -2160,59 +2162,71 @@ Password : ${password || 'N/A'}`;
       window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
     }
 
+    let isMsgInitialLoad = true;
+
     function setupRealtimeMessagesListener() {
-  db.collection("messages").orderBy("timestamp", "desc").onSnapshot(snapshot => {
-    allMessagesCache = [];
-    let hasUnread = false;
+      db.collection("messages").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+        allMessagesCache = [];
+        let hasUnread = false;
 
-    snapshot.forEach(doc => {
-      const m = doc.data();
-      m.id = doc.id;
+        // Detect new incoming messages in real-time
+        snapshot.docChanges().forEach(change => {
+          if (!isMsgInitialLoad && change.type === "added") {
+            const m = change.doc.data();
+            if (!m.read && m.sender !== (currentUser ? currentUser.username : '')) {
+              showPresenceToast(`Message from ${m.sender}`, 'join');
+            }
+          }
+        });
 
-      const isAdmin = currentUser.role === "Admin";
-      const isStudent = currentUser.role === "Student";
+        isMsgInitialLoad = false;
 
-      if (isStudent) {
-        // HIDE AUTOMATED SYSTEM SENDS FROM STUDENT TO ADMIN
-        const isAutoStudentCompletionMsg = (m.sender === currentUser.username && m.receiver === "Admin" && m.message.includes("Completed"));
-        if (isAutoStudentCompletionMsg) return; // Skip showing to student
+        snapshot.forEach(doc => {
+          const m = doc.data();
+          m.id = doc.id;
 
-        const isTarget = m.receiver === currentUser.username || m.receiver === "ALL" || (m.sender === currentUser.username && !m.message.includes("Completed"));
-        if (isTarget) {
-          allMessagesCache.push(m);
-          if (!m.read && m.sender !== currentUser.username) hasUnread = true;
+          const isAdmin = currentUser && currentUser.role === "Admin";
+          const isStudent = currentUser && currentUser.role === "Student";
+
+          if (isStudent) {
+            const isAutoStudentCompletionMsg = (m.sender === currentUser.username && m.receiver === "Admin" && m.message.includes("Completed"));
+            if (isAutoStudentCompletionMsg) return;
+
+            const isTarget = m.receiver === currentUser.username || m.receiver === "ALL" || (m.sender === currentUser.username && !m.message.includes("Completed"));
+            if (isTarget) {
+              allMessagesCache.push(m);
+              if (!m.read && m.sender !== currentUser.username) hasUnread = true;
+            }
+          } 
+          else if (isAdmin) {
+            const isAutoSystemToStudentMsg = (m.sender === "System" && m.receiver !== "Admin");
+            if (isAutoSystemToStudentMsg) return;
+
+            allMessagesCache.push(m);
+            if (!m.read && m.sender !== currentUser.username) hasUnread = true;
+          }
+        });
+
+        if (hasUnread) {
+          playNotificationSound();
         }
-      } 
-      else if (isAdmin) {
-        // HIDE AUTOMATED SYSTEM MESSAGES ECHOED BACK TO STUDENTS
-        const isAutoSystemToStudentMsg = (m.sender === "System" && m.receiver !== "Admin");
-        if (isAutoSystemToStudentMsg) return; // Skip showing echo copy to admin
 
-        allMessagesCache.push(m);
-        if (!m.read && m.sender !== currentUser.username) hasUnread = true;
-      }
-    });
-
-    if (hasUnread) {
-      playNotificationSound();
+        if (currentUser && currentUser.role === "Admin") {
+          const dot = document.getElementById("adminNewMsgDot");
+          if (hasUnread && dot) dot.classList.remove('hidden');
+          renderAdminFeed(allMessagesCache);
+          document.getElementById("statTotalMsgs").innerText = allMessagesCache.length;
+          document.getElementById("statActivityCount").innerText = allMessagesCache.filter(m => m.message.includes("Completed") || m.message.includes("completed") || m.message.includes("Successfully") || m.message.includes("Quiz")).length;
+        } else if (currentUser) {
+          const dot = document.getElementById("studentNewMsgDot");
+          if (hasUnread && dot) dot.classList.remove('hidden');
+          renderStudentFeed(allMessagesCache);
+          document.getElementById("statStudentAnnounce").innerText = allMessagesCache.filter(m => m.receiver === "ALL").length;
+          document.getElementById("statStudentDirect").innerText = allMessagesCache.filter(m => m.sender === "Admin" && m.receiver.toLowerCase() === currentUser.username.toLowerCase()).length;
+          document.getElementById("statStudentCompleted").innerText = allMessagesCache.filter(m => m.message.includes("Completed") || m.message.includes("completed") || m.message.includes("Successfully") || m.message.includes("Quiz")).length;
+        }
+      });
     }
-
-    if (currentUser.role === "Admin") {
-        const dot = document.getElementById("adminNewMsgDot");
-        if (hasUnread && dot) dot.classList.remove('hidden');
-        renderAdminFeed(allMessagesCache);
-        document.getElementById("statTotalMsgs").innerText = allMessagesCache.length;
-        document.getElementById("statActivityCount").innerText = allMessagesCache.filter(m => m.message.includes("Completed") || m.message.includes("completed") || m.message.includes("Successfully") || m.message.includes("Quiz")).length;
-      } else {
-        const dot = document.getElementById("studentNewMsgDot");
-        if (hasUnread && dot) dot.classList.remove('hidden');
-        renderStudentFeed(allMessagesCache);
-        document.getElementById("statStudentAnnounce").innerText = allMessagesCache.filter(m => m.receiver === "ALL").length;
-        document.getElementById("statStudentDirect").innerText = allMessagesCache.filter(m => m.sender === "Admin" && m.receiver.toLowerCase() === currentUser.username.toLowerCase()).length;
-        document.getElementById("statStudentCompleted").innerText = allMessagesCache.filter(m => m.message.includes("Completed") || m.message.includes("completed") || m.message.includes("Successfully") || m.message.includes("Quiz")).length;
-      }
-  });
-}
 
     async function fetchAllChapterContent() {
       showProgressLoader();
@@ -7141,6 +7155,25 @@ JOIN NOW : https://tdschoolnews.in/
       if (hours < 24) return `${hours}hr ago`;
       return `${days}d ago`;
     }
+
+    let isLogsRealtimeInitialLoad = true;
+
+    function setupRealtimeFailedLoginsAlertListener() {
+      if (!currentUser || currentUser.role !== "Admin") return;
+
+      db.collection("logs").orderBy("timestamp", "desc").limit(10).onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+          if (!isLogsRealtimeInitialLoad && change.type === "added") {
+            const l = change.doc.data();
+            if (l.status === "Failed") {
+              showPresenceToast(`${l.identifier} Failed to Login`, 'leave');
+            }
+          }
+        });
+        isLogsRealtimeInitialLoad = false;
+      });
+    }
+    
   </script>
 </body>
 </html>
