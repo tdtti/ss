@@ -635,8 +635,9 @@
   </style>
 </head>
 <body>
+  
   <!-- LIVE PRESENCE FLASH TOAST CONTAINER -->
-  <div id="presenceToastContainer" style="position:fixed; top:15px; right:15px; z-index:25000; display:flex; flex-direction:column; gap:8px; pointer-events:none;"></div>
+  <div id="presenceToastContainer" style="position:fixed; top:15px; right:15px; z-index:99999 !important; display:flex; flex-direction:column; gap:8px; pointer-events:none; max-width:90vw;"></div>
 
   <div id="topProgressBar"></div>
 
@@ -1598,7 +1599,11 @@
       const passwordInput = document.getElementById("loginPassword").value.trim();
       const keepLoggedIn = document.getElementById("keepLoggedInSwitch").checked;
 
-      if (!usernameInput || !passwordInput) return showInlineMsg("loginInlineMsg", "Please fill all fields", "error");
+      if (!usernameInput || !passwordInput) {
+        showInlineMsg("loginInlineMsg", "Please enter both Username and Password", "error");
+        showPresenceToast("Please enter Username & Password", 'leave');
+        return;
+      }
 
       const deviceStr = parseDeviceDetails();
 
@@ -1632,18 +1637,19 @@
             }
           } else {
             recordAuditLog(usernameInput, uData.role || "Student", "Failed", formatDateTimeStrict(), "Incorrect Password", deviceStr);
-            showInlineMsg("loginInlineMsg", "Invalid Username or Password!", "error");
+            showInlineMsg("loginInlineMsg", `${usernameInput} Failed to Login - Incorrect Password`, "error");
             showPresenceToast(`${usernameInput} Failed to Login`, 'leave');
           }
         } else {
           recordAuditLog(usernameInput, "Unknown", "Failed", formatDateTimeStrict(), "Incorrect User Name", deviceStr);
-          showInlineMsg("loginInlineMsg", "User not found!", "error");
+          showInlineMsg("loginInlineMsg", `${usernameInput} Failed to Login - User Not Found`, "error");
           showPresenceToast(`${usernameInput} Failed to Login`, 'leave');
         }
       } catch(e) {
         hideProgressLoader();
         console.error("Login Error:", e);
-        document.getElementById("networkErrorModal").classList.remove("hidden");
+        showInlineMsg("loginInlineMsg", "Connection Error! Please retry.", "error");
+        showPresenceToast(`${usernameInput} Failed to Login`, 'leave');
       }
     }
 
@@ -7161,16 +7167,19 @@ JOIN NOW : https://tdschoolnews.in/
     function setupRealtimeFailedLoginsAlertListener() {
       if (!currentUser || currentUser.role !== "Admin") return;
 
-      db.collection("logs").orderBy("timestamp", "desc").limit(10).onSnapshot(snapshot => {
+      db.collection("logs").onSnapshot(snapshot => {
         snapshot.docChanges().forEach(change => {
           if (!isLogsRealtimeInitialLoad && change.type === "added") {
             const l = change.doc.data();
-            if (l.status === "Failed") {
-              showPresenceToast(`${l.identifier} Failed to Login`, 'leave');
+            if (l && l.status === "Failed") {
+              const failUser = l.identifier || "User";
+              showPresenceToast(`${failUser} Failed to Login`, 'leave');
             }
           }
         });
         isLogsRealtimeInitialLoad = false;
+      }, err => {
+        console.warn("Logs snapshot listener warning:", err);
       });
     }
     
