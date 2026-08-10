@@ -637,8 +637,8 @@
 <body>
   
   <!-- LIVE PRESENCE FLASH TOAST CONTAINER -->
+  <!-- LIVE PRESENCE FLASH TOAST CONTAINER -->
   <div id="presenceToastContainer" style="position:fixed; top:15px; right:15px; z-index:99999 !important; display:flex; flex-direction:column; gap:8px; pointer-events:none; max-width:90vw;"></div>
-
   <div id="topProgressBar"></div>
 
   <!-- NETWORK ERROR MODAL -->
@@ -1600,8 +1600,9 @@
       const keepLoggedIn = document.getElementById("keepLoggedInSwitch").checked;
 
       if (!usernameInput || !passwordInput) {
-        showInlineMsg("loginInlineMsg", "Please enter both Username and Password", "error");
-        showPresenceToast("Please enter Username & Password", 'leave');
+        const missingUser = usernameInput ? `${usernameInput} Failed to Login` : "Failed to Login";
+        showInlineMsg("loginInlineMsg", `${missingUser} — Username & Password Required`, "error");
+        showPresenceToast(`${missingUser} — Credentials Required`, 'leave');
         return;
       }
 
@@ -1636,19 +1637,21 @@
               loadApp();
             }
           } else {
+            // WRONG PASSWORD FAILURE
             recordAuditLog(usernameInput, uData.role || "Student", "Failed", formatDateTimeStrict(), "Incorrect Password", deviceStr);
-            showInlineMsg("loginInlineMsg", `${usernameInput} Failed to Login - Incorrect Password`, "error");
+            showInlineMsg("loginInlineMsg", `${usernameInput} Failed to Login`, "error");
             showPresenceToast(`${usernameInput} Failed to Login`, 'leave');
           }
         } else {
+          // WRONG USERNAME FAILURE
           recordAuditLog(usernameInput, "Unknown", "Failed", formatDateTimeStrict(), "Incorrect User Name", deviceStr);
-          showInlineMsg("loginInlineMsg", `${usernameInput} Failed to Login - User Not Found`, "error");
+          showInlineMsg("loginInlineMsg", `${usernameInput} Failed to Login`, "error");
           showPresenceToast(`${usernameInput} Failed to Login`, 'leave');
         }
       } catch(e) {
         hideProgressLoader();
         console.error("Login Error:", e);
-        showInlineMsg("loginInlineMsg", "Connection Error! Please retry.", "error");
+        showInlineMsg("loginInlineMsg", `${usernameInput} Failed to Login (Network Error)`, "error");
         showPresenceToast(`${usernameInput} Failed to Login`, 'leave');
       }
     }
@@ -1688,6 +1691,7 @@
         document.getElementById("adminSecuritySection").classList.remove("hidden");
         loadStudentsDropdown();
         onEditorTabOrChapterChange();
+        fetchAuditLogs(); // <--- STARTS REAL-TIME AUDIT LISTENER IMMEDIATELY
       } else {
         document.getElementById("studentPanel").classList.remove("hidden");
         renderBookmarksTabFeed();
@@ -2011,135 +2015,161 @@
     }
 
     // 3. RENDER SYSTEM AUDIT LOGS STREAM (100% Mobile & Desktop Viewable Stream)
-    async function fetchAuditLogs() {
+    let auditLogsUnsubscribe = null;
+    let isAuditLogsInitialLoad = true;
+
+    // Real-Time Audit Logs Listener (Instant updates without refresh)
+    function fetchAuditLogs() {
+      // If listener is already active, don't duplicate
+      if (auditLogsUnsubscribe) return;
+
       showProgressLoader();
-      const snap = await db.collection("logs").orderBy("timestamp", "desc").get();
-      hideProgressLoader();
 
-      const container = document.getElementById("auditLogsContainer");
-      if (snap.empty) {
-        container.innerHTML = `<div style="text-align:center; padding:18px; color:#64748b; background:rgba(2, 132, 199, 0.02); border-radius:10px; border:1px dashed var(--border-color); font-size:0.85rem;">No system audit logs available.</div>`;
-        updateBulkDeleteLogsState();
-        return;
-      }
+      auditLogsUnsubscribe = db.collection("logs").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+        hideProgressLoader();
 
-      // Count consecutive failures per typed identifier
-      const failureCounts = {};
-      const latestFailuresMap = {};
-
-      snap.docs.forEach(doc => {
-        const l = doc.data();
-        if (l.status === "Failed") {
-          const id = l.identifier || "Unknown";
-          failureCounts[id] = (failureCounts[id] || 0) + 1;
-          if (!latestFailuresMap[id]) {
-            latestFailuresMap[id] = l;
-          }
+        const container = document.getElementById("auditLogsContainer");
+        if (snapshot.empty) {
+          container.innerHTML = `<div style="text-align:center; padding:20px; color:#64748b; background:rgba(2, 132, 199, 0.02); border-radius:10px; border:1px dashed var(--border-color); font-size:0.85rem;">No system audit logs available.</div>`;
+          updateBulkDeleteLogsState();
+          return;
         }
-      });
 
-      // Render Login Assistance Banner for Admin
-      const alertCard = document.getElementById("failedLoginsAlertCard");
-      const alertList = document.getElementById("failedLoginsAlertList");
+        
+        // Detect new incoming messages in real-time (hiding system & automated completion popups)
+        snapshot.docChanges().forEach(change => {
+          if (!isMsgInitialLoad && change.type === "added") {
+            const m = change.doc.data();
+            const isSystemMsg = m.sender === "System" || (m.message && (m.message.includes("Successfully completed") || m.message.includes("Quiz Completed")));
 
-      const needyUserIds = Object.keys(failureCounts).filter(id => failureCounts[id] >= 1);
+            if (!m.read && !isSystemMsg && m.sender !== (currentUser ? currentUser.username : '')) {
+              showPresenceToast(`Message from ${m.sender}`, 'join');
+            }
+          }
+        });
 
-      if (needyUserIds.length > 0 && alertCard && alertList) {
-        alertCard.style.display = "block";
-        alertList.innerHTML = needyUserIds.map(id => {
-          const count = failureCounts[id];
-          const lastFail = latestFailuresMap[id];
-          const isRegisteredUser = lastFail.logoutTime === "Incorrect Password";
+        isAuditLogsInitialLoad = false;
 
-          const statusLabel = isRegisteredUser 
-            ? `<span style="color:#16a34a; font-weight:bold;">LISTED (User Exists)</span>`
-            : `<span style="color:#dc2626; font-weight:bold;">UNLISTED / TYPO (User Not Found)</span>`;
+        // 2. INSTANT BANNER UPDATE: Count failed logins per username
+        const failureCounts = {};
+        const latestFailuresMap = {};
+
+        snapshot.docs.forEach(doc => {
+          const l = doc.data();
+          if (l.status === "Failed") {
+            const id = l.identifier || "Unknown";
+            failureCounts[id] = (failureCounts[id] || 0) + 1;
+            if (!latestFailuresMap[id]) {
+              latestFailuresMap[id] = l;
+            }
+          }
+        });
+
+        const alertCard = document.getElementById("failedLoginsAlertCard");
+        const alertList = document.getElementById("failedLoginsAlertList");
+
+        const needyUserIds = Object.keys(failureCounts).filter(id => failureCounts[id] >= 1);
+
+        if (needyUserIds.length > 0 && alertCard && alertList) {
+          alertCard.style.display = "block";
+          alertList.innerHTML = needyUserIds.map(id => {
+            const count = failureCounts[id];
+            const lastFail = latestFailuresMap[id];
+            const isRegisteredUser = lastFail.logoutTime === "Incorrect Password";
+
+            const statusLabel = isRegisteredUser 
+              ? `<span style="color:#16a34a; font-weight:bold;">LISTED (User Exists)</span>`
+              : `<span style="color:#dc2626; font-weight:bold;">UNLISTED / TYPO (User Not Found)</span>`;
+
+            return `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; padding:8px 12px; border-radius:8px; font-size:0.8rem; border:1px solid #fed7aa; flex-wrap:wrap; gap:8px;">
+                <div style="word-break:break-word;">
+                  <strong>Typed Username: "${id}"</strong> — Failed ${count} times (${statusLabel})
+                  <div style="font-size:0.72rem; color:#64748b;">Reason: ${lastFail.logoutTime} | Last Attempt: ${getRelativeTimeAgo(lastFail.timestamp)}</div>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center; margin-left:auto;">
+                  <button onclick="helpUserLoginCredentials('${id.replace(/'/g, "\\'")}', ${isRegisteredUser})" style="background:#25D366; color:white; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;">
+                    <i class="fa-brands fa-whatsapp"></i> Assist
+                  </button>
+                  <button onclick="deleteFailedAlertItem('${id.replace(/'/g, "\\'")}')" style="background:#ef4444; color:white; padding:4px 8px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;" title="Delete alert item">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else if (alertCard) {
+          alertCard.style.display = "none";
+        }
+
+        // 3. INSTANT AUDIT LOG STREAM UPDATE
+        container.innerHTML = snapshot.docs.map((doc, idx) => {
+          const l = doc.data();
+          const docId = doc.id;
+          const isFailed = l.status === "Failed";
+          const detailId = `audit-log-detail-${idx}`;
+          const isRegisteredFail = isFailed && l.logoutTime === "Incorrect Password";
+          const relativeTimeStr = getRelativeTimeAgo(l.timestamp);
+
+          // Glowing LED Bulb
+          const ledBulb = isFailed
+            ? `<span style="width:10px; height:10px; background-color:#ef4444; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 6px #ef4444;" title="Failed"></span>`
+            : `<span style="width:10px; height:10px; background-color:#22c55e; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 8px #22c55e, 0 0 12px #22c55e;" title="Success"></span>`;
 
           return `
-            <div style="display:flex; justify-content:space-between; align-items:center; background:#ffffff; padding:8px 12px; border-radius:8px; font-size:0.8rem; border:1px solid #fed7aa; flex-wrap:wrap; gap:8px;">
-              <div style="word-break:break-word;">
-                <strong>Typed Username: "${id}"</strong> — Failed ${count} times (${statusLabel})
-                <div style="font-size:0.72rem; color:#64748b;">Reason: ${lastFail.logoutTime} | Last Attempt: ${getRelativeTimeAgo(lastFail.timestamp)}</div>
+            <div style="width:100%; box-sizing:border-box; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:10px 12px; box-shadow:0 1px 3px rgba(0,0,0,0.02); transition:all 0.15s ease; ${isFailed ? 'border-left:4px solid #ef4444;' : 'border-left:4px solid #22c55e;'}">
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                
+                <!-- Left: Checkbox + LED + Icon + Identifier + Status Badge -->
+                <div style="display:flex; align-items:center; gap:8px; cursor:pointer; flex:1 1 180px; min-width:0;" onclick="document.getElementById('${detailId}').classList.toggle('hidden')">
+                  <input type="checkbox" class="log-select-chk" value="${docId}" onclick="event.stopPropagation()" onchange="updateBulkDeleteLogsState()" style="width:auto; margin:0;">
+                  ${ledBulb}
+                  <i class="fa-solid ${isFailed ? 'fa-user-xmark' : 'fa-user-check'}" style="font-size:1.1rem; color:${isFailed ? '#dc2626' : 'var(--primary)'}; flex-shrink:0;"></i>
+                  
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; word-break:break-word;">
+                    <strong style="font-size:0.88rem; color:var(--text); line-height:1.2;">${l.identifier}</strong>
+                    <span style="font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:10px; background:${isFailed ? '#fee2e2' : '#dcfce7'}; color:${isFailed ? '#991b1b' : '#166534'};">
+                      ${l.status}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Right: Relative Time & Action Buttons -->
+                <div style="display:flex; align-items:center; gap:10px; margin-left:auto; flex-shrink:0;">
+                  <span style="font-size:0.73rem; color:#64748b; font-weight:600;">${relativeTimeStr}</span>
+                  
+                  ${isFailed ? `
+                    <button onclick="event.stopPropagation(); helpUserLoginCredentials('${(l.identifier || '').replace(/'/g, "\\'")}', ${isRegisteredFail})" 
+                            style="background:none; border:none; padding:4px; margin:0; cursor:pointer; display:inline-flex; align-items:center;" title="WhatsApp Assist">
+                      <i class="fa-brands fa-whatsapp" style="font-size:1.4rem; color:#25D366; transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"></i>
+                    </button>
+                  ` : ''}
+
+                  <button class="btn-msg-del" onclick="event.stopPropagation(); deleteSingleAuditLog('${docId}')" title="Delete Log Entry" style="padding:3px 7px; font-size:0.7rem; border-radius:4px;">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
               </div>
-              <div style="display:flex; gap:6px; align-items:center; margin-left:auto;">
-                <button onclick="helpUserLoginCredentials('${id.replace(/'/g, "\\'")}', ${isRegisteredUser})" style="background:#25D366; color:white; padding:4px 10px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;">
-                  <i class="fa-brands fa-whatsapp"></i> Assist
-                </button>
-                <button onclick="deleteFailedAlertItem('${id.replace(/'/g, "\\'")}')" style="background:#ef4444; color:white; padding:4px 8px; border-radius:15px; font-size:0.75rem; border:none; cursor:pointer; font-weight:700;" title="Delete alert item">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
+
+              <!-- COLLAPSIBLE METADATA DRAWER -->
+              <div id="${detailId}" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color); display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px; font-size:0.78rem; background:rgba(2, 132, 199, 0.02); padding:10px; border-radius:6px;">
+                <div><strong style="color:var(--primary);">User Identifier:</strong> ${l.identifier}</div>
+                <div><strong style="color:var(--primary);">Role:</strong> ${l.role || 'Student'}</div>
+                <div><strong style="color:var(--primary);">Status:</strong> <span style="color:${isFailed ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight:bold;">${l.status}</span></div>
+                <div><strong style="color:var(--primary);">Relative Time:</strong> ${relativeTimeStr}</div>
+                <div><strong style="color:var(--primary);">Raw Timestamp:</strong> ${l.timestamp}</div>
+                <div><strong style="color:var(--primary);">Logout / Reason:</strong> ${l.logoutTime || '-'}</div>
+                <div><strong style="color:var(--primary);">Device:</strong> ${l.device || 'N/A'}</div>
               </div>
             </div>
           `;
         }).join('');
-      } else if (alertCard) {
-        alertCard.style.display = "none";
-      }
 
-      // Render Logs Stream (100% Mobile & Desktop Viewable Stream)
-      container.innerHTML = snap.docs.map((doc, idx) => {
-        const l = doc.data();
-        const docId = doc.id;
-        const isFailed = l.status === "Failed";
-        const detailId = `audit-log-detail-${idx}`;
-        const isRegisteredFail = isFailed && l.logoutTime === "Incorrect Password";
-        const relativeTimeStr = getRelativeTimeAgo(l.timestamp);
-
-        // Glowing LED Bulb
-        const ledBulb = isFailed
-          ? `<span style="width:10px; height:10px; background-color:#ef4444; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 6px #ef4444;" title="Failed"></span>`
-          : `<span style="width:10px; height:10px; background-color:#22c55e; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 8px #22c55e, 0 0 12px #22c55e;" title="Success"></span>`;
-
-        return `
-          <div style="width:100%; box-sizing:border-box; background:var(--card-bg); border:1px solid var(--border-color); border-radius:10px; padding:10px 12px; box-shadow:0 1px 3px rgba(0,0,0,0.02); transition:all 0.15s ease; ${isFailed ? 'border-left:4px solid #ef4444;' : 'border-left:4px solid #22c55e;'}">
-            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
-              
-              <!-- Left: Checkbox + LED + Icon + Identifier + Status Badge -->
-              <div style="display:flex; align-items:center; gap:8px; cursor:pointer; flex:1 1 180px; min-width:0;" onclick="document.getElementById('${detailId}').classList.toggle('hidden')">
-                <input type="checkbox" class="log-select-chk" value="${docId}" onclick="event.stopPropagation()" onchange="updateBulkDeleteLogsState()" style="width:auto; margin:0;">
-                ${ledBulb}
-                <i class="fa-solid ${isFailed ? 'fa-user-xmark' : 'fa-user-check'}" style="font-size:1.1rem; color:${isFailed ? '#dc2626' : 'var(--primary)'}; flex-shrink:0;"></i>
-                
-                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; word-break:break-word;">
-                  <strong style="font-size:0.88rem; color:var(--text); line-height:1.2;">${l.identifier}</strong>
-                  <span style="font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:10px; background:${isFailed ? '#fee2e2' : '#dcfce7'}; color:${isFailed ? '#991b1b' : '#166534'};">
-                    ${l.status}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Right: Relative Time & Action Buttons -->
-              <div style="display:flex; align-items:center; gap:10px; margin-left:auto; flex-shrink:0;">
-                <span style="font-size:0.73rem; color:#64748b; font-weight:600;">${relativeTimeStr}</span>
-                
-                ${isFailed ? `
-                  <button onclick="event.stopPropagation(); helpUserLoginCredentials('${(l.identifier || '').replace(/'/g, "\\'")}', ${isRegisteredFail})" 
-                          style="background:none; border:none; padding:4px; margin:0; cursor:pointer; display:inline-flex; align-items:center;" title="WhatsApp Assist">
-                    <i class="fa-brands fa-whatsapp" style="font-size:1.4rem; color:#25D366; transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"></i>
-                  </button>
-                ` : ''}
-
-                <button class="btn-msg-del" onclick="event.stopPropagation(); deleteSingleAuditLog('${docId}')" title="Delete Log Entry" style="padding:3px 7px; font-size:0.7rem; border-radius:4px;">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- COLLAPSIBLE METADATA DRAWER (100% Responsive Grid) -->
-            <div id="${detailId}" class="hidden" style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color); display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px; font-size:0.78rem; background:rgba(2, 132, 199, 0.02); padding:10px; border-radius:6px;">
-              <div><strong style="color:var(--primary);">User Identifier:</strong> ${l.identifier}</div>
-              <div><strong style="color:var(--primary);">Role:</strong> ${l.role || 'Student'}</div>
-              <div><strong style="color:var(--primary);">Status:</strong> <span style="color:${isFailed ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight:bold;">${l.status}</span></div>
-              <div><strong style="color:var(--primary);">Relative Time:</strong> ${relativeTimeStr}</div>
-              <div><strong style="color:var(--primary);">Raw Timestamp:</strong> ${l.timestamp}</div>
-              <div><strong style="color:var(--primary);">Logout / Reason:</strong> ${l.logoutTime || '-'}</div>
-              <div><strong style="color:var(--primary);">Device:</strong> ${l.device || 'N/A'}</div>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      updateBulkDeleteLogsState();
+        updateBulkDeleteLogsState();
+      }, err => {
+        hideProgressLoader();
+        console.warn("Audit logs real-time listener note:", err);
+      });
     }
     
 
@@ -7164,23 +7194,49 @@ JOIN NOW : https://tdschoolnews.in/
 
     let isLogsRealtimeInitialLoad = true;
 
-    function setupRealtimeFailedLoginsAlertListener() {
-      if (!currentUser || currentUser.role !== "Admin") return;
+    // Enhanced Toast Handler (Guaranteed Visibility & Audio Fallback)
+    function showPresenceToast(message, type) {
+      const container = document.getElementById("presenceToastContainer");
+      if (!container) return;
 
-      db.collection("logs").onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-          if (!isLogsRealtimeInitialLoad && change.type === "added") {
-            const l = change.doc.data();
-            if (l && l.status === "Failed") {
-              const failUser = l.identifier || "User";
-              showPresenceToast(`${failUser} Failed to Login`, 'leave');
-            }
-          }
-        });
-        isLogsRealtimeInitialLoad = false;
-      }, err => {
-        console.warn("Logs snapshot listener warning:", err);
-      });
+      // Play Audio Cues safely
+      try {
+        if (type === 'join') {
+          playJoinSound();
+        } else if (type === 'leave') {
+          playLeaveSound();
+        }
+      } catch (err) {
+        console.warn("Audio cue playback note:", err);
+      }
+
+      const toast = document.createElement("div");
+      toast.style.cssText = `
+        background: ${type === 'join' ? '#16a34a' : '#dc2626'};
+        color: white;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.35);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 99999 !important;
+        pointer-events: auto;
+        animation: slideInToast 0.3s ease;
+      `;
+
+      const icon = type === 'join' ? 'fa-circle-check' : 'fa-triangle-exclamation';
+      toast.innerHTML = `<i class="fa-solid ${icon}" style="font-size:1.1rem;"></i> <span>${message}</span>`;
+      container.appendChild(toast);
+
+      // Auto remove after 4.5 seconds
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.4s ease';
+        setTimeout(() => toast.remove(), 400);
+      }, 4500);
     }
     
   </script>
