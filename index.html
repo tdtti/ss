@@ -882,6 +882,7 @@
         <button class="icon-nav-tab" title="Audit Logs" onclick="switchAdminTab('logs', this)">
           <i class="fa-solid fa-list-check"></i>
           <span>Logs</span>
+          <span id="adminNewLogDot" class="badge-new hidden">NEW</span>
         </button>
       </div>
 
@@ -2036,14 +2037,23 @@
         }
 
         
-        // Detect new incoming messages in real-time (hiding system & automated completion popups)
+        // Detect new incoming messages in real-time (Strictly suppressing System & Activity popups for Admin & Students)
         snapshot.docChanges().forEach(change => {
           if (!isMsgInitialLoad && change.type === "added") {
             const m = change.doc.data();
-            const isSystemMsg = m.sender === "System" || (m.message && (m.message.includes("Successfully completed") || m.message.includes("Quiz Completed")));
+            const senderLower = (m.sender || "").toLowerCase().trim();
+            const msgLower = (m.message || "").toLowerCase();
 
-            if (!m.read && !isSystemMsg && m.sender !== (currentUser ? currentUser.username : '')) {
-              showPresenceToast(`Message from ${m.sender}`, 'join');
+            const isSystemSender = senderLower === "system" || senderLower.includes("system");
+            const isActivityMsg = msgLower.includes("completed") || msgLower.includes("successfully") || msgLower.includes("quiz");
+
+            // Filter out system senders AND automated completion messages
+            if (!m.read && !isSystemSender && !isActivityMsg) {
+              if (currentUser && currentUser.role === "Admin" && m.sender !== "Admin") {
+                showPresenceToast(`Message from ${m.sender}`, 'join');
+              } else if (currentUser && currentUser.role === "Student" && m.sender !== currentUser.username) {
+                showPresenceToast(`Message from ${m.sender}`, 'join');
+              }
             }
           }
         });
@@ -2225,15 +2235,15 @@ Password : ${password || 'N/A'}`;
           const isStudent = currentUser && currentUser.role === "Student";
 
           if (isStudent) {
-            const isAutoStudentCompletionMsg = (m.sender === currentUser.username && m.receiver === "Admin" && m.message.includes("Completed"));
-            if (isAutoStudentCompletionMsg) return;
+            // Hide all messages addressed to Admin from the student view
+            if (m.receiver === "Admin") return;
 
-            const isTarget = m.receiver === currentUser.username || m.receiver === "ALL" || (m.sender === currentUser.username && !m.message.includes("Completed"));
+            const isTarget = m.receiver === currentUser.username || m.receiver === "ALL";
             if (isTarget) {
               allMessagesCache.push(m);
               if (!m.read && m.sender !== currentUser.username) hasUnread = true;
             }
-          } 
+          }
           else if (isAdmin) {
             const isAutoSystemToStudentMsg = (m.sender === "System" && m.receiver !== "Admin");
             if (isAutoSystemToStudentMsg) return;
@@ -3362,7 +3372,11 @@ Password : ${userPass}`;
       if (tabName === 'tracker') fetchActivityTrackerData();
       if (tabName === 'quizresults') fetchAdminQuizResults();
       if (tabName === 'medialib') fetchMediaLibrary();
-      if (tabName === 'logs') fetchAuditLogs();
+      if (tabName === 'logs') {
+        const logDot = document.getElementById("adminNewLogDot");
+        if (logDot) logDot.classList.add("hidden"); // Clear Red LED badge when viewed
+        fetchAuditLogs();
+      }
     }
 
     function switchStudentTab(tabName, btnEl) {
@@ -5045,19 +5059,22 @@ Password : ${userPass}`;
 
     function buildMsgCardHTML(m) {
       const isBroadcast = m.receiver === "ALL";
-      const isSystem = m.message.includes("Completed") || m.message.includes("Quiz");
+      const isSystem = m.message.includes("Completed") || m.message.includes("Quiz") || m.message.includes("completed") || m.message.includes("Successfully");
 
       let badgeText = "Direct"; let badgeClass = "direct";
       let icon = '<i class="fa-solid fa-comment" style="color:var(--primary)"></i>';
 
       if (isBroadcast) { badgeText = "Broadcast"; badgeClass = "broadcast"; icon = '<i class="fa-solid fa-bullhorn" style="color:var(--accent-purple)"></i>'; }
       else if (isSystem) { badgeText = "Activity"; badgeClass = "system"; icon = '<i class="fa-solid fa-circle-check" style="color:var(--accent-green)"></i>'; }
-      else if (currentUser.role === "Admin" && m.sender !== "Admin") {
+      else if (currentUser && currentUser.role === "Admin" && m.sender !== "Admin") {
         badgeText = "Student"; badgeClass = "student"; icon = '<i class="fa-solid fa-circle-user" style="color:var(--accent-green)"></i>';
       }
 
-      const showReplyBtn = currentUser.role === "Admin" && m.sender !== "Admin" && m.sender !== "System";
+      const showReplyBtn = currentUser && currentUser.role === "Admin" && m.sender !== "Admin" && m.sender !== "System";
       const showDeleteBtn = currentUser && currentUser.role === "Admin";
+
+      // Hide "To: Admin" label completely for student view
+      const toLabel = (currentUser && currentUser.role === "Student") ? '' : `To: <strong>${m.receiver}</strong> | `;
 
       return `
         <div class="msg-card">
@@ -5065,9 +5082,9 @@ Password : ${userPass}`;
             <span>${icon} <strong>${m.sender}</strong></span>
             <span class="msg-badge ${badgeClass}">${badgeText}</span>
           </div>
-          <div class="msg-body">${m.message}</div>
+          <div class="msg-body">${formatCleanMessageText(m.message)}</div>
           <div class="msg-footer">
-            <span>To: <strong>${m.receiver}</strong> | ${m.timestamp}</span>
+            <span>${toLabel}${m.timestamp}</span>
             <span style="display:flex; gap:4px; align-items:center;">
               ${showReplyBtn ? `<button class="btn-quick-reply" onclick="quickReplyToStudent('${m.sender}')"><i class="fa-solid fa-reply"></i> Reply</button>` : ''}
               ${showDeleteBtn ? `<button class="btn-msg-del" onclick="deleteSingleMessage('${m.id}')" title="Delete Message"><i class="fa-solid fa-trash"></i></button>` : ''}
@@ -5520,8 +5537,16 @@ function playLeaveSound() {
 
 // Updated Toast Handler with Sound Triggers
 function showPresenceToast(message, type) {
-  const container = document.getElementById("presenceToastContainer");
-  if (!container) return;
+      if (!message) return;
+
+      // ABSOLUTE SYSTEM SHIELD: Block any popup containing "System" or "Message from System"
+      const msgLower = message.toLowerCase();
+      if (msgLower.includes("system") || msgLower.includes("message from system") || msgLower.includes("from system")) {
+        return; // Block execution completely for system popups
+      }
+
+      const container = document.getElementById("presenceToastContainer");
+      if (!container) return;
 
   // Play Audible Cues
   if (type === 'join') {
