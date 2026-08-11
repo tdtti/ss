@@ -9,7 +9,8 @@
   <!-- Firebase Web SDK v9 -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
+  <!-- Jitsi Meet Live Video Broadcast API -->
+  <script src="https://meet.jit.si/external_api.js"></script>
   <style>
     :root {
       --primary: #0284c7;
@@ -863,6 +864,11 @@
           <i class="fa-solid fa-users"></i>
           <span>Users</span>
         </button>
+        <!-- LIVE VIDEO BROADCAST TAB BUTTON -->
+        <button class="icon-nav-tab" title="Live Video Broadcast" onclick="switchAdminTab('broadcast', this)">
+          <i class="fa-solid fa-video" style="color:var(--accent-red);"></i>
+          <span>Broadcast</span>
+        </button>
         <button class="icon-nav-tab" title="Media Library" onclick="switchAdminTab('medialib', this)">
           <i class="fa-solid fa-photo-film"></i>
           <span>Media</span>
@@ -885,7 +891,35 @@
           <span id="adminNewLogDot" class="badge-new hidden">NEW</span>
         </button>
       </div>
+      <!-- ADMIN LIVE VIDEO BROADCAST TAB -->
+      <div id="adminTab-broadcast" class="admin-tab-content hidden" style="padding:15px; width:100%; box-sizing:border-box;">
+        <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <h4 style="margin:0; color:var(--primary); font-size:1rem; font-weight:700;">
+                <i class="fa-solid fa-video" style="color:var(--accent-red);"></i> Live Class Video Broadcast
+              </h4>
+              <p style="font-size:0.78rem; color:#64748b; margin:2px 0 0 0;">Broadcast live video, audio & screen share to students. View all live student video feeds!</p>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button onclick="startAdminLiveBroadcast()" style="background:#16a34a; color:white; padding:6px 14px; border-radius:20px; font-size:0.8rem; font-weight:700; border:none; cursor:pointer;">
+                <i class="fa-solid fa-play"></i> Start Broadcast & Notify All
+              </button>
+              <button onclick="stopLiveBroadcast()" style="background:#dc2626; color:white; padding:6px 14px; border-radius:20px; font-size:0.8rem; font-weight:700; border:none; cursor:pointer;">
+                <i class="fa-solid fa-stop"></i> End Broadcast
+              </button>
+            </div>
+          </div>
 
+          <!-- Video Container -->
+          <div id="adminLiveVideoFrame" style="width:100%; height:520px; border-radius:10px; overflow:hidden; background:#0f172a; display:flex; align-items:center; justify-content:center; color:white;">
+            <div style="text-align:center;">
+              <i class="fa-solid fa-video-slash" style="font-size:3rem; color:#64748b; margin-bottom:10px;"></i>
+              <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Click "Start Broadcast & Notify All" to launch the live video room.</p>
+            </div>
+          </div>
+        </div>
+      </div>
       <div id="adminTab-units" class="admin-tab-content">
         <div class="stats-bar">
           <div class="stat-badge"><i class="pulse-green-dot"></i> Online: <span id="statOnlineCount">0</span></div>
@@ -1311,6 +1345,10 @@
         <button class="icon-nav-tab" title="Saved Revision Notes" onclick="switchStudentTab('bookmarks', this)">
           <i class="fa-solid fa-star"></i>SAVED NOTES
         </button>
+        <!-- STUDENT LIVE CLASS TAB BUTTON -->
+        <button class="icon-nav-tab" title="Live Video Class" onclick="switchStudentTab('liveclass', this)">
+          <i class="fa-solid fa-video" style="color:var(--accent-red);"></i>
+        </button>
         <button class="icon-nav-tab" title="My Overall Profile Folio" onclick="switchStudentTab('profilefolio', this)">
           <i class="fa-solid fa-id-card"></i>MY PROFILE
         </button>
@@ -1320,6 +1358,29 @@
         <button class="icon-nav-tab" title="Refresh App Data" onclick="refreshAppData()">
           <i class="fa-solid fa-rotate"></i>REFRESH
         </button>
+      </div>
+
+      <!-- STUDENT LIVE VIDEO CLASS TAB -->
+      <div id="studentTab-liveclass" class="student-tab-content hidden" style="padding:15px; width:100%; box-sizing:border-box;">
+        <div class="card" style="border-top:4px solid var(--primary);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <h4 style="margin:0; color:var(--primary);"><i class="fa-solid fa-video" style="color:var(--accent-red);"></i> Interactive Live Video Class</h4>
+              <p style="margin:2px 0 0 0; font-size:0.8rem; color:#64748b;">Join teacher's live interactive broadcast with full audio, video & screen share!</p>
+            </div>
+            <button onclick="joinStudentLiveClass()" style="background:#16a34a; color:white; padding:6px 16px; border-radius:20px; font-weight:700; font-size:0.82rem; border:none; cursor:pointer;">
+              <i class="fa-solid fa-right-to-bracket"></i> Join Live Class Now
+            </button>
+          </div>
+
+          <!-- Video Container -->
+          <div id="studentLiveVideoFrame" style="width:100%; height:520px; border-radius:10px; overflow:hidden; background:#0f172a; display:flex; align-items:center; justify-content:center; color:white;">
+            <div style="text-align:center;">
+              <i class="fa-solid fa-chalkboard-user" style="font-size:3rem; color:#0284c7; margin-bottom:10px;"></i>
+              <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Click "Join Live Class Now" to enter the live video room.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="studentTab-units" class="student-tab-content">
@@ -3376,6 +3437,9 @@ Password : ${userPass}`;
         const logDot = document.getElementById("adminNewLogDot");
         if (logDot) logDot.classList.add("hidden"); // Clear Red LED badge when viewed
         fetchAuditLogs();
+      if (tabName === 'broadcast') {
+  // Unhide broadcast container
+}
       }
     }
 
@@ -3396,6 +3460,9 @@ Password : ${userPass}`;
 
       if (tabName === 'bookmarks') renderBookmarksTabFeed();
       if (tabName === 'profilefolio') renderStudentProfileFolioUI();
+      if (tabName === 'liveclass') {
+  // Unhide live class container
+}
 
       if (tabName === 'messages') {
         const dot = document.getElementById("studentNewMsgDot");
@@ -7262,6 +7329,107 @@ JOIN NOW : https://tdschoolnews.in/
         toast.style.transition = 'opacity 0.4s ease';
         setTimeout(() => toast.remove(), 400);
       }, 4500);
+    }
+
+    let liveJitsiApi = null;
+    const LIVE_ROOM_NAME = "TDTTI_SS_7_Live_Class_Room_Thuravoor";
+
+    // 1. Admin Starts Broadcast & Sends Announcement
+    async function startAdminLiveBroadcast() {
+      const container = document.getElementById("adminLiveVideoFrame");
+      if (!container) return;
+
+      container.innerHTML = ""; // Clear placeholder
+
+      const domain = "meet.jit.si";
+      const options = {
+        roomName: LIVE_ROOM_NAME,
+        width: "100%",
+        height: "100%",
+        parentNode: container,
+        userInfo: {
+          displayName: `${currentUser.name || currentUser.username} (Teacher/Admin)`
+        },
+        configOverwrite: {
+          startWithAudioMuted: false,
+          startWithVideoMuted: false,
+          prejoinPageEnabled: false
+        }
+      };
+
+      liveJitsiApi = new JitsiMeetExternalAPI(domain, options);
+
+      // Send real-time broadcast notification to all students
+      showProgressLoader();
+      try {
+        await db.collection("messages").add({
+          sender: "Teacher / Admin",
+          receiver: "ALL",
+          message: "🎥 LIVE VIDEO CLASS STARTED! Open the Live Class tab to join now!",
+          timestamp: formatDateTimeStrict(),
+          read: false
+        });
+      } catch(e) {}
+      hideProgressLoader();
+
+      showPresenceToast("Live Broadcast Started & Announcement Sent!", "join");
+    }
+
+    // 2. Student Joins Broadcast
+    function joinStudentLiveClass() {
+      const container = document.getElementById("studentLiveVideoFrame");
+      if (!container) return;
+
+      container.innerHTML = ""; // Clear placeholder
+
+      const domain = "meet.jit.si";
+      const options = {
+        roomName: LIVE_ROOM_NAME,
+        width: "100%",
+        height: "100%",
+        parentNode: container,
+        userInfo: {
+          displayName: `${currentUser.name || currentUser.username} (Class ${currentUser.userClass || '7'}-${currentUser.userDivision || 'A'})`
+        },
+        configOverwrite: {
+          startWithAudioMuted: true,
+          startWithVideoMuted: false,
+          prejoinPageEnabled: false
+        }
+      };
+
+      liveJitsiApi = new JitsiMeetExternalAPI(domain, options);
+      showPresenceToast("Joined Live Class Room!", "join");
+    }
+
+    // 3. Stop / End Broadcast Session
+    function stopLiveBroadcast() {
+      if (liveJitsiApi) {
+        liveJitsiApi.dispose();
+        liveJitsiApi = null;
+      }
+
+      const adminFrame = document.getElementById("adminLiveVideoFrame");
+      if (adminFrame) {
+        adminFrame.innerHTML = `
+          <div style="text-align:center;">
+            <i class="fa-solid fa-video-slash" style="font-size:3rem; color:#64748b; margin-bottom:10px;"></i>
+            <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Broadcast Ended. Click "Start Broadcast" to launch again.</p>
+          </div>
+        `;
+      }
+
+      const studentFrame = document.getElementById("studentLiveVideoFrame");
+      if (studentFrame) {
+        studentFrame.innerHTML = `
+          <div style="text-align:center;">
+            <i class="fa-solid fa-chalkboard-user" style="font-size:3rem; color:#0284c7; margin-bottom:10px;"></i>
+            <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Class session ended. Click "Join Live Class Now" when active.</p>
+          </div>
+        `;
+      }
+
+      showPresenceToast("Live Class Broadcast Ended.", "leave");
     }
     
   </script>
