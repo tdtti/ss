@@ -1,0 +1,2856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <title>TDTTI USS TRAINING PORTAL 2026-27</title>
+
+  <!-- SUPABASE JS LIBRARY -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* DISABLE TOUCH ZOOM AND GESTURE SCALING */
+    html, body {
+      touch-action: pan-x pan-y;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    :root {
+      --primary: #1e40af;
+      --primary-hover: #1e3a8a;
+      --accent: #d97706;
+      --accent-light: #fef3c7;
+      --bg-main: #f1f5f9;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #cbd5e1;
+      --success: #10b981;
+      --danger: #ef4444;
+      --shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 10px 20px -5px rgba(30, 64, 175, 0.12);
+      --shadow-lg: 0 20px 30px -10px rgba(15, 23, 42, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background-color: var(--bg-main);
+    }
+
+    /* RED PROGRESS BAR */
+    #progress-bar-container { position: fixed; top: 0; left: 0; width: 100%; height: 10px; z-index: 9999; pointer-events: none; }
+    #progress-bar { height: 100%; width: 0%; background: var(--danger); box-shadow: 0 0 10px rgba(239, 68, 68, 0.9); transition: width 0.2s ease-out, opacity 0.3s; }
+
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
+    .toast { min-width: 280px; padding: 14px 18px; border-radius: 12px; background: #ffffff; color: var(--text-main); box-shadow: var(--shadow-lg); border-left: 5px solid var(--primary); font-size: 14px; font-weight: 600; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .toast.show { transform: translateX(0); }
+    .toast-success { border-left-color: var(--success); }
+    .toast-danger { border-left-color: var(--danger); }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .modal-card { background: #ffffff; padding: 28px; border-radius: 18px; max-width: 500px; width: 92%; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); max-height: 90vh; overflow-y: auto; }
+
+    .container { max-width: 1100px; margin: 25px auto; padding: 0 20px; }
+
+    /* Top Navbar */
+    .top-navbar { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #0f172a, #1e3a8a); color: #fff; padding: 14px 28px; box-shadow: var(--shadow-md); }
+    .brand-logo { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 16px; letter-spacing: 0.5px; }
+
+    .status-pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.12); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); }
+    .led-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .led-green { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
+    .led-red { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
+    .led-blue { background-color: #3b82f6; box-shadow: 0 0 8px #3b82f6; animation: led-pulse 0.8s infinite alternate; }
+
+    @keyframes led-pulse { 0% { opacity: 0.5; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1.15); } }
+    
+    .icon-btn-header { background: rgba(255, 255, 255, 0.15); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3); padding: 8px 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 16px; }
+    .icon-btn-header:hover { background: #ffffff; color: #1e3a8a; }
+
+    /* Modern Tab Bar */
+    .tab-bar-container { background: #ffffff; border-bottom: 1px solid var(--border-color); padding: 10px 24px; display: flex; gap: 10px; overflow-x: auto; position: relative; box-shadow: var(--shadow-sm); }
+    .icon-tab-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; background: #f8fafc; border: 1px solid var(--border-color); color: var(--text-muted); padding: 10px 16px; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; }
+    .icon-tab-btn svg { stroke: currentColor; width: 22px; height: 22px; }
+    .icon-tab-btn:hover { background: #eff6ff; color: var(--primary); border-color: var(--primary); }
+    .icon-tab-btn.active { background: var(--primary); color: #ffffff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25); }
+
+    .tab-badge-dot { position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; background-color: var(--danger); border-radius: 50%; border: 2px solid #ffffff; }
+
+    .mode-selector-group { display: flex; gap: 12px; margin-bottom: 20px; }
+    .mode-btn { flex: 1; padding: 14px; border: 1px solid var(--border-color); background: #ffffff; border-radius: 12px; font-weight: 700; font-size: 14px; color: var(--text-muted); cursor: pointer; text-align: center; transition: all 0.2s; }
+    .mode-btn:hover { background: #f8fafc; color: var(--primary); }
+    .mode-btn.active { background: var(--primary); color: #ffffff; border-color: var(--primary); }
+
+    .card { background: var(--card-bg); padding: 28px; border-radius: 18px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-bottom: 24px; }
+
+    /* LOGIN PORTAL CARD */
+    #login-sec {
+      max-width: 100%;
+      margin: 30px auto;
+      padding: 0;
+      background: #ffffff;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+      border: 1px solid var(--border-color);
+    }
+
+    .login-hero-header {
+      height: 240px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.85) 100%), 
+                  url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiJDRmD-1uwtSzqTkbIEhBWAuIpDIfKh-PH0KPn241KNSrg4UumjKqKbedmLdWFuQWElyHUUAuuepQW6J_om1lDT2yeFBE6JAFMGqLbf8fe2ueqI_NHjE0IOBlV9RlgbsmHgxKysW5b_jrsE7Kjx5oZTnbnyF6RKSWGSk8OjtBlcqNS3To/s1600/School_Photo.jpeg') center/cover no-repeat;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      text-align: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    .school-logo-img {
+      width: 100px;
+      height: 100px;
+      border-radius: 8%;
+      background: #ffffff;
+      padding: 4px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      margin-bottom: 8px;
+    }
+
+    .login-hero-title { font-size: 18px; font-weight: 900; color: #ffffff; margin: 0; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
+    .login-hero-subtitle { font-size: 12px; font-weight: 700; color: #fde68a; margin-top: 4px; }
+    .login-form-body { padding: 28px 26px; background: #ffffff; }
+
+    .keep-logged-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 20px;
+      background: #f1f5f9;
+      border: 1.5px solid var(--border-color);
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+      font-weight: 700;
+      margin: 14px 0 20px 0;
+      transition: all 0.2s ease;
+    }
+    .keep-logged-pill.active { background: #dbeafe; border-color: #3b82f6; color: #1e40af; }
+    .pill-indicator-dot { width: 12px; height: 12px; border-radius: 50%; background: #94a3b8; transition: all 0.2s ease; }
+    .keep-logged-pill.active .pill-indicator-dot { background: #2563eb; box-shadow: 0 0 8px #2563eb; }
+
+    .form-group { margin-bottom: 18px; text-align: left; width: 100%; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 700; font-size: 13px; color: var(--text-main); }
+    input, select, textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 10px; font-family: inherit; font-size: 14px; background: #f8fafc; }
+
+    .icon-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--border-color); background: #ffffff; color: var(--text-main); cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow-sm); }
+    .icon-action-btn:hover { background: #eff6ff; border-color: var(--primary); color: var(--primary); transform: translateY(-2px); }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 22px; border: none; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.9; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline { border: 1px solid var(--border-color); background: #fff; color: var(--text-main); }
+    .btn-block { width: 100%; }
+
+    .tap-toggle-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      gap: 10px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 13px;
+      user-select: none;
+      transition: all 0.25s ease;
+      border: 2px solid transparent;
+      margin-bottom: 10px;
+    }
+    .tap-toggle-pill.enabled { background: #dcfce7; color: #15803d; border-color: #86efac; }
+    .tap-toggle-pill.disabled { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+
+    .timer-badge { display: inline-flex; align-items: center; gap: 6px; background: #dbeafe; color: #1e40af; font-weight: 800; padding: 6px 14px; border-radius: 20px; font-size: 14px; border: 1px solid #93c5fd; }
+    .timer-badge.danger { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+
+    .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .question-text { font-size: 19px; font-weight: 700; margin: 15px 0 20px 0; }
+    .question-img { max-width: 100%; max-height: 250px; border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--border-color); }
+    
+    .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .opt-btn { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border: 1px solid var(--border-color); border-radius: 12px; background: #ffffff; text-align: left; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+    .opt-btn:hover { background: #f1f5f9; border-color: var(--primary); }
+    .opt-btn.selected { background: #dbeafe !important; border-color: var(--primary) !important; color: var(--primary) !important; font-weight: 800; box-shadow: 0 0 0 2px var(--primary); }
+
+    .spinner-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; }
+    .spinner-bar-pulse { width: 60px; height: 6px; background: var(--primary); border-radius: 3px; animation: bar-pulse 0.9s infinite ease-in-out alternate; }
+    @keyframes bar-pulse { 0% { width: 10px; opacity: 0.3; } 100% { width: 70px; opacity: 1; } }
+
+    .rtl-content { direction: rtl !important; text-align: right !important; font-family: 'Amiri', serif !important; }
+    .rtl-content .opt-btn { text-align: right !important; }
+
+    .badge { background: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+    .badge-success { background: #dcfce7; color: #166534; }
+    .badge-danger { background: #fee2e2; color: #991b1b; }
+
+    .chart-item { margin-bottom: 16px; }
+    .chart-label-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .chart-track { height: 14px; background: #e2e8f0; border-radius: 7px; overflow: hidden; position: relative; }
+    .chart-fill { height: 100%; border-radius: 7px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+    .chart-fill-strong { background: linear-gradient(90deg, #10b981, #059669); }
+    .chart-fill-weak { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+
+    .student-chips-container { display: flex; flex-wrap: wrap; gap: 10px; max-height: 220px; overflow-y: auto; background: #ffffff; padding: 14px; border: 1px solid var(--border-color); border-radius: 12px; margin-top: 8px; }
+    .student-chip { padding: 9px 18px; border-radius: 20px; border: 1px solid var(--border-color); background: #f8fafc; font-size: 13px; font-weight: 600; color: var(--text-main); cursor: pointer; user-select: none; transition: all 0.2s; }
+    .student-chip.selected { background: var(--primary); color: #ffffff; border-color: var(--primary); }
+
+    .notif-card-stylish {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .notif-card-stylish.unread { border-left: 5px solid var(--primary); background: #f8fafc; }
+    .notif-card-stylish.selected { border: 2px solid var(--primary) !important; background: #eff6ff !important; }
+    .notif-header-title { font-weight: 800; font-size: 16px; color: #1e3a8a; margin-bottom: 4px; }
+    .notif-date-stamp { font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 12px; }
+    .notif-body-box { background: #ffffff; border: 1px dashed #cbd5e1; padding: 12px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.5; color: #0f172a; margin-bottom: 12px; white-space: pre-wrap; }
+
+    .accordion-item { border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 12px; overflow: hidden; background: #fff; }
+    .accordion-header { padding: 16px 20px; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 700; user-select: none; }
+    .accordion-header:hover { background: #eff6ff; }
+    .accordion-body { padding: 20px; border-top: 1px solid var(--border-color); display: none; }
+
+    .table-responsive { width: 100%; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 12px; margin-top: 15px; margin-bottom: 15px; }
+    .data-table { width: 100%; min-width: 650px; border-collapse: collapse; }
+    .data-table th, .data-table td { border: 1px solid var(--border-color) !important; padding: 12px 14px; text-align: left; font-size: 13px; }
+    .data-table th { background: #eff6ff; font-weight: 700; color: var(--text-main); }
+    .sortable-header { cursor: pointer; user-select: none; }
+    .sortable-header:hover { background: #dbeafe; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+
+    .spinning { animation: spin 0.8s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    @media (max-width: 640px) {
+      .grid-2, .options-grid, .stats-grid { grid-template-columns: 1fr; }
+      .container { padding: 0 12px; margin: 15px auto; }
+      .top-navbar { padding: 12px 16px; }
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printable-consolidated-area, #printable-consolidated-area * { visibility: visible; }
+      #printable-consolidated-area { position: absolute; left: 0; top: 0; width: 100%; background: #fff; padding: 20px; }
+      .no-print { display: none !important; }
+    }
+
+    .target-audience-pill { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border-color); background: #ffffff; font-weight: 700; font-size: 13.5px; color: var(--text-main); cursor: pointer; user-select: none; text-align: left; transition: all 0.2s ease; box-sizing: border-box; }
+    .target-audience-pill.active { background: #dbeafe; border-color: #2563eb; color: #1e40af; box-shadow: var(--shadow-sm); }
+  </style>
+</head>
+<body>
+
+  <div id="progress-bar-container"><div id="progress-bar"></div></div>
+  <div id="toast-container"></div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirm-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <h3 id="modal-title" style="margin-top:0;">Confirm Action</h3>
+      <p id="modal-msg" style="color: var(--text-muted); font-size:14px;"></p>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button class="btn btn-outline" onclick="closeConfirmModal(false)">Cancel</button>
+        <button class="btn btn-primary" id="modal-confirm-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE & SETTINGS MODAL -->
+  <div id="settings-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin:0; font-weight:800; color:var(--primary);">Profile & Settings</h3>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="icon-action-btn" onclick="logout()" title="Logout" style="background:#fee2e2; color:#b91c1c; border-color:#fca5a5;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+          <button class="icon-action-btn" onclick="document.getElementById('settings-modal').style.display='none'" title="Close">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <div style="background: linear-gradient(135deg, #eff6ff, #dbeafe); padding: 18px; border-radius: 14px; margin-bottom: 18px; border: 1px solid var(--border-color);">
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:12px;">
+          <div style="width:48px; height:48px; background:var(--primary); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:18px;">
+            👤
+          </div>
+          <div>
+            <h4 id="set-name" style="margin:0; font-size:16px; color:#1e3a8a;">-</h4>
+            <span id="set-first-lang" class="badge badge-success" style="margin-top:4px; display:inline-block;">-</span>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px; background:#fff; padding:10px 12px; border-radius:10px; border:1px solid var(--border-color);">
+          <div><strong>Gender:</strong> <span id="set-gender">-</span></div>
+          <div><strong>Class/Div:</strong> <span id="set-class">-</span>-<span id="set-div">-</span></div>
+          <div style="grid-column: span 2;"><strong>Phone:</strong> <span id="set-phone">-</span></div>
+        </div>
+      </div>
+
+      <!-- COLLAPSIBLE 1: MODIFY PASSWORD -->
+      <div class="accordion-item" style="margin-bottom: 12px;">
+        <div class="accordion-header" onclick="toggleAccordion('modal-collapsible-pass')">
+          <span>🔑 Modify Password</span>
+          <span>▾</span>
+        </div>
+        <div class="accordion-body" id="modal-collapsible-pass">
+          <form id="change-pass-form">
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px; background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+              Username: <strong id="set-username-display" style="color: var(--text-main); font-size: 14px;">-</strong>
+            </div>
+            <div class="form-group">
+              <input type="password" id="new-password" required placeholder="Enter new password">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Update Password</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- COLLAPSIBLE 2: SYSTEM & SECURITY SETTINGS (ADMIN ONLY) -->
+      <div class="accordion-item admin-only">
+        <div class="accordion-header" onclick="toggleAccordion('modal-collapsible-sys')">
+          <span>⚙️ System & Security Settings</span>
+          <span>▾</span>
+        </div>
+        <div class="accordion-body" id="modal-collapsible-sys">
+          <label style="font-size: 13px; font-weight: 700; display: block; margin-bottom: 6px;">Security Mode:</label>
+          <div id="security-pill-btn" class="tap-toggle-pill enabled" onclick="toggleSecurityModePill()">
+            <span id="security-pill-icon">🛡️</span>
+            <span id="security-pill-status">Security Active: ENABLED</span>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <label style="font-size: 13px; font-weight: 700; display: block; margin-bottom: 6px;">Admin Practice Access:</label>
+            <div id="show-student-tabs-pill" class="tap-toggle-pill disabled" onclick="toggleShowStudentTabsForAdmin()">
+              <span>👁️</span>
+              <span id="show-student-tabs-status">Show Practice and Portfolio for Admin: OFF</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Printable Modal View -->
+  <div id="print-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 850px; width: 95%;">
+      <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin:0;">Report Print Preview</h3>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" onclick="window.print()">Print / Save PDF</button>
+          <button class="btn btn-outline" onclick="document.getElementById('print-modal').style.display='none'">Close</button>
+        </div>
+      </div>
+      <div id="print-modal-content"></div>
+    </div>
+  </div>
+
+  <!-- Top Navbar -->
+  <nav class="top-navbar" id="top-navbar" style="display: none;">
+    <div class="brand-logo">
+      <span>🎓 TDTTI USS PORTAL</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div class="status-pill">
+        <span id="network-led" class="led-dot led-green"></span>
+        <span id="network-status-text">Online</span>
+      </div>
+
+      <div style="text-align: right; font-size: 13px;">
+        <div id="user-display-name" style="font-weight: 700;">User</div>
+        <div style="color: #93c5fd; font-size: 11px;">Class <span id="user-display-class">10</span>-<span id="user-display-div">A</span></div>
+      </div>
+
+      <button class="icon-btn-header" onclick="openSettingsModal()" title="Profile & Settings">
+        ⚙️
+      </button>
+    </div>
+  </nav>
+
+  <!-- TAB NAVIGATION BAR -->
+  <div class="tab-bar-container" id="tab-bar-container" style="display: none;">
+    <button class="icon-tab-btn active student-tab-btn" id="tab-practice" onclick="showSection('practice-sec')" title="Practice Center">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="icon-tab-btn student-tab-btn" id="tab-portfolio" onclick="showSection('portfolio-sec')" title="My Dashboard & Portfolio">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="icon-tab-btn" id="tab-notif" onclick="showSection('notif-sec')" title="Notification Center">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="tab-badge-dot" id="notif-badge-dot" style="display:none;"></span>
+    </button>
+    <button class="icon-tab-btn" id="tab-refresh" onclick="refreshCurrentView()" title="Refresh Data">
+      <svg id="global-refresh-icon" viewBox="0 0 24 24" fill="none"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    
+    <!-- ADMIN TABS -->
+    <button class="icon-tab-btn admin-only" id="tab-student-reports" onclick="showSection('admin-report-sec')" title="Student Reports">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="icon-tab-btn admin-only" id="tab-resets" onclick="showSection('admin-resets-sec')" title="Reset Requests">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8m0 0V3m0 5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="tab-badge-dot" id="reset-badge-dot" style="display:none;"></span>
+    </button>
+    <button class="icon-tab-btn admin-only" id="tab-manage-qs" onclick="showSection('manage-qs-sec')" title="Manage Questions">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="icon-tab-btn admin-only" id="tab-manage-users" onclick="showSection('manage-users-sec')" title="Manage Users & Optimization">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="icon-tab-btn admin-only" id="tab-logs" onclick="showSection('admin-logs-sec')" title="Audit Access Logs">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div class="container">
+
+    <!-- LOGIN SCREEN -->
+    <section id="login-sec">
+      <div class="login-hero-header">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6dWKvrSQKybNS-C8s5KIFwaCI7GbTTMt1QavDq1yKrA&s=10" alt="School Logo" class="school-logo-img">
+        <h2 class="login-hero-title">TDTTI USS TRAINING PORTAL</h2>
+        <span class="login-hero-subtitle">ACADEMIC SESSION 2026-27</span>
+      </div>
+
+      <div class="login-form-body">
+        <form id="login-form">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="login-username" required placeholder="Enter username">
+          </div>
+
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" required placeholder="Enter password">
+          </div>
+          
+          <div id="keep-logged-pill" class="keep-logged-pill active" onclick="toggleKeepLoggedPill()">
+            <span class="pill-indicator-dot"></span>
+            <span id="keep-logged-text">Keep Me Logged In: ON</span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" style="padding:14px; font-weight:800;">Sign In →</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 1. PRACTICE TAB -->
+    <section id="practice-sec" class="section" style="display:none;">
+      <h3 style="margin-top:0; color:var(--primary);">Practice Center</h3>
+
+      <div class="mode-selector-group" id="practice-mode-selector">
+        <button class="mode-btn" onclick="switchPracticeMode('PRACTICE')">📖 Subject Practice</button>
+        <button class="mode-btn" onclick="switchPracticeMode('TRIAL')">⭐ Trial Exam Mode</button>
+      </div>
+
+      <!-- SUBJECT PRACTICE BOX -->
+      <div id="subject-practice-box" class="card" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <label style="font-weight: 700; font-size: 14px; margin:0;">Choose Subject:</label>
+          <button class="btn btn-outline" style="padding:6px 12px; font-size:12px;" onclick="exitPracticeMode()">✕ Exit Practice</button>
+        </div>
+        <select id="subject-select" onchange="loadPracticeSubject()">
+          <option value="">-- Choose Subject --</option>
+          <option value="MI" data-firstlang="true">Malayalam I (MI)</option>
+          <option value="AR" data-firstlang="true">Arabic - العربية (AR)</option>
+          <option value="SK" data-firstlang="true">Sanskrit - संस्कृतम् (SK)</option>
+          <option value="MII">Malayalam II (MII)</option>
+          <option value="EN">English (EN)</option>
+          <option value="MM">Mathematics (MM)</option>
+          <option value="BS">Basic Science (BS)</option>
+          <option value="SS">Social Science (SS)</option>
+        </select>
+      </div>
+
+      <!-- TRIAL EXAM BOX -->
+      <div id="trial-exam-box" class="card" style="display:none; text-align:center; padding:35px 20px; position:relative;">
+        <button class="btn btn-outline" style="position:absolute; top:15px; right:15px; padding:6px 12px; font-size:12px;" onclick="exitPracticeMode()">✕ Close Trial Mode</button>
+        <h3 style="margin-top:10px; color:var(--primary);">Comprehensive Trial Exam</h3>
+        <p style="color:var(--text-muted); font-size:14px; max-width:550px; margin:0 auto 20px auto; line-height:1.5;">
+          Includes up to 5 unseen questions from each subject (1 score per question, 30s timer). Attendance is compulsory once started!
+        </p>
+        <button class="btn btn-primary" onclick="startTrialExam()">Start Trial Exam Now →</button>
+      </div>
+
+      <div id="practice-spinner" class="card spinner-box" style="display:none;">
+        <div class="spinner-bar-pulse"></div>
+        <p style="color:var(--text-muted); font-size:14px; margin:15px 0 0 0; font-weight:600;">Loading Questions...</p>
+      </div>
+
+      <div id="no-trial-card" class="card" style="display:none; text-align:center; padding:45px 20px;">
+        <div style="font-size:52px; margin-bottom:12px;">ℹ️</div>
+        <h3 style="color:var(--text-main); margin:0 0 10px 0;">Notice</h3>
+        <p style="color:var(--text-muted); font-size:16px; margin:0 0 24px 0; font-weight:600;">
+          There is no Trial Exam available for you right now.
+        </p>
+        <button class="btn btn-primary" onclick="closeNoTrialCard()">Close</button>
+      </div>
+
+      <div id="no-questions-card" class="card" style="display:none; text-align:center; padding:40px 20px;">
+        <div style="font-size:48px; margin-bottom:10px;">📂</div>
+        <h3 style="color:var(--text-main); margin:0 0 8px 0;">No Questions Found</h3>
+        <p style="color:var(--text-muted); font-size:14px; margin:0 0 20px 0;">No questions found to attend for this subject yet.</p>
+        <button class="btn btn-primary" onclick="exitPracticeMode()">Return to Subjects</button>
+      </div>
+
+      <!-- QUIZ CARD -->
+      <div id="quiz-card" class="card" style="display:none;">
+        <div class="quiz-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <span id="quiz-subject" class="badge">Subject</span>
+          <div id="timer-badge" class="timer-badge">⏱️ <span id="timer-count">30</span>s</div>
+          <span id="quiz-progress" style="font-size: 13px; color: var(--text-muted); font-weight:600;">Question 1</span>
+          
+          <button id="quiz-exit-btn" onclick="triggerEarlyExitPractice()" class="btn btn-outline" style="padding:6px 14px; font-size:12px; color:var(--danger); border-color:#fca5a5; background:#fee2e2; font-weight:800;" title="Exit Practice">
+            Exit ✕
+          </button>
+        </div>
+        
+        <div id="quiz-question" class="question-text">Question prompt?</div>
+        <img id="quiz-image" class="question-img" style="display:none;" src="" alt="Question Diagram">
+
+        <div class="options-grid">
+          <button class="opt-btn" id="opt-btn-A" onclick="selectOption('A')"><span class="badge">A</span> <span id="optA"></span></button>
+          <button class="opt-btn" id="opt-btn-B" onclick="selectOption('B')"><span class="badge">B</span> <span id="optB"></span></button>
+          <button class="opt-btn" id="opt-btn-C" onclick="selectOption('C')"><span class="badge">C</span> <span id="optC"></span></button>
+          <button class="opt-btn" id="opt-btn-D" onclick="selectOption('D')"><span class="badge">D</span> <span id="optD"></span></button>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-top:24px;">
+          <button id="next-btn" class="btn btn-primary" onclick="confirmNextQuestion()">Next Question →</button>
+        </div>
+      </div>
+
+      <!-- CONSOLIDATION CARD -->
+      <div id="consolidation-card" class="card" style="display:none;">
+        <div style="text-align:center; margin-bottom:25px;">
+          <div style="font-size:48px; margin-bottom:8px;">🎯</div>
+          <h2 id="consolidation-title" style="margin:0; color:var(--primary);">Practice Session Summary</h2>
+          <p id="consolidation-subtitle" style="color:var(--text-muted); font-size:14px; margin-top:4px;">Detailed consolidation of answered questions.</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="card" style="margin:0; text-align:center; background:#f8fafc;">
+            <p style="margin:0; color:var(--text-muted); font-weight:700; font-size:13px;">Score / Attended</p>
+            <h2 id="summary-score-val" style="margin:6px 0 0 0; color:var(--primary);">0 / 0</h2>
+          </div>
+          <div class="card" style="margin:0; text-align:center; background:#f8fafc;">
+            <p style="margin:0; color:var(--text-muted); font-weight:700; font-size:13px;">Victory Rate</p>
+            <h2 id="summary-acc-val" style="margin:6px 0 0 0; color:var(--success);">0%</h2>
+          </div>
+        </div>
+
+        <h3 style="margin-top:25px; color:var(--text-main);">Question Breakdown</h3>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Subject</th>
+                <th>Question</th>
+                <th>Options</th>
+                <th>Your Choice</th>
+                <th>Correct Choice</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="summary-breakdown-body"></tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:30px; text-align:center;">
+          <button class="btn btn-primary" style="padding:14px 32px; font-weight:800; font-size:15px;" onclick="exitConsolidationView()">Proceed / Exit Practice →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. MY DASHBOARD & PORTFOLIO SECTION -->
+    <section id="portfolio-sec" class="section" style="display:none;">
+      <h3 style="margin-top:0; color:var(--primary);">My Performance Dashboard</h3>
+
+      <div class="stats-grid">
+        <div class="card" style="margin:0;">
+          <p style="margin:0; color:var(--text-muted); font-size:13px; font-weight:700;">Total Answered Questions</p>
+          <h2 id="stat-total" style="margin:6px 0 0 0; color:var(--primary);">0</h2>
+        </div>
+        <div class="card" style="margin:0;">
+          <p style="margin:0; color:var(--text-muted); font-size:13px; font-weight:700;">Overall Accuracy Rate</p>
+          <h2 id="stat-accuracy" style="margin:6px 0 0 0; color:var(--success);">0%</h2>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:24px;">
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:18px; border-radius:12px;">
+          <h4 style="margin:0 0 15px 0; color:#166534; display:flex; align-items:center; gap:8px;">
+            <span>🌟 Strengths (≥70%)</span>
+          </h4>
+          <div id="strong-subjects-chart-container">
+            <p style="font-size:13px; color:var(--text-muted);">No strength subjects recorded yet.</p>
+          </div>
+        </div>
+
+        <div style="background:#fffbe0; border:1px solid #fef08a; padding:18px; border-radius:12px;">
+          <h4 style="margin:0 0 15px 0; color:#92400e; display:flex; align-items:center; gap:8px;">
+            <span>⚠️ Priorities (<70%)</span>
+          </h4>
+          <div id="weak-subjects-chart-container">
+            <p style="font-size:13px; color:var(--text-muted);">No weak subjects identified!</p>
+          </div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:30px; color:var(--primary);">Subject Overview</h3> 
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Total</th>
+              <th>Correct</th>
+              <th>Wrong</th>
+              <th>Last Attended</th>
+            </tr>
+          </thead>
+          <tbody id="portfolio-overview-body"></tbody>
+        </table>
+      </div>
+
+      <div id="portfolio-trial-history-box" style="display:none; margin-top:35px;">
+        <h3 style="margin-top:0; color:var(--primary);">Trial Exam Consolidations</h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:15px;">Historical consolidations of all attended Trial Exams.</p>
+        <div id="portfolio-trial-history-container"></div>
+      </div>
+
+      <h3 style="margin-top:35px; color:var(--primary);">Practice Audit Log</h3> 
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>Subject</th>
+              <th>Question</th>
+              <th>Your Answer</th>
+              <th>Correct Answer</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="portfolio-audit-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3. NOTIFICATION CENTER TAB -->
+    <section id="notif-sec" class="section" style="display:none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin:0; color: #1B257D;">Notification Center</h2>
+        <button class="btn btn-outline" onclick="markAllNotifsAsRead()">Mark All Read ✓</button>
+      </div>
+      
+      <div id="admin-notif-composer" class="card admin-only" style="width:100%; box-sizing:border-box;">
+        <h3 style="margin-top:0; color:var(--primary);">Compose Notification</h3>
+        <form id="send-notif-form" style="width:100%; display:flex; flex-direction:column; align-items:flex-start;">
+          
+          <label style="font-weight:700; font-size:13px; margin-bottom:8px; display:block; width:100%; text-align:left;">Target Audience</label>
+          <input type="hidden" id="notif-target-mode" value="ALL">
+          
+          <div style="display:flex; flex-direction:column; gap:10px; width:100%; margin-bottom:18px;">
+            <div id="target-pill-all" class="target-audience-pill active" onclick="selectNotifTarget('ALL')">
+              📢 Broadcast to All Users
+            </div>
+            <div id="target-pill-custom" class="target-audience-pill" onclick="selectNotifTarget('CUSTOM')">
+              🎯 Select Specific Student(s)
+            </div>
+          </div>
+
+          <div id="student-picker-box" style="display:none; width:100%; margin-bottom:18px;">
+            <label style="font-weight:700; font-size:13px; margin-bottom:6px; display:block; text-align:left;">Tap to Select Student(s):</label>
+            <div class="student-chips-container" id="student-chips-container" style="width:100%; box-sizing:border-box;"></div>
+          </div>
+
+          <div class="form-group" style="width:100%;">
+            <label>Notification Title</label>
+            <input type="text" id="notif-title" required placeholder="e.g. Sanskrit Practice Activity Summary">
+          </div>
+
+          <div class="form-group" style="width:100%;">
+            <label>Message Content</label>
+            <textarea id="notif-message" rows="4" required placeholder="Type notification message here..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" style="width:100%; padding:12px; font-weight:800;">Send Notification</button>
+        </form>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; margin-top:30px;">
+        <h3 style="margin:0;">Notifications Feed</h3>
+        <button id="admin-delete-selected-btn" class="btn btn-danger admin-only" onclick="deleteSelectedNotifs()" style="display:none;">
+          Remove Selected (<span id="selected-notif-count">0</span>)
+        </button>
+      </div>
+
+      <div id="notifications-list-container">
+        <p style="color:var(--text-muted); font-size:14px;">Loading notifications...</p>
+      </div>
+    </section>
+
+    <!-- 4. ADMIN TAB: Student Reports -->
+    <section id="admin-report-sec" class="section" style="display:none;">
+      <h2 style="margin-top:0px; color: #1B257D;">Evaluation Reports</h2>
+      <div id="admin-student-accordion-list"></div>
+    </section>
+
+    <!-- 5. ADMIN TAB: Reset Requests -->
+    <section id="admin-resets-sec" class="section" style="display:none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin:0; color: #1B257D;">Reset Requests</h2>
+        <button onclick="refreshResetRequests()" class="btn btn-outline" title="Refresh Requests">🔄 Refresh</button>
+      </div>
+      
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>DT</th>
+              <th>NAME</th>
+              <th>CD</th>
+              <th>PH</th>
+              <th>SUB</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-resets-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6. ADMIN TAB: Manage Questions -->
+    <section id="manage-qs-sec" class="section" style="display:none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin:0; color: #1B257D;">Manage Questions</h2>
+        <label class="btn btn-outline" title="Import Questions from CSV" style="cursor:pointer; padding:8px 14px;">
+          <input type="file" accept=".csv" onchange="handleCSVQuestionsImport(this)" hidden>
+          📥 Bulk Import CSV
+        </label>
+      </div>
+
+      <form id="question-form" class="card">
+        <input type="hidden" id="q-id">
+        <div class="form-group">
+          <label>Subject</label>
+          <select id="q-subject" required>
+            <option value="MI">Malayalam I (MI)</option>
+            <option value="AR">Arabic - العربية (AR)</option>
+            <option value="SK">Sanskrit - संस्कृतम् (SK)</option>
+            <option value="MII">Malayalam II (MII)</option>
+            <option value="EN">English (EN)</option>
+            <option value="MM">Mathematics (MM)</option>
+            <option value="BS">Basic Science (BS)</option>
+            <option value="SS">Social Science (SS)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label style="margin:0;">Question Text</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <label class="btn btn-outline" title="Capture Camera Diagram" style="padding:4px 8px; cursor:pointer;">
+                <input type="file" accept="image/*" capture="environment" onchange="uploadToSupabaseStorage(this)" hidden> 📷 Camera
+              </label>
+              <label class="btn btn-outline" title="Upload Image File" style="padding:4px 8px; cursor:pointer;">
+                <input type="file" accept="image/*" onchange="uploadToSupabaseStorage(this)" hidden> 🖼️ Upload
+              </label>
+              <button id="q-img-delete-btn" type="button" class="btn btn-outline" onclick="deleteUploadedDiagram()" style="display:none; padding:4px 8px; color:var(--danger); border-color:#fca5a5; background:#fee2e2;" title="Delete Diagram">
+                🗑️ Delete Image
+              </button>
+            </div>
+          </div>
+          <textarea id="q-text" required rows="3" placeholder="Type Question Here..."></textarea>
+          <input type="text" id="q-img-url" style="display:none;">
+          <div style="text-align:right;">
+            <img id="q-img-preview" src="" style="display:none; max-height:120px; border-radius:8px; margin-top:10px; border:1px solid var(--border-color);">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div><input type="text" placeholder="Option A" id="q-optA" required></div>
+          <div><input type="text" placeholder="Option B" id="q-optB" required></div>
+          <div><input type="text" placeholder="Option C" id="q-optC" required></div>
+          <div><input type="text" placeholder="Option D" id="q-optD" required></div>
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label>Correct Choice</label>
+          <select id="q-correct" required>
+            <option value="A">Option A</option>
+            <option value="B">Option B</option>
+            <option value="C">Option C</option>
+            <option value="D">Option D</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save Question</button>
+      </form>
+
+      <h2 style="margin-top:35px; color: #1B257D;">Question Bank</h2>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr><th>Subject</th><th>Question</th><th>Answer</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="admin-questions-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7. ADMIN TAB: Manage Users & Optimization -->
+    <section id="manage-users-sec" class="section" style="display:none;">
+      <h2 style="margin:0 0 15px 0; color: #1B257D;">Student Optimization Analytics</h2>
+      <div id="manage-users-analytics-accordion"></div>
+
+      <hr style="margin:30px 0; border:none; border-top:1px solid var(--border-color);">
+
+      <div id="printable-consolidated-area">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <h3 style="margin:0; color: #1B257D;">Performance Consolidated Summary</h3>
+          <button class="btn btn-outline print-icon-btn no-print" onclick="printConsolidatedTable()">🖨️ Print Report</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="consolidated-perf-table">
+            <thead>
+              <tr>
+                <th class="sortable-header" onclick="sortConsolidatedTable('sno')">Sn ↕</th>
+                <th class="sortable-header" onclick="sortConsolidatedTable('name')">Name ↕</th>
+                <th class="sortable-header" onclick="sortConsolidatedTable('gender')">G ↕</th>
+                <th class="sortable-header" onclick="sortConsolidatedTable('userClass')">C ↕</th>
+                <th class="sortable-header" onclick="sortConsolidatedTable('div')">D ↕</th>
+                <th class="sortable-header" onclick="sortConsolidatedTable('firstLanguage')">Lan ↕</th>
+                <th class="sortable-header" onclick="sortConsolidatedTable('phone')">Phone ↕</th>
+                <th class="sortable-header" onclick="sortConsolidatedTable('accuracy')">Overall % ↕</th>
+              </tr>
+            </thead>
+            <tbody id="consolidated-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <hr style="margin:30px 0; border:none; border-top:1px solid var(--border-color);">
+
+      <h3 style="margin-top:0; color: #1B257D;">Enrolled Users Management</h3>
+      <form id="user-form" class="card">
+        <div class="grid-2">
+          <div><input type="text" placeholder="Name" id="u-name" required></div>
+          <div>
+            <select id="u-gender" required>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div><input type="text" placeholder="Class (e.g. 10)" id="u-class" required></div>
+          <div><input type="text" placeholder="Division (e.g. A)" id="u-div" required></div>
+          <div>
+            <select id="u-first-lang" required>
+              <option value="MI">MI (Malayalam I)</option>
+              <option value="AR">AR (Arabic)</option>
+              <option value="SK">SK (Sanskrit)</option>
+            </select>
+          </div>
+          <div><input type="text" placeholder="Phone No" id="u-phone" required></div>
+          <div><input type="text" placeholder="Username" id="u-username" required></div>
+          <div><input type="password" placeholder="Password" id="u-password" required></div>
+          <div>
+            <select id="u-role">
+              <option value="Student">Student</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+          <div>
+            <select id="u-status">
+              <option value="Active">Active</option>
+              <option value="Blocked">Blocked</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:15px;">Save User Credentials</button>
+      </form>
+
+      <h3 style="margin-top:30px; color: #1B257D;">Enrolled Users List</h3>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr><th>Name</th><th>Gender</th><th>Class</th><th>Div</th><th>First Language</th><th>Phone</th><th>Username</th><th>Role</th><th>Status</th><th>Action</th></tr>
+          </thead>
+          <tbody id="admin-users-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 8. ADMIN TAB: Audit Access Logs (100% WIDTH CARD LAYOUT) -->
+    <section id="admin-logs-sec" class="section" style="display:none;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2 style="margin:0; color: #1B257D;">Audit Access Logs</h2>
+    <button class="btn btn-outline" style="color:var(--danger); border-color:#fca5a5; padding:6px 14px;" onclick="clearAllLogs()">
+      🗑️ Clear All Logs
+    </button>
+  </div>
+  <div id="admin-logs-cards-container" style="width: 100%;"></div>
+</section>
+
+  </div>
+
+  <!-- FIRST TIME PASSWORD CHANGE MODAL -->
+  <div id="first-time-pass-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <h3 style="margin-top:0; color:var(--danger);">⚠️ Password Change Required</h3>
+      <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">
+        Welcome! Since this is your first login or you are using a default password, you <strong>must update your password</strong> to continue.
+      </p>
+
+      <form id="first-time-pass-form" onsubmit="handleFirstTimePassSubmit(event)">
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" id="first-new-pass" required minlength="4" placeholder="Enter new password">
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <input type="password" id="first-confirm-pass" required minlength="4" placeholder="Re-enter new password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Save Password & Access Portal</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // SUPABASE CONFIGURATION - PASTE YOUR CREDENTIALS HERE
+    // =========================================================================
+    const SUPABASE_URL = "https://xwnfjogvnncrfzdzqlmo.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3bmZqb2d2bm5jcmZ6ZHpxbG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MjgyMDksImV4cCI6MjEwMTAwNDIwOX0.aLlZqnZ-pVXyd2thZ6xNDLBTir8dChsCaTyw5wtPJbk";
+    // =========================================================================
+
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const SUBJECT_MAP = {
+      'MI': 'Malayalam I',
+      'AR': 'Arabic',
+      'SK': 'Sanskrit',
+      'MII': 'Malayalam II',
+      'EN': 'English',
+      'MM': 'Mathematics',
+      'BS': 'Basic Science',
+      'SS': 'Social Science'
+    };
+
+    let currentUser = JSON.parse(localStorage.getItem('USS_USER')) || JSON.parse(sessionStorage.getItem('USS_USER')) || null;
+    let currentQuestions = [];
+    let qIndex = 0;
+    let timerInterval = null;
+    let timeLeft = 30;
+    let confirmCallback = null;
+    let cachedAdminData = null;
+    
+    let isTrialMode = false;
+    let selectedOption = null;
+    let sessionAnswersLog = [];
+
+    let sortColumn = 'name';
+    let sortAscending = true;
+    let consolidatedStudentsList = [];
+    let selectedStudentPhones = new Set();
+    let selectedNotifIds = new Set();
+    
+    let securityProtectionActive = true;
+    let showStudentTabsForAdmin = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (currentUser) initializeSession();
+
+      document.getElementById('login-form').addEventListener('submit', handleLogin);
+      document.getElementById('question-form').addEventListener('submit', handleSaveQuestion);
+      document.getElementById('user-form').addEventListener('submit', handleSaveUser);
+      document.getElementById('change-pass-form').addEventListener('submit', handleChangePassword);
+      document.getElementById('send-notif-form').addEventListener('submit', handleSendNotification);
+
+      enableSecurityProtection();
+
+      window.addEventListener('online', () => {
+        showToast('⚡ You are Online.', 'success');
+        updateNetworkStatus();
+      });
+
+      window.addEventListener('offline', () => {
+        showToast('⚠️ You are Offline.', 'danger');
+        updateNetworkStatus();
+      });
+
+      updateNetworkStatus();
+    });
+
+    // RELATIVE TIME HELPER (e.g. "1 min ago", "2 hrs ago")
+    function getRelativeTime(dateStr) {
+      if (!dateStr || dateStr === '-') return 'N/A';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+
+      const now = new Date();
+      const diffMs = now - d;
+      const diffSec = Math.floor(diffMs / 1000);
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHr = Math.floor(diffMin / 60);
+      const diffDay = Math.floor(diffHr / 24);
+
+      if (diffSec < 60) return 'Just now';
+      if (diffMin < 60) return `${diffMin} min ago`;
+      if (diffHr < 24) return `${diffHr} hr${diffHr > 1 ? 's' : ''} ago`;
+      return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+    }
+
+    function sendWhatsappAlert(identifier) {
+      const text = `Hi ${identifier}! You are requested to log into the TDTTI USS Training Portal now for practice.`;
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    async function refreshCurrentView() {
+      const icon = document.getElementById('global-refresh-icon');
+      if (icon) icon.classList.add('spinning');
+
+      const activeSec = document.querySelector('.section[style*="display: block"]');
+      const activeId = activeSec ? activeSec.id : 'practice-sec';
+
+      try {
+        if (activeId === 'portfolio-sec') await loadPortfolio();
+        else if (activeId === 'notif-sec') await loadNotifications();
+        else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec'].includes(activeId)) await loadAdminData();
+      } catch (err) {
+        console.error("Refresh Error:", err);
+      }
+
+      setTimeout(() => {
+        if (icon) icon.classList.remove('spinning');
+        showToast('Data refreshed successfully!', 'success');
+      }, 500);
+    }
+
+    function getFullSubjectName(code) {
+      return SUBJECT_MAP[code] || code || 'General';
+    }
+
+    function enableSecurityProtection() {
+      document.addEventListener('contextmenu', (e) => {
+        if (!securityProtectionActive) return;
+        e.preventDefault();
+        return false;
+      });
+
+      document.addEventListener('copy', (e) => {
+        if (!securityProtectionActive) return;
+        e.preventDefault();
+        showToast('⚠️ Copying content is restricted!', 'danger');
+      });
+
+      document.addEventListener('cut', (e) => {
+        if (!securityProtectionActive) return;
+        e.preventDefault();
+      });
+
+      document.addEventListener('selectstart', (e) => {
+        if (!securityProtectionActive) return;
+        if (!['INPUT', 'TEXTAREA'].includes(e.target.tagName)) e.preventDefault();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (!securityProtectionActive) return;
+        const isCtrl = e.ctrlKey || e.metaKey;
+        if (e.keyCode === 123) { e.preventDefault(); showToast('⚠️ Developer tools restricted!', 'danger'); return false; }
+
+        if (isCtrl) {
+          const key = e.key.toLowerCase();
+          if (['u', 's', 'p'].includes(key)) { e.preventDefault(); return false; }
+          if (e.shiftKey && ['i', 'j', 'c'].includes(key)) { e.preventDefault(); return false; }
+        }
+      });
+    }
+
+    function toggleSecurityModePill() {
+      securityProtectionActive = !securityProtectionActive;
+      const pill = document.getElementById('security-pill-btn');
+      const statusText = document.getElementById('security-pill-status');
+
+      if (securityProtectionActive) {
+        pill.className = 'tap-toggle-pill enabled';
+        statusText.innerText = 'Security Active: ENABLED';
+        showToast('Security protection ENABLED', 'success');
+      } else {
+        pill.className = 'tap-toggle-pill disabled';
+        statusText.innerText = 'Security Active: DISABLED';
+        showToast('Security protection DISABLED', 'warning');
+      }
+    }
+
+    function toggleShowStudentTabsForAdmin() {
+      showStudentTabsForAdmin = !showStudentTabsForAdmin;
+      const pill = document.getElementById('show-student-tabs-pill');
+      const statusText = document.getElementById('show-student-tabs-status');
+
+      if (showStudentTabsForAdmin) {
+        pill.className = 'tap-toggle-pill enabled';
+        statusText.innerText = 'Show Practice and Portfolio for Admin: ON';
+        showToast('Practice & Portfolio tabs are now visible for Admin', 'info');
+      } else {
+        pill.className = 'tap-toggle-pill disabled';
+        statusText.innerText = 'Show Practice and Portfolio for Admin: OFF';
+        showToast('Practice & Portfolio tabs hidden for Admin', 'info');
+      }
+
+      if (currentUser && String(currentUser.role).toLowerCase() === 'admin') {
+        const studentTabs = document.querySelectorAll('.student-tab-btn');
+        studentTabs.forEach(tab => tab.style.display = showStudentTabsForAdmin ? 'inline-flex' : 'none');
+      }
+    }
+
+    function updateNetworkStatus() {
+      const led = document.getElementById('network-led');
+      const text = document.getElementById('network-status-text');
+
+      if (!navigator.onLine) {
+        led.className = 'led-dot led-red';
+        text.innerText = 'Offline';
+      } else {
+        led.className = 'led-dot led-green';
+        text.innerText = 'Online';
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function showConfirmModal(title, msg, onConfirm) {
+      document.getElementById('modal-title').innerText = title;
+      document.getElementById('modal-msg').innerText = msg;
+      confirmCallback = onConfirm;
+      document.getElementById('confirm-modal').style.display = 'flex';
+      
+      document.getElementById('modal-confirm-btn').onclick = () => { closeConfirmModal(true); };
+    }
+
+    function closeConfirmModal(isConfirmed) {
+      document.getElementById('confirm-modal').style.display = 'none';
+      if (isConfirmed && confirmCallback) confirmCallback();
+      confirmCallback = null;
+    }
+
+    function openSettingsModal() {
+      document.getElementById('set-name').innerText = currentUser.name || currentUser.username;
+      document.getElementById('set-gender').innerText = currentUser.gender || 'Male';
+      document.getElementById('set-class').innerText = currentUser.userClass || '10';
+      document.getElementById('set-div').innerText = currentUser.division || 'A';
+      document.getElementById('set-first-lang').innerText = currentUser.firstLanguage || 'MI';
+      document.getElementById('set-phone').innerText = currentUser.phone;
+      document.getElementById('set-username-display').innerText = currentUser.username;
+      document.getElementById('settings-modal').style.display = 'flex';
+    }
+
+    function formatDateStrict(dateStr) {
+      if (!dateStr || dateStr === '-' || dateStr === 'Active Now') return dateStr;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      let hours = d.getHours();
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      const seconds = String(d.getSeconds()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const hh = String(hours).padStart(2, '0');
+
+      return `${dd}/${mm}/${yyyy}, ${hh}:${minutes}:${seconds} ${ampm}`;
+    }
+
+    function getDeviceInfo() {
+      const ua = navigator.userAgent;
+      const platform = navigator.platform || 'Unknown';
+      const screenRes = `${window.screen.width}x${window.screen.height} (${window.screen.colorDepth}-bit)`;
+      const cores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} CPU Cores` : 'N/A Cores';
+      const memory = navigator.deviceMemory ? `${navigator.deviceMemory}GB RAM` : 'N/A RAM';
+      const lang = navigator.language || 'en-US';
+      const touch = ('ontouchstart' in window || navigator.maxTouchPoints > 0) ? 'Touch Enabled' : 'Non-Touch';
+
+      let os = "Unknown OS";
+      if (ua.includes("Win")) os = "Windows PC";
+      else if (ua.includes("Android")) os = "Android Device";
+      else if (ua.includes("iPhone")) os = "Apple iPhone";
+      else if (ua.includes("iPad")) os = "Apple iPad";
+      else if (ua.includes("Mac")) os = "macOS";
+      else if (ua.includes("Linux")) os = "Linux Desktop";
+
+      let browser = "Browser";
+      if (ua.includes("Edg")) browser = "MS Edge";
+      else if (ua.includes("Chrome")) browser = "Chrome";
+      else if (ua.includes("Safari")) browser = "Safari";
+      else if (ua.includes("Firefox")) browser = "Firefox";
+
+      return `OS: ${os} (${platform}) | Browser: ${browser} | Screen: ${screenRes} | Hardware: ${cores}, ${memory} | Touch: ${touch} | Lang: ${lang}`;
+    }
+
+    function setProgress(percent) {
+      const bar = document.getElementById('progress-bar');
+      if (!bar) return;
+      bar.style.width = percent + '%';
+      if (percent >= 100) {
+        setTimeout(() => { bar.style.opacity = '0'; setTimeout(() => { bar.style.width = '0%'; bar.style.opacity = '1'; }, 250); }, 300);
+      } else {
+        bar.style.opacity = '1';
+      }
+    }
+
+    // =========================================================================
+    // SUPABASE AUTHENTICATION & LOGS
+    // =========================================================================
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      
+      if (SUPABASE_URL.includes("YOUR_SUPABASE") || SUPABASE_ANON_KEY.includes("YOUR_SUPABASE")) {
+        showToast('⚠️ Error: Please paste your Supabase URL & Anon Key on lines 465 & 466!', 'danger');
+        return;
+      }
+
+      const usernameInput = document.getElementById('login-username').value.trim();
+      const passwordInput = document.getElementById('login-password').value.trim();
+      setProgress(50);
+
+      try {
+        const { data: user, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .ilike('username', usernameInput)
+          .eq('password', passwordInput)
+          .maybeSingle();
+
+        setProgress(100);
+
+        if (error) {
+          console.error("Supabase Query Error:", error);
+          showToast(`Supabase Error: ${error.message}`, 'danger');
+          return;
+        }
+
+        const nowStr = formatDateStrict(new Date().toISOString());
+        const logId = 'LOG-' + Date.now();
+        const deviceStr = getDeviceInfo();
+
+        if (user) {
+          if (String(user.status).toLowerCase() === 'blocked') {
+            await supabaseClient.from('logs').insert([{ timestamp: nowStr, log_id: logId, identifier: usernameInput, role: user.role, login_status: 'BLOCKED', login_time: nowStr, logout_time: '-', device: deviceStr }]);
+            showToast('Your account is blocked. Contact Admin.', 'danger');
+            return;
+          }
+
+          await supabaseClient.from('logs').insert([{ timestamp: nowStr, log_id: logId, identifier: user.username, role: user.role, login_status: 'SUCCESS', login_time: nowStr, logout_time: 'Active Now', device: deviceStr }]);
+
+          const isDefaultPass = (passwordInput === 'admin123' || passwordInput === 'student123' || passwordInput === usernameInput);
+
+          currentUser = {
+            name: user.name || user.username,
+            gender: user.gender || 'Male',
+            userClass: user.class || '10',
+            division: user.division || 'A',
+            firstLanguage: (user.first_language || 'MI').toUpperCase(),
+            phone: user.phone,
+            role: user.role || 'Student',
+            username: user.username,
+            isDefaultPass: isDefaultPass,
+            logId: logId
+          };
+
+          if (isDefaultPass) {
+            document.getElementById('first-time-pass-modal').style.display = 'flex';
+            return;
+          }
+
+          if (document.getElementById('keep-logged-pill').classList.contains('active')) {
+            localStorage.setItem('USS_USER', JSON.stringify(currentUser));
+          } else {
+            sessionStorage.setItem('USS_USER', JSON.stringify(currentUser));
+          }
+
+          initializeSession();
+          showToast('Logged in successfully!', 'success');
+        } else {
+          showToast('Invalid Username or Password', 'danger');
+        }
+      } catch (err) {
+        setProgress(100);
+        console.error("System Error:", err);
+        showToast(`System Error: ${err.message}`, 'danger');
+      }
+    }
+
+    function filterPracticeSubjectDropdown() {
+      if (!currentUser) return;
+      const select = document.getElementById('subject-select');
+      const userLang = (currentUser.firstLanguage || 'MI').trim().toUpperCase();
+
+      Array.from(select.options).forEach(opt => {
+        if (opt.getAttribute('data-firstlang') === 'true') {
+          if (opt.value.toUpperCase() === userLang) {
+            opt.style.display = '';
+            opt.disabled = false;
+          } else {
+            opt.style.display = 'none';
+            opt.disabled = true;
+          }
+        }
+      });
+    }
+
+    function initializeSession() {
+      document.getElementById('login-sec').style.display = 'none';
+      document.getElementById('top-navbar').style.display = 'flex';
+      document.getElementById('tab-bar-container').style.display = 'flex';
+
+      document.getElementById('user-display-name').innerText = currentUser.name || currentUser.username;
+      document.getElementById('user-display-class').innerText = currentUser.userClass || '10';
+      document.getElementById('user-display-div').innerText = currentUser.division || 'A';
+
+      filterPracticeSubjectDropdown();
+
+      const adminNavButtons = document.querySelectorAll('.admin-only');
+      const studentTabs = document.querySelectorAll('.student-tab-btn');
+      const role = String(currentUser.role).trim().toLowerCase();
+
+      if (role === 'admin') {
+        adminNavButtons.forEach(btn => btn.style.display = 'inline-flex');
+        studentTabs.forEach(tab => tab.style.display = showStudentTabsForAdmin ? 'inline-flex' : 'none');
+        showSection('admin-report-sec');
+        checkAdminPendingAlerts();
+      } else {
+        adminNavButtons.forEach(btn => btn.style.display = 'none');
+        studentTabs.forEach(tab => tab.style.display = 'inline-flex');
+        showSection('practice-sec');
+      }
+
+      loadNotifications();
+    }
+
+    async function checkAdminPendingAlerts() {
+      const { data: pending } = await supabaseClient.from('reset_requests').select('*').eq('status', 'Pending');
+      if (pending && pending.length > 0) {
+        showToast(`🔔 ${pending.length} pending reset request(s) waiting!`, 'danger');
+        document.getElementById('reset-badge-dot').style.display = 'block';
+      } else {
+        document.getElementById('reset-badge-dot').style.display = 'none';
+      }
+    }
+
+    async function handleChangePassword(e) {
+      e.preventDefault();
+      const newPass = document.getElementById('new-password').value.trim();
+      if (!newPass) return;
+
+      const { error } = await supabaseClient.from('users').update({ password: newPass }).eq('username', currentUser.username);
+      if (!error) {
+        showToast('Password updated successfully!', 'success');
+        document.getElementById('change-pass-form').reset();
+        document.getElementById('settings-modal').style.display = 'none';
+      } else {
+        showToast('Failed to update password.', 'danger');
+      }
+    }
+
+    async function logout() {
+      if (currentUser && currentUser.logId) {
+        await supabaseClient.from('logs').update({ logout_time: formatDateStrict(new Date().toISOString()) }).eq('log_id', currentUser.logId);
+      }
+      localStorage.removeItem('USS_USER');
+      sessionStorage.clear();
+      location.reload();
+    }
+
+    function showSection(sectionId) {
+      clearInterval(timerInterval);
+      document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+      document.querySelectorAll('.icon-tab-btn').forEach(b => b.classList.remove('active'));
+
+      document.getElementById(sectionId).style.display = 'block';
+      document.getElementById('tab-bar-container').style.display = 'flex';
+
+      if (sectionId === 'practice-sec') {
+        document.getElementById('practice-mode-selector').style.display = 'flex';
+        document.getElementById('subject-practice-box').style.display = 'none';
+        document.getElementById('trial-exam-box').style.display = 'none';
+        document.getElementById('quiz-card').style.display = 'none';
+        document.getElementById('consolidation-card').style.display = 'none';
+      }
+
+      const tabMap = {
+        'practice-sec': 'tab-practice',
+        'portfolio-sec': 'tab-portfolio',
+        'notif-sec': 'tab-notif',
+        'admin-report-sec': 'tab-student-reports',
+        'admin-resets-sec': 'tab-resets',
+        'manage-qs-sec': 'tab-manage-qs',
+        'manage-users-sec': 'tab-manage-users',
+        'admin-logs-sec': 'tab-logs'
+      };
+      if (tabMap[sectionId]) document.getElementById(tabMap[sectionId]).classList.add('active');
+
+      if (sectionId === 'portfolio-sec') loadPortfolio();
+      else if (sectionId === 'notif-sec') loadNotifications();
+      else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec'].includes(sectionId)) loadAdminData();
+    }
+
+    // =========================================================================
+    // SUPABASE PRACTICE & TRIAL EXAM MODULE
+    // =========================================================================
+
+    function switchPracticeMode(mode) {
+      document.getElementById('tab-bar-container').style.display = 'none';
+      document.getElementById('practice-mode-selector').style.display = 'none';
+      document.getElementById('quiz-card').style.display = 'none';
+      document.getElementById('no-questions-card').style.display = 'none';
+      document.getElementById('no-trial-card').style.display = 'none';
+      document.getElementById('consolidation-card').style.display = 'none';
+
+      if (mode === 'PRACTICE') {
+        document.getElementById('subject-practice-box').style.display = 'block';
+        document.getElementById('trial-exam-box').style.display = 'none';
+      } else {
+        document.getElementById('subject-practice-box').style.display = 'none';
+        document.getElementById('trial-exam-box').style.display = 'block';
+      }
+    }
+
+    function exitPracticeMode() {
+      clearInterval(timerInterval);
+      document.getElementById('tab-bar-container').style.display = 'flex';
+      document.getElementById('practice-mode-selector').style.display = 'flex';
+
+      document.getElementById('subject-practice-box').style.display = 'none';
+      document.getElementById('trial-exam-box').style.display = 'none';
+      document.getElementById('quiz-card').style.display = 'none';
+      document.getElementById('no-questions-card').style.display = 'none';
+      document.getElementById('no-trial-card').style.display = 'none';
+      document.getElementById('consolidation-card').style.display = 'none';
+
+      document.getElementById('subject-select').value = '';
+    }
+
+    async function loadPracticeSubject() {
+      const subject = document.getElementById('subject-select').value;
+      if (!subject) return;
+
+      sessionAnswersLog = [];
+      isTrialMode = false;
+
+      document.getElementById('no-questions-card').style.display = 'none';
+      document.getElementById('no-trial-card').style.display = 'none';
+      document.getElementById('consolidation-card').style.display = 'none';
+      document.getElementById('quiz-card').style.display = 'none';
+      document.getElementById('practice-spinner').style.display = 'flex';
+
+      const { data: allQuestions } = await supabaseClient.from('questions').select('*').eq('subject', subject);
+      const { data: answered } = await supabaseClient.from('student_answers').select('question_id').eq('phone', currentUser.phone);
+      
+      document.getElementById('practice-spinner').style.display = 'none';
+
+      if (!allQuestions || allQuestions.length === 0) {
+        document.getElementById('no-questions-card').style.display = 'block';
+        return;
+      }
+
+      const answeredIds = new Set((answered || []).map(a => a.question_id));
+      const unattended = allQuestions.filter(q => !answeredIds.has(q.id));
+
+      if (unattended.length === 0) {
+        document.getElementById('no-questions-card').style.display = 'block';
+      } else {
+        currentQuestions = unattended.map(q => ({
+          ID: q.id,
+          Subject: q.subject,
+          Question: q.question,
+          OptionA: q.option_a,
+          OptionB: q.option_b,
+          OptionC: q.option_c,
+          OptionD: q.option_d,
+          CorrectAnswer: q.correct_answer,
+          ImageUrl: q.image_url
+        }));
+        qIndex = 0;
+        enterExamFocusMode();
+        renderQuestion();
+        document.getElementById('quiz-card').style.display = 'block';
+      }
+    }
+
+    async function startTrialExam() {
+      document.getElementById('trial-exam-box').style.display = 'none';
+      document.getElementById('no-trial-card').style.display = 'none';
+      document.getElementById('practice-spinner').style.display = 'flex';
+
+      isTrialMode = true;
+      sessionAnswersLog = [];
+
+      const userLang = currentUser.firstLanguage || 'MI';
+      const firstLangChoices = ['MI', 'AR', 'SK'];
+
+      const { data: allQuestions } = await supabaseClient.from('questions').select('*');
+      const { data: answered } = await supabaseClient.from('student_answers').select('question_id').eq('phone', currentUser.phone);
+
+      document.getElementById('practice-spinner').style.display = 'none';
+
+      if (!allQuestions || allQuestions.length === 0) {
+        document.getElementById('no-trial-card').style.display = 'block';
+        return;
+      }
+
+      const answeredIds = new Set((answered || []).map(a => a.question_id));
+      let available = allQuestions.filter(q => {
+        const sub = String(q.subject).toUpperCase();
+        if (firstLangChoices.includes(sub)) return sub === userLang;
+        return true;
+      }).filter(q => !answeredIds.has(q.id));
+
+      if (available.length === 0) {
+        document.getElementById('no-trial-card').style.display = 'block';
+        return;
+      }
+
+      const groups = {};
+      available.forEach(q => {
+        if (!groups[q.subject]) groups[q.subject] = [];
+        groups[q.subject].push(q);
+      });
+
+      let trialQs = [];
+      for (let sub in groups) {
+        let picked = groups[sub].sort(() => 0.5 - Math.random()).slice(0, 5);
+        trialQs = trialQs.concat(picked);
+      }
+
+      currentQuestions = trialQs.map(q => ({
+        ID: q.id,
+        Subject: q.subject,
+        Question: q.question,
+        OptionA: q.option_a,
+        OptionB: q.option_b,
+        OptionC: q.option_c,
+        OptionD: q.option_d,
+        CorrectAnswer: q.correct_answer,
+        ImageUrl: q.image_url
+      }));
+
+      qIndex = 0;
+      enterExamFocusMode();
+      renderQuestion();
+      document.getElementById('quiz-card').style.display = 'block';
+    }
+
+    function enterExamFocusMode() {
+      document.getElementById('top-navbar').style.display = 'none';
+      document.getElementById('tab-bar-container').style.display = 'none';
+      document.querySelector('.mode-selector-group').style.display = 'none';
+      document.getElementById('subject-practice-box').style.display = 'none';
+      document.getElementById('trial-exam-box').style.display = 'none';
+
+      const quizExitBtn = document.getElementById('quiz-exit-btn');
+      quizExitBtn.style.display = isTrialMode ? 'none' : 'inline-flex';
+    }
+
+    function triggerEarlyExitPractice() {
+      if (isTrialMode) return;
+      if (sessionAnswersLog.length > 0) showConsolidationView();
+      else exitConsolidationView();
+    }
+
+    function closeNoTrialCard() {
+      document.getElementById('no-trial-card').style.display = 'none';
+      document.getElementById('trial-exam-box').style.display = 'block';
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 30;
+      const timerCount = document.getElementById('timer-count');
+      const timerBadge = document.getElementById('timer-badge');
+      timerCount.innerText = timeLeft;
+      timerBadge.classList.remove('danger');
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerCount.innerText = timeLeft;
+        if (timeLeft <= 10) timerBadge.classList.add('danger');
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          confirmNextQuestion(true);
+        }
+      }, 1000);
+    }
+
+    function renderQuestion() {
+      selectedOption = null;
+      const q = currentQuestions[qIndex];
+      const quizCard = document.getElementById('quiz-card');
+
+      if (q.Subject === 'AR' || q.Subject === 'Arabic') quizCard.classList.add('rtl-content');
+      else quizCard.classList.remove('rtl-content');
+
+      document.getElementById('quiz-subject').innerText = isTrialMode ? `TRIAL: ${getFullSubjectName(q.Subject)}` : getFullSubjectName(q.Subject);
+      document.getElementById('quiz-progress').innerText = `Question ${qIndex + 1} of ${currentQuestions.length}`;
+      document.getElementById('quiz-question').innerText = q.Question;
+      
+      const imgEl = document.getElementById('quiz-image');
+      if (q.ImageUrl) { imgEl.src = q.ImageUrl; imgEl.style.display = 'block'; }
+      else imgEl.style.display = 'none';
+
+      document.getElementById('optA').innerText = q.OptionA;
+      document.getElementById('optB').innerText = q.OptionB;
+      document.getElementById('optC').innerText = q.OptionC;
+      document.getElementById('optD').innerText = q.OptionD;
+
+      ['A', 'B', 'C', 'D'].forEach(opt => {
+        const btn = document.getElementById(`opt-btn-${opt}`);
+        btn.className = 'opt-btn';
+      });
+
+      startTimer();
+    }
+
+    function selectOption(opt) {
+      selectedOption = opt;
+      ['A', 'B', 'C', 'D'].forEach(o => {
+        const btn = document.getElementById(`opt-btn-${o}`);
+        if (o === opt) btn.classList.add('selected');
+        else btn.classList.remove('selected');
+      });
+    }
+
+    async function confirmNextQuestion(isTimeout = false) {
+      clearInterval(timerInterval);
+      const q = currentQuestions[qIndex];
+      const userChoice = isTimeout ? (selectedOption || 'Timed Out') : (selectedOption || 'Not Answered');
+      const isCorrect = userChoice === q.CorrectAnswer;
+
+      if (!sessionAnswersLog.some(item => item.QuestionID === q.ID)) {
+        const record = {
+          Subject: getFullSubjectName(q.Subject),
+          SubjectCode: q.Subject,
+          QuestionID: q.ID,
+          QuestionText: q.Question,
+          OptionA: q.OptionA,
+          OptionB: q.OptionB,
+          OptionC: q.OptionC,
+          OptionD: q.OptionD,
+          UserAnswer: userChoice,
+          CorrectAnswer: q.CorrectAnswer,
+          IsCorrect: isCorrect
+        };
+
+        sessionAnswersLog.push(record);
+
+        if (!isTrialMode) {
+          const nowStr = formatDateStrict(new Date().toISOString());
+          await supabaseClient.from('student_answers').upsert([{
+            timestamp: nowStr,
+            phone: currentUser.phone,
+            student_name: currentUser.name || currentUser.username,
+            class: currentUser.userClass || '10',
+            division: currentUser.division || 'A',
+            subject: q.Subject,
+            question_id: q.ID,
+            question_text: q.Question,
+            user_answer: userChoice,
+            correct_answer: q.CorrectAnswer,
+            is_correct: isCorrect ? 'YES' : 'NO'
+          }], { onConflict: 'phone,question_id' });
+        }
+      }
+
+      if (qIndex + 1 < currentQuestions.length) {
+        qIndex++;
+        renderQuestion();
+      } else {
+        document.getElementById('quiz-card').style.display = 'none';
+        showConsolidationView();
+      }
+    }
+
+    async function showConsolidationView() {
+      clearInterval(timerInterval);
+      document.getElementById('quiz-card').style.display = 'none';
+
+      const total = sessionAnswersLog.length;
+      const score = sessionAnswersLog.filter(a => a.IsCorrect).length;
+      const victoryRate = total ? Math.round((score / total) * 100) : 0;
+
+      document.getElementById('summary-score-val').innerText = `${score} / ${total}`;
+      document.getElementById('summary-acc-val').innerText = `${victoryRate}%`;
+      document.getElementById('consolidation-title').innerText = isTrialMode ? 'Trial Exam Report Consolidation' : 'Subject Practice Summary';
+
+      const tbody = document.getElementById('summary-breakdown-body');
+      tbody.innerHTML = sessionAnswersLog.map(item => `
+        <tr>
+          <td><span class="badge">${item.Subject}</span></td>
+          <td>${item.QuestionText}</td>
+          <td><small>A:${item.OptionA} | B:${item.OptionB} | C:${item.OptionC} | D:${item.OptionD}</small></td>
+          <td><b>${item.UserAnswer}</b></td>
+          <td><b style="color:var(--success);">${item.CorrectAnswer}</b></td>
+          <td><span class="badge ${item.IsCorrect ? 'badge-success' : 'badge-danger'}">${item.IsCorrect ? 'Correct' : 'Wrong'}</span></td>
+        </tr>
+      `).join('');
+
+      document.getElementById('consolidation-card').style.display = 'block';
+
+      const formattedDT = formatDateStrict(new Date().toISOString());
+      const studentNameBold = `<b>${currentUser.name || currentUser.username} ${currentUser.userClass || '10'}${currentUser.division || 'A'}</b>`;
+      const subjName = isTrialMode ? 'Comprehensive Trial Exam' : sessionAnswersLog[0].Subject;
+
+      const notifTitle = `${subjName} Practice Activity Summary`;
+      const notifMsg = `${studentNameBold} completed a ${subjName} session ON ${formattedDT}\n\nTotal Questions Practiced/Attended: ${total}\nCorrect: ${score} • Incorrect: ${total - score}`;
+
+      if (isTrialMode) {
+        await supabaseClient.from('trial_exams').insert([{
+          timestamp: formattedDT,
+          phone: currentUser.phone,
+          student_name: currentUser.name || currentUser.username,
+          class: currentUser.userClass || '10',
+          division: currentUser.division || 'A',
+          score: score,
+          total_questions: total,
+          answers_json: sessionAnswersLog
+        }]);
+      }
+
+      const notifId = 'NOTIF-' + Date.now();
+      await supabaseClient.from('notifications').insert([
+        { notification_id: notifId + '-1', timestamp: formattedDT, recipient_phone: 'ADMIN', title: notifTitle, message: notifMsg, sender: 'Practice Monitor' },
+        { notification_id: notifId + '-2', timestamp: formattedDT, recipient_phone: currentUser.phone, title: notifTitle, message: notifMsg, sender: 'Practice Monitor' }
+      ]);
+    }
+
+    function exitConsolidationView() {
+      document.getElementById('consolidation-card').style.display = 'none';
+      document.getElementById('top-navbar').style.display = 'flex';
+      document.getElementById('tab-bar-container').style.display = 'flex';
+
+      if (isTrialMode) {
+        document.getElementById('trial-exam-box').style.display = 'block';
+      } else {
+        document.getElementById('subject-select').value = '';
+        document.getElementById('subject-practice-box').style.display = 'block';
+        document.getElementById('practice-mode-selector').style.display = 'flex';
+      }
+    }
+
+    // =========================================================================
+    // SUPABASE DASHBOARD & PORTFOLIO CALCULATIONS
+    // =========================================================================
+
+    async function loadPortfolio() {
+      const { data: answers } = await supabaseClient.from('student_answers').select('*').eq('phone', currentUser.phone);
+      const { data: trials } = await supabaseClient.from('trial_exams').select('*').eq('phone', currentUser.phone);
+
+      const resData = {
+        detailedAnswers: (answers || []).map(a => ({
+          QuestionID: a.question_id,
+          QuestionText: a.question_text,
+          Subject: a.subject,
+          UserAnswer: a.user_answer,
+          CorrectAnswer: a.correct_answer,
+          IsCorrect: a.is_correct === 'YES' || a.is_correct === true,
+          Timestamp: a.timestamp
+        })),
+        trialExams: (trials || []).map(t => ({
+          Timestamp: t.timestamp,
+          Score: t.score,
+          TotalQuestions: t.total_questions,
+          AnswersJson: t.answers_json
+        }))
+      };
+
+      renderStudentDashboardAndOverview(resData, 'stat-total', 'stat-accuracy', 'strong-subjects-chart-container', 'weak-subjects-chart-container', 'portfolio-overview-body', 'portfolio-trial-history-box', 'portfolio-trial-history-container', 'portfolio-audit-body');
+    }
+
+    function renderStudentDashboardAndOverview(resData, totalElId, accElId, strongContainerId, weakContainerId, overviewTbodyId, trialBoxId, trialContainerId, auditTbodyId) {
+      let combinedAnswers = [];
+      let seenQKeys = new Set();
+
+      if (resData.detailedAnswers) {
+        resData.detailedAnswers.forEach(a => {
+          const uniqueKey = `${a.QuestionID || a.QuestionText}`;
+          if (!seenQKeys.has(uniqueKey)) {
+            seenQKeys.add(uniqueKey);
+            combinedAnswers.push({
+              Subject: getFullSubjectName(a.Subject),
+              SubjectCode: a.Subject,
+              QuestionID: a.QuestionID,
+              QuestionText: a.QuestionText,
+              UserAnswer: a.UserAnswer,
+              CorrectAnswer: a.CorrectAnswer,
+              IsCorrect: a.IsCorrect === 'YES' || a.IsCorrect === true,
+              Timestamp: a.Timestamp
+            });
+          }
+        });
+      }
+
+      if (resData.trialExams) {
+        resData.trialExams.forEach(tr => {
+          let tAns = typeof tr.AnswersJson === 'string' ? JSON.parse(tr.AnswersJson || '[]') : (tr.AnswersJson || []);
+          tAns.forEach(ta => {
+            const uniqueKey = `${ta.QuestionID || ta.QuestionText}`;
+            if (!seenQKeys.has(uniqueKey)) {
+              seenQKeys.add(uniqueKey);
+              combinedAnswers.push({
+                Subject: getFullSubjectName(ta.Subject),
+                SubjectCode: ta.Subject,
+                QuestionID: ta.QuestionID,
+                QuestionText: ta.QuestionText,
+                OptionA: ta.OptionA,
+                OptionB: ta.OptionB,
+                OptionC: ta.OptionC,
+                OptionD: ta.OptionD,
+                UserAnswer: ta.UserAnswer,
+                CorrectAnswer: ta.CorrectAnswer,
+                IsCorrect: ta.IsCorrect === true || ta.IsCorrect === 'YES',
+                Timestamp: tr.Timestamp
+              });
+            }
+          });
+        });
+      }
+
+      const totalAnswered = combinedAnswers.length;
+      const totalCorrect = combinedAnswers.filter(a => a.IsCorrect).length;
+      const overallAccuracy = totalAnswered ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+
+      if (document.getElementById(totalElId)) document.getElementById(totalElId).innerText = totalAnswered;
+      if (document.getElementById(accElId)) document.getElementById(accElId).innerText = `${overallAccuracy}%`;
+
+      const subjectStats = {};
+      combinedAnswers.forEach(a => {
+        const sName = a.Subject;
+        if (!subjectStats[sName]) {
+          subjectStats[sName] = { total: 0, correct: 0, wrong: 0, lastDate: a.Timestamp };
+        }
+        subjectStats[sName].total++;
+        if (a.IsCorrect) subjectStats[sName].correct++;
+        else subjectStats[sName].wrong++;
+        if (a.Timestamp > subjectStats[sName].lastDate) subjectStats[sName].lastDate = a.Timestamp;
+      });
+
+      let strongHTML = '';
+      let weakHTML = '';
+
+      for (let sName in subjectStats) {
+        const st = subjectStats[sName];
+        const acc = Math.round((st.correct / st.total) * 100);
+
+        const cardHTML = `
+          <div class="chart-item">
+            <div class="chart-label-row">
+              <span><b>${sName}</b></span>
+              <span>${acc}% (${st.correct}/${st.total} Correct)</span>
+            </div>
+            <div class="chart-track">
+              <div class="chart-fill ${acc >= 70 ? 'chart-fill-strong' : 'chart-fill-weak'}" style="width: ${acc}%;"></div>
+            </div>
+          </div>
+        `;
+
+        if (acc >= 70) strongHTML += cardHTML;
+        else weakHTML += cardHTML;
+      }
+
+      if (document.getElementById(strongContainerId)) {
+        document.getElementById(strongContainerId).innerHTML = strongHTML || '<p style="font-size:13px; color:var(--text-muted); margin:0;">No strength subjects (≥70%) recorded yet.</p>';
+      }
+      if (document.getElementById(weakContainerId)) {
+        document.getElementById(weakContainerId).innerHTML = weakHTML || '<p style="font-size:13px; color:var(--text-muted); margin:0;">No priority areas (<70%) identified!</p>';
+      }
+
+      // RENDER OVERVIEW TABLE WITH GRAND TOTAL ROW
+      if (document.getElementById(overviewTbodyId)) {
+        const overviewBody = document.getElementById(overviewTbodyId);
+        let gTotal = 0, gCorrect = 0, gWrong = 0;
+
+        let rowsHTML = Object.keys(subjectStats).map(sName => {
+          const st = subjectStats[sName];
+          gTotal += st.total;
+          gCorrect += st.correct;
+          gWrong += st.wrong;
+
+          return `
+            <tr>
+              <td><b>${sName}</b></td>
+              <td>${st.total}</td>
+              <td><b style="color:var(--success);">${st.correct}</b></td>
+              <td><b style="color:var(--danger);">${st.wrong}</b></td>
+              <td>${formatDateStrict(st.lastDate)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        if (Object.keys(subjectStats).length > 0) {
+          rowsHTML += `
+            <tr style="font-weight:800; background:#eff6ff; border-top:2px solid var(--primary) !important;">
+              <td>GRAND TOTAL</td>
+              <td>${gTotal}</td>
+              <td><b style="color:var(--success);">${gCorrect}</b></td>
+              <td><b style="color:var(--danger);">${gWrong}</b></td>
+              <td>-</td>
+            </tr>
+          `;
+        }
+
+        overviewBody.innerHTML = rowsHTML || '<tr><td colspan="5">No subject overview data available.</td></tr>';
+      }
+
+      // RENDER TRIAL EXAM CONSOLIDATIONS
+      if (document.getElementById(trialBoxId) && document.getElementById(trialContainerId)) {
+        const trialBox = document.getElementById(trialBoxId);
+        const trialContainer = document.getElementById(trialContainerId);
+
+        if (resData.trialExams && resData.trialExams.length > 0) {
+          trialBox.style.display = 'block';
+          trialContainer.innerHTML = resData.trialExams.map((t) => {
+            let answers = typeof t.AnswersJson === 'string' ? JSON.parse(t.AnswersJson || '[]') : (t.AnswersJson || []);
+
+            return `
+              <div style="background:#ffffff; border:1px solid var(--border-color); border-radius:12px; padding:18px; margin-bottom:20px; box-shadow:var(--shadow-sm);">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-weight:800; font-size:14px; margin-bottom:12px; color:var(--primary);">
+                  <span>Trial Exam (${formatDateStrict(t.Timestamp)})</span>
+                  <span class="badge badge-success" style="font-size:14px;">Score: ${t.Score} / ${t.TotalQuestions}</span>
+                </div>
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr><th>S.No</th><th>Subject</th><th>Question</th><th>Options</th><th>Your Choice</th><th>Correct</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                      ${answers.map((a, aIdx) => `
+                        <tr>
+                          <td>${aIdx + 1}</td>
+                          <td><span class="badge">${getFullSubjectName(a.Subject)}</span></td>
+                          <td>${a.QuestionText}</td>
+                          <td><small>A:${a.OptionA} | B:${a.OptionB} | C:${a.OptionC} | D:${a.OptionD}</small></td>
+                          <td><b>${a.UserAnswer}</b></td>
+                          <td><b style="color:var(--success);">${a.CorrectAnswer}</b></td>
+                          <td><span class="badge ${a.IsCorrect ? 'badge-success' : 'badge-danger'}">${a.IsCorrect ? 'Correct' : 'Wrong'}</span></td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `;
+          }).join('<hr style="margin:20px 0; border:none; border-top:1px dashed var(--border-color);">');
+        } else {
+          trialBox.style.display = 'none';
+        }
+      }
+
+      // RENDER DEDUPLICATED PRACTICE AUDIT LOG
+      if (document.getElementById(auditTbodyId) && resData.detailedAnswers) {
+        const auditBody = document.getElementById(auditTbodyId);
+        const uniqueAuditLogs = [];
+        const auditSeenKeys = new Set();
+
+        resData.detailedAnswers.forEach(item => {
+          const key = `${item.QuestionID || item.QuestionText}`;
+          if (!auditSeenKeys.has(key)) {
+            auditSeenKeys.add(key);
+            uniqueAuditLogs.push(item);
+          }
+        });
+
+        auditBody.innerHTML = uniqueAuditLogs.map((item, idx) => `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><span class="badge">${getFullSubjectName(item.Subject)}</span></td>
+            <td>${item.QuestionText}</td>
+            <td><b>${item.UserAnswer}</b></td>
+            <td><b style="color:var(--success);">${item.CorrectAnswer}</b></td>
+            <td><span class="badge ${item.IsCorrect === 'YES' || item.IsCorrect === true ? 'badge-success' : 'badge-danger'}">${item.IsCorrect === 'YES' || item.IsCorrect === true ? 'Correct' : 'Wrong'}</span></td>
+          </tr>
+        `).join('') || '<tr><td colspan="6">No practice audit records found.</td></tr>';
+      }
+    }
+
+    // =========================================================================
+    // SUPABASE NOTIFICATIONS
+    // =========================================================================
+
+    async function loadNotifications() {
+      const isAdmin = String(currentUser.role).trim().toLowerCase() === 'admin';
+      let query = supabaseClient.from('notifications').select('*').order('created_at', { ascending: false });
+
+      if (!isAdmin) {
+        query = query.or(`recipient_phone.eq.ALL,recipient_phone.eq.${currentUser.phone}`);
+      }
+
+      const { data: notifications } = await query;
+      const container = document.getElementById('notifications-list-container');
+      const readSet = new Set(JSON.parse(localStorage.getItem('read_notifs_' + currentUser.username) || '[]'));
+
+      if (!notifications || notifications.length === 0) {
+        container.innerHTML = `<p style="color:var(--text-muted); font-size:14px;">No notifications yet.</p>`;
+        document.getElementById('notif-badge-dot').style.display = 'none';
+        return;
+      }
+
+      let unreadCount = 0;
+      container.innerHTML = '';
+      selectedNotifIds.clear();
+
+      notifications.forEach(n => {
+        const notifId = n.notification_id || String(n.id);
+        const isRead = readSet.has(notifId);
+        if (!isRead) unreadCount++;
+
+        const card = document.createElement('div');
+        card.className = `notif-card-stylish ${isRead ? '' : 'unread'}`;
+        card.id = `notif-card-${notifId}`;
+
+        card.innerHTML = `
+          <div class="notif-header-title">${n.title}</div>
+          <div class="notif-date-stamp">DATE AND TIME : ${formatDateStrict(n.timestamp)}</div>
+          <div class="notif-body-box">${n.message}</div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <small style="color:var(--text-muted); font-weight:700;">Sender: ${n.sender}</small>
+            <div style="display:flex; gap:8px;">
+              <button onclick="event.stopPropagation(); toggleNotifRead('${notifId}')" class="btn btn-outline" style="padding:4px 12px; font-size:12px;">
+                ${isRead ? 'Mark Unread' : 'Mark Read ✓'}
+              </button>
+              ${isAdmin ? `
+                <button onclick="event.stopPropagation(); deleteSingleNotif('${notifId}')" class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete Notification">
+                  🗑️
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+
+        if (isAdmin) attachNotifTouchAndHold(card, notifId);
+        container.appendChild(card);
+      });
+
+      document.getElementById('notif-badge-dot').style.display = unreadCount > 0 ? 'block' : 'none';
+    }
+
+    function attachNotifTouchAndHold(cardEl, notifId) {
+      let timer = null;
+      let isLongPress = false;
+
+      cardEl.addEventListener('touchstart', () => {
+        isLongPress = false;
+        timer = setTimeout(() => {
+          isLongPress = true;
+          toggleNotifCardSelection(cardEl, notifId);
+        }, 350);
+      }, { passive: true });
+
+      cardEl.addEventListener('touchend', () => clearTimeout(timer));
+      cardEl.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        if (!isLongPress) toggleNotifCardSelection(cardEl, notifId);
+      });
+    }
+
+    function toggleNotifCardSelection(cardEl, notifId) {
+      if (selectedNotifIds.has(notifId)) {
+        selectedNotifIds.delete(notifId);
+        cardEl.classList.remove('selected');
+      } else {
+        selectedNotifIds.add(notifId);
+        cardEl.classList.add('selected');
+      }
+      const delBtn = document.getElementById('admin-delete-selected-btn');
+      delBtn.style.display = selectedNotifIds.size > 0 ? 'inline-flex' : 'none';
+      document.getElementById('selected-notif-count').innerText = selectedNotifIds.size;
+    }
+
+    function toggleNotifRead(notifId) {
+      let readSet = new Set(JSON.parse(localStorage.getItem('read_notifs_' + currentUser.username) || '[]'));
+      if (readSet.has(notifId)) readSet.delete(notifId);
+      else readSet.add(notifId);
+      localStorage.setItem('read_notifs_' + currentUser.username, JSON.stringify(Array.from(readSet)));
+      loadNotifications();
+    }
+
+    function markAllNotifsAsRead() {
+      const cards = document.querySelectorAll('.notif-card-stylish');
+      let readSet = new Set(JSON.parse(localStorage.getItem('read_notifs_' + currentUser.username) || '[]'));
+      cards.forEach(c => {
+        const id = c.id.replace('notif-card-', '');
+        if (id) readSet.add(id);
+      });
+      localStorage.setItem('read_notifs_' + currentUser.username, JSON.stringify(Array.from(readSet)));
+      showToast('All notifications marked as read', 'success');
+      loadNotifications();
+    }
+
+    function selectNotifTarget(mode) {
+      const pillAll = document.getElementById('target-pill-all');
+      const pillCustom = document.getElementById('target-pill-custom');
+      const pickerBox = document.getElementById('student-picker-box');
+
+      if (mode === 'ALL') {
+        pillAll.className = 'target-audience-pill active';
+        pillCustom.className = 'target-audience-pill';
+        pickerBox.style.display = 'none';
+        document.getElementById('notif-target-mode').value = 'ALL';
+      } else {
+        pillAll.className = 'target-audience-pill';
+        pillCustom.className = 'target-audience-pill active';
+        pickerBox.style.display = 'block';
+        document.getElementById('notif-target-mode').value = 'CUSTOM';
+      }
+    }
+
+    async function handleSendNotification(e) {
+      e.preventDefault();
+      const targetMode = document.getElementById('notif-target-mode').value;
+      let recipients = [];
+
+      if (targetMode === 'ALL') {
+        recipients = ['ALL'];
+      } else {
+        recipients = Array.from(selectedStudentPhones);
+        if (recipients.length === 0) {
+          showToast('Please select at least one student!', 'danger');
+          return;
+        }
+      }
+
+      const title = document.getElementById('notif-title').value.trim();
+      const message = document.getElementById('notif-message').value.trim();
+      const formattedDT = formatDateStrict(new Date().toISOString());
+
+      const notifRows = recipients.map(phone => ({
+        notification_id: 'NOTIF-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+        timestamp: formattedDT,
+        recipient_phone: phone,
+        title: title,
+        message: message,
+        sender: currentUser.name || 'System Admin'
+      }));
+
+      const { error } = await supabaseClient.from('notifications').insert(notifRows);
+
+      if (!error) {
+        showToast('Notification sent successfully!', 'success');
+        document.getElementById('send-notif-form').reset();
+        selectedStudentPhones.clear();
+        selectNotifTarget('ALL');
+        loadNotifications();
+      } else {
+        showToast('Failed to send notification.', 'danger');
+      }
+    }
+
+    async function deleteSingleNotif(notifId) {
+      showConfirmModal('Delete Notification', 'Permanently delete this notification?', async () => {
+        await supabaseClient.from('notifications').delete().eq('notification_id', notifId);
+        showToast('Notification deleted', 'info');
+        loadNotifications();
+      });
+    }
+
+    async function deleteSelectedNotifs() {
+      const ids = Array.from(selectedNotifIds);
+      if (ids.length === 0) return;
+
+      showConfirmModal('Delete Notifications', `Delete ${ids.length} selected notification(s)?`, async () => {
+        await supabaseClient.from('notifications').delete().in('notification_id', ids);
+        showToast(`${ids.length} notification(s) deleted`, 'info');
+        selectedNotifIds.clear();
+        loadNotifications();
+      });
+    }
+
+    // =========================================================================
+    // SUPABASE ADMIN DATA & REPORTS
+    // =========================================================================
+
+    async function loadAdminData() {
+      const { data: users } = await supabaseClient.from('users').select('*');
+      const { data: questions } = await supabaseClient.from('questions').select('*');
+      const { data: logs } = await supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(50);
+      const { data: allAnswers } = await supabaseClient.from('student_answers').select('*').order('created_at', { ascending: false });
+      const { data: allTrialExams } = await supabaseClient.from('trial_exams').select('*').order('created_at', { ascending: false });
+      const { data: resetRequests } = await supabaseClient.from('reset_requests').select('*').order('created_at', { ascending: false });
+
+      cachedAdminData = { users, questions, logs, allAnswers, allTrialExams, resetRequests };
+
+      const studentChipsContainer = document.getElementById('student-chips-container');
+      const students = (users || []).filter(u => String(u.role).trim().toLowerCase() === 'student');
+
+      studentChipsContainer.innerHTML = '';
+      students.forEach(s => {
+        const chip = document.createElement('div');
+        chip.className = 'student-chip';
+        chip.innerText = `${s.name} (${s.class || '10'}-${s.division || 'A'}) [${s.phone}]`;
+        chip.onclick = () => {
+          if (selectedStudentPhones.has(s.phone)) {
+            selectedStudentPhones.delete(s.phone);
+            chip.classList.remove('selected');
+          } else {
+            selectedStudentPhones.add(s.phone);
+            chip.classList.add('selected');
+          }
+        };
+        studentChipsContainer.appendChild(chip);
+      });
+
+      // RENDER STUDENT REPORTS
+      const reportAccordion = document.getElementById('admin-student-accordion-list');
+      reportAccordion.innerHTML = students.map((st, idx) => `
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion('report-acc-${idx}')">
+            <div>
+              <strong>${st.name}</strong> — Class ${st.class || '10'}-${st.division || 'A'} [FL: ${st.first_language || 'MI'}] [${st.phone}]
+            </div>
+            <div>▾</div>
+          </div>
+          <div class="accordion-body" id="report-acc-${idx}">
+            <div id="admin-rep-container-${idx}"></div>
+          </div>
+        </div>
+      `).join('');
+
+      students.forEach((st, idx) => {
+        const stPhone = String(st.phone).trim();
+        const stAnswers = (allAnswers || []).filter(a => String(a.phone).trim() === stPhone).map(a => ({
+          QuestionID: a.question_id, QuestionText: a.question_text, Subject: a.subject, UserAnswer: a.user_answer, CorrectAnswer: a.correct_answer, IsCorrect: a.is_correct === 'YES' || a.is_correct === true, Timestamp: a.timestamp
+        }));
+        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === stPhone).map(t => ({
+          Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
+        }));
+        const stData = { detailedAnswers: stAnswers, trialExams: stTrials };
+
+        const container = document.getElementById(`admin-rep-container-${idx}`);
+        container.innerHTML = `
+          <h4 style="margin-top:0; color:var(--primary);">Subject Overview</h4>
+          <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="admin-rep-overview-${idx}"></tbody></table></div>
+          
+          <h4 style="margin-top:20px; color:var(--primary);">Trial Exam Consolidations</h4>
+          <div id="admin-rep-trial-box-${idx}">
+            ${stTrials.length > 0 ? stTrials.map(t => {
+              let tAns = typeof t.AnswersJson === 'string' ? JSON.parse(t.AnswersJson || '[]') : (t.AnswersJson || []);
+              return `
+                <div style="background:#f8fafc; border:1px solid var(--border-color); padding:12px; border-radius:8px; margin-bottom:12px;">
+                  <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Date: ${formatDateStrict(t.Timestamp)} | Score: ${t.Score} / ${t.TotalQuestions}</div>
+                  <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>User Choice</th><th>Correct Choice</th></tr></thead><tbody>
+                    ${tAns.map((a, aIdx) => `<tr><td>${aIdx + 1}</td><td>${getFullSubjectName(a.Subject)}</td><td>${a.QuestionText}</td><td><b>${a.UserAnswer}</b></td><td><b style="color:var(--success);">${a.CorrectAnswer}</b></td></tr>`).join('')}
+                  </tbody></table></div>
+                </div>
+              `;
+            }).join('') : '<p style="font-size:13px; color:var(--text-muted);">No trial exams recorded.</p>'}
+          </div>
+
+          <h4 style="margin-top:20px; color:var(--primary);">Practice Audit Log</h4>
+          <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Status</th></tr></thead><tbody id="admin-rep-audit-${idx}"></tbody></table></div>
+        `;
+
+        renderStudentDashboardAndOverview(stData, null, null, null, null, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
+      });
+
+      // RENDER USER OPTIMIZATION ACCORDIONS
+      const optAccordion = document.getElementById('manage-users-analytics-accordion');
+      optAccordion.innerHTML = students.map((st, idx) => `
+        <div class="accordion-item">
+          <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')">
+            <div>
+              <strong>${st.name}</strong> — Class ${st.class || '10'}-${st.division || 'A'} Optimization Analytics
+            </div>
+            <div>▾</div>
+          </div>
+          <div class="accordion-body" id="opt-acc-${idx}">
+            <h4 style="margin-top:0; color:var(--primary); font-weight:800;">STUDENT PERFORMANCE DASHBOARD</h4>
+            <div class="stats-grid">
+              <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Total Answered</p><h3 id="opt-tot-${idx}">0</h3></div>
+              <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Overall Accuracy</p><h3 id="opt-acc-val-${idx}">0%</h3></div>
+            </div>
+            <div class="grid-2" style="margin-bottom:20px;">
+              <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px;">
+                <h5 style="margin:0 0 10px 0; color:#166534;">🌟 Strengths (≥70%)</h5>
+                <div id="opt-strong-${idx}"></div>
+              </div>
+              <div style="background:#fffbe0; border:1px solid #fef08a; padding:12px; border-radius:10px;">
+                <h5 style="margin:0 0 10px 0; color:#92400e;">⚠️ Priorities (<70%)</h5>
+                <div id="opt-weak-${idx}"></div>
+              </div>
+            </div>
+            <h4 style="margin:20px 0 8px 0; color:var(--primary); font-weight:800;">Subject Overview</h4>
+            <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="opt-overview-${idx}"></tbody></table></div>
+          </div>
+        </div>
+      `).join('');
+
+      students.forEach((st, idx) => {
+        const stPhone = String(st.phone).trim();
+        const stAnswers = (allAnswers || []).filter(a => String(a.phone).trim() === stPhone).map(a => ({
+          QuestionID: a.question_id, QuestionText: a.question_text, Subject: a.subject, UserAnswer: a.user_answer, CorrectAnswer: a.correct_answer, IsCorrect: a.is_correct === 'YES' || a.is_correct === true, Timestamp: a.timestamp
+        }));
+        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === stPhone).map(t => ({
+          Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
+        }));
+        const stData = { detailedAnswers: stAnswers, trialExams: stTrials };
+
+        renderStudentDashboardAndOverview(stData, `opt-tot-${idx}`, `opt-acc-val-${idx}`, `opt-strong-${idx}`, `opt-weak-${idx}`, `opt-overview-${idx}`);
+      });
+
+      // CONSOLIDATED SUMMARY TABLE
+      consolidatedStudentsList = students.map((st, index) => {
+        const stPhone = String(st.phone).trim();
+        const stAnswers = (allAnswers || []).filter(a => String(a.phone).trim() === stPhone);
+        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === stPhone);
+        
+        let total = stAnswers.length;
+        stTrials.forEach(t => { try { total += (typeof t.answers_json === 'string' ? JSON.parse(t.answers_json) : t.answers_json).length; }catch(e){} });
+        let correct = stAnswers.filter(a => a.is_correct === 'YES' || a.is_correct === true).length;
+        stTrials.forEach(t => { try { correct += (typeof t.answers_json === 'string' ? JSON.parse(t.answers_json) : t.answers_json).filter(x=>x.IsCorrect).length; }catch(e){} });
+
+        const accuracy = total ? Math.round((correct / total) * 100) : 0;
+
+        return {
+          sno: index + 1,
+          name: st.name,
+          gender: st.gender || 'Male',
+          userClass: st.class || '10',
+          div: st.division || 'A',
+          firstLanguage: st.first_language || 'MI',
+          phone: st.phone,
+          accuracy: accuracy,
+          totalAttempted: total
+        };
+      });
+
+      renderConsolidatedTable();
+
+      // RESET REQUESTS
+      const resetBody = document.getElementById('admin-resets-body');
+      resetBody.innerHTML = (resetRequests || []).map(r => `
+        <tr>
+          <td><small>${r.request_id}</small></td>
+          <td>${formatDateStrict(r.timestamp)}</td>
+          <td><b>${r.student_name}</b></td>
+          <td>${r.class || '10'}-${r.division || 'A'}</td>
+          <td>${r.phone}</td>
+          <td><span class="badge">${r.subject}</span></td>
+          <td><b>${r.status}</b></td>
+          <td>
+            ${r.status === 'Pending' ? `
+              <button onclick="handleReset('${r.request_id}', 'Accepted', '${r.phone}', '${r.subject}')" class="btn btn-primary" style="padding:4px 8px; font-size:12px;">Accept</button>
+              <button onclick="handleReset('${r.request_id}', 'Rejected', '${r.phone}', '${r.subject}')" class="btn btn-danger" style="padding:4px 8px; font-size:12px;">Reject</button>
+            ` : '-'}
+          </td>
+        </tr>
+      `).join('');
+
+      // QUESTION BANK
+      const qBody = document.getElementById('admin-questions-body');
+      qBody.innerHTML = (questions || []).map(q => `
+        <tr>
+          <td><span class="badge">${q.subject}</span></td>
+          <td>${q.question} ${q.image_url ? '📷' : ''}</td>
+          <td><b>${q.correct_answer}</b></td>
+          <td style="display:flex; gap:8px;">
+            <button onclick="editQuestion('${q.id}','${encodeURIComponent(q.subject)}','${encodeURIComponent(q.question)}','${encodeURIComponent(q.option_a || '')}','${encodeURIComponent(q.option_b || '')}','${encodeURIComponent(q.option_c || '')}','${encodeURIComponent(q.option_d || '')}','${q.correct_answer}','${encodeURIComponent(q.image_url || '')}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
+            <button onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger);" title="Delete">🗑️ Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // USERS LIST
+      const uBody = document.getElementById('admin-users-body');
+      uBody.innerHTML = (users || []).map(u => `
+        <tr>
+          <td><b>${u.name}</b></td>
+          <td>${u.gender || 'Male'}</td>
+          <td>${u.class || '10'}</td>
+          <td>${u.division || 'A'}</td>
+          <td><span class="badge badge-success">${u.first_language || 'MI'}</span></td>
+          <td>${u.phone}</td>
+          <td>${u.username}</td>
+          <td>${u.role}</td>
+          <td><span class="badge ${u.status === 'Active' ? 'badge-success' : ''}">${u.status}</span></td>
+          <td>
+            <button onclick="editUser('${u.name}','${u.gender || 'Male'}','${u.phone}','${u.username}','${u.password}','${u.role}','${u.status}','${u.class || '10'}','${u.division || 'A'}','${u.first_language || 'MI'}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // AUDIT ACCESS LOGS: 100% WIDTH CARD TYPE VIEW
+      const lContainer = document.getElementById('admin-logs-cards-container');
+      if (lContainer && logs) {
+        if (logs.length === 0) {
+          lContainer.innerHTML = '<p style="color:var(--text-muted); font-size:14px;">No access logs recorded yet.</p>';
+        } else {
+          lContainer.innerHTML = logs.map((l, idx) => {
+            const isActive = l.logout_time === 'Active Now';
+            const relativeTime = getRelativeTime(l.timestamp || l.login_time);
+
+            return `
+              <div class="card" style="margin-bottom:12px; padding:16px; width:100%; box-shadow:var(--shadow-sm); border:1px solid var(--border-color);">
+                <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:10px;">
+                  <!-- LED + Identifier (Clickable to reveal details) -->
+                  <div style="display:flex; align-items:center; gap:12px; cursor:pointer; flex:1;" onclick="toggleAccordion('log-detail-${idx}')">
+                    <span class="led-dot ${isActive ? 'led-green' : 'led-red'}" title="${isActive ? 'Active' : 'Inactive'}"></span>
+                    <div>
+                      <strong style="font-size:15px; color:var(--primary); display:block;">${l.identifier}</strong>
+                      <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Last Active: ${relativeTime}</span>
+                    </div>
+                  </div>
+
+                  <!-- WhatsApp Alert Icon Button -->
+                  <!-- Action Buttons (WhatsApp + Delete) -->
+<div style="display:flex; gap:8px;">
+  <button onclick="event.stopPropagation(); sendWhatsappAlert('${l.identifier}')" class="btn btn-outline" style="padding:8px 12px; background:#dcfce7; color:#15803d; border-color:#86efac; font-size:16px;" title="WhatsApp Alert to Join">
+    💬
+  </button>
+  <button onclick="event.stopPropagation(); deleteSingleLog('${l.log_id || l.id}')" class="btn btn-outline" style="padding:8px 12px; color:var(--danger); border-color:#fca5a5; font-size:16px;" title="Delete Log Entry">
+    🗑️
+  </button>
+</div>
+                </div>
+
+                <!-- Hidden Collapsible Detail View (Shown when Name/Identifier is clicked) -->
+                <div id="log-detail-${idx}" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-color);">
+                  <div style="font-size:13px; line-height:1.6;">
+                    <div><strong>Role:</strong> <span class="badge">${l.role}</span></div>
+                    <div><strong>Status:</strong> <span class="badge ${l.login_status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}">${l.login_status}</span></div>
+                    <div><strong>Login Time:</strong> ${formatDateStrict(l.login_time || l.timestamp)}</div>
+                    <div><strong>Logout Time:</strong> ${isActive ? '<span class="badge badge-success">Active Now</span>' : formatDateStrict(l.logout_time)}</div>
+                    <div style="margin-top:4px;"><strong>Device Specifications:</strong> <br><small style="color:var(--text-muted); font-family:monospace;">${l.device}</small></div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    function sortConsolidatedTable(key) {
+      if (sortColumn === key) sortAscending = !sortAscending;
+      else { sortColumn = key; sortAscending = true; }
+      renderConsolidatedTable();
+    }
+
+    function renderConsolidatedTable() {
+      const tbody = document.getElementById('consolidated-table-body');
+      if (!tbody) return;
+
+      consolidatedStudentsList.sort((a, b) => {
+        let valA = a[sortColumn]; let valB = b[sortColumn];
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        if (valA < valB) return sortAscending ? -1 : 1;
+        if (valA > valB) return sortAscending ? 1 : -1;
+        return 0;
+      });
+
+      tbody.innerHTML = consolidatedStudentsList.map((item, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><b>${item.name}</b></td>
+          <td>${item.gender}</td>
+          <td>${item.userClass}</td>
+          <td>${item.div}</td>
+          <td><span class="badge badge-success">${item.firstLanguage}</span></td>
+          <td>${item.phone}</td>
+          <td><b>${item.accuracy}%</b> (${item.totalAttempted} Answered)</td>
+        </tr>
+      `).join('');
+    }
+
+    function printConsolidatedTable() {
+      const printableContent = document.getElementById('printable-consolidated-area').outerHTML;
+      const modalContent = document.getElementById('print-modal-content');
+      modalContent.innerHTML = printableContent;
+      document.getElementById('print-modal').style.display = 'flex';
+    }
+
+    function refreshResetRequests() {
+      loadAdminData().then(() => showToast('Reset requests refreshed!', 'info'));
+    }
+
+    function toggleAccordion(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    async function handleReset(requestId, decision, phone, subject) {
+      await supabaseClient.from('reset_requests').update({ status: decision }).eq('request_id', requestId);
+
+      if (decision === 'Accepted') {
+        await supabaseClient.from('student_answers').delete().eq('phone', phone).eq('subject', subject);
+        await supabaseClient.from('student_progress').delete().eq('phone', phone).eq('subject', subject);
+      }
+
+      const formattedDT = formatDateStrict(new Date().toISOString());
+      await supabaseClient.from('notifications').insert([{
+        notification_id: 'NOTIF-' + Date.now(),
+        timestamp: formattedDT,
+        recipient_phone: phone,
+        title: `Subject Reset Request ${decision}`,
+        message: `Your request to reset attempts for '${subject || 'Subject'}' has been ${decision.toLowerCase()} by Admin.`,
+        sender: 'System Admin'
+      }]);
+
+      showToast(`Request ${decision}!`, 'info');
+      loadAdminData();
+    }
+
+    // =========================================================================
+    // DIRECT SUPABASE STORAGE UPLOADER FOR DIAGRAMS
+    // =========================================================================
+    async function uploadToSupabaseStorage(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      showToast('Uploading diagram to Supabase Storage...', 'info');
+
+      const fileExt = file.name.split('.').pop() || 'png';
+      const fileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
+      const filePath = `diagrams/${fileName}`;
+
+      const { data, error } = await supabaseClient
+        .storage
+        .from('question-images')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+      if (error) {
+        console.error("Supabase Storage Upload Error:", error);
+        showToast('Storage Upload Failed: ' + error.message, 'danger');
+        return;
+      }
+
+      const { data: publicUrlData } = supabaseClient
+        .storage
+        .from('question-images')
+        .getPublicUrl(filePath);
+
+      const publicUrl = publicUrlData.publicUrl;
+
+      document.getElementById('q-img-url').value = publicUrl;
+      const preview = document.getElementById('q-img-preview');
+      preview.src = publicUrl;
+      preview.style.display = 'block';
+
+      document.getElementById('q-img-delete-btn').style.display = 'inline-flex';
+
+      showToast('Diagram uploaded successfully!', 'success');
+    }
+
+    async function deleteUploadedDiagram() {
+      const imgUrl = document.getElementById('q-img-url').value;
+      if (!imgUrl) return;
+
+      showToast('Deleting diagram from Supabase Storage...', 'info');
+
+      try {
+        if (imgUrl.includes('/question-images/')) {
+          const filePath = imgUrl.split('/question-images/')[1];
+          if (filePath) {
+            await supabaseClient.storage.from('question-images').remove([filePath]);
+          }
+        }
+      } catch (err) {
+        console.error("Delete diagram error:", err);
+      }
+
+      document.getElementById('q-img-url').value = '';
+      const preview = document.getElementById('q-img-preview');
+      preview.src = '';
+      preview.style.display = 'none';
+      document.getElementById('q-img-delete-btn').style.display = 'none';
+
+      showToast('Diagram deleted successfully!', 'success');
+    }
+
+    async function handleCSVQuestionsImport(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      showToast('Reading CSV file...', 'info');
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const text = e.target.result;
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        
+        if (lines.length < 2) {
+          showToast('CSV file is empty or missing rows.', 'danger');
+          return;
+        }
+
+        const rows = [];
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          if (values.length >= 8) {
+            rows.push({
+              id: values[0] || ('Q-' + Date.now() + '-' + i),
+              subject: values[1] || 'BS',
+              question: values[2],
+              option_a: values[3],
+              option_b: values[4],
+              option_c: values[5],
+              option_d: values[6],
+              correct_answer: values[7] || 'A',
+              image_url: values[8] || ''
+            });
+          }
+        }
+
+        if (rows.length > 0) {
+          showToast(`Uploading ${rows.length} questions to Supabase...`, 'info');
+          const { error } = await supabaseClient.from('questions').upsert(rows);
+          if (!error) {
+            showToast(`Successfully imported ${rows.length} questions!`, 'success');
+            loadAdminData();
+          } else {
+            showToast('Failed to import CSV: ' + error.message, 'danger');
+          }
+        } else {
+          showToast('No valid question rows found in CSV.', 'danger');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    async function handleSaveQuestion(e) {
+      e.preventDefault();
+      const qId = document.getElementById('q-id').value || ('Q-' + Date.now());
+
+      const questionData = {
+        id: qId,
+        subject: document.getElementById('q-subject').value,
+        question: document.getElementById('q-text').value,
+        image_url: document.getElementById('q-img-url').value,
+        option_a: document.getElementById('q-optA').value,
+        option_b: document.getElementById('q-optB').value,
+        option_c: document.getElementById('q-optC').value,
+        option_d: document.getElementById('q-optD').value,
+        correct_answer: document.getElementById('q-correct').value,
+      };
+
+      const { error } = await supabaseClient.from('questions').upsert([questionData]);
+      if (!error) {
+        showToast('Question saved!', 'success');
+        document.getElementById('question-form').reset();
+        document.getElementById('q-id').value = '';
+        document.getElementById('q-img-url').value = '';
+        document.getElementById('q-img-preview').style.display = 'none';
+        document.getElementById('q-img-delete-btn').style.display = 'none';
+        loadAdminData();
+      } else {
+        showToast('Failed to save question.', 'danger');
+      }
+    }
+
+    function editQuestion(id, subject, text, optA, optB, optC, optD, correct, imgUrl) {
+      showSection('manage-qs-sec');
+      document.getElementById('q-id').value = id;
+      document.getElementById('q-subject').value = decodeURIComponent(subject);
+      document.getElementById('q-text').value = decodeURIComponent(text);
+      document.getElementById('q-optA').value = decodeURIComponent(optA);
+      document.getElementById('q-optB').value = decodeURIComponent(optB);
+      document.getElementById('q-optC').value = decodeURIComponent(optC);
+      document.getElementById('q-optD').value = decodeURIComponent(optD);
+      document.getElementById('q-correct').value = correct;
+
+      const img = decodeURIComponent(imgUrl);
+      document.getElementById('q-img-url').value = img;
+      const preview = document.getElementById('q-img-preview');
+      const deleteBtn = document.getElementById('q-img-delete-btn');
+
+      if (img && img !== 'null' && img !== 'undefined') {
+        preview.src = img;
+        preview.style.display = 'block';
+        deleteBtn.style.display = 'inline-flex';
+      } else {
+        preview.style.display = 'none';
+        deleteBtn.style.display = 'none';
+      }
+    }
+
+    function confirmDeleteQuestion(id) {
+      showConfirmModal('Delete Question', 'Permanently delete this question?', async () => {
+        await supabaseClient.from('questions').delete().eq('id', id);
+        showToast('Question deleted', 'info');
+        loadAdminData();
+      });
+    }
+
+    async function handleSaveUser(e) {
+      e.preventDefault();
+      const userData = {
+        name: document.getElementById('u-name').value,
+        gender: document.getElementById('u-gender').value,
+        phone: document.getElementById('u-phone').value,
+        class: document.getElementById('u-class').value,
+        division: document.getElementById('u-div').value,
+        first_language: document.getElementById('u-first-lang').value,
+        username: document.getElementById('u-username').value,
+        password: document.getElementById('u-password').value,
+        role: document.getElementById('u-role').value,
+        status: document.getElementById('u-status').value
+      };
+
+      const { error } = await supabaseClient.from('users').upsert([userData], { onConflict: 'username' });
+      if (!error) {
+        showToast('User credentials updated!', 'success');
+        document.getElementById('user-form').reset();
+        loadAdminData();
+      } else {
+        showToast('Failed to save user.', 'danger');
+      }
+    }
+
+    function editUser(name, gender, phone, username, password, role, status, userClass, div, firstLang) {
+      showSection('manage-users-sec');
+      document.getElementById('u-name').value = name;
+      document.getElementById('u-gender').value = gender || 'Male';
+      document.getElementById('u-phone').value = phone;
+      document.getElementById('u-class').value = userClass;
+      document.getElementById('u-div').value = div;
+      document.getElementById('u-first-lang').value = firstLang || 'MI';
+      document.getElementById('u-username').value = username;
+      document.getElementById('u-password').value = password;
+      document.getElementById('u-role').value = role;
+      document.getElementById('u-status').value = status;
+    }
+
+    function toggleKeepLoggedPill() {
+      const pill = document.getElementById('keep-logged-pill');
+      const text = document.getElementById('keep-logged-text');
+      if (pill.classList.contains('active')) {
+        pill.className = 'keep-logged-pill';
+        text.innerText = 'Keep Me Logged In: OFF';
+      } else {
+        pill.className = 'keep-logged-pill active';
+        text.innerText = 'Keep Me Logged In: ON';
+      }
+    }
+
+    async function handleFirstTimePassSubmit(e) {
+      e.preventDefault();
+      const pass1 = document.getElementById('first-new-pass').value.trim();
+      const pass2 = document.getElementById('first-confirm-pass').value.trim();
+
+      if (pass1 !== pass2) {
+        showToast('Passwords do not match!', 'danger');
+        return;
+      }
+
+      const { error } = await supabaseClient.from('users').update({ password: pass1 }).eq('username', currentUser.username);
+      if (!error) {
+        showToast('Password updated! Redirecting...', 'success');
+        document.getElementById('first-time-pass-modal').style.display = 'none';
+        localStorage.setItem('USS_USER', JSON.stringify(currentUser));
+        initializeSession();
+      } else {
+        showToast('Failed to change password.', 'danger');
+      }
+    }
+
+    // =========================================================================
+// DELETE SINGLE LOG & CLEAR ALL LOGS
+// =========================================================================
+async function deleteSingleLog(logId) {
+  showConfirmModal('Delete Access Log', 'Permanently delete this access log record?', async () => {
+    let query = supabaseClient.from('logs').delete();
+
+    // TARGET log_id COLUMN FOR TEXT IDS (e.g. 'LOG-1786368738727')
+    if (typeof logId === 'string' && logId.startsWith('LOG-')) {
+      query = query.eq('log_id', logId);
+    } else if (!isNaN(logId)) {
+      query = query.eq('id', Number(logId));
+    } else {
+      query = query.eq('log_id', String(logId));
+    }
+
+    const { error } = await query;
+
+    if (!error) {
+      showToast('Log deleted successfully!', 'success');
+      loadAdminData();
+    } else {
+      showToast('Failed to delete log: ' + error.message, 'danger');
+    }
+  });
+}
+
+async function clearAllLogs() {
+  showConfirmModal('Clear All Access Logs', 'Are you sure you want to permanently delete ALL access logs?', async () => {
+    const { error } = await supabaseClient
+      .from('logs')
+      .delete()
+      .neq('id', 0); // Deletes all rows
+
+    if (!error) {
+      showToast('All access logs cleared!', 'success');
+      loadAdminData();
+    } else {
+      showToast('Failed to clear logs: ' + error.message, 'danger');
+    }
+  });
+}
+  </script>
+</body>
+</html>
