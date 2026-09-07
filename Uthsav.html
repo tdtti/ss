@@ -624,10 +624,10 @@
 
         <!-- STRICT VALIDATED JUDGE LOGIN -->
         <div id="formJudge" class="login-form">
-            <label>Judge Full Name</label>
-            <input type="text" id="judgeLoginName" placeholder="Enter exact registered full name">
-            <label>Registered Phone Number</label>
-            <input type="text" id="judgeLoginPhone" placeholder="Enter 10-digit registered phone">
+            <label>User ID</label>
+            <input type="text" id="judgeLoginName" placeholder="User ID">
+            <label>Password</label>
+            <input type="text" id="judgeLoginPhone" placeholder="Password">
             <button class="login-btn" style="background:var(--primary);" onclick="loginJudge()">Enter Judgement Panel</button>
         </div>
     </div>
@@ -757,25 +757,35 @@
                     <input type="text" id="studentMasterSearch" placeholder="Instant Search by Admission No, Name, Class, Division, Phone..." oninput="renderStudentMasterTable()" style="width:100%;">
                 </div>
 
-                <div id="studentFormBox" style="display:none; background:#f1f5f9; padding:16px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:15px;">
-                    <h5 id="studentFormTitle" style="margin:0 0 12px 0; color:var(--dark);">Add Student</h5>
-                    <div class="row">
-                        <div class="form-group"><label>Admission No</label><input type="text" id="mAdmnNo"></div>
-                        <div class="form-group"><label>Name</label><input type="text" id="mName"></div>
-                        <div class="form-group"><label>Class</label><input type="text" id="mClass" placeholder="e.g. 5"></div>
-                        <div class="form-group"><label>Division</label><input type="text" id="mDiv" placeholder="e.g. A"></div>
-                        <div class="form-group">
-                            <label>Gender</label>
-                            <select id="mGender">
-                                <option value="Boy">Boy</option>
-                                <option value="Girl">Girl</option>
-                            </select>
+                <!-- Add / Modify Student Instant Popup Modal -->
+                <div id="studentModalOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.65); backdrop-filter:blur(4px); z-index:9999; display:none; justify-content:center; align-items:center; padding:15px;">
+                    <div id="studentFormBox" style="background:#ffffff; border-radius:12px; width:100%; max-width:560px; box-shadow:0 20px 40px rgba(0,0,0,0.3); padding:24px; border:1px solid #e2e8f0; animation:popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #edf2f7; padding-bottom:10px;">
+                            <h4 id="studentFormTitle" style="margin:0; font-size:18px; color:var(--dark); display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-user-edit" style="color:var(--primary);"></i> <span>Modify Student Details</span>
+                            </h4>
+                            <button type="button" onclick="closeStudentMasterForm()" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer; padding:4px 8px;">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
-                        <div class="form-group"><label>Phone Number</label><input type="text" id="mPhone"></div>
-                    </div>
-                    <div style="display:flex; gap:10px; margin-top:5px;">
-                        <button class="action-btn success" onclick="saveStudentMaster()"><i class="fas fa-save"></i> Save Student</button>
-                        <button class="action-btn secondary" onclick="closeStudentMasterForm()"><i class="fas fa-times"></i> Cancel</button>
+                        <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                            <div class="form-group"><label>Admission No</label><input type="text" id="mAdmnNo"></div>
+                            <div class="form-group"><label>Name</label><input type="text" id="mName"></div>
+                            <div class="form-group"><label>Class</label><input type="text" id="mClass" placeholder="e.g. 5"></div>
+                            <div class="form-group"><label>Division</label><input type="text" id="mDiv" placeholder="e.g. A"></div>
+                            <div class="form-group">
+                                <label>Gender</label>
+                                <select id="mGender">
+                                    <option value="Boy">Boy</option>
+                                    <option value="Girl">Girl</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label>Phone Number</label><input type="text" id="mPhone"></div>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
+                            <button class="action-btn secondary" onclick="closeStudentMasterForm()"><i class="fas fa-times"></i> Cancel</button>
+                            <button class="action-btn success" onclick="saveStudentMaster()"><i class="fas fa-save"></i> Save Student</button>
+                        </div>
                     </div>
                 </div>
 
@@ -904,7 +914,7 @@
                     </div>
                     <div class="form-group">
                         <label>Phone Number</label>
-                        <input type="text" id="newJudgePhone" placeholder="10-digit phone number">
+                        <input type="text" id="newJudgePhone" placeholder="Password">
                     </div>
                     <div class="form-group">
                         <label>Allot Item</label>
@@ -1198,6 +1208,60 @@
                 <p style="font-size:12px; color:#777; margin-bottom:10px;">Format: <code>Fest Name, Item Name, Item Code, Category (General/Boy/Girl), Participants, Duration</code></p>
                 <textarea id="bulkItemData" style="width:100%; height:130px; font-family: monospace;" placeholder="General Kalothswom, Bharatanatyam, GK101, General, 1, 10 Mins&#10;Sports Day, 100M RUN (BOYS), SD101, Boy, 1, 15 Mins"></textarea>
                 <button class="action-btn success" style="margin-top:10px;" onclick="bulkUploadItems()"><i class="fas fa-upload"></i> Start Bulk Items Import</button>
+            <!-- ITEMS DIRECTORY BY CONCERNED FESTIVAL -->
+                <div style="margin-top:25px; border-top:2px solid #edf2f7; padding-top:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                        <h5 style="margin:0; font-size:16px; color:var(--dark);"><i class="fas fa-list-check"></i> Manage Existing Items Directory</h5>
+                        <input type="text" id="adminItemSearch" placeholder="Search by Item, Code, Fest, Category..." oninput="renderAdminItemsTable()" style="max-width:320px; padding:8px 12px;">
+                    </div>
+                    <div id="adminItemsDirectoryContainer">
+                        <p style="text-align:center; color:#999; padding:20px;">Loading items directory...</p>
+                    </div>
+                </div>
+
+                <!-- INSTANT EDIT ITEM MODAL -->
+                <div id="itemModalOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.65); backdrop-filter:blur(4px); z-index:9999; display:none; justify-content:center; align-items:center; padding:15px;">
+                    <div id="itemFormBox" style="background:#ffffff; border-radius:12px; width:100%; max-width:560px; box-shadow:0 20px 40px rgba(0,0,0,0.3); padding:24px; border:1px solid #e2e8f0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #edf2f7; padding-bottom:10px;">
+                            <h4 style="margin:0; font-size:18px; color:var(--dark);"><i class="fas fa-edit" style="color:var(--primary);"></i> Modify Item Details</h4>
+                            <button type="button" onclick="closeEditItemModal()" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                            <div class="form-group">
+                                <label>Fest Name</label>
+                                <select id="editItemFest"></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Item Name</label>
+                                <input type="text" id="editItemName">
+                            </div>
+                            <div class="form-group">
+                                <label>Item Code</label>
+                                <input type="text" id="editItemCode">
+                            </div>
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select id="editItemCat">
+                                    <option value="General">General</option>
+                                    <option value="M">M</option>
+                                    <option value="F">F</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Participants</label>
+                                <input type="number" id="editItemPart" min="1" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label>Duration</label>
+                                <input type="text" id="editItemDur" placeholder="e.g. 10 Mins">
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
+                            <button class="action-btn secondary" onclick="closeEditItemModal()"><i class="fas fa-times"></i> Cancel</button>
+                            <button class="action-btn success" onclick="saveItemMaster()"><i class="fas fa-save"></i> Update Item</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="section">
@@ -2189,23 +2253,25 @@
 
     function openStudentMasterForm(id) {
         editingStudentDocId = id;
-        const box = document.getElementById('studentFormBox');
+        const overlay = document.getElementById('studentModalOverlay');
         const title = document.getElementById('studentFormTitle');
-        box.style.display = 'block';
+        
+        // Instantly pop up modal in front of the screen
+        if (overlay) overlay.style.display = 'flex';
 
         if (id) {
-            title.innerText = "Modify Student Details";
+            title.innerHTML = '<i class="fas fa-user-edit" style="color:var(--primary);"></i> <span>Modify Student Details</span>';
             const st = dbStudents.find(s => s.id === id);
             if (st) {
-                document.getElementById('mAdmnNo').value = st["Admission Number"];
-                document.getElementById('mName').value = st["Name"];
-                document.getElementById('mClass').value = st["Class"];
-                document.getElementById('mDiv').value = st["Division"];
+                document.getElementById('mAdmnNo').value = st["Admission Number"] || "";
+                document.getElementById('mName').value = st["Name"] || "";
+                document.getElementById('mClass').value = st["Class"] || "";
+                document.getElementById('mDiv').value = st["Division"] || "";
                 document.getElementById('mGender').value = st["Gender"] || "Boy";
                 document.getElementById('mPhone').value = st["Phone No"] || "";
             }
         } else {
-            title.innerText = "Add New Student";
+            title.innerHTML = '<i class="fas fa-user-plus" style="color:var(--success);"></i> <span>Add New Student</span>';
             document.getElementById('mAdmnNo').value = "";
             document.getElementById('mName').value = "";
             document.getElementById('mClass').value = "";
@@ -2217,7 +2283,8 @@
 
     function closeStudentMasterForm() {
         editingStudentDocId = null;
-        document.getElementById('studentFormBox').style.display = 'none';
+        const overlay = document.getElementById('studentModalOverlay');
+        if (overlay) overlay.style.display = 'none';
     }
 
     async function saveStudentMaster() {
@@ -3865,6 +3932,7 @@
         renderUserTable();
         loadJudgeActivities();
         loadStudentLogs();
+        renderAdminItemsTable();
     }
 
     function renderConvenorsTable() {
@@ -4078,9 +4146,10 @@
             });
 
             await batch.commit();
-            hideLoader();
-            document.getElementById('bulkItemData').value = "";
-            showCustomDialog("Import Complete", `Successfully imported ${count} items.`, "success");
+        hideLoader();
+        document.getElementById('bulkItemData').value = "";
+        renderAdminItemsTable(); // <-- ADD THIS LINE
+        showCustomDialog("Import Complete", `Successfully imported ${count} items.`, "success");
         } catch (e) {
             hideLoader();
             showCustomDialog("Error", "Bulk items import encountered an error.", "danger");
@@ -4258,6 +4327,185 @@
             renderUserTable();
             showCustomDialog("Deleted", "System user removed.", "success");
         }, true);
+    }
+
+    // --- MANAGE EXISTING ITEMS DIRECTORY (TABLE, MODIFY & DELETE) ---
+    let editingItemDocId = null;
+
+    function renderAdminItemsTable() {
+        const container = document.getElementById('adminItemsDirectoryContainer');
+        if (!container) return;
+        const q = String(document.getElementById('adminItemSearch')?.value || "").toLowerCase().trim();
+
+        container.innerHTML = "";
+
+        let items = [...dbFests];
+        if (q) {
+            items = items.filter(f => 
+                String(f["Fest Name"] || "").toLowerCase().includes(q) ||
+                String(f["Item"] || "").toLowerCase().includes(q) ||
+                String(f["Item Code"] || "").toLowerCase().includes(q) ||
+                String(f["Category"] || "").toLowerCase().includes(q)
+            );
+        }
+
+        if (items.length === 0) {
+            container.innerHTML = `<p style="text-align:center; color:#999; padding:25px;">No items found matching criteria.</p>`;
+            return;
+        }
+
+        // Group by Festival Name
+        const festGroups = {};
+        items.forEach(it => {
+            const fName = it["Fest Name"] || "Other";
+            if (!festGroups[fName]) festGroups[fName] = [];
+            festGroups[fName].push(it);
+        });
+
+        Object.keys(festGroups).sort().forEach(festName => {
+            const festItems = festGroups[festName];
+            festItems.sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
+
+            let groupHTML = `
+                <div style="margin-bottom:20px;">
+                    <div class="item-sub-head" style="margin: 15px 0 5px 0;">
+                        <span><i class="fas fa-trophy" style="color:var(--gold); margin-right:8px;"></i> ${festName}</span>
+                        <span style="font-size:12px; font-weight:normal; color:#555;">${festItems.length} Item(s)</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;">#</th>
+                                    <th>Item Name</th>
+                                    <th style="width:110px;">Item Code</th>
+                                    <th>Category</th>
+                                    <th style="width:100px;">Participants</th>
+                                    <th>Duration</th>
+                                    <th style="width:100px; text-align:center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            festItems.forEach((it, idx) => {
+                groupHTML += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td><b>${it["Item"]}</b></td>
+                        <td><span style="font-family:monospace; font-weight:700; color:var(--primary);">${it["Item Code"] || '-'}</span></td>
+                        <td>${it["Category"] || 'General'}</td>
+                        <td>${it["No of Participants"] || '1'}</td>
+                        <td>${it["Duration"] || '-'}</td>
+                        <td style="text-align:center;">
+                            <div style="display:inline-flex; gap:6px;">
+                                <button class="action-btn secondary" style="padding:4px 8px; font-size:12px;" onclick="openEditItemModal('${it.id}')" title="Modify Item">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn danger" style="padding:4px 8px; font-size:12px;" onclick="deleteItemMaster('${it.id}')" title="Delete Item">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            groupHTML += `</tbody></table></div></div>`;
+            container.innerHTML += groupHTML;
+        });
+    }
+
+    function openEditItemModal(id) {
+        editingItemDocId = id;
+        const it = dbFests.find(f => f.id === id);
+        if (!it) return;
+
+        // Populate Fest Dropdown inside modal
+        const festSel = document.getElementById('editItemFest');
+        festSel.innerHTML = "";
+        allFestNames.forEach(f => {
+            festSel.innerHTML += `<option value="${f}">${f}</option>`;
+        });
+
+        festSel.value = it["Fest Name"] || allFestNames[0];
+        document.getElementById('editItemName').value = it["Item"] || "";
+        document.getElementById('editItemCode').value = it["Item Code"] || "";
+        document.getElementById('editItemCat').value = it["Category"] || "General";
+        document.getElementById('editItemPart').value = it["No of Participants"] || "1";
+        document.getElementById('editItemDur').value = it["Duration"] || "";
+
+        document.getElementById('itemModalOverlay').style.display = 'flex';
+    }
+
+    function closeEditItemModal() {
+        editingItemDocId = null;
+        document.getElementById('itemModalOverlay').style.display = 'none';
+    }
+
+    async function saveItemMaster() {
+        if (!editingItemDocId) return;
+
+        const fest = document.getElementById('editItemFest').value;
+        const name = document.getElementById('editItemName').value.trim();
+        const code = document.getElementById('editItemCode').value.trim();
+        const cat = document.getElementById('editItemCat').value;
+        const part = document.getElementById('editItemPart').value || "1";
+        const dur = document.getElementById('editItemDur').value.trim();
+
+        if (!name || !code) {
+            return showCustomDialog("Incomplete Details", "Item Name and Item Code are required.", "warning");
+        }
+
+        const updatedObj = {
+            "Fest Name": fest,
+            "Festival Category": getFestivalCategory(fest),
+            "Item": name,
+            "Item Code": code,
+            "Category": cat,
+            "No of Participants": part,
+            "Duration": dur
+        };
+
+        showLoader("Updating Item...");
+        try {
+            await db.collection("fests").doc(editingItemDocId).update(updatedObj);
+            const idx = dbFests.findIndex(f => f.id === editingItemDocId);
+            if (idx !== -1) dbFests[idx] = { ...updatedObj, id: editingItemDocId };
+
+            closeEditItemModal();
+            hideLoader();
+            renderAdminItemsTable();
+            showCustomDialog("Updated", `Item <b>${name}</b> modified successfully.`, "success");
+        } catch (e) {
+            hideLoader();
+            showCustomDialog("Error", "Could not update item in database.", "danger");
+        }
+    }
+
+    async function deleteItemMaster(id) {
+        const it = dbFests.find(f => f.id === id);
+        const name = it ? it["Item"] : "this item";
+
+        showCustomDialog(
+            "Delete Item?",
+            `Are you sure you want to permanently delete <b>${name}</b> from the items list?`,
+            "danger",
+            async () => {
+                showLoader("Deleting Item...");
+                try {
+                    await db.collection("fests").doc(id).delete();
+                    dbFests = dbFests.filter(f => f.id !== id);
+                    hideLoader();
+                    renderAdminItemsTable();
+                    showCustomDialog("Deleted", "Item removed successfully.", "success");
+                } catch (e) {
+                    hideLoader();
+                    showCustomDialog("Error", "Could not delete item.", "danger");
+                }
+            },
+            true
+        );
     }
 </script>
 </body>
