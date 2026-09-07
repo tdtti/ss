@@ -112,7 +112,8 @@
         .tab button { 
             background: #eee; border: none; padding: 12px 18px; cursor: pointer; font-weight: bold; 
             color: #666; border-radius: 8px 8px 0 0; display: inline-flex; align-items: center; gap: 8px; 
-            transition: 0.3s; white-space: nowrap; position: relative; 
+            transition: background 0.08s ease, color 0.08s ease; /* FAST INSTANT RESPONSE */
+            white-space: nowrap; position: relative; 
         }
         .tab button i { font-size: 16px; }
         .tab button.active { background: var(--primary); color: white; }
@@ -218,9 +219,79 @@
         .dialog-btn-confirm { background: var(--primary); color: white; }
         .dialog-btn-cancel { background: #e2e8f0; color: #475569; }
 
-        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .spinner-ring { position: absolute; width: 75px; height: 75px; border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* YOUTUBE-STYLE TOP MULTICOLOUR BAR & SCREEN FREEZE / BLUR */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.35); /* Translucent glass effect */
+            backdrop-filter: blur(8px);           /* Blurs the entire screen */
+            -webkit-backdrop-filter: blur(8px);   /* Safari support */
+            z-index: 999999;                      /* Stays on top of everything */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: wait;                         /* Indicates busy state */
+            pointer-events: all;                  /* Freezes all user interaction */
+            user-select: none;
+        }
+
+        /* 5px Multicolour Animated Top Progress Bar */
+        /* 5px YouTube Official Red Progress Bar */
+        .yt-loader-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            z-index: 1000000;
+            background: linear-gradient(
+                90deg, 
+                #ff0000 0%, 
+                #ff4444 30%, 
+                #ffffff 50%, 
+                #ff4444 70%, 
+                #ff0000 100%
+            );
+            background-size: 250% 100%;
+            animation: ytProgressSlide 1.2s linear infinite;
+            box-shadow: 0 0 12px rgba(255, 0, 0, 0.8), 0 0 5px rgba(255, 68, 68, 0.6);
+        }
+
+        @keyframes ytProgressSlide {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        /* Central Floating Status Badge */
+        .loading-badge-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px 30px;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .spinner-ring {
+            position: absolute;
+            width: 75px;
+            height: 75px;
+            border: 4px solid #f1f5f9;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        
 
         /* ==========================================================================
            MODERN A4 LANDSCAPE CERTIFICATE & SIDE SCROLL PREVIEW STYLES
@@ -574,12 +645,19 @@
     </div>
 </div>
 
+<!-- YOUTUBE-STYLE TOP LOADER & FROZEN BLUR OVERLAY -->
 <div id="loadingOverlay">
-    <div style="position: relative; width: 80px; height: 80px; display: flex; justify-content: center; align-items: center;">
-        <div class="spinner-ring"></div>
-        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" style="width: 48px; height: 48px; border-radius: 50%;" alt="Loading">
+    <!-- 5px Multicolour Top Bar -->
+    <div class="yt-loader-bar"></div>
+
+    <!-- Center Card -->
+    <div class="loading-badge-card">
+        <div style="position: relative; width: 75px; height: 75px; display: flex; justify-content: center; align-items: center;">
+            <div class="spinner-ring"></div>
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" style="width: 46px; height: 46px; border-radius: 50%;" alt="Loading">
+        </div>
+        <div id="loadingText" style="margin-top: 15px; font-size: 14px; font-weight: 700; color: var(--dark); letter-spacing: 0.3px;">Loading System...</div>
     </div>
-    <div id="loadingText" style="margin-top: 20px; font-weight: bold; color: var(--dark);">Loading System...</div>
 </div>
 
 <!-- 1. LOGIN SCREEN -->
@@ -776,8 +854,8 @@
                             <div class="form-group">
                                 <label>Gender</label>
                                 <select id="mGender">
-                                    <option value="Boy">Boy</option>
-                                    <option value="Girl">Girl</option>
+                                    <option value="M">M</option>
+                                    <option value="F">F</option>
                                 </select>
                             </div>
                             <div class="form-group"><label>Phone Number</label><input type="text" id="mPhone"></div>
@@ -1205,8 +1283,8 @@
 
             <div class="section">
                 <h4 class="section-title"><i class="fas fa-file-circle-plus"></i> Bulk Items Upload</h4>
-                <p style="font-size:12px; color:#777; margin-bottom:10px;">Format: <code>Fest Name, Item Name, Item Code, Category (General/Boy/Girl), Participants, Duration</code></p>
-                <textarea id="bulkItemData" style="width:100%; height:130px; font-family: monospace;" placeholder="General Kalothswom, Bharatanatyam, GK101, General, 1, 10 Mins&#10;Sports Day, 100M RUN (BOYS), SD101, Boy, 1, 15 Mins"></textarea>
+                <p style="font-size:12px; color:#777; margin-bottom:10px;">Format: <code>Fest Name, Item Name, Item Code, Category (General/Male/Female), Participants, Duration</code></p>
+                <textarea id="bulkItemData" style="width:100%; height:130px; font-family: monospace;" placeholder="General Kalothswom, Bharatanatyam, GK101, General, 1, 10 Mins&#10;Sports Day, 100M RUN (BOYS), SD101, M, 1, 15 Mins"></textarea>
                 <button class="action-btn success" style="margin-top:10px;" onclick="bulkUploadItems()"><i class="fas fa-upload"></i> Start Bulk Items Import</button>
             <!-- ITEMS DIRECTORY BY CONCERNED FESTIVAL -->
                 <div style="margin-top:25px; border-top:2px solid #edf2f7; padding-top:20px;">
@@ -1726,8 +1804,10 @@
 
     // --- 6. TAB NAVIGATION & PROPER RESULTS BADGE HANDLING ---
     function openTab(tabId) {
+        // 1. Instantly switch active tabs, button styles, and icons
         document.querySelectorAll('.tabcontent').forEach(t => t.style.display = 'none');
         document.querySelectorAll('.tab button').forEach(b => b.classList.remove('active'));
+        
         const target = document.getElementById(tabId);
         if (target) target.style.display = 'block';
         
@@ -1740,14 +1820,22 @@
             localStorage.setItem("uthsav_last_seen_results_count", String(dbPublishedResults.length));
         }
 
-        if (tabId === 'RegTab') renderStudentMasterTable();
-        if (tabId === 'RecTab') renderTables();
-        if (tabId === 'EventMgmtTab') initEventMgmtTab();
-        if (tabId === 'JudgementTab') initJudgementTab();
-        if (tabId === 'TabulationTab') renderTabulation();
-        if (tabId === 'ResultTab') renderResults();
-        if (tabId === 'SubDistrictTab') renderSubDistrictTab();
-        if (tabId === 'AdminTab') renderAdminPanel();
+        // 2. Let browser paint the active button & icon instantly first, then load data
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                // Skip student directory rendering if user is a student (since it's hidden)
+                if (tabId === 'RegTab' && currentUser && currentUser.role !== 'Student') {
+                    renderStudentMasterTable();
+                }
+                if (tabId === 'RecTab') renderTables();
+                if (tabId === 'EventMgmtTab') initEventMgmtTab();
+                if (tabId === 'JudgementTab') initJudgementTab();
+                if (tabId === 'TabulationTab') renderTabulation();
+                if (tabId === 'ResultTab') renderResults();
+                if (tabId === 'SubDistrictTab') renderSubDistrictTab();
+                if (tabId === 'AdminTab') renderAdminPanel();
+            }, 0);
+        });
     }
 
     // --- 7. INITIALIZATION ---
@@ -2054,7 +2142,7 @@
 
         dbStudents.filter(s => {
             const mTxt = String(s["Admission Number"] || "").toLowerCase().includes(q) || String(s["Name"] || "").toLowerCase().includes(q);
-            const mGen = (cat === 'boy' || cat === 'girl') ? String(s["Gender"] || "").toLowerCase() === cat : true;
+            const mGen = (cat === 'M' || cat === 'F') ? String(s["Gender"] || "").toLowerCase() === cat : true;
             return mTxt && mGen;
         }).forEach(st => {
             const d = document.createElement("div");
@@ -2183,13 +2271,15 @@
         `;
     }
 
+    // Fast pre-compiled collator for instant natural sorting (5A, 5B, 5C, 10A...)
+    const naturalCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
     function renderStudentMasterTable() {
         renderStudentMasterThead();
         const tbody = document.getElementById('studentMasterTbody');
         if (!tbody) return;
         const q = String(document.getElementById('studentMasterSearch')?.value || "").toLowerCase().trim();
 
-        tbody.innerHTML = "";
         let filtered = dbStudents.filter(s => {
             if (!q) return true;
             return String(s["Admission Number"] || "").toLowerCase().includes(q) ||
@@ -2204,31 +2294,32 @@
             return;
         }
 
-        // Sorting Logic (Default: Class-wise like 5A, 5B, 5C...)
+        // High-speed natural sorting
         filtered.sort((a, b) => {
             let cmp = 0;
             if (studentMasterSort.col === 'class') {
                 const aClassDiv = `${a["Class"] || ''}${a["Division"] || ''}`.trim();
                 const bClassDiv = `${b["Class"] || ''}${b["Division"] || ''}`.trim();
-                // Natural alphanumeric comparison: handles 5A < 5B < 5C < 10A properly
-                cmp = aClassDiv.localeCompare(bClassDiv, undefined, { numeric: true, sensitivity: 'base' });
+                cmp = naturalCollator.compare(aClassDiv, bClassDiv);
                 if (cmp === 0) {
                     cmp = String(a["Name"] || "").localeCompare(String(b["Name"] || ""));
                 }
             } else if (studentMasterSort.col === 'admn') {
-                cmp = String(a["Admission Number"] || "").localeCompare(String(b["Admission Number"] || ""), undefined, { numeric: true });
+                cmp = naturalCollator.compare(String(a["Admission Number"] || ""), String(b["Admission Number"] || ""));
             } else if (studentMasterSort.col === 'name') {
                 cmp = String(a["Name"] || "").localeCompare(String(b["Name"] || ""));
             } else if (studentMasterSort.col === 'gender') {
                 cmp = String(a["Gender"] || "").localeCompare(String(b["Gender"] || ""));
             } else if (studentMasterSort.col === 'phone') {
-                cmp = String(a["Phone No"] || "").localeCompare(String(b["Phone No"] || ""), undefined, { numeric: true });
+                cmp = naturalCollator.compare(String(a["Phone No"] || ""), String(b["Phone No"] || ""));
             }
             return studentMasterSort.dir === 'asc' ? cmp : -cmp;
         });
 
+        // BATCH WRITE: Build the full string once (100x faster than innerHTML += in a loop)
+        let rowsHTML = "";
         filtered.forEach((st, idx) => {
-            tbody.innerHTML += `
+            rowsHTML += `
                 <tr>
                     <td style="text-align:center; font-weight:600; color:#64748b;">${idx + 1}</td>
                     <td><b>${st["Admission Number"]}</b></td>
@@ -2249,6 +2340,7 @@
                 </tr>
             `;
         });
+        tbody.innerHTML = rowsHTML; // Single instant paint
     }
 
     function openStudentMasterForm(id) {
@@ -2267,7 +2359,7 @@
                 document.getElementById('mName').value = st["Name"] || "";
                 document.getElementById('mClass').value = st["Class"] || "";
                 document.getElementById('mDiv').value = st["Division"] || "";
-                document.getElementById('mGender').value = st["Gender"] || "Boy";
+                document.getElementById('mGender').value = st["Gender"] || "M";
                 document.getElementById('mPhone').value = st["Phone No"] || "";
             }
         } else {
@@ -2276,7 +2368,7 @@
             document.getElementById('mName').value = "";
             document.getElementById('mClass').value = "";
             document.getElementById('mDiv').value = "";
-            document.getElementById('mGender').value = "Boy";
+            document.getElementById('mGender').value = "M";
             document.getElementById('mPhone').value = "";
         }
     }
@@ -4354,7 +4446,7 @@
             return;
         }
 
-        // Group by Festival Name
+        // Group items by Festival Name
         const festGroups = {};
         items.forEach(it => {
             const fName = it["Fest Name"] || "Other";
@@ -4367,22 +4459,29 @@
             festItems.sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
 
             let groupHTML = `
-                <div style="margin-bottom:20px;">
-                    <div class="item-sub-head" style="margin: 15px 0 5px 0;">
-                        <span><i class="fas fa-trophy" style="color:var(--gold); margin-right:8px;"></i> ${festName}</span>
-                        <span style="font-size:12px; font-weight:normal; color:#555;">${festItems.length} Item(s)</span>
+                <div style="margin-bottom:24px; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; background:#ffffff;">
+                    <!-- Festival Header with Delete Entire Fest Table Button -->
+                    <div class="item-sub-head" style="margin:0; padding:12px 18px; border-radius:0; border-left:5px solid var(--primary); display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
+                        <span style="font-size:16px;"><i class="fas fa-trophy" style="color:var(--gold); margin-right:8px;"></i> ${festName}</span>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span style="font-size:12.5px; font-weight:bold; color:#64748b;">${festItems.length} Item(s)</span>
+                            <!-- Delete Entire Festival Table Icon -->
+                            <button class="action-btn danger" style="padding:4px 9px; font-size:11.5px;" onclick="deleteEntireFestTable('${festName}')" title="Delete entire ${festName} table">
+                                <i class="fas fa-trash-alt"></i> 
+                            </button>
+                        </div>
                     </div>
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="margin:0;">
                         <table>
                             <thead>
-                                <tr>
+                                <tr style="background:#f1f5f9;">
                                     <th style="width:40px;">#</th>
                                     <th>Item Name</th>
                                     <th style="width:110px;">Item Code</th>
                                     <th>Category</th>
                                     <th style="width:100px;">Participants</th>
                                     <th>Duration</th>
-                                    <th style="width:100px; text-align:center;">Actions</th>
+                                    <th style="width:130px; text-align:center;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -4399,10 +4498,16 @@
                         <td>${it["Duration"] || '-'}</td>
                         <td style="text-align:center;">
                             <div style="display:inline-flex; gap:6px;">
-                                <button class="action-btn secondary" style="padding:4px 8px; font-size:12px;" onclick="openEditItemModal('${it.id}')" title="Modify Item">
+                                <!-- ADD NEW ITEM TO THIS FESTIVAL ICON -->
+                                <button class="action-btn success" style="padding:4px 7px; font-size:11.5px;" onclick="openAddItemForFest('${festName}')" title="Add new item to ${festName}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <!-- MODIFY ITEM ICON -->
+                                <button class="action-btn secondary" style="padding:4px 7px; font-size:11.5px;" onclick="openEditItemModal('${it.id}')" title="Modify Item">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="action-btn danger" style="padding:4px 8px; font-size:12px;" onclick="deleteItemMaster('${it.id}')" title="Delete Item">
+                                <!-- DELETE ITEM ICON -->
+                                <button class="action-btn danger" style="padding:4px 7px; font-size:11.5px;" onclick="deleteItemMaster('${it.id}')" title="Delete Item">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
@@ -4414,6 +4519,64 @@
             groupHTML += `</tbody></table></div></div>`;
             container.innerHTML += groupHTML;
         });
+    }
+
+    // Opens modal pre-configured to add a new item under the specific fest
+    function openAddItemForFest(festName) {
+        editingItemDocId = null; // New item mode
+
+        const festSel = document.getElementById('editItemFest');
+        festSel.innerHTML = "";
+        allFestNames.forEach(f => {
+            festSel.innerHTML += `<option value="${f}">${f}</option>`;
+        });
+
+        festSel.value = festName;
+        document.getElementById('editItemName').value = "";
+        document.getElementById('editItemCode').value = "";
+        document.getElementById('editItemCat').value = "General";
+        document.getElementById('editItemPart').value = "1";
+        document.getElementById('editItemDur').value = "";
+
+        const modalTitle = document.querySelector('#itemFormBox h4');
+        if (modalTitle) modalTitle.innerHTML = `<i class="fas fa-plus-circle" style="color:var(--success);"></i> Add New Item to ${festName}`;
+
+        const saveBtn = document.querySelector('#itemFormBox .action-btn.success');
+        if (saveBtn) saveBtn.innerHTML = `<i class="fas fa-save"></i> Save Item`;
+
+        document.getElementById('itemModalOverlay').style.display = 'flex';
+    }
+
+    // Handles deleting all items belonging to the selected festival
+    async function deleteEntireFestTable(festName) {
+        const festItems = dbFests.filter(f => f["Fest Name"] === festName);
+        if (festItems.length === 0) return;
+
+        showCustomDialog(
+            `Delete Entire ${festName} Table?`,
+            `⚠️ Are you sure you want to permanently delete <b>ALL ${festItems.length} items</b> under <b>${festName}</b>? This action cannot be undone.`,
+            "danger",
+            async () => {
+                showLoader(`Deleting all items in ${festName}...`);
+                try {
+                    const batch = db.batch();
+                    festItems.forEach(it => {
+                        batch.delete(db.collection("fests").doc(it.id));
+                    });
+                    await batch.commit();
+
+                    dbFests = dbFests.filter(f => f["Fest Name"] !== festName);
+                    hideLoader();
+                    renderAdminItemsTable();
+                    initEventMgmtTab();
+                    showCustomDialog("Table Deleted", `All items under ${festName} have been removed.`, "success");
+                } catch (e) {
+                    hideLoader();
+                    showCustomDialog("Error", `Could not delete items for ${festName}.`, "danger");
+                }
+            },
+            true
+        );
     }
 
     function openEditItemModal(id) {
@@ -4444,8 +4607,6 @@
     }
 
     async function saveItemMaster() {
-        if (!editingItemDocId) return;
-
         const fest = document.getElementById('editItemFest').value;
         const name = document.getElementById('editItemName').value.trim();
         const code = document.getElementById('editItemCode').value.trim();
@@ -4457,7 +4618,7 @@
             return showCustomDialog("Incomplete Details", "Item Name and Item Code are required.", "warning");
         }
 
-        const updatedObj = {
+        const itemObj = {
             "Fest Name": fest,
             "Festival Category": getFestivalCategory(fest),
             "Item": name,
@@ -4467,19 +4628,28 @@
             "Duration": dur
         };
 
-        showLoader("Updating Item...");
+        showLoader(editingItemDocId ? "Updating Item..." : "Saving New Item...");
         try {
-            await db.collection("fests").doc(editingItemDocId).update(updatedObj);
-            const idx = dbFests.findIndex(f => f.id === editingItemDocId);
-            if (idx !== -1) dbFests[idx] = { ...updatedObj, id: editingItemDocId };
+            if (editingItemDocId) {
+                // Modify existing item
+                await db.collection("fests").doc(editingItemDocId).update(itemObj);
+                const idx = dbFests.findIndex(f => f.id === editingItemDocId);
+                if (idx !== -1) dbFests[idx] = { ...itemObj, id: editingItemDocId };
+                showCustomDialog("Updated", `Item <b>${name}</b> modified successfully.`, "success");
+            } else {
+                // Add new item to this festival
+                const docRef = await db.collection("fests").add(itemObj);
+                dbFests.push({ ...itemObj, id: docRef.id });
+                showCustomDialog("Item Added", `New item <b>${name}</b> added to <b>${fest}</b>.`, "success");
+            }
 
             closeEditItemModal();
             hideLoader();
             renderAdminItemsTable();
-            showCustomDialog("Updated", `Item <b>${name}</b> modified successfully.`, "success");
+            initEventMgmtTab();
         } catch (e) {
             hideLoader();
-            showCustomDialog("Error", "Could not update item in database.", "danger");
+            showCustomDialog("Error", "Could not save item to database.", "danger");
         }
     }
 
