@@ -781,7 +781,7 @@
 
                 <div class="table-responsive">
                     <table>
-                        <thead>
+                        <thead id="studentMasterThead">
                             <tr>
                                 <th>Admission No</th>
                                 <th>Name</th>
@@ -789,7 +789,7 @@
                                 <th>Gender</th>
                                 <th>Phone Number</th>
                                 <th style="width:110px; text-align:center;">Actions</th>
-                            </tr>
+                            </tr> 
                         </thead>
                         <tbody id="studentMasterTbody"></tbody>
                     </table>
@@ -2080,7 +2080,47 @@
     }
 
     // --- STUDENT MASTER DIRECTORY (ADMIN ONLY) ---
+    // --- STUDENT MASTER DIRECTORY WITH SL NO & CLASSWISE SORT (5A, 5B, 5C...) ---
+    let studentMasterSort = { col: 'class', dir: 'asc' }; // Default sort: Class & Div ascending
+
+    function setStudentMasterSort(col) {
+        if (studentMasterSort.col === col) {
+            studentMasterSort.dir = studentMasterSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            studentMasterSort.col = col;
+            studentMasterSort.dir = 'asc';
+        }
+        renderStudentMasterTable();
+    }
+
+    function renderStudentMasterThead() {
+        const thead = document.getElementById('studentMasterThead');
+        if (!thead) return;
+
+        const getSortIcon = (col) => {
+            if (studentMasterSort.col !== col) {
+                return '<i class="fas fa-sort" style="color:#cbd5e1; margin-left:5px; font-size:11px;"></i>';
+            }
+            return studentMasterSort.dir === 'asc'
+                ? '<i class="fas fa-sort-up" style="color:var(--primary); margin-left:5px;"></i>'
+                : '<i class="fas fa-sort-down" style="color:var(--primary); margin-left:5px;"></i>';
+        };
+
+        thead.innerHTML = `
+            <tr>
+                <th style="width:55px; text-align:center;">Sl No</th>
+                <th onclick="setStudentMasterSort('admn')" style="cursor:pointer; user-select:none;">Admission No ${getSortIcon('admn')}</th>
+                <th onclick="setStudentMasterSort('name')" style="cursor:pointer; user-select:none;">Name ${getSortIcon('name')}</th>
+                <th onclick="setStudentMasterSort('class')" style="cursor:pointer; user-select:none;">Class & Div ${getSortIcon('class')}</th>
+                <th onclick="setStudentMasterSort('gender')" style="cursor:pointer; user-select:none;">Gender ${getSortIcon('gender')}</th>
+                <th onclick="setStudentMasterSort('phone')" style="cursor:pointer; user-select:none;">Phone Number ${getSortIcon('phone')}</th>
+                <th style="width:110px; text-align:center;">Actions</th>
+            </tr>
+        `;
+    }
+
     function renderStudentMasterTable() {
+        renderStudentMasterThead();
         const tbody = document.getElementById('studentMasterTbody');
         if (!tbody) return;
         const q = String(document.getElementById('studentMasterSearch')?.value || "").toLowerCase().trim();
@@ -2096,16 +2136,40 @@
         });
 
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#999; padding:20px;">No students matching search criteria.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#999; padding:20px;">No students matching search criteria.</td></tr>`;
             return;
         }
 
-        filtered.slice(0, 100).forEach(st => {
+        // Sorting Logic (Default: Class-wise like 5A, 5B, 5C...)
+        filtered.sort((a, b) => {
+            let cmp = 0;
+            if (studentMasterSort.col === 'class') {
+                const aClassDiv = `${a["Class"] || ''}${a["Division"] || ''}`.trim();
+                const bClassDiv = `${b["Class"] || ''}${b["Division"] || ''}`.trim();
+                // Natural alphanumeric comparison: handles 5A < 5B < 5C < 10A properly
+                cmp = aClassDiv.localeCompare(bClassDiv, undefined, { numeric: true, sensitivity: 'base' });
+                if (cmp === 0) {
+                    cmp = String(a["Name"] || "").localeCompare(String(b["Name"] || ""));
+                }
+            } else if (studentMasterSort.col === 'admn') {
+                cmp = String(a["Admission Number"] || "").localeCompare(String(b["Admission Number"] || ""), undefined, { numeric: true });
+            } else if (studentMasterSort.col === 'name') {
+                cmp = String(a["Name"] || "").localeCompare(String(b["Name"] || ""));
+            } else if (studentMasterSort.col === 'gender') {
+                cmp = String(a["Gender"] || "").localeCompare(String(b["Gender"] || ""));
+            } else if (studentMasterSort.col === 'phone') {
+                cmp = String(a["Phone No"] || "").localeCompare(String(b["Phone No"] || ""), undefined, { numeric: true });
+            }
+            return studentMasterSort.dir === 'asc' ? cmp : -cmp;
+        });
+
+        filtered.forEach((st, idx) => {
             tbody.innerHTML += `
                 <tr>
+                    <td style="text-align:center; font-weight:600; color:#64748b;">${idx + 1}</td>
                     <td><b>${st["Admission Number"]}</b></td>
                     <td>${st["Name"]}</td>
-                    <td>${st["Class"]} ${st["Division"]}</td>
+                    <td><span style="font-weight:700; color:var(--primary);">${st["Class"]} ${st["Division"]}</span></td>
                     <td>${st["Gender"]}</td>
                     <td>${st["Phone No"] || '-'}</td>
                     <td style="text-align:center;">
