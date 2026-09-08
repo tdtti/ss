@@ -2520,46 +2520,42 @@
             let sDiv = student['Division'] || '';
 
             html += `
-            <div class="bday-item" id="${postIdStr}" data-docid="${student.id}">
-                <div class="bday-img-wrapper">
-                    <img src="${imgLink}" alt="${sName}" loading="lazy" decoding="async">
-                    <div class="bday-info">
-                        <h5>${sName}</h5>
-                        <p>${sClass}${sDiv}</p>
-                    </div>
-                </div>
-                
-                <div class="social-bar">
-                    <div class="social-left-group">
-                        <div class="reaction-container">
-                            <div class="reaction-container">
-    <button type="button" class="social-btn main-react-btn ${myReaction ? 'reacted-'+myReaction : ''}" 
-            onclick="handleMainLikeClick(this, '${item.id}', 'posts')" title="Like post">
-        ${myReaction === 'love' ? '❤️' : myReaction === 'clap' ? '👏' : '👍'} 
-        <span class="total-count">${(reacts.like || 0) + (reacts.love || 0) + (reacts.clap || 0)}</span>
-    </button>
-    <button type="button" class="social-btn" onclick="toggleReactionPopup('${postIdStr}')" style="padding:4px 3px; margin-left:-9px;" title="More reactions">
-        <span style="font-size:0.65rem; opacity:0.7;">⌄</span>
-    </button>
-    <div class="reaction-popup" id="popup-${postIdStr}">
-        <span class="reaction-option" onclick="doReaction(this, '${item.id}', 'posts', 'like')" title="Like">👍</span>
-        <span class="reaction-option" onclick="doReaction(this, '${item.id}', 'posts', 'love')" title="Love">❤️</span>
-        <span class="reaction-option" onclick="doReaction(this, '${item.id}', 'posts', 'clap')" title="Applaud">👏</span>
+<div class="bday-item" id="${postIdStr}" data-docid="${student.id}">
+    <div class="bday-img-wrapper">
+        <img src="${imgLink}" alt="${sName}" loading="lazy" decoding="async">
+        <div class="bday-info">
+            <h5>${sName}</h5>
+            <p>${sClass}${sDiv}</p>
+        </div>
     </div>
-</div>
-                            <div class="reaction-popup" id="popup-${postIdStr}">
-                                <span class="reaction-option" onclick="doReaction(this, '${student.id}', 'birthdays', 'like')">👍</span>
-                                <span class="reaction-option" onclick="doReaction(this, '${student.id}', 'birthdays', 'love')">❤️</span>
-                                <span class="reaction-option" onclick="doReaction(this, '${student.id}', 'birthdays', 'clap')">👏</span>
-                            </div>
-                        </div>
-                        <button class="social-btn" onclick="toggleComments(this)">
-                            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
-                            <span class="comment-count">${comments.length}</span>
-                        </button>
-                        <button class="social-btn" onclick="sendBirthdayWish(this, '${sName}', '${student.id}')" title="Wish">
-                            🎁 <span>${wishes}</span>
-                        </button>
+    
+    <div class="social-bar">
+        <div class="social-left-group">
+            <div class="reaction-container">
+                <button type="button" class="social-btn main-react-btn ${myReaction ? 'reacted-'+myReaction : ''}" 
+                        onclick="handleMainLikeClick(this, '${student.id}', 'birthdays')">
+                    ${myReaction === 'love' ? '❤️' : myReaction === 'clap' ? '👏' : '👍'} 
+                    <span class="total-count">${(reacts.like || 0) + (reacts.love || 0) + (reacts.clap || 0)}</span>
+                </button>
+                <button type="button" class="social-btn" onclick="toggleReactionPopup('${postIdStr}')" style="padding:4px 3px; margin-left:-9px;">
+                    <span style="font-size:0.65rem; opacity:0.7;">⌄</span>
+                </button>
+                <div class="reaction-popup" id="popup-${postIdStr}">
+                    <span class="reaction-option" onclick="doReaction(this, '${student.id}', 'birthdays', 'like')">👍</span>
+                    <span class="reaction-option" onclick="doReaction(this, '${student.id}', 'birthdays', 'love')">❤️</span>
+                    <span class="reaction-option" onclick="doReaction(this, '${student.id}', 'birthdays', 'clap')">👏</span>
+                </div>
+            </div>
+            <button class="social-btn" onclick="toggleComments(this)">
+                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+                <span class="comment-count">${comments.length}</span>
+            </button>
+            <button class="social-btn" onclick="sendBirthdayWish(this, '${sName}', '${student.id}')">
+                🎁 <span>${wishes}</span>
+            </button>
+        </div>
+    </div>
+    
                         <button class="social-btn" onclick="sharePost(this, '${student.id}', 'birthdays')" title="Share Image">
                             <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                             <span>${shares}</span>
