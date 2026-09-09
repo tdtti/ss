@@ -626,6 +626,85 @@
             }
             .main-content { padding: 15px; }
         }
+
+        /* 100% WIDTH CATEGORIZED RECORDS STYLES */
+        .rec-classification-head {
+            background: linear-gradient(90deg, #0c2340, #1b6ca8);
+            color: #ffffff;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 800;
+            margin: 28px 0 16px 0;
+            width: ;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .rec-fest-head {
+            background: #f1f5f9;
+            border-left: 6px solid #1b6ca8;
+            padding: 12px 18px;
+            border-radius: 0 8px 8px 0;
+            margin: 18px 0 12px 0;
+            width: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .rec-fest-head h5 {
+            margin: 0;
+            font-size: 16px;
+            color: #1e293b;
+            font-weight: 700;
+        }
+        .rec-type-banner {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #475569;
+            margin: 12px 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* CLEAN PRINT-LIKE FEST REPORT MODAL */
+        #reportModal .report-modal-content {
+            background: #ffffff !important;
+            color: #111827 !important;
+            border-radius: 8px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border: 1px solid #d1d5db;
+        }
+        #printableReportArea {
+            background: #ffffff !important;
+            color: #111827 !important;
+            padding: 20px 10px;
+        }
+        #printableReportArea table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #ffffff !important;
+            color: #111827 !important;
+        }
+        #printableReportArea th, #printableReportArea td {
+            border: 1px solid #cbd5e1 !important;
+            padding: 9px 12px !important;
+            color: #111827 !important;
+            background: #ffffff !important;
+        }
+        #printableReportArea th {
+            background-color: #f8fafc !important;
+            font-weight: 700 !important;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        #printableReportArea tr:nth-child(even) td {
+            background-color: #fbfcfd !important;
+        }
+
     </style>
 </head>
 <body>
@@ -948,7 +1027,10 @@
                     </div>
                     <div class="form-group" style="justify-content: flex-end;">
                         <div style="display:flex; gap:10px;">
-                            <button class="action-btn success" style="flex:1;" onclick="toggleProgramStatus('ACTIVE')"><i class="fas fa-play"></i> Activate</button>
+                            <button class="action( General Convenor )</span>
+                            </div>
+
+                            <div clas-btn success" style="flex:1;" onclick="toggleProgramStatus('ACTIVE')"><i class="fas fa-play"></i> Activate</button>
                             <button class="action-btn danger" style="flex:1;" onclick="toggleProgramStatus('INACTIVE')"><i class="fas fa-stop"></i> Deactivate</button>
                         </div>
                     </div>
@@ -2152,29 +2234,118 @@
         });
     }
 
+    // PARTICIPATION LIMIT CHECKER & STUDENT SELECTOR
     function selectStudent(st, idx) {
         const fName = document.getElementById('festName').value;
         const iName = document.getElementById('itemSelect').value;
         const cnt = parseInt(document.getElementById('participants').value) || 1;
+        const isGroup = cnt > 1;
+        const festCategory = getFestivalCategory(fName);
 
+        // 1. Check duplicate within current form
         for (let i = 1; i <= cnt; i++) {
             if (i !== idx && document.getElementById('admnNo_' + i)?.value == st["Admission Number"]) {
-                return showCustomDialog("Duplicate Candidate", "Student already selected in this entry form!", "warning");
+                return showCustomDialog("Duplicate Candidate", `Student <b>${st.Name}</b> (${st["Admission Number"]}) is already selected in Participant slot ${i}.`, "warning");
             }
         }
 
-        let sCount = 0, gCount = 0;
-        dbRegistrations.filter(r => r["Admission Number"] == st["Admission Number"] && r["Name of Fest"] == fName).forEach(r => {
-            parseInt(r["No of Participants"]) > 1 ? gCount++ : sCount++;
-        });
-
-        if (dbRegistrations.find(r => r["Admission Number"] == st["Admission Number"] && r["Item"] == iName && r["Name of Fest"] == fName)) {
-            return showCustomDialog("Already Registered", "Student has already registered for this specific item!", "warning");
+        // 2. Check duplicate for same item
+        const duplicateItem = dbRegistrations.find(r => 
+            String(r["Admission Number"]) === String(st["Admission Number"]) && 
+            r["Item"] === iName && 
+            r["Name of Fest"] === fName
+        );
+        if (duplicateItem) {
+            return showCustomDialog("Already Registered", `Student <b>${st.Name}</b> (${st["Admission Number"]}) is already registered for <b>${iName}</b> under ${fName}.`, "warning");
         }
 
-        if (cnt === 1 && sCount >= 3) return showCustomDialog("Limit Exceeded", "Maximum 3 Individual items allowed per fest!", "danger");
-        if (cnt > 1 && gCount >= 2) return showCustomDialog("Limit Exceeded", "Maximum 2 Group items allowed per fest!", "danger");
+        // 3. Count existing registrations for this student
+        const studentRegs = dbRegistrations.filter(r => String(r["Admission Number"]) === String(st["Admission Number"]));
 
+        if (festCategory === "Kalothswom") {
+            const kRegs = studentRegs.filter(r => (r["Festival Classification"] === "Kalothswom" || getFestivalCategory(r["Name of Fest"]) === "Kalothswom"));
+            const kIndCount = kRegs.filter(r => parseInt(r["No of Participants"] || 1) === 1).length;
+            const kGrpCount = kRegs.filter(r => parseInt(r["No of Participants"] || 1) > 1).length;
+            const kTotal = kIndCount + kGrpCount;
+
+            if (!isGroup && kIndCount >= 3) {
+                return showCustomDialog(
+                    "Kalothswom Limit Exceeded",
+                    `❌ <b>Individual Item Limit Reached!</b><br><br>` +
+                    `<b>Candidate:</b> ${st.Name} (${st["Admission Number"]})<br>` +
+                    `<b>Category:</b> Kalothswom<br>` +
+                    `<b>Rule:</b> Maximum 3 Individual items allowed.<br>` +
+                    `<b>Current Status:</b> Already registered for <b>${kIndCount} of 3</b> Individual items.`,
+                    "danger"
+                );
+            }
+
+            if (isGroup && kGrpCount >= 2) {
+                return showCustomDialog(
+                    "Kalothswom Limit Exceeded",
+                    `❌ <b>Group Item Limit Reached!</b><br><br>` +
+                    `<b>Candidate:</b> ${st.Name} (${st["Admission Number"]})<br>` +
+                    `<b>Category:</b> Kalothswom<br>` +
+                    `<b>Rule:</b> Maximum 2 Group items allowed.<br>` +
+                    `<b>Current Status:</b> Already registered for <b>${kGrpCount} of 2</b> Group items.`,
+                    "danger"
+                );
+            }
+
+            if (kTotal >= 5) {
+                return showCustomDialog(
+                    "Kalothswom Total Limit Reached",
+                    `❌ <b>Overall Kalothswom Limit Reached!</b><br><br>` +
+                    `<b>Candidate:</b> ${st.Name} (${st["Admission Number"]})<br>` +
+                    `<b>Rule:</b> Maximum 5 items in total (Max 3 Individual + Max 2 Group).<br>` +
+                    `<b>Current Total:</b> ${kIndCount} Individual + ${kGrpCount} Group = <b>${kTotal} Items</b>.`,
+                    "danger"
+                );
+            }
+
+        } else if (festCategory === "Fest") {
+            const fRegs = studentRegs.filter(r => (r["Festival Classification"] === "Fest" || getFestivalCategory(r["Name of Fest"]) === "Fest"));
+            const fIndCount = fRegs.filter(r => parseInt(r["No of Participants"] || 1) === 1).length;
+            const fGrpCount = fRegs.filter(r => parseInt(r["No of Participants"] || 1) > 1).length;
+            const fTotal = fIndCount + fGrpCount;
+
+            if (!isGroup && fIndCount >= 1) {
+                return showCustomDialog(
+                    "Fest Event Limit Exceeded",
+                    `❌ <b>Individual Fest Item Limit Reached!</b><br><br>` +
+                    `<b>Candidate:</b> ${st.Name} (${st["Admission Number"]})<br>` +
+                    `<b>Category:</b> All Fest Events<br>` +
+                    `<b>Rule:</b> Maximum 1 Individual item across all fest events.<br>` +
+                    `<b>Current Status:</b> Already registered for <b>${fIndCount} of 1</b> Individual item.`,
+                    "danger"
+                );
+            }
+
+            if (isGroup && fGrpCount >= 1) {
+                return showCustomDialog(
+                    "Fest Event Limit Exceeded",
+                    `❌ <b>Group Fest Item Limit Reached!</b><br><br>` +
+                    `<b>Candidate:</b> ${st.Name} (${st["Admission Number"]})<br>` +
+                    `<b>Category:</b> All Fest Events<br>` +
+                    `<b>Rule:</b> Maximum 1 Group item across all fest events.<br>` +
+                    `<b>Current Status:</b> Already registered for <b>${fGrpCount} of 1</b> Group item.`,
+                    "danger"
+                );
+            }
+
+            if (fTotal >= 2) {
+                return showCustomDialog(
+                    "Fest Total Limit Reached",
+                    `❌ <b>Overall Fest Limit Reached!</b><br><br>` +
+                    `<b>Candidate:</b> ${st.Name} (${st["Admission Number"]})<br>` +
+                    `<b>Rule:</b> Maximum 2 items in total across all Fest events (1 Individual + 1 Group).<br>` +
+                    `<b>Current Total:</b> ${fIndCount} Individual + ${fGrpCount} Group = <b>${fTotal} Items</b>.`,
+                    "danger"
+                );
+            }
+        }
+
+        // Fill Form Fields
         document.getElementById('admnNo_' + idx).value = st["Admission Number"];
         document.getElementById('name_' + idx).value = st["Name"];
         document.getElementById('studentClass_' + idx).value = `${st["Class"]} ${st["Division"]}`;
@@ -2184,21 +2355,52 @@
         document.getElementById('searchResults_' + idx).innerHTML = '';
     }
 
+    // SUBMIT FORM WITH COMPULSORY FIELDS VALIDATION
     async function submitForm(e) {
         e.preventDefault();
         const classification = document.getElementById('festClassification').value;
-        const cnt = parseInt(document.getElementById('participants').value) || 1;
         const fName = document.getElementById('festName').value;
         const iName = document.getElementById('itemSelect').value;
         const iCode = document.getElementById('itemCode').value;
-        const leaderIdx = cnt > 1 ? (document.querySelector('input[name="teamLeader"]:checked')?.value || 1) : 1;
+        const cnt = parseInt(document.getElementById('participants').value) || 1;
 
-        showLoader("Saving Registration...");
+        if (!classification || !fName || !iName || !iCode) {
+            return showCustomDialog("Compulsory Fields Missing", "Please select Festival Classification, Name of Fest, and Item.", "warning");
+        }
+
+        // Strict check: Ensure all participant slots are completely filled
+        for (let i = 1; i <= cnt; i++) {
+            const admn = document.getElementById('admnNo_' + i)?.value.trim();
+            const name = document.getElementById('name_' + i)?.value.trim();
+            const cls = document.getElementById('studentClass_' + i)?.value.trim();
+
+            if (!admn || !name || !cls) {
+                return showCustomDialog(
+                    "Incomplete Participant Details", 
+                    `All participant fields are compulsory.<br><br>Please select candidate details for <b>Participant ${i}</b> before submitting.`, 
+                    "warning"
+                );
+            }
+        }
+
+        // For group items, verify a Team Leader is assigned
+        let leaderIdx = 1;
+        if (cnt > 1) {
+            const checkedLeader = document.querySelector('input[name="teamLeader"]:checked');
+            if (!checkedLeader) {
+                return showCustomDialog("Team Leader Required", "For group items, assigning a Team Leader is compulsory. Please check one of the radio buttons.", "warning");
+            }
+            leaderIdx = parseInt(checkedLeader.value, 10);
+        }
+
+        showLoader("Validating & Saving Registration...");
         try {
             const batch = db.batch();
+            const timestamp = new Date().toLocaleString('en-IN');
+
             for (let i = 1; i <= cnt; i++) {
                 const entry = {
-                    "Timestamp": new Date().toLocaleString('en-IN'),
+                    "Timestamp": timestamp,
                     "Admission Number": document.getElementById('admnNo_' + i).value,
                     "Name": document.getElementById('name_' + i).value,
                     "Class": document.getElementById('studentClass_' + i).value.split(' ')[0],
@@ -2210,28 +2412,28 @@
                     "Item Code": iCode,
                     "Category": document.getElementById('category').value,
                     "No of Participants": cnt,
-                    "Role in Event": cnt === 1 ? 'Participant' : (i == leaderIdx ? 'Team Leader' : 'Participant'),
+                    "Role in Event": cnt === 1 ? 'Participant' : (i === leaderIdx ? 'Team Leader' : 'Participant'),
                     "Lot Number": ""
                 };
                 const ref = db.collection("registrations").doc();
                 batch.set(ref, entry);
                 dbRegistrations.push({ ...entry, id: ref.id });
             }
-            await batch.commit();
 
+            await batch.commit();
             logStudentAction(`Registered for item: ${iName} (${fName})`);
             hideLoader();
-            showCustomDialog("Success", "Registration completed successfully!", "success");
+            showCustomDialog("Registration Successful", `Registration completed successfully for <b>${iName}</b> (${fName})!`, "success");
             e.target.reset();
             document.getElementById('studentsContainer').innerHTML = "<p style='color:#888; font-style:italic;'>Select Classification, Fest, and Item to register.</p>";
         } catch (err) {
             hideLoader();
             console.error(err);
-            showCustomDialog("Error", "Could not save registration data.", "danger");
+            showCustomDialog("Save Error", "Could not save registration data to database.", "danger");
         }
     }
 
-    // --- STUDENT MASTER DIRECTORY (ADMIN ONLY) ---
+
     // --- STUDENT MASTER DIRECTORY WITH SL NO & CLASSWISE SORT (5A, 5B, 5C...) ---
     let studentMasterSort = { col: 'class', dir: 'asc' }; // Default sort: Class & Div ascending
 
@@ -2444,11 +2646,31 @@
     }
 
     // --- 10. TAB 2: VIEW RECORDS ---
+    // TAB 2: 100% WIDTH FESTIVAL & FEST-BASED VIEW RECORDS WITH ADMIN PRINT & SORT
+    let adminFestSorts = {}; // Tracks sorting state per fest for admins
+
+    function setAdminFestSort(festName, sortKey) {
+        adminFestSorts[festName] = sortKey;
+        renderTables();
+    }
+
+    function printFestSection(festName) {
+        document.getElementById('reportFestSelect').value = festName;
+        openParticipantsReport(true);
+    }
+
     function renderTables() {
         const clsFilt = document.getElementById('filterClass').value;
         const divFilt = document.getElementById('filterDivision').value;
         const txtFilt = String(document.getElementById('filterSearch')?.value || "").toLowerCase().trim();
-        const sortBy = document.getElementById('sortRecordsBy').value;
+        const globalSortBy = document.getElementById('sortRecordsBy').value;
+
+        const containerInd = document.getElementById('cardsInd');
+        const containerGrp = document.getElementById('cardsGrp');
+        if (!containerInd || !containerGrp) return;
+
+        containerInd.innerHTML = "";
+        containerGrp.innerHTML = "";
 
         let data = [...dbRegistrations].filter(r => isFestEnabled(r["Name of Fest"]));
         const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
@@ -2457,6 +2679,7 @@
             data = data.filter(r => String(r["Admission Number"]) === String(currentUser.id));
         }
 
+        // Apply filters
         data = data.filter(r => {
             const mCls = clsFilt === "ALL" || String(r["Class"]) === clsFilt;
             const mDiv = divFilt === "ALL" || String(r["Division"]) === divFilt;
@@ -2464,49 +2687,139 @@
             return mCls && mDiv && mTxt;
         });
 
-        data.sort((a, b) => {
-            if (sortBy === 'name_asc') return String(a.Name || "").localeCompare(String(b.Name || ""));
-            if (sortBy === 'name_desc') return String(b.Name || "").localeCompare(String(a.Name || ""));
-            if (sortBy === 'admn_asc') return String(a["Admission Number"] || "").localeCompare(String(b["Admission Number"] || ""));
-            if (sortBy === 'admn_desc') return String(b["Admission Number"] || "").localeCompare(String(a["Admission Number"] || ""));
-            if (sortBy === 'time_asc') return new Date(a.Timestamp || 0) - new Date(b.Timestamp || 0);
-            return new Date(b.Timestamp || 0) - new Date(a.Timestamp || 0);
-        });
-
-        const cardsInd = document.getElementById('cardsInd');
-        const cardsGrp = document.getElementById('cardsGrp');
-        cardsInd.innerHTML = '';
-        cardsGrp.innerHTML = '';
-
         if (data.length === 0) {
-            const empty = "<p style='grid-column:1/-1; text-align:center; color:#999; padding:20px;'>No records found matching filters.</p>";
-            cardsInd.innerHTML = empty; cardsGrp.innerHTML = empty;
+            const emptyMsg = "<p style='width:100%; text-align:center; color:#94a3b8; padding:30px;'>No records found matching filters.</p>";
+            containerInd.innerHTML = emptyMsg;
+            containerGrp.innerHTML = emptyMsg;
             return;
         }
 
+        // Group by Festival Classification -> Name of Fest
+        const hierarchy = {};
         data.forEach(r => {
-            const isGroup = parseInt(r["No of Participants"]) > 1;
-            const deleteIconHTML = isAdmin ? `
-                <button class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate Registration">
-                    <i class="fas fa-trash-alt"></i> Delete
-                </button>
-            ` : '';
+            const cat = r["Festival Classification"] || getFestivalCategory(r["Name of Fest"]);
+            const fName = r["Name of Fest"] || "Other";
+            if (!hierarchy[cat]) hierarchy[cat] = {};
+            if (!hierarchy[cat][fName]) hierarchy[cat][fName] = [];
+            hierarchy[cat][fName].push(r);
+        });
 
-            const cardHTML = `
-                <div class="record-card ${isGroup ? 'group-card' : ''}">
-                    <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
-                    <p><span class="label">Candidate</span> <span>${r["Name"]}</span></p>
-                    <p><span class="label">Admn No</span> <span>${r["Admission Number"]}</span></p>
-                    <p><span class="label">Class & Div</span> <span>${r["Class"]} ${r["Division"]}</span></p>
-                    <p><span class="label">Lot Number</span> <span style="font-weight:bold; color:var(--dark);">${r["Lot Number"] || 'Not Allotted'}</span></p>
-                    <p><span class="label">${isGroup ? 'Role' : 'Category'}</span> <span style="color:var(--primary); font-weight:bold;">${isGroup ? r["Role in Event"] : r["Category"]}</span></p>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:6px;">
-                        <span class="timestamp">${r["Timestamp"]}</span>
-                        ${deleteIconHTML}
-                    </div>
+        const mainCategories = ["Kalothswom", "Fest", "Sports"];
+
+        mainCategories.forEach(cat => {
+            if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
+
+            // 100% Width Festival Classification Banner
+            const classBannerHTML = `
+                <div class="rec-classification-head">
+                    <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
                 </div>
             `;
-            if (isGroup) cardsGrp.innerHTML += cardHTML; else cardsInd.innerHTML += cardHTML;
+            containerInd.innerHTML += classBannerHTML;
+            containerGrp.innerHTML += classBannerHTML;
+
+            Object.keys(hierarchy[cat]).sort().forEach(festName => {
+                let records = hierarchy[cat][festName];
+
+                // Check fest-specific sort or fallback to global sort
+                const sortBy = (isAdmin && adminFestSorts[festName]) ? adminFestSorts[festName] : globalSortBy;
+                records.sort((a, b) => {
+                    if (sortBy === 'name_asc') return String(a.Name || "").localeCompare(String(b.Name || ""));
+                    if (sortBy === 'name_desc') return String(b.Name || "").localeCompare(String(a.Name || ""));
+                    if (sortBy === 'admn_asc') return String(a["Admission Number"] || "").localeCompare(String(b["Admission Number"] || ""));
+                    if (sortBy === 'admn_desc') return String(b["Admission Number"] || "").localeCompare(String(a["Admission Number"] || ""));
+                    if (sortBy === 'time_asc') return new Date(a.Timestamp || 0) - new Date(b.Timestamp || 0);
+                    return new Date(b.Timestamp || 0) - new Date(a.Timestamp || 0);
+                });
+
+                const indRecords = records.filter(r => parseInt(r["No of Participants"] || 1) === 1);
+                const grpRecords = records.filter(r => parseInt(r["No of Participants"] || 1) > 1);
+
+                // Admin-only Controls: Fest Sort Selector & Section Print Button
+                let adminFestControls = "";
+                if (isAdmin) {
+                    adminFestControls = `
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <select onchange="setAdminFestSort('${festName}', this.value)" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1;">
+                                <option value="time_desc" ${sortBy === 'time_desc' ? 'selected' : ''}>Sort: Newest</option>
+                                <option value="name_asc" ${sortBy === 'name_asc' ? 'selected' : ''}>Sort: Name (A-Z)</option>
+                                <option value="name_desc" ${sortBy === 'name_desc' ? 'selected' : ''}>Sort: Name (Z-A)</option>
+                                <option value="admn_asc" ${sortBy === 'admn_asc' ? 'selected' : ''}>Sort: Admn No</option>
+                            </select>
+                            <button class="action-btn gold" style="padding:6px 12px; font-size:12px;" onclick="printFestSection('${festName}')" title="Print ${festName} Report">
+                                <i class="fas fa-print"></i> Print Fest
+                            </button>
+                        </div>
+                    `;
+                }
+
+                // 100% Width Fest Header
+                const festHeaderHTML = `
+                    <div class="rec-fest-head">
+                        <div>
+                            <h5><i class="fas fa-trophy" style="color:var(--gold); margin-right:8px;"></i> ${festName}</h5>
+                            <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${records.length} (${indRecords.length} Individual, ${grpRecords.length} Group)</span>
+                        </div>
+                        ${adminFestControls}
+                    </div>
+                `;
+
+                // Render Individual Items for this fest
+                if (indRecords.length > 0) {
+                    let indCardsHTML = `<div style="width:100%;">${festHeaderHTML}<div class="records-grid" style="margin-bottom:20px;">`;
+                    indRecords.forEach(r => {
+                        const deleteBtn = isAdmin ? `
+                            <button class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        ` : '';
+                        indCardsHTML += `
+                            <div class="record-card">
+                                <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
+                                <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
+                                <p><span class="label">Admn No</span> <span>${r["Admission Number"]}</span></p>
+                                <p><span class="label">Class & Div</span> <span>${r["Class"]} ${r["Division"]}</span></p>
+                                <p><span class="label">Lot Number</span> <span style="font-weight:bold; color:var(--dark);">${r["Lot Number"] || 'Not Allotted'}</span></p>
+                                <p><span class="label">Category</span> <span style="color:var(--primary); font-weight:bold;">${r["Category"]}</span></p>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:6px;">
+                                    <span class="timestamp">${r["Timestamp"]}</span>
+                                    ${deleteBtn}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    indCardsHTML += `</div></div>`;
+                    containerInd.innerHTML += indCardsHTML;
+                }
+
+                // Render Group Items for this fest
+                if (grpRecords.length > 0) {
+                    let grpCardsHTML = `<div style="width:100%;">${festHeaderHTML}<div class="records-grid" style="margin-bottom:20px;">`;
+                    grpRecords.forEach(r => {
+                        const deleteBtn = isAdmin ? `
+                            <button class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        ` : '';
+                        grpCardsHTML += `
+                            <div class="record-card group-card">
+                                <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
+                                <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
+                                <p><span class="label">Admn No</span> <span>${r["Admission Number"]}</span></p>
+                                <p><span class="label">Class & Div</span> <span>${r["Class"]} ${r["Division"]}</span></p>
+                                <p><span class="label">Lot Number</span> <span style="font-weight:bold; color:var(--dark);">${r["Lot Number"] || 'Not Allotted'}</span></p>
+                                <p><span class="label">Role in Team</span> <span style="color:var(--warning); font-weight:bold;">${r["Role in Event"]}</span></p>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:6px;">
+                                    <span class="timestamp">${r["Timestamp"]}</span>
+                                    ${deleteBtn}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    grpCardsHTML += `</div></div>`;
+                    containerGrp.innerHTML += grpCardsHTML;
+                }
+            });
         });
     }
 
@@ -2550,23 +2863,23 @@
         });
 
         document.getElementById('reportFestHeaderTitle').innerText = fest === "ALL" ? "ALL FEST PARTICIPANTS DIRECTORY" : `${fest.toUpperCase()} - PARTICIPANTS DIRECTORY`;
-        document.getElementById('reportMetaInfo').innerText = `Total Entries: ${list.length} | Generated: ${new Date().toLocaleString('en-IN')}`;
+        document.getElementById('reportMetaInfo').innerText = `Total Registered Candidates: ${list.length} | Generated: ${new Date().toLocaleString('en-IN')}`;
 
         if (list.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#999; padding:30px;">No registered participants found for this selection.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#64748b; padding:30px;">No registered participants found for this selection.</td></tr>`;
         } else {
             list.forEach((r, idx) => {
                 tbody.innerHTML += `
                     <tr>
-                        <td>${idx + 1}</td>
+                        <td style="text-align:center; font-weight:600;">${idx + 1}</td>
                         <td><b>${r["Admission Number"]}</b></td>
                         <td><b>${r["Name"]}</b></td>
                         <td>${r["Class"]} ${r["Division"]}</td>
                         <td>${r["Name of Fest"]}</td>
-                        <td>${r["Item"]} <small>(${r["Item Code"] || '-'})</small></td>
+                        <td>${r["Item"]} <small style="color:#64748b;">(${r["Item Code"] || '-'})</small></td>
                         <td>${r["Category"]}</td>
                         <td>${r["Role in Event"]}</td>
-                        <td><b>${r["Lot Number"] || 'Unassigned'}</b></td>
+                        <td style="text-align:center; font-weight:700; color:#0c2340;">${r["Lot Number"] || 'Unassigned'}</td>
                     </tr>
                 `;
             });
@@ -3450,32 +3763,107 @@
     }
 
     // --- 14. RESULT TAB (WITH RESULT DECLARED BADGE & CERTIFICATE) ---
+    // --- 14. TAB 6: RESULT TAB (WITH CHAMPIONSHIP POINTS TABLE, 100% WIDTH CATEGORIES & DELETE ICONS) ---
     function renderResults() {
         const container = document.getElementById('resultsContainer');
-        const catFilter = document.getElementById('resultFilterCategory').value;
+        if (!container) return;
+
+        const catFilter = document.getElementById('resultFilterCategory')?.value || "ALL";
         const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
 
         container.innerHTML = "";
 
+        // 1. Filter results: only active enabled fests
         let results = [...dbPublishedResults].filter(r => isFestEnabled(r.festName));
+
+        // 2. Filter by Category
         if (catFilter !== "ALL") {
-            results = results.filter(r => r.festCategory === catFilter);
+            results = results.filter(r => (r.festCategory || getFestivalCategory(r.festName)) === catFilter);
         }
 
+        // 3. Search query filter
         if (q) {
             results = results.filter(r => 
                 String(r.candidateName || "").toLowerCase().includes(q) ||
                 String(r.itemName || "").toLowerCase().includes(q) ||
                 String(r.studentClass || "").toLowerCase().includes(q) ||
-                String(r.lotNumber || "").toLowerCase().includes(q)
+                String(r.admissionNumber || "").toLowerCase().includes(q) ||
+                String(r.lotNumber || "").toLowerCase().includes(q) ||
+                String(r.festName || "").toLowerCase().includes(q)
             );
         }
 
+        // 4. OVERALL CHAMPIONSHIP POINTS TABLE CALCULATION
+        const classPoints = {};
+        dbPublishedResults.filter(r => isFestEnabled(r.festName)).forEach(r => {
+            const clsKey = `${r.studentClass} ${r.studentDivision || ''}`.trim() || "General";
+            if (!classPoints[clsKey]) {
+                classPoints[clsKey] = { points: 0, first: 0, second: 0, third: 0 };
+            }
+            
+            if (r.place === "FIRST Place") { 
+                classPoints[clsKey].points += 5; 
+                classPoints[clsKey].first += 1; 
+            } else if (r.place === "SECOND Place") { 
+                classPoints[clsKey].points += 3; 
+                classPoints[clsKey].second += 1; 
+            } else if (r.place === "THIRD Place") { 
+                classPoints[clsKey].points += 1; 
+                classPoints[clsKey].third += 1; 
+            }
+        });
+
+        const sortedStandings = Object.keys(classPoints).map(k => ({
+            className: k,
+            ...classPoints[k]
+        })).sort((a, b) => b.points - a.points);
+
+        // Render Championship Points Table if records exist and no search filter is applied
+        if (sortedStandings.length > 0 && !q && catFilter === "ALL") {
+            let pointsHTML = `
+                <div class="section" style="margin-bottom:25px; border-top:4px solid var(--gold);">
+                    <h4 class="section-title">
+                        <span><i class="fas fa-trophy" style="color:var(--gold);"></i> Overall Championship Points Table</span>
+                        <span style="font-size:12px; color:#64748b; font-weight:normal;">(1st: 5 pts | 2nd: 3 pts | 3rd: 1 pt)</span>
+                    </h4>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr style="background:#f8fafc;">
+                                    <th style="width:60px; text-align:center;">Rank</th>
+                                    <th>Class & Division</th>
+                                    <th style="text-align:center;">1st Places</th>
+                                    <th style="text-align:center;">2nd Places</th>
+                                    <th style="text-align:center;">3rd Places</th>
+                                    <th style="text-align:center; font-weight:800; color:var(--primary);">Total Points</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            sortedStandings.forEach((c, idx) => {
+                const posBadge = idx === 0 ? 'place-1' : (idx === 1 ? 'place-2' : (idx === 2 ? 'place-3' : 'place-other'));
+                pointsHTML += `
+                    <tr>
+                        <td style="text-align:center;"><span class="badge-place ${posBadge}">${idx + 1}</span></td>
+                        <td><b>${c.className}</b></td>
+                        <td style="text-align:center;">${c.first}</td>
+                        <td style="text-align:center;">${c.second}</td>
+                        <td style="text-align:center;">${c.third}</td>
+                        <td style="text-align:center; font-size:15px; font-weight:800; color:var(--primary);">${c.points} pts</td>
+                    </tr>
+                `;
+            });
+            pointsHTML += `</tbody></table></div></div>`;
+            container.innerHTML += pointsHTML;
+        }
+
+        // Empty state check
         if (results.length === 0) {
-            container.innerHTML = `<p style="text-align:center; color:#999; padding:40px;">No published results available.</p>`;
+            container.innerHTML += `<p style="text-align:center; color:#94a3b8; padding:40px; font-weight:600;">No published results found matching your criteria.</p>`;
             return;
         }
 
+        // 5. Group by Classification -> Fest -> Item
         const hierarchy = {};
         results.forEach(r => {
             const cat = r.festCategory || getFestivalCategory(r.festName);
@@ -3486,6 +3874,9 @@
         });
 
         const mainCategories = ["Kalothswom", "Fest", "Sports"];
+        const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
+
+        // 6. Render Results Tables
         mainCategories.forEach(cat => {
             if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
 
@@ -3501,20 +3892,22 @@
                             <span><i class="fas fa-star" style="color:var(--warning);"></i> ${itemKey}</span>
                             <span class="result-badge-new"><i class="fas fa-bolt"></i> NEW</span>
                         </div>
-                        <span style="font-size:12px; font-weight:normal; color:#555;">Published: ${rows[0].publishedAt || 'Official'}</span>
+                        <span style="font-size:12px; font-weight:normal; color:#555;">
+                            <i class="far fa-clock"></i> Published: ${rows[0].publishedAt || 'Official'}
+                        </span>
                     </div>
                     <div class="table-responsive">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Sl No</th>
-                                    <th>Lot No</th>
+                                    <th style="width:50px; text-align:center;">Sl No</th>
+                                    <th style="width:80px; text-align:center;">Lot No</th>
                                     <th>Candidate Name</th>
                                     <th>Class & Div</th>
-                                    <th>Score</th>
-                                    <th>Grade</th>
-                                    <th>Place</th>
-                                    <th style="width:110px; text-align:center;">Certificate</th>
+                                    <th style="width:90px; text-align:center;">Score</th>
+                                    <th style="width:70px; text-align:center;">Grade</th>
+                                    <th style="width:130px; text-align:center;">Place</th>
+                                    <th style="width:130px; text-align:center;">Certificate & Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -3528,22 +3921,25 @@
 
                     catHTML += `
                         <tr>
-                            <td>${sIdx + 1}</td>
-                            <td><b>${row.lotNumber || 'N/A'}</b></td>
+                            <td style="text-align:center; font-weight:600;">${sIdx + 1}</td>
+                            <td style="text-align:center; font-weight:700; color:#0c2340;">${row.lotNumber || 'N/A'}</td>
                             <td><b>${row.candidateName}</b></td>
                             <td>${row.studentClass} ${row.studentDivision || ''}</td>
-                            <td><b>${row.score}</b></td>
-                            <td><span style="font-weight:bold; color:var(--primary);">${row.grade}</span></td>
-                            <td><span class="badge-place ${placeBadge}">${row.place}</span></td>
+                            <td style="text-align:center;"><b>${row.score}</b></td>
+                            <td style="text-align:center;"><span style="font-weight:bold; color:var(--primary);">${row.grade}</span></td>
+                            <td style="text-align:center;"><span class="badge-place ${placeBadge}">${row.place}</span></td>
                             <td style="text-align:center;">
-                                <div style="display:inline-flex; gap:6px;">
-                                    <button class="action-btn" style="padding:6px 9px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
+                                <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
+                                    <!-- View Certificate Icon -->
+                                    <button class="action-btn" style="padding:5px 8px; font-size:12px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="action-btn gold" style="padding:6px 9px;" title="Print Certificate" onclick="openCertificateModal('${row.id}', true)">
+                                    <!-- Print Certificate Icon -->
+                                    <button class="action-btn gold" style="padding:5px 8px; font-size:12px;" title="Print Certificate" onclick="openCertificateModal('${row.id}', true)">
                                         <i class="fas fa-print"></i>
                                     </button>
-                                    <button class="action-btn danger" style="padding:6px 9px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
+                                    <!-- Delete Result Entry Icon -->
+                                    <button class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </div>
