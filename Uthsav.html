@@ -2977,17 +2977,24 @@
     const db = firebase.firestore();
 
     // --- 2. GLOBAL CONSTANTS & APP STATE ---
-    const classificationMap = {
-        "Kalothswom": ["General Kalothswom", "Sanskrit Kalothswom", "Arabic Kalothswom"],
-        "Fest": [ "Work Experience Fest", "Maths Fest", "Science Fest", "Social Science Fest", "IT Fest"],
-        "Sports": ["Sports Day"]
-    };
+    // --- SORTED GLOBALLY (A-Z) ---
+const classificationMap = {
+    "Fest": ["IT Fest", "Maths Fest", "Science Fest", "Social Science Fest", "Work Experience Fest"],
+    "Kalothswom": ["Arabic Kalothswom", "General Kalothswom", "Sanskrit Kalothswom"],
+    "Sports": ["Sports Day"]
+};
 
-    const allFestNames = [
-        "General Kalothswom", "Sanskrit Kalothswom", "Arabic Kalothswom", 
-        "Work Experience Fest", "Maths Fest", "Science Fest", 
-        "Social Science Fest", "IT Fest", "Sports Day"
-    ];
+const allFestNames = [
+    "Arabic Kalothswom",
+    "General Kalothswom", 
+    "IT Fest", 
+    "Maths Fest", 
+    "Sanskrit Kalothswom", 
+    "Science Fest", 
+    "Social Science Fest", 
+    "Sports Day",
+    "Work Experience Fest"
+];
 
     let dbStudents = [], dbFests = [], dbRegistrations = [], dbUsers = [], dbJudges = [], dbJudgeScores = [], dbPublishedResults = [];
     let dbSettings = { 
@@ -3428,33 +3435,39 @@
     }
 
     function onClassificationChanged() {
-        const classification = document.getElementById('festClassification').value;
-        const festDropdown = document.getElementById('festName');
-        const itemSelect = document.getElementById('itemSelect');
-        festDropdown.innerHTML = '<option value="">-- Select Fest --</option>';
-        itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+    const classification = document.getElementById('festClassification').value;
+    const festDropdown = document.getElementById('festName');
+    const itemSelect = document.getElementById('itemSelect');
+    festDropdown.innerHTML = '<option value="">-- Select Fest --</option>';
+    itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
 
-        if (!classification) return;
+    if (!classification) return;
 
-        const validFests = classificationMap[classification] || [];
-        validFests.forEach(f => {
-            // ONLY show fests that are ticked/enabled in Enabled Fests
-            if (dbSettings["Fest_" + f] !== "DISABLED") {
-                festDropdown.innerHTML += `<option value="${f}">${f}</option>`;
-            }
-        });
-    }
+    // Sort fests A-Z
+    const validFests = [...(classificationMap[classification] || [])].sort((a, b) => a.localeCompare(b));
+    validFests.forEach(f => {
+        if (dbSettings["Fest_" + f] !== "DISABLED") {
+            festDropdown.innerHTML += `<option value="${f}">${f}</option>`;
+        }
+    });
+}
 
-    function populateItems() {
-        const fest = document.getElementById('festName').value;
-        const sel = document.getElementById('itemSelect');
-        sel.innerHTML = '<option value="">-- Select Item --</option>';
-        if (!fest) return;
+function populateItems() {
+    const fest = document.getElementById('festName').value;
+    const sel = document.getElementById('itemSelect');
+    sel.innerHTML = '<option value="">-- Select Item --</option>';
+    if (!fest) return;
 
-        dbFests.filter(f => f["Fest Name"] === fest).forEach(i => {
-            sel.innerHTML += `<option value="${i["Item"]}">${i["Item"]} (${i["Category"]})</option>`;
-        });
-    }
+    // Filter by fest and sort items A-Z
+    const festItems = dbFests
+        .filter(f => f["Fest Name"] === fest)
+        .sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
+
+    festItems.forEach(i => {
+        sel.innerHTML += `<option value="${i["Item"]}">${i["Item"]} (${i["Category"]})</option>`;
+    });
+}
+    
 
     function updateItemDetails() {
         const it = document.getElementById('itemSelect').value;
@@ -5262,7 +5275,13 @@ async function finalizeJudgement() {
 
             let catHTML = `<div class="category-main-head"><span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()} TABULATION</span></div>`;
 
-            Object.keys(hierarchy[cat]).forEach(festName => {
+            Object.keys(hierarchy[cat]).sort().forEach(festName => {
+                // Sort items A-Z inside this fest
+                hierarchy[cat][festName].sort((a, b) => {
+                    const itemA = a.festObj ? a.festObj["Item"] : a.code;
+                    const itemB = b.festObj ? b.festObj["Item"] : b.code;
+                    return String(itemA).localeCompare(String(itemB));
+                });
                 hierarchy[cat][festName].forEach(({ code, festObj }) => {
                     const itemName = festObj ? festObj["Item"] : code;
                     const itemScores = dbJudgeScores.filter(s => s.itemCode === code);
@@ -5620,6 +5639,11 @@ async function finalizeJudgement() {
         mainCategories.forEach(cat => {
             if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
 
+            // Sort all items alphabetically A-Z under this category
+            Object.keys(hierarchy[cat]).sort().forEach(itemKey => {
+                const rows = hierarchy[cat][itemKey];
+            
+
             // 1. COLLAPSIBLE MAIN CATEGORY HEADER
             catHTML += `
                 <div class="category-main-head collapsible-header" onclick="toggleResultSection(this)">
@@ -5699,6 +5723,7 @@ async function finalizeJudgement() {
 
             catHTML += `</div>`; // closes category-collapsible-content
             container.innerHTML += catHTML;
+        });
         });
     }
 
@@ -5817,6 +5842,9 @@ async function finalizeJudgement() {
         mainCategories.forEach(cat => {
             if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
 
+            // Sort Sub-District items alphabetically A-Z
+            Object.keys(hierarchy[cat]).sort().forEach(itemKey => {
+                const rows = hierarchy[cat][itemKey];
             let catHTML = `<div class="category-main-head"><i class="fas fa-medal"></i> ${cat.toUpperCase()} - SUB DISTRICT ENTRIES</div>`;
 
             Object.keys(hierarchy[cat]).forEach(itemKey => {
@@ -5874,6 +5902,7 @@ async function finalizeJudgement() {
             });
 
             container.innerHTML += catHTML;
+        });
         });
     }
 
@@ -6907,19 +6936,21 @@ document.addEventListener('keydown', (e) => {
     }
 
     function populateLLLotItemFilter() {
-        const fest = document.getElementById('llLotFestFilter').value;
-        const itemSel = document.getElementById('llLotItemFilter');
-        itemSel.innerHTML = '<option value="ALL">All Items</option>';
+    const fest = document.getElementById('llLotFestFilter').value;
+    const itemSel = document.getElementById('llLotItemFilter');
+    itemSel.innerHTML = '<option value="ALL">All Items</option>';
 
-        let fests = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
-        if (fest !== "ALL") fests = fests.filter(f => f["Fest Name"] === fest);
+    let fests = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
+    if (fest !== "ALL") fests = fests.filter(f => f["Fest Name"] === fest);
 
-        fests.forEach(f => {
-            itemSel.innerHTML += `<option value="${f["Item"]}">${f["Item"]}</option>`;
-        });
+    // Get unique item names sorted A-Z
+    const uniqueItems = [...new Set(fests.map(f => f["Item"]))].sort((a, b) => a.localeCompare(b));
+    uniqueItems.forEach(item => {
+        itemSel.innerHTML += `<option value="${item}">${item}</option>`;
+    });
 
-        renderLLLotLabels();
-    }
+    renderLLLotLabels();
+}
 
     // SECTION 1: 4 ITEMS PER A4 PAGE
     function renderLLItemLabels() {
@@ -6945,6 +6976,8 @@ document.addEventListener('keydown', (e) => {
             container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">No registered items found for selected filter.</p>';
             return;
         }
+        // Sort item labels A-Z by Fest, then A-Z by Item Name
+        items.sort((a, b) => a.festName.localeCompare(b.festName) || a.itemName.localeCompare(b.itemName));
 
         // Chunk into groups of 4 per page
         let html = '';
