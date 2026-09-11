@@ -1377,18 +1377,114 @@
 /* STRICT A4 PORTRAIT PRINTING (2CM MARGINS ALL SIDES) */
 @media print {
     @page {
-        size: 297mm 210mm landscape; /* keep default */
+        size: 210mm 297mm portrait !important;
+        margin: 20mm !important; /* Exactly 2.00 cm on all four sides */
     }
+
     body.printing-ll-portrait {
-        background: #fff !important;
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
     }
+
     body.printing-ll-portrait #appScreen,
     body.printing-ll-portrait .app-header,
     body.printing-ll-portrait .tab,
+    body.printing-ll-portrait .no-print,
     body.printing-ll-portrait .ll-toolbar,
-    body.printing-ll-portrait .no-print {
+    body.printing-ll-portrait .ll-mobile-hint {
         display: none !important;
     }
+
+    body.printing-ll-portrait #llPrintModal.active-print,
+    body.printing-ll-portrait #llPrintModal.active-print * {
+        visibility: visible !important;
+    }
+
+    body.printing-ll-portrait #llPrintModal.active-print {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Page container takes exactly 100% of printable height and width */
+    body.printing-ll-portrait #llPrintModal.active-print .ll-page {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    body.printing-ll-portrait #llPrintModal.active-print .ll-page:last-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
+
+    /* 2 Columns x 4 Rows filling 100% of the printable canvas */
+    body.printing-ll-portrait #llPrintModal.active-print .ll-lots-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+
+    body.printing-ll-portrait #llPrintModal.active-print .ll-lot-label {
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        box-sizing: border-box !important;
+        border: 1.5px dashed #475569 !important;
+        padding: 4px !important;
+        overflow: hidden !important;
+    }
+
+    body.printing-ll-portrait #llPrintModal.active-print .ll-lot-card {
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-evenly !important;
+        align-items: center !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+
+    body.printing-ll-portrait #llPrintModal.active-print .ll-lot-number {
+        font-size: 36px !important;
+        font-weight: 900 !important;
+        margin: 2px 0 !important;
+        line-height: 1 !important;
+    }
+
+    body.printing-ll-portrait #llPrintModal.active-print .ll-lot-meta {
+        font-size: 9px !important;
+        max-width: 95% !important;
+        line-height: 1.2 !important;
+    }
+}
     .ll-print-area {
         display: block !important;
         visibility: visible !important;
@@ -1583,7 +1679,129 @@
         break-after: avoid !important;
     }
 }
-    
+
+/* Collapsible Header Styles for Results Tab */
+.category-main-head.collapsible-header,
+.item-sub-head.collapsible-header {
+    cursor: pointer !important;
+    user-select: none;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+.category-main-head.collapsible-header:hover {
+    filter: brightness(1.15);
+}
+.item-sub-head.collapsible-header:hover {
+    filter: brightness(0.96);
+}
+.collapse-chevron {
+    transition: transform 0.25s ease;
+    font-size: 13px;
+    margin-left: 10px;
+}
+.collapse-chevron.collapsed {
+    transform: rotate(-90deg);
+}
+
+/* Reusable Custom Searchable Select Dropdown */
+.custom-search-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+.custom-search-dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1.5px solid #2563eb;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    z-index: 1050;
+    display: none;
+}
+.custom-search-dropdown-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    text-align: left;
+}
+.custom-search-dropdown-item:hover, 
+.custom-search-dropdown-item.active {
+    background: #eff6ff;
+    color: #2563eb;
+    font-weight: 700;
+}
+
+/* Tab 2: Collapsible Headers & Chevron Styling */
+.rec-classification-head.collapsible-header,
+.rec-fest-head.collapsible-header {
+    cursor: pointer !important;
+    user-select: none;
+    transition: filter 0.15s ease;
+}
+
+.rec-classification-head.collapsible-header:hover {
+    filter: brightness(1.15);
+}
+
+.rec-fest-head.collapsible-header:hover {
+    filter: brightness(0.96);
+}
+
+.collapse-chevron {
+    transition: transform 0.25s ease;
+    font-size: 13px;
+}
+
+.collapse-chevron.collapsed {
+    transform: rotate(-90deg);
+}
+
+
+/* Instant Popup Animation & Backdrop for Edit Modal */
+@keyframes popIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.92) translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+#itemModalOverlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+    z-index: 99999 !important;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+#itemFormBox {
+    background: #ffffff !important;
+    border-radius: 16px !important;
+    width: 100% !important;
+    max-width: 560px !important;
+    padding: 24px 26px !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid var(--glass-border) !important;
+    animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
 </style>
 </head>
 <body>
@@ -1972,19 +2190,18 @@
                 <h4 class="section-title"><i class="fas fa-broadcast-tower"></i> Live Programme Activation</h4>
                 <div class="row">
                     <div class="form-group">
-                        <label>Select Item to Control</label>
-                        <select id="emItemSelect" onchange="loadEventMgmtItemDetails()">
-                            <option value="">-- Choose Item --</option>
-                        </select>
-                    </div>
+    <label>Select Item to Control</label>
+    <div class="custom-search-select-wrapper">
+        <input type="text" id="emItemSearchInput" placeholder="🔍 Type item name or code..." oninput="filterEmSearchItems(this.value)" onfocus="openEmSearchDropdown()" autocomplete="off">
+        <input type="hidden" id="emItemSelect">
+        <div id="emItemDropdownList" class="custom-search-dropdown-list"></div>
+    </div>
+</div>
                     <div class="form-group">
                         <label>Current Status</label>
                         <input type="text" id="emItemStatus" readonly style="font-weight:bold;">
                     </div>
-                    <div class="form-group">
-                        <label>Current Status</label>
-                        <input type="text" id="emItemStatus" readonly style="font-weight:bold;">
-                    </div>
+                    
                     <div class="form-group" style="justify-content: flex-end;">
                         <div style="display:flex; gap:10px;">
                             <button type="button" class="action-btn success" style="flex:1;" onclick="toggleProgramStatus('ACTIVE')">
@@ -2095,11 +2312,13 @@
                 <h4 class="section-title"><i class="fas fa-gavel"></i> Evaluation Item</h4>
                 <div class="row">
                     <div class="form-group">
-                        <label>Allotted Active Items to Judge</label>
-                        <select id="judgeActiveItemsSelect" onchange="setupJudgeSheet()">
-                            <option value="">-- Select Active Item --</option>
-                        </select>
-                    </div>
+    <label>Allotted Active Items to Judge</label>
+    <div class="custom-search-select-wrapper">
+        <input type="text" id="judgeActiveItemsSearchInput" placeholder="🔍 Type item name or code..." oninput="filterJudgeSearchItems(this.value)" onfocus="openJudgeSearchDropdown()" autocomplete="off">
+        <input type="hidden" id="judgeActiveItemsSelect">
+        <div id="judgeActiveItemsDropdownList" class="custom-search-dropdown-list"></div>
+    </div>
+</div>
                     <div class="form-group">
                         <label>Classification & Fest</label>
                         <input type="text" id="judgeItemFestMeta" readonly style="background:#f9f9f9; font-weight:bold;">
@@ -2399,48 +2618,58 @@
                 </div>
 
                 <!-- INSTANT EDIT ITEM MODAL -->
-                <div id="itemModalOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.65); backdrop-filter:blur(4px); z-index:9999; display:none; justify-content:center; align-items:center; padding:15px;">
-                    <div id="itemFormBox" style="background:#ffffff; border-radius:12px; width:100%; max-width:560px; box-shadow:0 20px 40px rgba(0,0,0,0.3); padding:24px; border:1px solid #e2e8f0;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #edf2f7; padding-bottom:10px;">
-                            <h4 style="margin:0; font-size:18px; color:var(--dark);"><i class="fas fa-edit" style="color:var(--primary);"></i> Modify Item Details</h4>
-                            <button type="button" onclick="closeEditItemModal()" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;"><i class="fas fa-times"></i></button>
-                        </div>
-                        <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                            <div class="form-group">
-                                <label>Fest Name</label>
-                                <select id="editItemFest"></select>
-                            </div>
-                            <div class="form-group">
-                                <label>Item Name</label>
-                                <input type="text" id="editItemName">
-                            </div>
-                            <div class="form-group">
-                                <label>Item Code</label>
-                                <input type="text" id="editItemCode">
-                            </div>
-                            <div class="form-group">
-                                <label>Category</label>
-                                <select id="editItemCat">
-                                    <option value="General">General</option>
-                                    <option value="M">M</option>
-                                    <option value="F">F</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Participants</label>
-                                <input type="number" id="editItemPart" min="1" value="1">
-                            </div>
-                            <div class="form-group">
-                                <label>Duration</label>
-                                <input type="text" id="editItemDur" placeholder="e.g. 10 Mins">
-                            </div>
-                        </div>
-                        <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
-                            <button class="action-btn secondary" onclick="closeEditItemModal()"><i class="fas fa-times"></i> Cancel</button>
-                            <button class="action-btn success" onclick="saveItemMaster()"><i class="fas fa-save"></i> Update Item</button>
-                        </div>
-                    </div>
-                </div>
+<div id="itemModalOverlay" onclick="if(event.target === this) closeEditItemModal()">
+    <div id="itemFormBox">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #edf2f7; padding-bottom:10px;">
+            <h4 id="itemModalTitle" style="margin:0; font-size:18px; color:var(--dark);">
+                <i class="fas fa-edit" style="color:var(--primary);"></i> Modify Item Details
+            </h4>
+            <button type="button" onclick="closeEditItemModal()" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            <div class="form-group">
+                <label>Fest Name</label>
+                <select id="editItemFest"></select>
+            </div>
+            <div class="form-group">
+                <label>Item Name</label>
+                <input type="text" id="editItemName" placeholder="Enter Item Name" onkeydown="if(event.key==='Enter') saveItemMaster()">
+            </div>
+            <div class="form-group">
+                <label>Item Code</label>
+                <input type="text" id="editItemCode" placeholder="Enter Item Code" onkeydown="if(event.key==='Enter') saveItemMaster()">
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="editItemCat">
+                    <option value="General">General</option>
+                    <option value="M">M</option>
+                    <option value="F">F</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Participants</label>
+                <input type="number" id="editItemPart" min="1" value="1" onkeydown="if(event.key==='Enter') saveItemMaster()">
+            </div>
+            <div class="form-group">
+                <label>Duration</label>
+                <input type="text" id="editItemDur" placeholder="e.g. 10 Mins" onkeydown="if(event.key==='Enter') saveItemMaster()">
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:18px; justify-content:flex-end;">
+            <button type="button" class="action-btn secondary" onclick="closeEditItemModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" id="itemModalSaveBtn" class="action-btn success" onclick="saveItemMaster()">
+                <i class="fas fa-save"></i> Update Item
+            </button>
+        </div>
+    </div>
+</div>
             </div>
 
             <div class="section">
@@ -3704,6 +3933,27 @@
         openParticipantsReport(true);
     }
 
+    // Toggle collapse for Tab 2 headers & sub-headers
+function toggleRecSection(headerEl) {
+    const targetBody = headerEl.nextElementSibling;
+    if (!targetBody) return;
+
+    const chevron = headerEl.querySelector('.collapse-chevron');
+    const isClosed = targetBody.style.display === 'none';
+
+    // Toggle display (reverts to original CSS grid/block or none)
+    targetBody.style.display = isClosed ? '' : 'none';
+
+    if (chevron) {
+        if (isClosed) {
+            chevron.classList.remove('collapsed');
+        } else {
+            chevron.classList.add('collapsed');
+        }
+    }
+}
+
+
     function renderTables() {
         const clsFilt = document.getElementById('filterClass').value;
         const divFilt = document.getElementById('filterDivision').value;
@@ -3754,19 +4004,13 @@
         mainCategories.forEach(cat => {
             if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
 
-            // 100% Width Festival Classification Banner
-            const classBannerHTML = `
-                <div class="rec-classification-head">
-                    <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
-                </div>
-            `;
-            containerInd.innerHTML += classBannerHTML;
-            containerGrp.innerHTML += classBannerHTML;
+            let indFestsHTML = "";
+            let grpFestsHTML = "";
 
             Object.keys(hierarchy[cat]).sort().forEach(festName => {
                 let records = hierarchy[cat][festName];
 
-                // Check fest-specific sort or fallback to global sort
+                // Fest-specific sort or fallback to global sort
                 const sortBy = (isAdmin && adminFestSorts[festName]) ? adminFestSorts[festName] : globalSortBy;
                 records.sort((a, b) => {
                     if (sortBy === 'name_asc') return String(a.Name || "").localeCompare(String(b.Name || ""));
@@ -3780,7 +4024,7 @@
                 const indRecords = records.filter(r => parseInt(r["No of Participants"] || 1) === 1);
                 const grpRecords = records.filter(r => parseInt(r["No of Participants"] || 1) > 1);
 
-                // Admin-only Controls: Fest Sort Selector & Section Print Button
+                // Admin Controls
                 let adminFestControls = "";
                 if (isAdmin) {
                     adminFestControls = `
@@ -3798,27 +4042,30 @@
                     `;
                 }
 
-                // 100% Width Fest Header
-                const festHeaderHTML = `
-                    <div class="rec-fest-head">
-                        <div>
-                            <h5><i class="fas fa-trophy" style="color:var(--gold); margin-right:8px;"></i> ${festName}</h5>
-                            <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${records.length} (${indRecords.length} Individual, ${grpRecords.length} Group)</span>
-                        </div>
-                        ${adminFestControls}
-                    </div>
-                `;
-
-                // Render Individual Items for this fest
+                // 1. COLLAPSIBLE SUB-HEADER FOR INDIVIDUAL ITEMS
                 if (indRecords.length > 0) {
-                    let indCardsHTML = `<div style="width:100%;">${festHeaderHTML}<div class="records-grid" style="margin-bottom:20px;">`;
+                    indFestsHTML += `
+                        <div style="width:100%; margin-bottom:15px;">
+                            <div class="rec-fest-head collapsible-header" onclick="if (!event.target.closest('select, button')) toggleRecSection(this)">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <i class="fas fa-chevron-down collapse-chevron"></i>
+                                    <div>
+                                        <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--gold); margin-right:6px;"></i> ${festName}</h5>
+                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${indRecords.length} Individual</span>
+                                    </div>
+                                </div>
+                                ${adminFestControls}
+                            </div>
+                            <div class="records-grid" style="margin-bottom:20px;">
+                    `;
+
                     indRecords.forEach(r => {
                         const deleteBtn = isAdmin ? `
                             <button class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
                                 <i class="fas fa-trash-alt"></i> Delete
                             </button>
                         ` : '';
-                        indCardsHTML += `
+                        indFestsHTML += `
                             <div class="record-card">
                                 <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
                                 <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
@@ -3833,20 +4080,34 @@
                             </div>
                         `;
                     });
-                    indCardsHTML += `</div></div>`;
-                    containerInd.innerHTML += indCardsHTML;
+
+                    indFestsHTML += `</div></div>`;
                 }
 
-                // Render Group Items for this fest
+                // 2. COLLAPSIBLE SUB-HEADER FOR GROUP ITEMS
                 if (grpRecords.length > 0) {
-                    let grpCardsHTML = `<div style="width:100%;">${festHeaderHTML}<div class="records-grid" style="margin-bottom:20px;">`;
+                    grpFestsHTML += `
+                        <div style="width:100%; margin-bottom:15px;">
+                            <div class="rec-fest-head collapsible-header" onclick="if (!event.target.closest('select, button')) toggleRecSection(this)">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <i class="fas fa-chevron-down collapse-chevron"></i>
+                                    <div>
+                                        <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--gold); margin-right:6px;"></i> ${festName}</h5>
+                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${grpRecords.length} Group</span>
+                                    </div>
+                                </div>
+                                ${adminFestControls}
+                            </div>
+                            <div class="records-grid" style="margin-bottom:20px;">
+                    `;
+
                     grpRecords.forEach(r => {
                         const deleteBtn = isAdmin ? `
                             <button class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
                                 <i class="fas fa-trash-alt"></i> Delete
                             </button>
                         ` : '';
-                        grpCardsHTML += `
+                        grpFestsHTML += `
                             <div class="record-card group-card">
                                 <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
                                 <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
@@ -3861,10 +4122,40 @@
                             </div>
                         `;
                     });
-                    grpCardsHTML += `</div></div>`;
-                    containerGrp.innerHTML += grpCardsHTML;
+
+                    grpFestsHTML += `</div></div>`;
                 }
             });
+
+            // 3. COLLAPSIBLE MAIN CATEGORY HEADER FOR INDIVIDUAL ITEMS
+            if (indFestsHTML) {
+                containerInd.innerHTML += `
+                    <div style="width:100%; margin-bottom:15px;">
+                        <div class="rec-classification-head collapsible-header" onclick="toggleRecSection(this)">
+                            <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
+                            <i class="fas fa-chevron-down collapse-chevron"></i>
+                        </div>
+                        <div class="rec-classification-body" style="width:100%;">
+                            ${indFestsHTML}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 4. COLLAPSIBLE MAIN CATEGORY HEADER FOR GROUP ITEMS
+            if (grpFestsHTML) {
+                containerGrp.innerHTML += `
+                    <div style="width:100%; margin-bottom:15px;">
+                        <div class="rec-classification-head collapsible-header" onclick="toggleRecSection(this)">
+                            <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
+                            <i class="fas fa-chevron-down collapse-chevron"></i>
+                        </div>
+                        <div class="rec-classification-body" style="width:100%;">
+                            ${grpFestsHTML}
+                        </div>
+                    </div>
+                `;
+            }
         });
     }
 
@@ -3952,27 +4243,72 @@
     }
 
     // --- 11. EVENT MANAGEMENT TAB ---
-    function initEventMgmtTab() {
-        const sel = document.getElementById('emItemSelect');
-        const judgeSel = document.getElementById('judgeItemAllotSelect');
-        const existJudgeSel = document.getElementById('existingJudgeSelect');
+    let allEmSortedItems = [];
 
-        sel.innerHTML = '<option value="">-- Choose Item --</option>';
-        judgeSel.innerHTML = '<option value="">-- Choose Item --</option>';
-        existJudgeSel.innerHTML = '<option value="">-- Or Choose Existing Registered Judge --</option>';
+function initEventMgmtTab() {
+    const judgeSel = document.getElementById('judgeItemAllotSelect');
+    const existJudgeSel = document.getElementById('existingJudgeSelect');
 
-        dbFests.filter(f => isFestEnabled(f["Fest Name"])).forEach(f => {
+    judgeSel.innerHTML = '<option value="">-- Choose Item --</option>';
+    existJudgeSel.innerHTML = '<option value="">-- Or Choose Existing Registered Judge --</option>';
+
+    // Filter enabled fests and sort alphabetically by Item Name
+    allEmSortedItems = dbFests.filter(f => isFestEnabled(f["Fest Name"])).sort((a, b) => 
+        String(a["Item"] || "").localeCompare(String(b["Item"] || ""))
+    );
+
+    allEmSortedItems.forEach(f => {
         const txt = `${f["Item"]} [${f["Item Code"] || 'N/A'}] (${f["Fest Name"]})`;
-        sel.innerHTML += `<option value="${f["Item Code"]}">${txt}</option>`;
         judgeSel.innerHTML += `<option value="${f["Item Code"]}">${txt}</option>`;
-        });
+    });
 
-        dbJudges.forEach(j => {
-            existJudgeSel.innerHTML += `<option value="${j.phone}">${j.name} (${j.phone})</option>`;
-        });
+    dbJudges.forEach(j => {
+        existJudgeSel.innerHTML += `<option value="${j.phone}">${j.name} (${j.phone})</option>`;
+    });
 
-        renderJudgesList();
+    renderJudgesList();
+    renderEmDropdownList(allEmSortedItems);
+}
+
+function renderEmDropdownList(items) {
+    const list = document.getElementById('emItemDropdownList');
+    if (!list) return;
+    list.innerHTML = '';
+    if (items.length === 0) {
+        list.innerHTML = '<div style="padding:10px; color:#94a3b8; font-size:12px; text-align:center;">No matching items found</div>';
+        return;
     }
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'custom-search-dropdown-item';
+        div.innerHTML = `<b>${item["Item"]}</b> <span style="color:#64748b; font-size:11px;">[${item["Item Code"]}] (${item["Fest Name"]})</span>`;
+        div.onclick = () => selectEmSearchItem(item["Item Code"], `${item["Item"]} [${item["Item Code"]}]`);
+        list.appendChild(div);
+    });
+}
+
+function openEmSearchDropdown() {
+    renderEmDropdownList(allEmSortedItems);
+    document.getElementById('emItemDropdownList').style.display = 'block';
+}
+
+function filterEmSearchItems(query) {
+    const q = String(query || "").toLowerCase().trim();
+    const filtered = allEmSortedItems.filter(f => 
+        String(f["Item"] || "").toLowerCase().includes(q) ||
+        String(f["Item Code"] || "").toLowerCase().includes(q) ||
+        String(f["Fest Name"] || "").toLowerCase().includes(q)
+    );
+    renderEmDropdownList(filtered);
+    document.getElementById('emItemDropdownList').style.display = 'block';
+}
+
+function selectEmSearchItem(code, displayText) {
+    document.getElementById('emItemSelect').value = code;
+    document.getElementById('emItemSearchInput').value = displayText;
+    document.getElementById('emItemDropdownList').style.display = 'none';
+    loadEventMgmtItemDetails();
+}
 
     function onExistingJudgeChosen() {
         const phone = document.getElementById('existingJudgeSelect').value;
@@ -3985,11 +4321,29 @@
     }
 
     function getItemLiveStatus(code) {
-        if (!code) return "NONE";
-        if ((dbSettings.CompletedProgrammes || []).includes(code)) return "COMPLETED";
-        if ((dbSettings.ActiveProgrammes || []).includes(code)) return "ACTIVE";
-        return "INACTIVE";
+    if (!code) return "NONE";
+    const cleanCode = String(code).trim().toLowerCase();
+
+    // 1. Check CompletedProgrammes or PublishedItems settings list
+    const isCompletedSetting = (dbSettings.CompletedProgrammes || []).some(c => String(c).trim().toLowerCase() === cleanCode);
+    const isPublishedSetting = (dbSettings.PublishedItems || []).some(c => String(c).trim().toLowerCase() === cleanCode);
+
+    // 2. Check if scores have already been locked by judges in database
+    const hasLockedScores = dbJudgeScores.some(s => String(s.itemCode).trim().toLowerCase() === cleanCode && s.locked === true);
+
+    // 3. Check if results have been published for this item
+    const hasPublishedResults = dbPublishedResults.some(p => String(p.itemCode).trim().toLowerCase() === cleanCode);
+
+    if (isCompletedSetting || isPublishedSetting || hasLockedScores || hasPublishedResults) {
+        return "COMPLETED";
     }
+
+    // 4. Check if currently active
+    const isActive = (dbSettings.ActiveProgrammes || []).some(c => String(c).trim().toLowerCase() === cleanCode);
+    if (isActive) return "ACTIVE";
+
+    return "INACTIVE";
+}
 
     function loadEventMgmtItemDetails() {
         const code = document.getElementById('emItemSelect').value;
@@ -4046,66 +4400,78 @@
     }
 
     async function toggleProgramStatus(targetState) {
-        const code = document.getElementById('emItemSelect').value;
-        if (!code) return showCustomDialog("Selection Needed", "Please select an item first.", "warning");
+    const rawCode = document.getElementById('emItemSelect').value;
+    if (!rawCode) return showCustomDialog("Selection Needed", "Please select an item first.", "warning");
 
-        if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
-        if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
-        if (!dbSettings.PublishedItems) dbSettings.PublishedItems = [];
+    const code = String(rawCode).trim();
+    if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
+    if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
+    if (!dbSettings.PublishedItems) dbSettings.PublishedItems = [];
 
-        const currentStatus = getItemLiveStatus(code);
+    const currentStatus = getItemLiveStatus(code);
 
-        if (targetState === 'ACTIVE' && currentStatus === 'COMPLETED') {
-            showCustomDialog(
-                "Reset Completed Programme?",
-                `The item <b>[${code}]</b> is already marked as <b>COMPLETED</b>.<br><br>Reactivating it will <b>RESET and clear all judge evaluations, tabulated marks, and published results</b> for this item.<br><br>Do you want to proceed?`,
-                "warning",
-                async () => {
-                    showLoader("Resetting & Clearing Judgement Data...");
-                    try {
-                        const snapScores = await db.collection("judge_scores").where("itemCode", "==", code).get();
-                        const b1 = db.batch();
-                        snapScores.docs.forEach(d => b1.delete(d.ref));
-                        await b1.commit();
-                        dbJudgeScores = dbJudgeScores.filter(s => s.itemCode !== code);
+    // REACTIVATION FLOW: Clears all previous locks and scores so judges can re-evaluate
+    if (targetState === 'ACTIVE' && currentStatus === 'COMPLETED') {
+        showCustomDialog(
+            "Reactivate Completed Programme?",
+            `The item <b>[${code}]</b> has completed judgement.<br><br>Reactivating it will <b>RESET and clear all submitted judge scores, locked marks, and published results</b> for this item so it can be re-evaluated.<br><br>Do you want to proceed?`,
+            "warning",
+            async () => {
+                showLoader("Resetting & Reactivating Programme...");
+                try {
+                    // 1. Delete all submitted scores for this item from Firestore
+                    const snapScores = await db.collection("judge_scores").where("itemCode", "==", code).get();
+                    const b1 = db.batch();
+                    snapScores.docs.forEach(d => b1.delete(d.ref));
+                    await b1.commit();
+                    dbJudgeScores = dbJudgeScores.filter(s => String(s.itemCode).trim() !== code);
 
-                        const snapPub = await db.collection("published_results").where("itemCode", "==", code).get();
-                        const b2 = db.batch();
-                        snapPub.docs.forEach(d => b2.delete(d.ref));
-                        await b2.commit();
-                        dbPublishedResults = dbPublishedResults.filter(p => p.itemCode !== code);
+                    // 2. Delete all published results for this item from Firestore
+                    const snapPub = await db.collection("published_results").where("itemCode", "==", code).get();
+                    const b2 = db.batch();
+                    snapPub.docs.forEach(d => b2.delete(d.ref));
+                    await b2.commit();
+                    dbPublishedResults = dbPublishedResults.filter(p => String(p.itemCode).trim() !== code);
 
-                        dbSettings.CompletedProgrammes = dbSettings.CompletedProgrammes.filter(c => c !== code);
-                        dbSettings.PublishedItems = dbSettings.PublishedItems.filter(c => c !== code);
-                        if (!dbSettings.ActiveProgrammes.includes(code)) dbSettings.ActiveProgrammes.push(code);
-
-                        await db.collection("config").doc("settings").set(dbSettings, { merge: true });
-                        hideLoader();
-                        loadEventMgmtItemDetails();
-                        showCustomDialog("Programme Reactivated", `Item [${code}] has been reset and activated.`, "success");
-                    } catch (err) {
-                        hideLoader();
-                        showCustomDialog("Error", "Could not complete programme reset.", "danger");
+                    // 3. Update settings lists
+                    dbSettings.CompletedProgrammes = dbSettings.CompletedProgrammes.filter(c => String(c).trim() !== code);
+                    dbSettings.PublishedItems = dbSettings.PublishedItems.filter(c => String(c).trim() !== code);
+                    if (!dbSettings.ActiveProgrammes.some(c => String(c).trim() === code)) {
+                        dbSettings.ActiveProgrammes.push(code);
                     }
-                },
-                true
-            );
-            return;
-        }
 
-        if (targetState === 'ACTIVE') {
-            if (!dbSettings.ActiveProgrammes.includes(code)) dbSettings.ActiveProgrammes.push(code);
-            dbSettings.CompletedProgrammes = dbSettings.CompletedProgrammes.filter(c => c !== code);
-        } else if (targetState === 'INACTIVE') {
-            dbSettings.ActiveProgrammes = dbSettings.ActiveProgrammes.filter(c => c !== code);
-        }
-
-        showLoader("Updating Programme status...");
-        await db.collection("config").doc("settings").set(dbSettings, { merge: true });
-        hideLoader();
-        loadEventMgmtItemDetails();
-        showCustomDialog("Updated", `Programme status set to ${targetState}`, "success");
+                    await db.collection("config").doc("settings").set(dbSettings, { merge: true });
+                    
+                    hideLoader();
+                    loadEventMgmtItemDetails();
+                    showCustomDialog("Programme Reactivated", `Item <b>[${code}]</b> is now ACTIVE and unlocked for marks entry.`, "success");
+                } catch (err) {
+                    hideLoader();
+                    console.error(err);
+                    showCustomDialog("Error", "Could not complete programme reset.", "danger");
+                }
+            },
+            true
+        );
+        return;
     }
+
+    // NORMAL ACTIVATION / DEACTIVATION
+    if (targetState === 'ACTIVE') {
+        if (!dbSettings.ActiveProgrammes.some(c => String(c).trim() === code)) {
+            dbSettings.ActiveProgrammes.push(code);
+        }
+        dbSettings.CompletedProgrammes = dbSettings.CompletedProgrammes.filter(c => String(c).trim() !== code);
+    } else if (targetState === 'INACTIVE') {
+        dbSettings.ActiveProgrammes = dbSettings.ActiveProgrammes.filter(c => String(c).trim() !== code);
+    }
+
+    showLoader("Updating Programme Status...");
+    await db.collection("config").doc("settings").set(dbSettings, { merge: true });
+    hideLoader();
+    loadEventMgmtItemDetails();
+    showCustomDialog("Updated", `Programme status set to ${targetState}.`, "success");
+}
 
     async function saveSingleLot(regId) {
         const input = document.querySelector(`input[data-regid="${regId}"]`);
@@ -4259,36 +4625,91 @@ function autoGenerateContinuousLots(randomize = false) {
     }
 
     // --- 12. JUDGEMENT TAB ---
-    function initJudgementTab() {
-        const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
-        const isReadOnlyAdmin = isAdmin && (dbSettings.Admin_ReadOnly_Judgement !== "DISABLED");
-        
-        document.getElementById('judgeAdminNotice').style.display = isReadOnlyAdmin ? 'block' : 'none';
+    let allJudgeSortedItems = [];
 
-        const sel = document.getElementById('judgeActiveItemsSelect');
-        sel.innerHTML = '<option value="">-- Select Active Item --</option>';
+function initJudgementTab() {
+    const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
+    const isReadOnlyAdmin = isAdmin && (dbSettings.Admin_ReadOnly_Judgement !== "DISABLED");
+    
+    document.getElementById('judgeAdminNotice').style.display = isReadOnlyAdmin ? 'block' : 'none';
 
-        let itemsToShow = [];
-        if (isAdmin) {
-            itemsToShow = dbFests.filter(f => (dbSettings.ActiveProgrammes || []).includes(f["Item Code"]) || (dbSettings.CompletedProgrammes || []).includes(f["Item Code"]));
-        } else {
-            const currentJudge = dbJudges.find(j => 
-                (j.phone && currentUser.id && String(j.phone).trim() === String(currentUser.id).trim()) || 
-                (j.name && currentUser.name && String(j.name).toLowerCase() === String(currentUser.name).toLowerCase())
-            );
-            const assigned = currentJudge ? (currentJudge.assignedItems || []) : [];
-            itemsToShow = dbFests.filter(f => assigned.includes(f["Item Code"]) && ((dbSettings.ActiveProgrammes || []).includes(f["Item Code"]) || (dbSettings.CompletedProgrammes || []).includes(f["Item Code"])));
-        }
-        // ADD THIS LINE right before itemsToShow.forEach(...):
-        itemsToShow = itemsToShow.filter(f => isFestEnabled(f["Fest Name"]));
-
-        itemsToShow.forEach(item => {
-    const isDone = (dbSettings.CompletedProgrammes || []).includes(item["Item Code"]);
-    sel.innerHTML += `<option value="${item["Item Code"]}">${item["Item"]} [${item["Item Code"]}] ${isDone ? '(COMPLETED)' : ''}</option>`;
-});
-
-        renderCriteriaChips(isReadOnlyAdmin);
+    let itemsToShow = [];
+    if (isAdmin) {
+        itemsToShow = dbFests.filter(f => 
+            (dbSettings.ActiveProgrammes || []).includes(f["Item Code"]) || 
+            (dbSettings.CompletedProgrammes || []).includes(f["Item Code"])
+        );
+    } else {
+        const currentJudge = dbJudges.find(j => 
+            (j.phone && currentUser.id && String(j.phone).trim() === String(currentUser.id).trim()) || 
+            (j.name && currentUser.name && String(j.name).toLowerCase() === String(currentUser.name).toLowerCase())
+        );
+        const assigned = currentJudge ? (currentJudge.assignedItems || []) : [];
+        itemsToShow = dbFests.filter(f => 
+            assigned.includes(f["Item Code"]) && 
+            ((dbSettings.ActiveProgrammes || []).includes(f["Item Code"]) || (dbSettings.CompletedProgrammes || []).includes(f["Item Code"]))
+        );
     }
+
+    // Filter only enabled fests and sort in ALPHABETICAL ORDER by Item Name
+    allJudgeSortedItems = itemsToShow.filter(f => isFestEnabled(f["Fest Name"])).sort((a, b) => 
+        String(a["Item"] || "").localeCompare(String(b["Item"] || ""))
+    );
+
+    renderJudgeDropdownList(allJudgeSortedItems);
+    renderCriteriaChips(isReadOnlyAdmin);
+}
+
+function renderJudgeDropdownList(items) {
+    const list = document.getElementById('judgeActiveItemsDropdownList');
+    if (!list) return;
+    list.innerHTML = '';
+    if (items.length === 0) {
+        list.innerHTML = '<div style="padding:10px; color:#94a3b8; font-size:12px; text-align:center;">No active/completed items available</div>';
+        return;
+    }
+    items.forEach(item => {
+        const isDone = (dbSettings.CompletedProgrammes || []).includes(item["Item Code"]);
+        const div = document.createElement('div');
+        div.className = 'custom-search-dropdown-item';
+        div.innerHTML = `<b>${item["Item"]}</b> <span style="font-size:11px; color:#64748b;">[${item["Item Code"]}]</span> ${isDone ? '<span style="color:#7c3aed; font-weight:700; font-size:10px;">(COMPLETED)</span>' : ''}`;
+        div.onclick = () => selectJudgeSearchItem(item["Item Code"], `${item["Item"]} [${item["Item Code"]}] ${isDone ? '(COMPLETED)' : ''}`);
+        list.appendChild(div);
+    });
+}
+
+function openJudgeSearchDropdown() {
+    renderJudgeDropdownList(allJudgeSortedItems);
+    document.getElementById('judgeActiveItemsDropdownList').style.display = 'block';
+}
+
+function filterJudgeSearchItems(query) {
+    const q = String(query || "").toLowerCase().trim();
+    const filtered = allJudgeSortedItems.filter(f => 
+        String(f["Item"] || "").toLowerCase().includes(q) ||
+        String(f["Item Code"] || "").toLowerCase().includes(q) ||
+        String(f["Fest Name"] || "").toLowerCase().includes(q)
+    );
+    renderJudgeDropdownList(filtered);
+    document.getElementById('judgeActiveItemsDropdownList').style.display = 'block';
+}
+
+function selectJudgeSearchItem(code, displayText) {
+    document.getElementById('judgeActiveItemsSelect').value = code;
+    document.getElementById('judgeActiveItemsSearchInput').value = displayText;
+    document.getElementById('judgeActiveItemsDropdownList').style.display = 'none';
+    setupJudgeSheet();
+}
+
+// Global click listener to automatically close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-search-select-wrapper')) {
+        const emList = document.getElementById('emItemDropdownList');
+        const judgeList = document.getElementById('judgeActiveItemsDropdownList');
+        if (emList) emList.style.display = 'none';
+        if (judgeList) judgeList.style.display = 'none';
+    }
+});
 
     function renderCriteriaChips(isLocked = false) {
         const cList = document.getElementById('criteriaList');
@@ -4641,98 +5062,129 @@ function autoGenerateContinuousLots(randomize = false) {
         updateLotDropdownAndProgress();
     }
 
-    // FINALIZE AND LOCK ALL SCORES AT ONCE
-    async function finalizeJudgement() {
-        const code = document.getElementById('judgeActiveItemsSelect').value;
-        if (!code) return showCustomDialog("Item Missing", "No item selected for finalization.", "warning");
+    
+    // --- FINALIZE AND LOCK ALL SCORES AT ONCE ---
+async function finalizeJudgement() {
+    const rawCode = document.getElementById('judgeActiveItemsSelect')?.value;
+    if (!rawCode) {
+        return showCustomDialog("Item Missing", "No item selected for finalization.", "warning");
+    }
 
-        const festObj = dbFests.find(f => f["Item Code"] === code);
-        const totalUnits = currentJudgeSession.units.length;
+    const cleanCode = String(rawCode).trim();
+    const festObj = dbFests.find(f => String(f["Item Code"] || "").trim() === cleanCode);
+    const itemName = festObj ? festObj["Item"] : cleanCode;
+    const totalUnits = currentJudgeSession.units ? currentJudgeSession.units.length : 0;
 
-        if (currentJudgeSession.savedUnitIds.size < totalUnits) {
-            return showCustomDialog(
-                "Evaluation Incomplete",
-                `Please evaluate and save all lots before locking.<br>Scored: <b>${currentJudgeSession.savedUnitIds.size} of ${totalUnits} lots</b>.`,
-                "warning"
-            );
-        }
-
-        showCustomDialog(
-            "Lock Judgement Submission?",
-            `Finalize and permanently lock scores for <b>${festObj ? festObj["Item"] : code}</b>?<br><br>All lot scores will be recorded and signed by <b>${currentUser.name} (${currentUser.id})</b>.`,
-            "warning",
-            async () => {
-                showLoader("Submitting & Locking Judgement...");
-                try {
-                    const batch = db.batch();
-                    const timestamp = new Date().toLocaleString('en-IN');
-
-                    currentJudgeSession.units.forEach(unit => {
-                        const scoreData = currentJudgeSession.unitScores[unit.id];
-                        if (!scoreData) return;
-
-                        const reg = dbRegistrations.find(r => r.id === unit.id);
-
-                        const scoreDoc = {
-                            itemCode: code,
-                            itemName: festObj ? festObj["Item"] : code,
-                            festName: festObj ? festObj["Fest Name"] : "",
-                            festCategory: getFestivalCategory(festObj ? festObj["Fest Name"] : ""),
-                            registrationId: unit.id,
-                            admissionNumber: reg ? reg["Admission Number"] : "",
-                            candidateName: reg ? reg["Name"] : "",
-                            studentClass: reg ? reg["Class"] : "",
-                            studentDivision: reg ? reg["Division"] : "",
-                            lotNumber: scoreData.lotNumber,
-                            criteriaScores: scoreData.critMap,
-                            totalScore: scoreData.score,
-                            maxMarks: scoreData.maxMarks,
-                            percentage: scoreData.percentage,
-                            grade: scoreData.grade,
-                            judgeName: currentUser.name,
-                            judgePhone: currentUser.id,
-                            timestamp: timestamp,
-                            locked: true
-                        };
-
-                        const ref = db.collection("judge_scores").doc();
-                        batch.set(ref, scoreDoc);
-                        dbJudgeScores.push({ ...scoreDoc, id: ref.id });
-                    });
-
-                    // Mark program as COMPLETED
-                    if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
-                    if (!dbSettings.CompletedProgrammes.includes(code)) {
-                        dbSettings.CompletedProgrammes.push(code);
-                    }
-                    dbSettings.ActiveProgrammes = (dbSettings.ActiveProgrammes || []).filter(c => c !== code);
-                    batch.set(db.collection("config").doc("settings"), dbSettings, { merge: true });
-
-                    // Audit Log
-                    const logRef = db.collection("judge_logs").doc();
-                    batch.set(logRef, {
-                        timestamp,
-                        judgeName: currentUser.name,
-                        judgePhone: currentUser.id,
-                        itemCode: code,
-                        itemName: festObj ? festObj["Item"] : code,
-                        criteriaCount: currentJudgeCriteria.length,
-                        status: "Judgement Locked & Completed"
-                    });
-
-                    await batch.commit();
-                    hideLoader();
-                    showCustomDialog("Judgement Completed", "All scores successfully locked and submitted.", "success");
-                    setupJudgeSheet();
-                } catch (err) {
-                    hideLoader();
-                    console.error(err);
-                    showCustomDialog("Error", "Could not complete judgement locking.", "danger");
-                }
-            },
-            true
+    // 1. Validation: Ensure all candidates/lots have been scored
+    if (currentJudgeSession.savedUnitIds.size < totalUnits) {
+        return showCustomDialog(
+            "Evaluation Incomplete",
+            `Please evaluate and save all lots before locking.<br><br>Scored: <b>${currentJudgeSession.savedUnitIds.size} of ${totalUnits} lots</b>.`,
+            "warning"
         );
     }
+
+    // 2. Confirmation prompt before locking
+    showCustomDialog(
+        "Lock Judgement Submission?",
+        `Finalize and permanently lock scores for <b>${itemName} [${cleanCode}]</b>?<br><br>` +
+        `All lot scores will be recorded and signed by <b>${currentUser.name} (${currentUser.id})</b>.<br><br>` +
+        `<i>Once locked, marks cannot be altered without administrator reset.</i>`,
+        "warning",
+        async () => {
+            showLoader("Submitting & Locking Judgement...");
+            try {
+                const batch = db.batch();
+                const timestamp = new Date().toLocaleString('en-IN');
+
+                // 3. Batch commit all individual lot scores
+                currentJudgeSession.units.forEach(unit => {
+                    const scoreData = currentJudgeSession.unitScores[unit.id];
+                    if (!scoreData) return;
+
+                    const reg = dbRegistrations.find(r => r.id === unit.id);
+
+                    const scoreDoc = {
+                        itemCode: cleanCode,
+                        itemName: itemName,
+                        festName: festObj ? festObj["Fest Name"] : "",
+                        festCategory: getFestivalCategory(festObj ? festObj["Fest Name"] : ""),
+                        registrationId: unit.id,
+                        admissionNumber: reg ? (reg["Admission Number"] || "") : "",
+                        candidateName: reg ? (reg["Name"] || "") : "",
+                        studentClass: reg ? (reg["Class"] || "") : "",
+                        studentDivision: reg ? (reg["Division"] || "") : "",
+                        lotNumber: scoreData.lotNumber || "N/A",
+                        criteriaScores: scoreData.critMap || {},
+                        totalScore: scoreData.score,
+                        maxMarks: scoreData.maxMarks,
+                        percentage: scoreData.percentage,
+                        grade: scoreData.grade,
+                        isAbsent: scoreData.isAbsent || false,
+                        judgeName: currentUser.name,
+                        judgePhone: currentUser.id,
+                        timestamp: timestamp,
+                        locked: true
+                    };
+
+                    const ref = db.collection("judge_scores").doc();
+                    batch.set(ref, scoreDoc);
+                    dbJudgeScores.push({ ...scoreDoc, id: ref.id });
+                });
+
+                // 4. Update System Settings (Move from Active to Completed)
+                if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
+                if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
+
+                // Add to CompletedProgrammes if not present (case/trim safe)
+                if (!dbSettings.CompletedProgrammes.some(c => String(c).trim().toLowerCase() === cleanCode.toLowerCase())) {
+                    dbSettings.CompletedProgrammes.push(cleanCode);
+                }
+
+                // Remove from ActiveProgrammes
+                dbSettings.ActiveProgrammes = dbSettings.ActiveProgrammes.filter(
+                    c => String(c).trim().toLowerCase() !== cleanCode.toLowerCase()
+                );
+
+                batch.set(db.collection("config").doc("settings"), dbSettings, { merge: true });
+
+                // 5. Audit Logging for Administrator visibility
+                const logRef = db.collection("judge_logs").doc();
+                batch.set(logRef, {
+                    timestamp: timestamp,
+                    judgeName: currentUser.name,
+                    judgePhone: currentUser.id,
+                    itemCode: cleanCode,
+                    itemName: itemName,
+                    criteriaCount: currentJudgeCriteria.length,
+                    status: "Judgement Locked & Completed"
+                });
+
+                // Execute batch commit
+                await batch.commit();
+
+                hideLoader();
+                showCustomDialog(
+                    "Judgement Completed",
+                    `All scores for <b>${itemName}</b> have been locked and submitted successfully.`,
+                    "success"
+                );
+
+                // 6. Refresh UI components
+                setupJudgeSheet();
+                initJudgementTab();
+                if (typeof loadEventMgmtItemDetails === "function") {
+                    loadEventMgmtItemDetails();
+                }
+            } catch (err) {
+                hideLoader();
+                console.error("Judgement locking error:", err);
+                showCustomDialog("Submission Error", "Could not complete judgement locking. Please try again.", "danger");
+            }
+        },
+        true
+    );
+}
 
     function recalculateRowScore(unitId) {
         const inputs = document.querySelectorAll(`input.score-input[data-unitid="${unitId}"]`);
@@ -5036,7 +5488,21 @@ function autoGenerateContinuousLots(randomize = false) {
         );
     }
 
-    // --- 14. RESULT TAB (WITH RESULT DECLARED BADGE & CERTIFICATE) ---
+    function toggleResultSection(headerEl) {
+    const targetBody = headerEl.nextElementSibling;
+    if (!targetBody) return;
+    
+    const chevron = headerEl.querySelector('.collapse-chevron');
+    const isCurrentlyOpen = targetBody.style.display !== 'none';
+
+    if (isCurrentlyOpen) {
+        targetBody.style.display = 'none';
+        if (chevron) chevron.classList.add('collapsed');
+    } else {
+        targetBody.style.display = 'block';
+        if (chevron) chevron.classList.remove('collapsed');
+    }
+}
     // --- 14. TAB 6: RESULT TAB (WITH CHAMPIONSHIP POINTS TABLE, 100% WIDTH CATEGORIES & DELETE ICONS) ---
     function renderResults() {
         const container = document.getElementById('resultsContainer');
@@ -5154,15 +5620,24 @@ function autoGenerateContinuousLots(randomize = false) {
         mainCategories.forEach(cat => {
             if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
 
-            let catHTML = `<div class="category-main-head"><i class="fas fa-award"></i> ${cat.toUpperCase()} RESULTS</div>`;
+            // 1. COLLAPSIBLE MAIN CATEGORY HEADER
+            catHTML += `
+                <div class="category-main-head collapsible-header" onclick="toggleResultSection(this)">
+                    <span><i class="fas fa-award"></i> ${cat.toUpperCase()} RESULTS</span>
+                    <i class="fas fa-chevron-down collapse-chevron"></i>
+                </div>
+                <div class="category-collapsible-content" style="display: block;">
+            `;
 
             Object.keys(hierarchy[cat]).forEach(itemKey => {
                 const rows = hierarchy[cat][itemKey];
                 rows.sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
 
+                // 2. COLLAPSIBLE ITEM SUB-HEADER
                 catHTML += `
-                    <div class="item-sub-head">
+                    <div class="item-sub-head collapsible-header" onclick="toggleResultSection(this)">
                         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <i class="fas fa-chevron-down collapse-chevron"></i>
                             <span><i class="fas fa-star" style="color:var(--warning);"></i> ${itemKey}</span>
                             <span class="result-badge-new"><i class="fas fa-bolt"></i> NEW</span>
                         </div>
@@ -5170,7 +5645,7 @@ function autoGenerateContinuousLots(randomize = false) {
                             <i class="far fa-clock"></i> Published: ${rows[0].publishedAt || 'Official'}
                         </span>
                     </div>
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="display: block;">
                         <table>
                             <thead>
                                 <tr>
@@ -5204,15 +5679,12 @@ function autoGenerateContinuousLots(randomize = false) {
                             <td style="text-align:center;"><span class="badge-place ${placeBadge}">${row.place}</span></td>
                             <td style="text-align:center;">
                                 <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
-                                    <!-- View Certificate Icon -->
                                     <button class="action-btn" style="padding:5px 8px; font-size:12px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <!-- Print Certificate Icon -->
                                     <button class="action-btn gold" style="padding:5px 8px; font-size:12px;" title="Print Certificate" onclick="openCertificateModal('${row.id}', true)">
                                         <i class="fas fa-print"></i>
                                     </button>
-                                    <!-- Delete Result Entry Icon -->
                                     <button class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
@@ -5225,6 +5697,7 @@ function autoGenerateContinuousLots(randomize = false) {
                 catHTML += `</tbody></table></div>`;
             });
 
+            catHTML += `</div>`; // closes category-collapsible-content
             container.innerHTML += catHTML;
         });
     }
@@ -6281,32 +6754,68 @@ dbStudents.push({ ...s, id: ref.id });
         );
     }
 
-    function openEditItemModal(id) {
-        editingItemDocId = id;
-        const it = dbFests.find(f => f.id === id);
-        if (!it) return;
+    // --- INSTANT EDIT ITEM MODAL HANDLER ---
+function openEditItemModal(id) {
+    editingItemDocId = id;
+    const it = dbFests.find(f => f.id === id);
+    if (!it) return;
 
-        // Populate Fest Dropdown inside modal
-        const festSel = document.getElementById('editItemFest');
-        festSel.innerHTML = "";
-        allFestNames.forEach(f => {
-            festSel.innerHTML += `<option value="${f}">${f}</option>`;
-        });
+    // 1. Populate Fests Dropdown
+    const festSel = document.getElementById('editItemFest');
+    festSel.innerHTML = "";
+    allFestNames.forEach(f => {
+        festSel.innerHTML += `<option value="${f}">${f}</option>`;
+    });
 
-        festSel.value = it["Fest Name"] || allFestNames[0];
-        document.getElementById('editItemName').value = it["Item"] || "";
-        document.getElementById('editItemCode').value = it["Item Code"] || "";
-        document.getElementById('editItemCat').value = it["Category"] || "General";
-        document.getElementById('editItemPart').value = it["No of Participants"] || "1";
-        document.getElementById('editItemDur').value = it["Duration"] || "";
+    // 2. Pre-fill Form Data
+    festSel.value = it["Fest Name"] || allFestNames[0];
+    document.getElementById('editItemName').value = it["Item"] || "";
+    document.getElementById('editItemCode').value = it["Item Code"] || "";
+    document.getElementById('editItemCat').value = it["Category"] || "General";
+    document.getElementById('editItemPart').value = it["No of Participants"] || "1";
+    document.getElementById('editItemDur').value = it["Duration"] || "";
 
-        document.getElementById('itemModalOverlay').style.display = 'flex';
+    // 3. Dynamic Title & Button Labels
+    const titleEl = document.getElementById('itemModalTitle');
+    if (titleEl) {
+        titleEl.innerHTML = `<i class="fas fa-edit" style="color:var(--primary);"></i> Edit: <b>${it["Item"]}</b>`;
+    }
+    const saveBtn = document.getElementById('itemModalSaveBtn');
+    if (saveBtn) {
+        saveBtn.innerHTML = `<i class="fas fa-save"></i> Update Item`;
     }
 
-    function closeEditItemModal() {
-        editingItemDocId = null;
-        document.getElementById('itemModalOverlay').style.display = 'none';
+    // 4. Instantly Pop Modal & Auto-Focus Item Name
+    const overlay = document.getElementById('itemModalOverlay');
+    overlay.style.display = 'flex';
+
+    // Auto-focus & select the item name for immediate editing
+    setTimeout(() => {
+        const nameInput = document.getElementById('editItemName');
+        if (nameInput) {
+            nameInput.focus();
+            nameInput.select();
+        }
+    }, 50);
+}
+
+function closeEditItemModal() {
+    editingItemDocId = null;
+    const overlay = document.getElementById('itemModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Global Escape Key to close modal
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const overlay = document.getElementById('itemModalOverlay');
+        if (overlay && overlay.style.display === 'flex') {
+            closeEditItemModal();
+        }
     }
+});
+
+    
 
     async function saveItemMaster() {
         const fest = document.getElementById('editItemFest').value;
