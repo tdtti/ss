@@ -267,7 +267,15 @@
         box-shadow: var(--glass-shadow);
         margin-bottom: 20px; 
         width: 100%; 
+        position: relative;
+        z-index: 1;
+        overflow: visible !important;
     }
+
+    .section:focus-within {
+    z-index: 50 !important;
+    }
+
     .section-title { 
         margin: 0 0 16px 0; 
         color: var(--primary); 
@@ -303,7 +311,10 @@
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
     .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; width: 100%; }
-
+    .row, .form-group {
+    position: relative;
+    overflow: visible !important;
+}
     /* Frosted Glass Buttons */
     .submit-btn { 
         background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(29, 78, 216, 0.95));
@@ -1706,6 +1717,7 @@
 .custom-search-select-wrapper {
     position: relative;
     width: 100%;
+    z-index: 60;
 }
 .custom-search-dropdown-list {
     position: absolute;
@@ -1714,11 +1726,11 @@
     right: 0;
     max-height: 220px;
     overflow-y: auto;
-    background: #ffffff;
+    background: #ffffff !important;
     border: 1.5px solid #2563eb;
     border-radius: 0 0 10px 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    z-index: 1050;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25) !important;
+    z-index: 999999 !important;
     display: none;
 }
 .custom-search-dropdown-item {
@@ -4302,8 +4314,44 @@ function renderEmDropdownList(items) {
 
 function openEmSearchDropdown() {
     renderEmDropdownList(allEmSortedItems);
-    document.getElementById('emItemDropdownList').style.display = 'block';
+    const list = document.getElementById('emItemDropdownList');
+    list.style.display = 'block';
+    
+    // Explicitly raise parent section z-index
+    const parentSection = list.closest('.section');
+    if (parentSection) parentSection.style.zIndex = '100';
 }
+
+function openJudgeSearchDropdown() {
+    renderJudgeDropdownList(allJudgeSortedItems);
+    const list = document.getElementById('judgeActiveItemsDropdownList');
+    list.style.display = 'block';
+    
+    // Explicitly raise parent section z-index
+    const parentSection = list.closest('.section');
+    if (parentSection) parentSection.style.zIndex = '100';
+}
+
+// Reset z-index when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-search-select-wrapper')) {
+        const emList = document.getElementById('emItemDropdownList');
+        const judgeList = document.getElementById('judgeActiveItemsDropdownList');
+        
+        if (emList) {
+            emList.style.display = 'none';
+            const s = emList.closest('.section');
+            if (s) s.style.zIndex = '';
+        }
+        if (judgeList) {
+            judgeList.style.display = 'none';
+            const s = judgeList.closest('.section');
+            if (s) s.style.zIndex = '';
+        }
+    }
+});
+
+
 
 function filterEmSearchItems(query) {
     const q = String(query || "").toLowerCase().trim();
@@ -4691,10 +4739,7 @@ function renderJudgeDropdownList(items) {
     });
 }
 
-function openJudgeSearchDropdown() {
-    renderJudgeDropdownList(allJudgeSortedItems);
-    document.getElementById('judgeActiveItemsDropdownList').style.display = 'block';
-}
+
 
 function filterJudgeSearchItems(query) {
     const q = String(query || "").toLowerCase().trim();
@@ -5507,225 +5552,225 @@ async function finalizeJudgement() {
         );
     }
 
-    function toggleResultSection(headerEl) {
+    // --- COLLAPSIBLE TOGGLE HELPER FOR RESULTS TAB ---
+function toggleResultSection(headerEl) {
     const targetBody = headerEl.nextElementSibling;
     if (!targetBody) return;
-    
-    const chevron = headerEl.querySelector('.collapse-chevron');
-    const isCurrentlyOpen = targetBody.style.display !== 'none';
 
-    if (isCurrentlyOpen) {
-        targetBody.style.display = 'none';
-        if (chevron) chevron.classList.add('collapsed');
-    } else {
-        targetBody.style.display = 'block';
-        if (chevron) chevron.classList.remove('collapsed');
+    const chevron = headerEl.querySelector('.collapse-chevron');
+    const isClosed = targetBody.style.display === 'none';
+
+    // Toggle container display
+    targetBody.style.display = isClosed ? 'block' : 'none';
+
+    // Rotate chevron arrow indicator
+    if (chevron) {
+        if (isClosed) {
+            chevron.classList.remove('collapsed');
+        } else {
+            chevron.classList.add('collapsed');
+        }
     }
 }
     // --- 14. TAB 6: RESULT TAB (WITH CHAMPIONSHIP POINTS TABLE, 100% WIDTH CATEGORIES & DELETE ICONS) ---
-    function renderResults() {
-        const container = document.getElementById('resultsContainer');
-        if (!container) return;
+    // --- TAB 6: FULL UPDATED RESULTS RENDERER ---
+function renderResults() {
+    const container = document.getElementById('resultsContainer');
+    if (!container) return;
 
-        const catFilter = document.getElementById('resultFilterCategory')?.value || "ALL";
-        const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
+    const catFilter = document.getElementById('resultFilterCategory')?.value || "ALL";
+    const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
 
-        container.innerHTML = "";
+    container.innerHTML = "";
 
-        // 1. Filter results: only active enabled fests
-        let results = [...dbPublishedResults].filter(r => isFestEnabled(r.festName));
+    // 1. Filter results: only active enabled fests
+    let results = [...dbPublishedResults].filter(r => isFestEnabled(r.festName));
 
-        // 2. Filter by Category
-        if (catFilter !== "ALL") {
-            results = results.filter(r => (r.festCategory || getFestivalCategory(r.festName)) === catFilter);
+    // 2. Filter by Category
+    if (catFilter !== "ALL") {
+        results = results.filter(r => (r.festCategory || getFestivalCategory(r.festName)) === catFilter);
+    }
+
+    // 3. Search query filter
+    if (q) {
+        results = results.filter(r => 
+            String(r.candidateName || "").toLowerCase().includes(q) ||
+            String(r.itemName || "").toLowerCase().includes(q) ||
+            String(r.studentClass || "").toLowerCase().includes(q) ||
+            String(r.admissionNumber || "").toLowerCase().includes(q) ||
+            String(r.lotNumber || "").toLowerCase().includes(q) ||
+            String(r.festName || "").toLowerCase().includes(q)
+        );
+    }
+
+    // 4. OVERALL CHAMPIONSHIP POINTS TABLE CALCULATION
+    const classPoints = {};
+    dbPublishedResults.filter(r => isFestEnabled(r.festName)).forEach(r => {
+        const clsKey = `${r.studentClass} ${r.studentDivision || ''}`.trim() || "General";
+        if (!classPoints[clsKey]) {
+            classPoints[clsKey] = { points: 0, first: 0, second: 0, third: 0 };
         }
-
-        // 3. Search query filter
-        if (q) {
-            results = results.filter(r => 
-                String(r.candidateName || "").toLowerCase().includes(q) ||
-                String(r.itemName || "").toLowerCase().includes(q) ||
-                String(r.studentClass || "").toLowerCase().includes(q) ||
-                String(r.admissionNumber || "").toLowerCase().includes(q) ||
-                String(r.lotNumber || "").toLowerCase().includes(q) ||
-                String(r.festName || "").toLowerCase().includes(q)
-            );
+        
+        if (r.place === "FIRST Place") { 
+            classPoints[clsKey].points += 5; 
+            classPoints[clsKey].first += 1; 
+        } else if (r.place === "SECOND Place") { 
+            classPoints[clsKey].points += 3; 
+            classPoints[clsKey].second += 1; 
+        } else if (r.place === "THIRD Place") { 
+            classPoints[clsKey].points += 1; 
+            classPoints[clsKey].third += 1; 
         }
+    });
 
-        // 4. OVERALL CHAMPIONSHIP POINTS TABLE CALCULATION
-        const classPoints = {};
-        dbPublishedResults.filter(r => isFestEnabled(r.festName)).forEach(r => {
-            const clsKey = `${r.studentClass} ${r.studentDivision || ''}`.trim() || "General";
-            if (!classPoints[clsKey]) {
-                classPoints[clsKey] = { points: 0, first: 0, second: 0, third: 0 };
-            }
-            
-            if (r.place === "FIRST Place") { 
-                classPoints[clsKey].points += 5; 
-                classPoints[clsKey].first += 1; 
-            } else if (r.place === "SECOND Place") { 
-                classPoints[clsKey].points += 3; 
-                classPoints[clsKey].second += 1; 
-            } else if (r.place === "THIRD Place") { 
-                classPoints[clsKey].points += 1; 
-                classPoints[clsKey].third += 1; 
-            }
-        });
+    const sortedStandings = Object.keys(classPoints).map(k => ({
+        className: k,
+        ...classPoints[k]
+    })).sort((a, b) => b.points - a.points);
 
-        const sortedStandings = Object.keys(classPoints).map(k => ({
-            className: k,
-            ...classPoints[k]
-        })).sort((a, b) => b.points - a.points);
-
-        // Render Championship Points Table if records exist and no search filter is applied
-        if (sortedStandings.length > 0 && !q && catFilter === "ALL") {
-            let pointsHTML = `
-                <div class="section" style="margin-bottom:25px; border-top:4px solid var(--gold);">
-                    <h4 class="section-title">
-                        <span><i class="fas fa-trophy" style="color:var(--gold);"></i> Overall Championship Points Table</span>
-                        <span style="font-size:12px; color:#64748b; font-weight:normal;">(1st: 5 pts | 2nd: 3 pts | 3rd: 1 pt)</span>
-                    </h4>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr style="background:#f8fafc;">
-                                    <th style="width:60px; text-align:center;">Rank</th>
-                                    <th>Class & Division</th>
-                                    <th style="text-align:center;">1st Places</th>
-                                    <th style="text-align:center;">2nd Places</th>
-                                    <th style="text-align:center;">3rd Places</th>
-                                    <th style="text-align:center; font-weight:800; color:var(--primary);">Total Points</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+    // Render Championship Points Table if records exist and no search filter is applied
+    if (sortedStandings.length > 0 && !q && catFilter === "ALL") {
+        let pointsHTML = `
+            <div class="section" style="margin-bottom:25px; border-top:4px solid var(--gold);">
+                <h4 class="section-title">
+                    <span><i class="fas fa-trophy" style="color:var(--gold);"></i> Overall Championship Points Table</span>
+                    <span style="font-size:12px; color:#64748b; font-weight:normal;">(1st: 5 pts | 2nd: 3 pts | 3rd: 1 pt)</span>
+                </h4>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr style="background:#f8fafc;">
+                                <th style="width:60px; text-align:center;">Rank</th>
+                                <th>Class & Division</th>
+                                <th style="text-align:center;">1st Places</th>
+                                <th style="text-align:center;">2nd Places</th>
+                                <th style="text-align:center;">3rd Places</th>
+                                <th style="text-align:center; font-weight:800; color:var(--primary);">Total Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        sortedStandings.forEach((c, idx) => {
+            const posBadge = idx === 0 ? 'place-1' : (idx === 1 ? 'place-2' : (idx === 2 ? 'place-3' : 'place-other'));
+            pointsHTML += `
+                <tr>
+                    <td style="text-align:center;"><span class="badge-place ${posBadge}">${idx + 1}</span></td>
+                    <td><b>${c.className}</b></td>
+                    <td style="text-align:center;">${c.first}</td>
+                    <td style="text-align:center;">${c.second}</td>
+                    <td style="text-align:center;">${c.third}</td>
+                    <td style="text-align:center; font-size:15px; font-weight:800; color:var(--primary);">${c.points} pts</td>
+                </tr>
             `;
-            sortedStandings.forEach((c, idx) => {
-                const posBadge = idx === 0 ? 'place-1' : (idx === 1 ? 'place-2' : (idx === 2 ? 'place-3' : 'place-other'));
-                pointsHTML += `
+        });
+        pointsHTML += `</tbody></table></div></div>`;
+        container.innerHTML += pointsHTML;
+    }
+
+    // Empty state check
+    if (results.length === 0) {
+        container.innerHTML += `<p style="text-align:center; color:#94a3b8; padding:40px; font-weight:600;">No published results found matching your criteria.</p>`;
+        return;
+    }
+
+    // 5. Group by Classification -> Item
+    const hierarchy = {};
+    results.forEach(r => {
+        const cat = r.festCategory || getFestivalCategory(r.festName);
+        if (!hierarchy[cat]) hierarchy[cat] = {};
+        const itemKey = `${r.itemName} (${r.itemCode})`;
+        if (!hierarchy[cat][itemKey]) hierarchy[cat][itemKey] = [];
+        hierarchy[cat][itemKey].push(r);
+    });
+
+    // 6. Sort Categories A-Z (e.g., Fest -> Kalothswom -> Sports)
+    const sortedCategories = Object.keys(hierarchy).sort((a, b) => a.localeCompare(b));
+
+    sortedCategories.forEach(cat => {
+        if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
+
+        // 1. Collapsible Category Main Banner
+        let catHTML = `
+            <div class="category-main-head collapsible-header" onclick="toggleResultSection(this)">
+                <span><i class="fas fa-award"></i> ${cat.toUpperCase()} RESULTS</span>
+                <i class="fas fa-chevron-down collapse-chevron"></i>
+            </div>
+            <div class="category-collapsible-content" style="display: block; width: 100%;">
+        `;
+
+        // 2. Sort Items Alphabetically A-Z under this category
+        Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b)).forEach(itemKey => {
+            const rows = hierarchy[cat][itemKey];
+            rows.sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
+
+            // Collapsible Item Sub-Header
+            catHTML += `
+                <div class="item-sub-head collapsible-header" onclick="toggleResultSection(this)">
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <i class="fas fa-chevron-down collapse-chevron"></i>
+                        <span><i class="fas fa-star" style="color:var(--warning);"></i> ${itemKey}</span>
+                        <span class="result-badge-new"><i class="fas fa-bolt"></i> NEW</span>
+                    </div>
+                    <span style="font-size:12px; font-weight:normal; color:#555;">
+                        <i class="far fa-clock"></i> Published: ${rows[0].publishedAt || 'Official'}
+                    </span>
+                </div>
+                <div class="table-responsive" style="display: block;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:50px; text-align:center;">Sl No</th>
+                                <th style="width:80px; text-align:center;">Lot No</th>
+                                <th>Candidate Name</th>
+                                <th>Class & Div</th>
+                                <th style="width:90px; text-align:center;">Score</th>
+                                <th style="width:70px; text-align:center;">Grade</th>
+                                <th style="width:130px; text-align:center;">Place</th>
+                                <th style="width:130px; text-align:center;">Certificate & Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            rows.forEach((row, sIdx) => {
+                let placeBadge = 'place-other';
+                if (row.place === "FIRST Place") placeBadge = 'place-1';
+                else if (row.place === "SECOND Place") placeBadge = 'place-2';
+                else if (row.place === "THIRD Place") placeBadge = 'place-3';
+
+                catHTML += `
                     <tr>
-                        <td style="text-align:center;"><span class="badge-place ${posBadge}">${idx + 1}</span></td>
-                        <td><b>${c.className}</b></td>
-                        <td style="text-align:center;">${c.first}</td>
-                        <td style="text-align:center;">${c.second}</td>
-                        <td style="text-align:center;">${c.third}</td>
-                        <td style="text-align:center; font-size:15px; font-weight:800; color:var(--primary);">${c.points} pts</td>
+                        <td style="text-align:center; font-weight:600;">${sIdx + 1}</td>
+                        <td style="text-align:center; font-weight:700; color:#0c2340;">${row.lotNumber || 'N/A'}</td>
+                        <td><b>${row.candidateName}</b></td>
+                        <td>${row.studentClass} ${row.studentDivision || ''}</td>
+                        <td style="text-align:center;"><b>${row.score}</b></td>
+                        <td style="text-align:center;"><span style="font-weight:bold; color:var(--primary);">${row.grade}</span></td>
+                        <td style="text-align:center;"><span class="badge-place ${placeBadge}">${row.place}</span></td>
+                        <td style="text-align:center;">
+                            <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
+                                <button class="action-btn" style="padding:5px 8px; font-size:12px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn gold" style="padding:5px 8px; font-size:12px;" title="Print Certificate" onclick="openCertificateModal('${row.id}', true)">
+                                    <i class="fas fa-print"></i>
+                                </button>
+                                <button class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                 `;
             });
-            pointsHTML += `</tbody></table></div></div>`;
-            container.innerHTML += pointsHTML;
-        }
 
-        // Empty state check
-        if (results.length === 0) {
-            container.innerHTML += `<p style="text-align:center; color:#94a3b8; padding:40px; font-weight:600;">No published results found matching your criteria.</p>`;
-            return;
-        }
-
-        // 5. Group by Classification -> Fest -> Item
-        const hierarchy = {};
-        results.forEach(r => {
-            const cat = r.festCategory || getFestivalCategory(r.festName);
-            if (!hierarchy[cat]) hierarchy[cat] = {};
-            const itemKey = `${r.itemName} (${r.itemCode})`;
-            if (!hierarchy[cat][itemKey]) hierarchy[cat][itemKey] = [];
-            hierarchy[cat][itemKey].push(r);
+            catHTML += `</tbody></table></div>`;
         });
 
-        const mainCategories = ["Kalothswom", "Fest", "Sports"];
-        const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
-
-        // 6. Render Results Tables
-        mainCategories.forEach(cat => {
-            if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
-
-            // Sort all items alphabetically A-Z under this category
-            Object.keys(hierarchy[cat]).sort().forEach(itemKey => {
-                const rows = hierarchy[cat][itemKey];
-            
-
-            // 1. COLLAPSIBLE MAIN CATEGORY HEADER
-            catHTML += `
-                <div class="category-main-head collapsible-header" onclick="toggleResultSection(this)">
-                    <span><i class="fas fa-award"></i> ${cat.toUpperCase()} RESULTS</span>
-                    <i class="fas fa-chevron-down collapse-chevron"></i>
-                </div>
-                <div class="category-collapsible-content" style="display: block;">
-            `;
-
-            Object.keys(hierarchy[cat]).forEach(itemKey => {
-                const rows = hierarchy[cat][itemKey];
-                rows.sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
-
-                // 2. COLLAPSIBLE ITEM SUB-HEADER
-                catHTML += `
-                    <div class="item-sub-head collapsible-header" onclick="toggleResultSection(this)">
-                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <i class="fas fa-chevron-down collapse-chevron"></i>
-                            <span><i class="fas fa-star" style="color:var(--warning);"></i> ${itemKey}</span>
-                            <span class="result-badge-new"><i class="fas fa-bolt"></i> NEW</span>
-                        </div>
-                        <span style="font-size:12px; font-weight:normal; color:#555;">
-                            <i class="far fa-clock"></i> Published: ${rows[0].publishedAt || 'Official'}
-                        </span>
-                    </div>
-                    <div class="table-responsive" style="display: block;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width:50px; text-align:center;">Sl No</th>
-                                    <th style="width:80px; text-align:center;">Lot No</th>
-                                    <th>Candidate Name</th>
-                                    <th>Class & Div</th>
-                                    <th style="width:90px; text-align:center;">Score</th>
-                                    <th style="width:70px; text-align:center;">Grade</th>
-                                    <th style="width:130px; text-align:center;">Place</th>
-                                    <th style="width:130px; text-align:center;">Certificate & Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                rows.forEach((row, sIdx) => {
-                    let placeBadge = 'place-other';
-                    if (row.place === "FIRST Place") placeBadge = 'place-1';
-                    else if (row.place === "SECOND Place") placeBadge = 'place-2';
-                    else if (row.place === "THIRD Place") placeBadge = 'place-3';
-
-                    catHTML += `
-                        <tr>
-                            <td style="text-align:center; font-weight:600;">${sIdx + 1}</td>
-                            <td style="text-align:center; font-weight:700; color:#0c2340;">${row.lotNumber || 'N/A'}</td>
-                            <td><b>${row.candidateName}</b></td>
-                            <td>${row.studentClass} ${row.studentDivision || ''}</td>
-                            <td style="text-align:center;"><b>${row.score}</b></td>
-                            <td style="text-align:center;"><span style="font-weight:bold; color:var(--primary);">${row.grade}</span></td>
-                            <td style="text-align:center;"><span class="badge-place ${placeBadge}">${row.place}</span></td>
-                            <td style="text-align:center;">
-                                <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
-                                    <button class="action-btn" style="padding:5px 8px; font-size:12px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="action-btn gold" style="padding:5px 8px; font-size:12px;" title="Print Certificate" onclick="openCertificateModal('${row.id}', true)">
-                                        <i class="fas fa-print"></i>
-                                    </button>
-                                    <button class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                });
-
-                catHTML += `</tbody></table></div>`;
-            });
-
-            catHTML += `</div>`; // closes category-collapsible-content
-            container.innerHTML += catHTML;
-        });
-        });
-    }
+        catHTML += `</div>`; // Close category-collapsible-content
+        container.innerHTML += catHTML;
+    });
+}
 
     function openCertificateModal(resId, autoPrint = false) {
         const r = dbPublishedResults.find(x => x.id === resId);
