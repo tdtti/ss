@@ -17,60 +17,65 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Great+Vibes&display=swap" rel="stylesheet">
 
-    <style>
+  <style>
     /* ==========================================================================
-       GLASSMORPHISM DESIGN SYSTEM & AMBIENT CANVAS
+       MINIMALIST DESIGN SYSTEM (CLEAN, FUNCTIONAL & LIGHTWEIGHT)
        ========================================================================== */
     :root { 
-        --glass-bg: #0f172a;
-        --glass-surface: rgba(255, 255, 255, 0.62);
-        --glass-surface-hover: rgba(255, 255, 255, 0.78);
-        --glass-surface-solid: rgba(255, 255, 255, 0.92);
-        --glass-border: rgba(255, 255, 255, 0.65);
-        --glass-border-subtle: rgba(255, 255, 255, 0.35);
-        --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-        --glass-shadow-lg: 0 16px 40px 0 rgba(15, 23, 42, 0.12);
-        --glass-blur: blur(16px) saturate(180%);
-        --glass-blur-sm: blur(10px) saturate(160%);
+        --bg-body: #f8fafc;
+        --surface: #ffffff;
+        --surface-subtle: #f1f5f9;
+        --surface-hover: #f8fafc;
+        --border: #e2e8f0;
+        --border-subtle: #edf2f7;
+        --border-focus: #2563eb;
+        
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --text-light: #94a3b8;
 
-        /* Palette Accents */
+        /* Minimalist Accent Palette */
         --primary: #0f172a;
-        --primary-glass: rgba(15, 23, 42, 0.88);
+        --primary-hover: #1e293b;
         --accent: #2563eb;
-        --accent-glass: rgba(37, 99, 235, 0.85);
+        --accent-hover: #1d4ed8;
         --success: #059669;
-        --success-glass: rgba(16, 185, 129, 0.85);
+        --success-hover: #047857;
         --danger: #dc2626;
-        --danger-glass: rgba(239, 68, 68, 0.85);
+        --danger-hover: #b91c1c;
         --warning: #d97706;
-        --warning-glass: rgba(245, 158, 11, 0.85);
         --purple: #7c3aed;
-        --purple-glass: rgba(139, 92, 246, 0.85);
-        --gold: #b45309;
-        --gold-light: rgba(254, 243, 199, 0.8);
-        --muted: #475569;
+        
+        /* Pure Gold & Regal Matching Accents for Certificates */
+        --gold-pure: #d4af37;
+        --gold-dark: #b89727;
+        --gold-light: #fef9e7;
+        --corner-accent: #1e3a8a; /* Deep Royal Navy (NOT black) */
+
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 14px;
+        
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
     }
 
     *, *::before, *::after { box-sizing: border-box; }
     
     body { 
         font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-        background: radial-gradient(at 0% 0%, #e0e7ff 0px, transparent 50%), 
-                    radial-gradient(at 100% 0%, #fae8ff 0px, transparent 45%), 
-                    radial-gradient(at 100% 100%, #dbeafe 0px, transparent 50%), 
-                    radial-gradient(at 0% 100%, #f1f5f9 0px, transparent 50%), 
-                    #edf2f7;
-        background-attachment: fixed;
+        background: var(--bg-body);
         margin: 0; 
         padding: 0; 
-        color: #0f172a; 
+        color: var(--text-main); 
         width: 100%; 
         min-height: 100vh;
         -webkit-font-smoothing: antialiased;
     }
 
     /* ==========================================================================
-       1. LOGIN SCREEN (FULL WHITE BACKGROUND)
+       1. MINIMALIST LOGIN SCREEN
        ========================================================================== */
     #loginScreen { 
         display: flex; 
@@ -81,97 +86,103 @@
         padding: 20px;
         position: relative;
     }
-    #loginScreen::before {
-        display: none !important;
-    }
+    #loginScreen::before { display: none !important; }
+    
     .login-box { 
         background: #ffffff !important; 
-        padding: 38px 34px; 
-        border-radius: 16px; 
-        border: 1px solid #e2e8f0 !important;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+        padding: 40px 34px; 
+        border-radius: var(--radius-lg); 
+        border: 1px solid var(--border) !important;
+        box-shadow: var(--shadow-md) !important;
         width: 100%; 
-        max-width: 440px; 
+        max-width: 430px; 
         text-align: center; 
         position: relative;
         z-index: 2;
-        color: #0f172a !important;
+        color: var(--text-main) !important;
     }
-    .login-box img { max-width: 70px; margin-bottom: 8px; }
+    .login-box img { max-width: 65px; margin-bottom: 8px; }
     .login-box h2 { 
         font-family: 'Cinzel', serif; 
         margin: 0 0 14px 0; 
         font-size: 22px; 
         letter-spacing: 2px; 
-        color: #0f172a !important;
+        color: var(--text-main) !important;
+        font-weight: 800;
     }
     .login-tabs { 
         display: flex; 
         margin: 18px 0 20px 0; 
-        background: #f1f5f9 !important; 
+        background: var(--surface-subtle) !important; 
         padding: 4px; 
-        border-radius: 10px;
-        border: 1px solid #e2e8f0 !important;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border) !important;
         gap: 4px;
     }
     .login-tabs button { 
         flex: 1; 
-        padding: 10px; 
+        padding: 9px; 
         background: transparent; 
         border: none; 
-        font-size: 13.5px; 
+        font-size: 13px; 
         font-weight: 700; 
-        color: #64748b !important; 
+        color: var(--text-muted) !important; 
         cursor: pointer; 
-        border-radius: 8px; 
-        transition: all 0.2s ease; 
+        border-radius: var(--radius-sm); 
+        transition: all 0.15s ease; 
     }
     .login-tabs button.active { 
         background: #ffffff !important; 
-        color: #0f172a !important; 
-        box-shadow: 0 2px 6px rgba(0,0,0,0.06) !important;
-        border: 1px solid #e2e8f0 !important;
+        color: var(--text-main) !important; 
+        box-shadow: var(--shadow-subtle) !important;
+        border: 1px solid var(--border) !important;
     }
     .login-form { display: none; text-align: left; }
     .login-form.active { display: block; }
-    .login-form label { display: block; font-size: 12px; font-weight: 600; color: #475569 !important; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .login-form label { 
+        display: block; 
+        font-size: 11.5px; 
+        font-weight: 700; 
+        color: var(--text-muted) !important; 
+        margin-bottom: 6px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+    }
     .login-form input { 
         width: 100%; 
-        padding: 12px 14px; 
+        padding: 11px 13px; 
         margin: 0 0 16px 0; 
-        border: 1px solid #cbd5e1 !important; 
-        border-radius: 10px; 
-        font-size: 14px;
-        background: #f8fafc !important;
-        color: #0f172a !important;
-        transition: all 0.2s ease;
+        border: 1px solid var(--border) !important; 
+        border-radius: var(--radius-sm); 
+        font-size: 13.5px;
+        background: #ffffff !important;
+        color: var(--text-main) !important;
+        transition: all 0.15s ease;
     }
-    .login-form input::placeholder { color: #94a3b8 !important; }
+    .login-form input::placeholder { color: var(--text-light) !important; }
     .login-form input:focus { 
         outline: none; 
-        border-color: #2563eb !important;
-        background: #ffffff !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+        border-color: var(--border-focus) !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
     }
     .login-btn { 
         width: 100%; 
-        padding: 13px; 
-        background: #0f172a !important;
-        color: #fff !important; 
+        padding: 12px; 
+        background: var(--primary) !important;
+        color: #ffffff !important; 
         border: none; 
-        border-radius: 10px; 
-        font-size: 14.5px; 
+        border-radius: var(--radius-sm); 
+        font-size: 14px; 
         font-weight: 700; 
         cursor: pointer; 
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
-        transition: all 0.15s ease; 
+        transition: background 0.15s ease; 
     }
-    .login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .login-btn:hover { background: var(--primary-hover) !important; }
 
     .login-whatsapp-box {
         background: #f0fdf4 !important;
         border: 1px solid #bbf7d0 !important;
-        border-radius: 10px;
+        border-radius: var(--radius-sm);
         padding: 10px 14px;
         margin: 0 0 16px 0;
         font-size: 12px;
@@ -184,18 +195,17 @@
         align-items: center;
         gap: 6px;
         background: #10b981 !important;
-        color: #fff !important;
+        color: #ffffff !important;
         padding: 5px 14px;
         border-radius: 20px;
         font-weight: 700;
         text-decoration: none;
         margin-top: 6px;
-        font-size: 12.5px;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        font-size: 12px;
     }
 
     /* ==========================================================================
-       2. FLATTENED GLASS WRAPPER & CONTROLS
+       2. MINIMALIST APP WRAPPER & HEADER
        ========================================================================== */
     #appScreen { 
         display: none; 
@@ -204,13 +214,11 @@
         margin: 0; 
     }
     .app-header { 
-        background: var(--glass-surface);
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
+        background: #ffffff;
         padding: 14px 22px; 
-        border-radius: 16px; 
-        border: 1px solid var(--glass-border);
-        box-shadow: var(--glass-shadow);
+        border-radius: var(--radius-lg); 
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-subtle);
         display: flex; 
         justify-content: space-between; 
         align-items: center; 
@@ -220,33 +228,30 @@
         gap: 12px;
     }
     .header-left { display: flex; align-items: center; gap: 14px; }
-    .header-left img { max-width: 50px; }
+    .header-left img { max-width: 48px; }
     .header-left h1 { 
         margin: 0; 
         font-family: 'Cinzel', serif; 
-        font-size: 21px; 
+        font-size: 20px; 
         letter-spacing: 1px; 
-        color: var(--primary);
+        color: var(--text-main);
+        font-weight: 800;
     }
-    .header-left h4 { font-weight: 600; font-size: 12px; color: var(--muted); margin: 2px 0 0; }
-    .header-right { text-align: right; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+    .header-left h4 { font-weight: 600; font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
+    .header-right { text-align: right; font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
     .logout-btn { 
-        background: rgba(239, 68, 68, 0.1); 
+        background: #fee2e2; 
         color: var(--danger); 
-        border: 1px solid rgba(239, 68, 68, 0.3); 
-        padding: 5px 13px; 
-        border-radius: 8px; 
+        border: 1px solid #fecaca; 
+        padding: 5px 12px; 
+        border-radius: var(--radius-sm); 
         cursor: pointer; 
         margin-top: 5px; 
         font-weight: 700; 
         font-size: 11.5px;
         transition: all 0.15s ease;
     }
-    .logout-btn:hover { 
-        background: var(--danger); 
-        color: #fff; 
-        box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
-    }
+    .logout-btn:hover { background: var(--danger); color: #fff; }
 
     .main-content { 
         width: 100%; 
@@ -256,28 +261,24 @@
         box-shadow: none !important;
     }
     .section { 
-        background: var(--glass-surface); 
-        backdrop-filter: var(--glass-blur);
-        -webkit-backdrop-filter: var(--glass-blur);
-        padding: 22px; 
-        border: 1px solid var(--glass-border); 
-        border-radius: 16px; 
-        box-shadow: var(--glass-shadow);
-        margin-bottom: 20px; 
+        background: #ffffff;
+        padding: 20px 22px; 
+        border: 1px solid var(--border); 
+        border-radius: var(--radius-lg); 
+        box-shadow: var(--shadow-subtle);
+        margin-bottom: 18px; 
         width: 100%; 
         position: relative;
         z-index: 1;
         overflow: visible !important;
     }
-    .section:focus-within {
-        z-index: 50 !important;
-    }
+    .section:focus-within { z-index: 50 !important; }
     .section-title { 
         margin: 0 0 16px 0; 
-        color: var(--primary); 
-        font-size: 16.5px; 
+        color: var(--text-main); 
+        font-size: 16px; 
         font-weight: 700;
-        border-bottom: 1px solid rgba(226, 232, 240, 0.8); 
+        border-bottom: 1px solid var(--border-subtle); 
         padding-bottom: 10px; 
         display: flex; 
         align-items: center; 
@@ -286,141 +287,139 @@
         flex-wrap: wrap;
     }
 
-    .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
-    .form-group label { font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #334155; }
+    .form-group { display: flex; flex-direction: column; margin-bottom: 14px; }
+    .form-group label { font-weight: 600; margin-bottom: 6px; font-size: 12.5px; color: #334155; }
     input, select, textarea { 
-        padding: 10px 13px; 
+        padding: 9px 12px; 
         font-size: 13.5px; 
-        border: 1px solid rgba(203, 213, 225, 0.8); 
-        border-radius: 10px; 
+        border: 1px solid var(--border); 
+        border-radius: var(--radius-sm); 
         font-family: inherit; 
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(8px);
-        color: #0f172a;
-        transition: all 0.2s ease;
+        background: #ffffff;
+        color: var(--text-main);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     input:focus, select:focus, textarea:focus {
         outline: none;
-        background: rgba(255, 255, 255, 0.95);
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        border-color: var(--border-focus);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
     }
     .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; width: 100%; }
     .row, .form-group { position: relative; overflow: visible !important; }
 
+    /* Minimalist Buttons */
     .submit-btn { 
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(29, 78, 216, 0.95));
-        backdrop-filter: blur(8px);
-        color: #fff; 
-        border: 1px solid rgba(255, 255, 255, 0.35); 
+        background: var(--accent);
+        color: #ffffff; 
+        border: none; 
         cursor: pointer; 
         font-weight: 700; 
-        font-size: 14.5px; 
-        padding: 13px 22px; 
-        border-radius: 10px;
+        font-size: 14px; 
+        padding: 12px 20px; 
+        border-radius: var(--radius-sm);
         display: inline-flex; 
         align-items: center; 
         justify-content: center; 
         gap: 8px;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-        transition: all 0.15s ease;
+        transition: background 0.15s ease;
     }
+    .submit-btn:hover { background: var(--accent-hover); }
+
     .action-btn { 
-        background: var(--primary-glass); 
-        backdrop-filter: blur(6px);
-        color: #fff; 
-        border: 1px solid rgba(255, 255, 255, 0.25); 
+        background: var(--primary); 
+        color: #ffffff; 
+        border: none; 
         cursor: pointer; 
         font-weight: 600; 
-        padding: 8px 14px; 
-        border-radius: 8px; 
+        padding: 7px 13px; 
+        border-radius: var(--radius-sm); 
         display: inline-flex; 
         align-items: center; 
         gap: 6px; 
         justify-content: center; 
         font-size: 12.5px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transition: all 0.15s ease;
+        transition: background 0.15s ease;
     }
-    .action-btn:hover, .submit-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
-    .action-btn.secondary { background: rgba(100, 116, 139, 0.85); }
-    .action-btn.danger { background: var(--danger-glass); box-shadow: 0 3px 10px rgba(239, 68, 68, 0.3); }
-    .action-btn.success { background: var(--success-glass); box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3); }
-    .action-btn.purple { background: var(--purple-glass); box-shadow: 0 3px 10px rgba(139, 92, 246, 0.3); }
-    .action-btn.gold { background: linear-gradient(135deg, rgba(217, 119, 6, 0.9), rgba(180, 83, 9, 0.9)); color: white; box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3); }
-    .action-btn:disabled { background: rgba(203, 213, 225, 0.6) !important; color: #94a3b8 !important; cursor: not-allowed; box-shadow: none; }
+    .action-btn:hover { background: var(--primary-hover); }
+    .action-btn.secondary { background: #64748b; }
+    .action-btn.secondary:hover { background: #475569; }
+    .action-btn.danger { background: var(--danger); }
+    .action-btn.danger:hover { background: var(--danger-hover); }
+    .action-btn.success { background: var(--success); }
+    .action-btn.success:hover { background: var(--success-hover); }
+    .action-btn.purple { background: var(--purple); }
+    .action-btn.gold { background: #d97706; color: #ffffff; }
+    .action-btn.gold:hover { background: #b45309; }
+    .action-btn:disabled { background: #cbd5e1 !important; color: #94a3b8 !important; cursor: not-allowed; }
 
+    /* Segmented Tap Switch */
     .tap-switch-group { 
         display: inline-flex; 
-        background: rgba(255, 255, 255, 0.5); 
-        backdrop-filter: blur(8px);
-        border-radius: 10px; 
-        padding: 3px; 
-        gap: 3px; 
-        border: 1px solid var(--glass-border); 
+        background: var(--surface-subtle); 
+        border-radius: var(--radius-sm); 
+        padding: 2px; 
+        gap: 2px; 
+        border: 1px solid var(--border); 
         width: fit-content; 
     }
     .tap-btn { 
         border: none; 
         background: transparent; 
-        padding: 6px 14px; 
-        border-radius: 7px; 
+        padding: 5px 12px; 
+        border-radius: 4px; 
         font-size: 12px; 
         font-weight: 700; 
-        color: var(--muted); 
+        color: var(--text-muted); 
         cursor: pointer; 
         display: inline-flex; 
         align-items: center; 
-        gap: 6px; 
-        transition: all 0.15s ease;
+        gap: 5px; 
+        transition: all 0.12s ease;
     }
     .tap-btn.active { 
-        background: rgba(255, 255, 255, 0.9); 
-        color: #0f172a; 
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08); 
-        border: 1px solid rgba(255, 255, 255, 0.8);
+        background: #ffffff; 
+        color: var(--text-main); 
+        box-shadow: var(--shadow-subtle); 
+        border: 1px solid var(--border);
     }
     .tap-btn.active.primary { color: var(--accent); }
     .tap-btn.active.success { color: var(--success); }
     .tap-btn.active.danger { color: var(--danger); }
 
     /* ==========================================================================
-       3. NAVIGATION TABS (TRANSLUCENT GLASS PILLS)
+       3. NAVIGATION TABS
        ========================================================================== */
     .tab { 
         display: flex; 
-        gap: 8px; 
-        margin-bottom: 18px; 
+        gap: 6px; 
+        margin-bottom: 16px; 
         border-bottom: none; 
-        padding: 4px 0; 
+        padding: 2px 0; 
         overflow-x: auto; 
         width: 100%; 
         position: relative;
     }
     .tab button { 
-        background: rgba(255, 255, 255, 0.5); 
-        backdrop-filter: var(--glass-blur-sm);
-        -webkit-backdrop-filter: var(--glass-blur-sm);
-        border: 1px solid var(--glass-border); 
-        padding: 10px 16px; 
+        background: #ffffff; 
+        border: 1px solid var(--border); 
+        padding: 9px 15px; 
         cursor: pointer; 
         font-weight: 600; 
-        font-size: 13px;
-        color: #334155; 
-        border-radius: 10px; 
+        font-size: 12.5px;
+        color: var(--text-muted); 
+        border-radius: var(--radius-sm); 
         display: inline-flex; 
         align-items: center; 
         gap: 7px; 
-        transition: all 0.2s ease; 
+        transition: all 0.15s ease; 
         white-space: nowrap; 
         position: relative; 
     }
-    .tab button:hover { background: rgba(255, 255, 255, 0.8); color: var(--primary); }
+    .tab button:hover { background: var(--surface-subtle); color: var(--text-main); }
     .tab button.active { 
-        background: var(--primary-glass); 
+        background: var(--primary); 
         color: #ffffff; 
-        border: 1px solid rgba(255, 255, 255, 0.4); 
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+        border-color: var(--primary); 
     }
     .tabcontent { display: none; width: 100%; }
 
@@ -428,32 +427,24 @@
         position: absolute;
         top: -3px;
         right: -3px;
-        background: linear-gradient(135deg, #ef4444, #dc2626);
+        background: var(--danger);
         color: #ffffff !important;
         font-size: 9px;
         font-weight: 800;
-        padding: 2px 6px;
-        border-radius: 10px;
+        padding: 2px 5px;
+        border-radius: 8px;
         line-height: 1;
         letter-spacing: 0.5px;
-        box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.6);
-        animation: pulseBadge 1.8s infinite;
-        pointer-events: none;
-    }
-    @keyframes pulseBadge {
-        0%, 100% { transform: scale(0.95); opacity: 0.95; }
-        50% { transform: scale(1.08); opacity: 1; }
     }
 
     .result-badge-new {
-        background: rgba(239, 68, 68, 0.12);
-        color: #dc2626;
-        border: 1px solid rgba(239, 68, 68, 0.3);
-        font-size: 10.5px;
+        background: #fef2f2;
+        color: var(--danger);
+        border: 1px solid #fecaca;
+        font-size: 10px;
         font-weight: 700;
-        padding: 2px 7px;
-        border-radius: 6px;
+        padding: 2px 6px;
+        border-radius: 4px;
         display: inline-flex;
         align-items: center;
         gap: 4px;
@@ -461,107 +452,98 @@
 
     #studentGlobalNoticeBanner { 
         display: none; 
-        background: rgba(254, 243, 199, 0.85); 
-        backdrop-filter: blur(10px);
+        background: #fffbeb; 
         color: #92400e; 
-        border: 1px solid rgba(245, 158, 11, 0.35); 
-        border-radius: 12px; 
-        padding: 12px 18px; 
-        margin-bottom: 18px; 
+        border: 1px solid #fde68a; 
+        border-radius: var(--radius-sm); 
+        padding: 10px 16px; 
+        margin-bottom: 16px; 
         font-weight: 600; 
-        font-size: 13.5px;
+        font-size: 13px;
         align-items: center; 
-        gap: 12px; 
-        box-shadow: var(--glass-shadow);
+        gap: 10px; 
     }
 
     /* ==========================================================================
-       4. CARDS, GRIDS & 100% FULL-WIDTH BANNERS
-       ========================================================================= */
+       4. CARDS & CATEGORY BANNERS
+       ========================================================================== */
     .filters { 
         display: flex; 
         gap: 10px; 
         flex-wrap: wrap; 
         align-items: center; 
-        margin-bottom: 18px; 
+        margin-bottom: 16px; 
         width: 100%; 
     }
     .records-grid { 
         display: grid; 
-        grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); 
-        gap: 16px; 
-        margin-top: 12px; 
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+        gap: 14px; 
+        margin-top: 10px; 
         width: 100%; 
     }
     .record-card { 
-        background: var(--glass-surface); 
-        backdrop-filter: var(--glass-blur-sm);
-        -webkit-backdrop-filter: var(--glass-blur-sm);
-        border: 1px solid var(--glass-border); 
-        border-radius: 12px; 
-        padding: 16px; 
+        background: #ffffff; 
+        border: 1px solid var(--border); 
+        border-radius: var(--radius-md); 
+        padding: 14px 16px; 
         position: relative; 
-        border-left: 5px solid var(--accent);
-        box-shadow: var(--glass-shadow);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border-left: 4px solid var(--accent);
+        box-shadow: var(--shadow-subtle);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     .record-card:hover { 
-        transform: translateY(-2px); 
-        box-shadow: var(--glass-shadow-lg); 
-        background: var(--glass-surface-hover);
+        transform: translateY(-1px); 
+        box-shadow: var(--shadow-md); 
     }
     .record-card.group-card { border-left-color: var(--warning); }
     .record-card h4 { 
-        margin: 0 0 8px 0; 
-        font-size: 15px; 
-        color: var(--primary); 
+        margin: 0 0 6px 0; 
+        font-size: 14.5px; 
+        color: var(--text-main); 
         display: flex; 
         justify-content: space-between; 
         align-items: center; 
     }
     .record-card .fest-badge { 
         font-size: 11px; 
-        background: rgba(255, 255, 255, 0.7); 
-        border: 1px solid rgba(226, 232, 240, 0.8);
-        padding: 2px 7px; 
-        border-radius: 6px; 
-        color: var(--muted); 
+        background: var(--surface-subtle); 
+        border: 1px solid var(--border);
+        padding: 2px 6px; 
+        border-radius: 4px; 
+        color: var(--text-muted); 
         font-weight: 600; 
     }
     .record-card p { 
-        margin: 5px 0; 
-        font-size: 13px; 
+        margin: 4px 0; 
+        font-size: 12.5px; 
         color: #334155; 
         display: flex; 
         justify-content: space-between; 
     }
-    .record-card .label { color: var(--muted); font-weight: normal; }
-    .record-card .timestamp { font-size: 11px; color: #94a3b8; }
+    .record-card .label { color: var(--text-muted); }
+    .record-card .timestamp { font-size: 11px; color: var(--text-light); }
 
     #cardsInd, #cardsGrp { display: block !important; width: 100% !important; }
     .rec-classification-head {
-        background: var(--primary-glass);
-        backdrop-filter: blur(12px);
-        color: #fff;
-        padding: 11px 16px;
-        border-radius: 10px;
-        font-size: 14.5px;
+        background: var(--primary);
+        color: #ffffff;
+        padding: 10px 16px;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
         font-weight: 700;
-        margin: 24px 0 10px 0;
+        margin: 20px 0 10px 0;
         width: 100%;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
     }
     .rec-fest-head {
-        background: var(--glass-surface);
-        backdrop-filter: blur(10px);
-        border: 1px solid var(--glass-border);
-        border-left: 4px solid var(--accent);
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
         padding: 10px 16px;
-        border-radius: 10px;
+        border-radius: var(--radius-sm);
         margin: 10px 0 8px 0;
         width: 100%;
         display: flex;
@@ -569,95 +551,81 @@
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 8px;
-        box-shadow: var(--glass-shadow);
     }
-    .rec-fest-head h5 { margin: 0; font-size: 14.5px; color: #0f172a; font-weight: 700; }
+    .rec-fest-head h5 { margin: 0; font-size: 14px; color: var(--text-main); font-weight: 700; }
 
     /* ==========================================================================
-       5. FROSTED GLASS TABLES
+       5. MINIMALIST CLEAN TABLES
        ========================================================================== */
-    .table-responsive { overflow-x: auto; width: 100%; margin-top: 8px; border-radius: 10px; }
-    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; }
+    .table-responsive { overflow-x: auto; width: 100%; margin-top: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
     table th, table td { 
-        border: none; 
-        border-bottom: 1px solid rgba(226, 232, 240, 0.7); 
-        padding: 10px 13px; 
+        border-bottom: 1px solid var(--border); 
+        padding: 9px 12px; 
         text-align: left; 
     }
     table th { 
-        background: rgba(241, 245, 249, 0.75); 
-        backdrop-filter: blur(6px);
-        color: #334155; 
+        background: var(--surface-subtle); 
+        color: var(--text-muted); 
         font-weight: 700; 
-        font-size: 12px;
+        font-size: 11.5px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-    table tbody tr { 
-        background: rgba(255, 255, 255, 0.45);
-        transition: background 0.15s ease;
-    }
-    table tbody tr:hover { 
-        background: rgba(255, 255, 255, 0.75); 
-    }
+    table tbody tr { background: #ffffff; }
+    table tbody tr:hover { background: #f8fafc; }
 
     .badge-place { 
-        padding: 2px 9px; 
-        border-radius: 6px; 
+        padding: 2px 8px; 
+        border-radius: 4px; 
         font-weight: 700; 
         font-size: 11px; 
         display: inline-block;
         border: 1px solid rgba(0,0,0,0.06);
     }
-    .place-1 { background: rgba(254, 240, 138, 0.9); color: #854d0e; }
-    .place-2 { background: rgba(226, 232, 240, 0.9); color: #334155; }
-    .place-3 { background: rgba(255, 237, 213, 0.9); color: #9a3412; }
-    .place-other { background: rgba(241, 245, 249, 0.85); color: #64748b; }
+    .place-1 { background: #fef08a; color: #854d0e; }
+    .place-2 { background: #e2e8f0; color: #334155; }
+    .place-3 { background: #ffedd5; color: #9a3412; }
+    .place-other { background: #f1f5f9; color: #64748b; }
 
     .category-main-head { 
-        background: var(--primary-glass); 
-        backdrop-filter: blur(12px);
-        color: #fff; 
-        padding: 11px 16px; 
-        border-radius: 10px; 
-        margin: 24px 0 10px 0; 
-        font-size: 14.5px; 
+        background: var(--primary); 
+        color: #ffffff; 
+        padding: 10px 16px; 
+        border-radius: var(--radius-sm); 
+        margin: 20px 0 10px 0; 
+        font-size: 14px; 
         font-weight: 700; 
         display: flex; 
         align-items: center; 
         justify-content: space-between; 
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: var(--glass-shadow);
     }
     .item-sub-head { 
-        background: var(--glass-surface); 
-        backdrop-filter: blur(10px);
-        border: 1px solid var(--glass-border);
-        border-left: 4px solid var(--accent); 
-        color: #0f172a; 
-        padding: 10px 15px; 
-        margin: 14px 0 8px 0; 
-        border-radius: 8px; 
-        font-size: 14px; 
+        background: #ffffff; 
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent); 
+        color: var(--text-main); 
+        padding: 10px 14px; 
+        margin: 12px 0 8px 0; 
+        border-radius: var(--radius-sm); 
+        font-size: 13.5px; 
         font-weight: 700; 
         display: flex; 
         justify-content: space-between; 
         align-items: center; 
         flex-wrap: wrap; 
         gap: 8px; 
-        box-shadow: var(--glass-shadow);
     }
 
     .crit-badge { 
-        background: rgba(255, 255, 255, 0.6); 
-        backdrop-filter: blur(6px);
-        border: 1px solid var(--glass-border); 
-        padding: 6px 12px; 
-        border-radius: 8px; 
+        background: var(--surface-subtle); 
+        border: 1px solid var(--border); 
+        padding: 6px 10px; 
+        border-radius: var(--radius-sm); 
         display: flex; 
         align-items: center; 
         gap: 8px; 
-        font-size: 12.5px; 
+        font-size: 12px; 
         font-weight: 600; 
     }
     .fest-toggle-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 8px; }
@@ -665,11 +633,10 @@
         display: flex; 
         align-items: center; 
         gap: 8px; 
-        background: rgba(255, 255, 255, 0.6); 
-        backdrop-filter: blur(6px);
-        padding: 10px 13px; 
-        border-radius: 8px; 
-        border: 1px solid var(--glass-border); 
+        background: #ffffff; 
+        padding: 8px 12px; 
+        border-radius: var(--radius-sm); 
+        border: 1px solid var(--border); 
         font-size: 13px; 
         font-weight: 600;
     }
@@ -678,11 +645,10 @@
         display: flex; 
         align-items: center; 
         gap: 8px; 
-        background: rgba(255, 255, 255, 0.6); 
-        backdrop-filter: blur(6px);
-        padding: 9px 13px; 
-        border-radius: 8px; 
-        border: 1px solid var(--glass-border); 
+        background: #ffffff; 
+        padding: 8px 12px; 
+        border-radius: var(--radius-sm); 
+        border: 1px solid var(--border); 
         font-size: 12.5px; 
         font-weight: 600; 
         cursor: pointer; 
@@ -692,140 +658,124 @@
     .autocomplete-container { position: relative; width: 100%; }
     .autocomplete-items { 
         position: absolute; 
-        border: 1px solid rgba(255, 255, 255, 0.8); 
+        border: 1px solid var(--border); 
         z-index: 99; 
         top: 100%; 
         left: 0; 
         right: 0; 
-        background: rgba(255, 255, 255, 0.94); 
-        backdrop-filter: blur(16px);
+        background: #ffffff; 
         max-height: 190px; 
         overflow-y: auto; 
-        border-radius: 0 0 10px 10px; 
-        box-shadow: var(--glass-shadow-lg); 
+        border-radius: 0 0 var(--radius-sm) var(--radius-sm); 
+        box-shadow: var(--shadow-md); 
     }
-    .autocomplete-items div { padding: 9px 13px; cursor: pointer; border-bottom: 1px solid rgba(226, 232, 240, 0.7); font-size: 13px; }
-    .autocomplete-items div:hover { background-color: rgba(37, 99, 235, 0.08); }
+    .autocomplete-items div { padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--border-subtle); font-size: 13px; }
+    .autocomplete-items div:hover { background-color: #eff6ff; }
     .student-block { 
-        border: 1px dashed rgba(148, 163, 184, 0.8); 
+        border: 1px solid var(--border); 
         padding: 14px; 
-        border-radius: 10px; 
+        border-radius: var(--radius-sm); 
         margin-bottom: 12px; 
-        background: rgba(255, 255, 255, 0.4); 
-        backdrop-filter: blur(6px);
+        background: #ffffff; 
     }
     .leader-box { 
-        background: rgba(254, 243, 199, 0.85); 
-        padding: 6px 11px; 
-        border-radius: 6px; 
+        background: #fef3c7; 
+        padding: 5px 10px; 
+        border-radius: 4px; 
         margin-bottom: 10px; 
-        border: 1px solid rgba(245, 158, 11, 0.4); 
+        border: 1px solid #fde68a; 
         display: inline-block; 
-        font-size: 12px; 
+        font-size: 11.5px; 
         font-weight: 700; 
     }
 
     /* ==========================================================================
-       6. GLASS MODAL & INTERNAL POPUPS
+       6. DIALOGS & LOADERS
        ========================================================================== */
     #customDialogOverlay { 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        background: rgba(15, 23, 42, 0.45); 
-        backdrop-filter: blur(8px); 
-        -webkit-backdrop-filter: blur(8px);
+        background: rgba(15, 23, 42, 0.4); 
         z-index: 9999; display: none; justify-content: center; align-items: center; padding: 18px; 
     }
     .custom-dialog-card { 
-        background: rgba(255, 255, 255, 0.88); 
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 18px; 
+        background: #ffffff; 
+        border-radius: var(--radius-lg); 
         width: 100%; 
-        max-width: 420px; 
-        border: 1px solid var(--glass-border); 
+        max-width: 400px; 
+        border: 1px solid var(--border); 
         padding: 24px; 
         text-align: center; 
-        box-shadow: var(--glass-shadow-lg); 
+        box-shadow: var(--shadow-lg); 
     }
     .dialog-header { padding: 4px 0; }
-    .dialog-icon { width: 50px; height: 50px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-    .dialog-icon.success { background: rgba(16, 185, 129, 0.15); color: #059669; }
-    .dialog-icon.danger { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
-    .dialog-icon.warning { background: rgba(245, 158, 11, 0.15); color: #d97706; }
-    .dialog-icon.info { background: rgba(37, 99, 235, 0.15); color: #2563eb; }
-    .dialog-title { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 6px; }
-    .dialog-message { font-size: 13.5px; color: #475569; line-height: 1.5; margin: 0 0 18px; }
+    .dialog-icon { width: 46px; height: 46px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .dialog-icon.success { background: #d1fae5; color: var(--success); }
+    .dialog-icon.danger { background: #fee2e2; color: var(--danger); }
+    .dialog-icon.warning { background: #fef3c7; color: var(--warning); }
+    .dialog-icon.info { background: #dbeafe; color: var(--accent); }
+    .dialog-title { font-size: 17px; font-weight: 700; color: var(--text-main); margin: 0 0 6px; }
+    .dialog-message { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0 0 18px; }
     .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; }
-    .dialog-actions button { flex: 1; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 13px; }
-    .dialog-btn-confirm { background: var(--primary-glass); color: #fff; }
-    .dialog-btn-cancel { background: rgba(226, 232, 240, 0.8); color: #334155; }
+    .dialog-actions button { flex: 1; padding: 9px; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer; border: none; font-size: 13px; }
+    .dialog-btn-confirm { background: var(--primary); color: #fff; }
+    .dialog-btn-cancel { background: #e2e8f0; color: #334155; }
 
     #loadingOverlay { 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        background: rgba(241, 245, 249, 0.4); 
-        backdrop-filter: blur(8px); 
-        -webkit-backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.7); 
         z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; 
         cursor: wait; pointer-events: all; user-select: none; 
     }
     .yt-loader-bar { 
-        position: fixed; top: 0; left: 0; width: 100%; height: 5px; 
+        position: fixed; top: 0; left: 0; width: 100%; height: 4px; 
         z-index: 1000000; 
-        background: #ef4444; 
-        background-size: 200% 100%; 
-        animation: ytProgressSlide 1.2s linear infinite; 
-        box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+        background: var(--accent); 
     }
-    @keyframes ytProgressSlide { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
     .loading-badge-card { 
-        background: rgba(255, 255, 255, 0.85); 
-        backdrop-filter: blur(16px);
-        padding: 22px 30px; 
-        border-radius: 16px; 
-        border: 1px solid var(--glass-border); 
-        box-shadow: var(--glass-shadow-lg); 
+        background: #ffffff; 
+        padding: 22px 28px; 
+        border-radius: var(--radius-lg); 
+        border: 1px solid var(--border); 
+        box-shadow: var(--shadow-lg); 
         display: flex; 
         flex-direction: column; 
         align-items: center; 
     }
     .spinner-ring { 
         position: absolute; width: 44px; height: 44px; 
-        border: 3px solid rgba(226, 232, 240, 0.6); 
+        border: 3px solid #e2e8f0; 
         border-top: 3px solid var(--accent); 
         border-radius: 50%; animation: spin 0.8s linear infinite; 
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     /* ==========================================================================
-       7. CERTIFICATE MODAL & STRICT 1-PAGE A4 LANDSCAPE PRINT
+       7. CERTIFICATE MODAL & PURE GOLD BORDER WITH MATCHING NON-BLACK CORNERS
        ========================================================================== */
     #certModal, #reportModal, #subDistrictModal {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(15, 23, 42, 0.6); 
-        backdrop-filter: blur(8px); 
-        -webkit-backdrop-filter: blur(8px);
+        background: rgba(15, 23, 42, 0.5); 
         z-index: 9998; display: none;
         justify-content: center; align-items: center; overflow-y: auto; padding: 16px;
     }
     .cert-modal-content {
-        background: rgba(255, 255, 255, 0.95); 
-        backdrop-filter: blur(20px);
-        border-radius: 18px; 
+        background: #ffffff; 
+        border-radius: var(--radius-lg); 
         width: 100%; 
-        max-width: 1100px;
+        max-width: 1090px;
         padding: 16px 20px 20px; 
         text-align: center; 
-        border: 1px solid var(--glass-border);
-        box-shadow: var(--glass-shadow-lg);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-lg);
     }
     .cert-scroll-wrapper {
         width: 100%; overflow-x: auto; overflow-y: hidden; padding: 10px 0;
         -webkit-overflow-scrolling: touch; display: flex; justify-content: flex-start;
-        border-radius: 12px; background: rgba(226, 232, 240, 0.6); margin-top: 8px;
+        border-radius: var(--radius-sm); background: #f1f5f9; margin-top: 8px;
     }
     .cert-mobile-hint {
-        display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600;
-        color: var(--muted); background: rgba(255, 255, 255, 0.7); padding: 3px 10px; border-radius: 20px; border: 1px solid var(--glass-border); margin-top: 6px;
+        display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600;
+        color: var(--text-muted); background: #ffffff; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); margin-top: 6px;
     }
 
     .cert-container {
@@ -833,23 +783,26 @@
         min-width: 1020px;
         height: 720px;
         background: #ffffff;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        box-shadow: var(--shadow-md);
         margin: 0 auto;
         position: relative;
         box-sizing: border-box;
     }
+
+    /* PURE GOLD THICK BORDER (8PX SOLID GOLD) */
     .cert-outer-frame {
-        border: 6px solid var(--gold);
+        border: 8px solid var(--gold-pure) !important;
         height: 100%; 
         width: 100%; 
         padding: 6px;
         box-sizing: border-box; 
         position: relative; 
-        background: #fff;
+        background: #ffffff;
     }
+
     .cert-inner-frame {
-        border: 2px solid var(--gold); 
-        outline: 1px dashed rgba(180, 83, 9, 0.6); 
+        border: 2px solid var(--gold-pure) !important; 
+        outline: 1px dashed rgba(212, 175, 55, 0.65) !important; 
         outline-offset: -6px;
         height: 100%; 
         width: 100%; 
@@ -859,73 +812,75 @@
         display: flex; 
         flex-direction: column; 
         justify-content: space-between;
-        background: radial-gradient(circle at center, #ffffff 65%, #fdfbf7 100%);
+        background: radial-gradient(circle at center, #ffffff 68%, #fffdfa 100%);
     }
 
+    /* CORNERS: DEEP ROYAL NAVY (#1E3A8A) - MATCHING REGAL COLOR, NOT BLACK */
     .cert-corner { 
         position: absolute; 
-        width: 24px; 
-        height: 24px; 
-        border-color: var(--accent);
+        width: 26px; 
+        height: 26px; 
+        border-color: var(--corner-accent) !important; /* Deep Royal Navy */
         border-style: solid; 
     }
     .corner-tl { top: -2px; left: -2px; border-width: 4px 0 0 4px; }
     .corner-tr { top: -2px; right: -2px; border-width: 4px 4px 0 0; }
     .corner-bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; }
     .corner-br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; }
+
     .cert-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        width: 300px; height: 300px; opacity: 0.04; pointer-events: none; z-index: 1;
+        width: 290px; height: 290px; opacity: 0.04; pointer-events: none; z-index: 1;
         background: url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png') no-repeat center;
         background-size: contain;
     }
     .cert-header-row {
         display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;
-        border-bottom: 1.5px solid rgba(180, 83, 9, 0.35); padding-bottom: 10px;
+        border-bottom: 1.5px solid rgba(212, 175, 55, 0.4); padding-bottom: 10px;
     }
-    .cert-logo-box img { width: 72px; height: 72px; object-fit: contain; }
+    .cert-logo-box img { width: 70px; height: 70px; object-fit: contain; }
     .cert-inst-details h1 {
-        margin: 0; font-family: 'Cinzel', serif; font-size: 24px; letter-spacing: 2px; color: #0f172a; font-weight: 900;
+        margin: 0; font-family: 'Cinzel', serif; font-size: 24px; letter-spacing: 2px; color: var(--text-main); font-weight: 900;
     }
     .cert-inst-details h3 {
-        margin: 2px 0 1px; font-family: 'Montserrat', sans-serif; font-size: 13px; color: #1e3a8a; font-weight: 700; letter-spacing: 1px;
+        margin: 2px 0 1px; font-family: 'Montserrat', sans-serif; font-size: 13px; color: var(--corner-accent); font-weight: 700; letter-spacing: 1px;
     }
-    .cert-inst-details p { margin: 0; font-size: 11px; color: var(--muted); font-weight: 500; }
+    .cert-inst-details p { margin: 0; font-size: 11px; color: var(--text-muted); font-weight: 500; }
     .cert-badge-right { width: 75px; text-align: center; }
-    .cert-badge-right i { font-size: 34px; color: #b45309; }
+    .cert-badge-right i { font-size: 32px; color: var(--gold-dark); }
     .cert-badge-tag {
-        font-size: 9.5px; font-weight: 700; background: #0f172a; color: #fff; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-top: 3px;
+        font-size: 9.5px; font-weight: 700; background: var(--corner-accent); color: #fff; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-top: 3px;
     }
     .cert-title-area { margin: 6px 0 2px; position: relative; z-index: 2; }
     .cert-main-title {
-        font-family: 'Cinzel', serif; font-size: 21px; font-weight: 900; color: #78350f; letter-spacing: 4px;
+        font-family: 'Cinzel', serif; font-size: 21px; font-weight: 900; color: #854d0e; letter-spacing: 4px;
         display: inline-flex; align-items: center; gap: 12px;
     }
-    .cert-main-title::before, .cert-main-title::after { content: ''; display: inline-block; width: 40px; height: 1.5px; background: #b45309; }
+    .cert-main-title::before, .cert-main-title::after { content: ''; display: inline-block; width: 40px; height: 1.5px; background: var(--gold-pure); }
     .cert-congrats-animated {
         font-family: 'Great Vibes', cursive; font-size: 38px; color: #be185d; margin: -2px 0 2px;
     }
     .cert-body-area { position: relative; z-index: 2; padding: 0 10px; }
-    .cert-awarded-intro { font-family: 'Playfair Display', serif; font-size: 14px; font-style: italic; color: #64748b; margin-bottom: 2px; }
+    .cert-awarded-intro { font-family: 'Playfair Display', serif; font-size: 14px; font-style: italic; color: var(--text-muted); margin-bottom: 2px; }
     .cert-candidate-name {
-        font-family: 'Cinzel', serif; font-size: 26px; font-weight: 900; color: #0f172a; letter-spacing: 1px;
-        display: inline-block; border-bottom: 2px solid #b45309; padding: 0 24px 2px; margin-bottom: 2px;
+        font-family: 'Cinzel', serif; font-size: 25px; font-weight: 900; color: var(--text-main); letter-spacing: 1px;
+        display: inline-block; border-bottom: 2px solid var(--gold-pure); padding: 0 24px 2px; margin-bottom: 2px;
     }
     .cert-candidate-class { font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 10px; }
-    .cert-citation-p { font-family: 'Playfair Display', serif; font-size: 16px; line-height: 1.6; color: #1e293b; max-width: 820px; margin: 0 auto; }
+    .cert-citation-p { font-family: 'Playfair Display', serif; font-size: 15.5px; line-height: 1.6; color: #1e293b; max-width: 820px; margin: 0 auto; }
     .cert-highlight-badge {
-        background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 3px; font-family: 'Montserrat', sans-serif; font-size: 13.5px; font-weight: 700;
+        background: var(--gold-light); color: #854d0e; padding: 2px 8px; border-radius: 3px; font-family: 'Montserrat', sans-serif; font-size: 13.5px; font-weight: 700; border: 1px solid rgba(212, 175, 55, 0.3);
     }
     .cert-footer-row {
         display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 2;
-        padding: 8px 20px 0; border-top: 1.5px solid rgba(180, 83, 9, 0.35);
+        padding: 8px 20px 0; border-top: 1.5px solid rgba(212, 175, 55, 0.4);
     }
     .cert-sig-block { text-align: center; min-width: 160px; font-size: 12px; }
-    .cert-sig-block b { display: block; font-size: 13.5px; color: #0f172a; border-top: 1px solid #475569; padding-top: 3px; margin-top: 24px; }
-    .cert-sig-block span { font-size: 11px; color: var(--muted); }
+    .cert-sig-block b { display: block; font-size: 13px; color: var(--text-main); border-top: 1px solid #475569; padding-top: 3px; margin-top: 24px; }
+    .cert-sig-block span { font-size: 11px; color: var(--text-muted); }
     .cert-gold-seal {
-        width: 66px; height: 66px; border-radius: 50%; border: 2px solid #b45309; outline: 1px dashed #b45309; outline-offset: 2px;
-        display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; color: #b45309; background: #fff;
+        width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--gold-pure); outline: 1px dashed var(--gold-pure); outline-offset: 2px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; color: var(--gold-dark); background: #ffffff;
     }
     .cert-gold-seal i { font-size: 18px; }
     .cert-gold-seal span { font-size: 7.5px; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
@@ -941,7 +896,6 @@
     @media print {
         body * { visibility: hidden !important; }
         
-        /* Force single page landscape canvas without spilling */
         html, body.printing-cert {
             width: 297mm !important;
             height: 210mm !important;
@@ -949,12 +903,11 @@
             margin: 0 !important;
             padding: 0 !important;
             overflow: hidden !important;
-            background: #fff !important;
+            background: #ffffff !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
 
-        /* Completely collapse all background containers so 0 extra pages exist */
         body.printing-cert #appScreen,
         body.printing-cert #loginScreen,
         body.printing-cert #customDialogOverlay,
@@ -965,7 +918,6 @@
             display: none !important;
         }
 
-        /* Absolute positioning stops Chromium from repeating fixed elements across pages */
         body.printing-cert #certModal.active-print, 
         body.printing-cert #certModal.active-print * { 
             visibility: visible !important; 
@@ -976,11 +928,11 @@
             left: 0 !important;
             top: 0 !important;
             width: 297mm !important;
-            height: 208mm !important; /* 2mm buffer strictly prevents subpixel overflow */
+            height: 208mm !important;
             max-height: 208mm !important;
             margin: 0 !important;
             padding: 0 !important;
-            background: #fff !important;
+            background: #ffffff !important;
             display: block !important;
             box-shadow: none !important;
             overflow: hidden !important;
@@ -995,8 +947,7 @@
             width: 297mm !important;
             height: 208mm !important;
             max-height: 208mm !important;
-            background: #fff !important;
-            backdrop-filter: none !important;
+            background: #ffffff !important;
             overflow: hidden !important;
         }
 
@@ -1021,16 +972,23 @@
         }
 
         body.printing-cert #certModal.active-print .cert-outer-frame {
+            border: 8px solid var(--gold-pure) !important;
             height: 100% !important;
             max-height: 100% !important;
             overflow: hidden !important;
         }
 
         body.printing-cert #certModal.active-print .cert-inner-frame {
+            border: 2px solid var(--gold-pure) !important;
+            outline: 1px dashed rgba(212, 175, 55, 0.65) !important;
             height: 100% !important;
             max-height: 100% !important;
             padding: 16px 26px 14px !important;
             overflow: hidden !important;
+        }
+
+        body.printing-cert #certModal.active-print .cert-corner {
+            border-color: var(--corner-accent) !important;
         }
 
         .cert-congrats-animated { 
@@ -1038,11 +996,8 @@
             animation: none !important; 
         }
         
-        .no-print, .cert-mobile-hint { 
-            display: none !important; 
-        }
+        .no-print, .cert-mobile-hint { display: none !important; }
 
-        /* Landscape Reports Handling */
         #reportModal.active-print, #reportModal.active-print *,
         #subDistrictModal.active-print, #subDistrictModal.active-print * { 
             visibility: visible !important; 
@@ -1051,24 +1006,23 @@
             position: absolute !important; 
             left: 0 !important; 
             top: 0 !important; 
-            background: #fff !important; 
+            background: #ffffff !important; 
             width: 100% !important; 
             display: block !important;
         }
     }
 
     #reportModal .report-modal-content, #subDistrictModal .report-modal-content {
-        background: rgba(255, 255, 255, 0.94) !important; 
-        backdrop-filter: blur(16px);
-        border: 1px solid var(--glass-border); 
-        box-shadow: var(--glass-shadow-lg); 
-        border-radius: 14px;
+        background: #ffffff !important; 
+        border: 1px solid var(--border); 
+        box-shadow: var(--shadow-lg); 
+        border-radius: var(--radius-md);
     }
     #printableReportArea table th, #printableSubDistrictArea table th {
-        background: rgba(241, 245, 249, 0.9) !important; color: #334155 !important; border-bottom: 2px solid #cbd5e1;
+        background: var(--surface-subtle) !important; color: #334155 !important; border-bottom: 2px solid var(--border);
     }
     #printableReportArea table td, #printableSubDistrictArea table td {
-        border-bottom: 1px solid #e2e8f0;
+        border-bottom: 1px solid var(--border);
     }
 
     @media (max-width: 768px) {
@@ -1076,9 +1030,9 @@
         .app-header { flex-direction: column; text-align: center; }
         .header-right { text-align: center; }
         .tab button span.tab-text { display: none; }
-        .tab button { padding: 10px 14px; position: relative; }
+        .tab button { padding: 9px 12px; position: relative; }
         .tab-badge-notification { top: -2px; right: -2px; font-size: 8px; padding: 1px 4px; }
-        .section { padding: 16px; border-radius: 12px; }
+        .section { padding: 16px; border-radius: var(--radius-md); }
     }
 
     /* ==========================================================================
@@ -1087,34 +1041,34 @@
     .scoring-cards-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-        gap: 16px;
+        gap: 14px;
         width: 100%;
         margin-top: 10px;
     }
     .scoring-card {
-        background: var(--glass-surface, #ffffff);
-        border: 1px solid var(--glass-border, #e2e8f0);
-        border-radius: 14px;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
         padding: 16px;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+        box-shadow: var(--shadow-subtle);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         transition: transform 0.15s ease;
     }
-    .scoring-card:hover { transform: translateY(-2px); }
+    .scoring-card:hover { transform: translateY(-1px); }
     .scoring-card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        border-bottom: 1px solid var(--border-subtle);
         padding-bottom: 10px;
         margin-bottom: 12px;
     }
     .scoring-lot-pill {
-        background: #0f172a;
+        background: var(--primary);
         color: #ffffff;
-        font-size: 13.5px;
+        font-size: 13px;
         font-weight: 800;
         padding: 4px 12px;
         border-radius: 20px;
@@ -1133,9 +1087,9 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: rgba(241, 245, 249, 0.6);
+        background: var(--surface-subtle);
         padding: 6px 10px;
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
     }
     .scoring-crit-row label {
         font-size: 12.5px;
@@ -1147,10 +1101,8 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-top: 1px solid rgba(226, 232, 240, 0.8);
+        border-top: 1px solid var(--border-subtle);
         padding-top: 10px;
-        background: rgba(248, 250, 252, 0.5);
-        border-radius: 0 0 8px 8px;
     }
     .total-score-display {
         width: 75px;
@@ -1158,52 +1110,50 @@
         font-weight: 800;
         text-align: center;
         background: #ffffff;
-        border: 1.5px solid #cbd5e1;
-        border-radius: 6px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
         padding: 5px;
         color: var(--primary);
     }
 
     .lot-progress-pill {
-        background: #0f172a;
+        background: var(--primary);
         color: #ffffff !important;
         font-family: 'Montserrat', sans-serif;
-        font-size: 13px;
+        font-size: 12.5px;
         font-weight: 800;
-        padding: 5px 14px;
+        padding: 4px 14px;
         border-radius: 20px;
         letter-spacing: 0.5px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
     }
     .single-lot-box {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(12px);
-        border: 1px solid var(--glass-border, #e2e8f0);
-        border-radius: 16px;
-        padding: 22px;
-        box-shadow: var(--glass-shadow, 0 8px 24px rgba(0,0,0,0.06));
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        box-shadow: var(--shadow-subtle);
         margin-top: 15px;
     }
     .single-lot-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-bottom: 2px solid #e2e8f0;
+        border-bottom: 1px solid var(--border);
         padding-bottom: 12px;
-        margin-bottom: 18px;
+        margin-bottom: 16px;
     }
     .criteria-entry-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: rgba(241, 245, 249, 0.7);
-        padding: 10px 16px;
-        border-radius: 10px;
+        background: var(--surface-subtle);
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
         margin-bottom: 10px;
     }
     .criteria-entry-row label {
         margin: 0;
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 700;
         color: #1e293b;
     }
@@ -1212,7 +1162,7 @@
         text-align: center;
         font-size: 15px;
         font-weight: 800;
-        padding: 7px;
+        padding: 6px;
     }
 
     /* ==========================================================================
@@ -1241,9 +1191,9 @@
         width: 100% !important;
         box-sizing: border-box !important;
         padding: 12px 16px !important;
-        background: rgba(255, 255, 255, 0.85) !important;
-        border-radius: 12px !important;
-        border: 1px solid var(--glass-border) !important;
+        background: #ffffff !important;
+        border-radius: var(--radius-md) !important;
+        border: 1px solid var(--border) !important;
     }
 
     .ll-toolbar > div {
@@ -1263,12 +1213,12 @@
         display: inline-flex !important;
         align-items: center !important;
         gap: 6px !important;
-        font-size: 11.5px !important;
+        font-size: 11px !important;
         font-weight: 700 !important;
-        color: #1e3a8a !important;
-        background: #e0e7ff !important;
-        border: 1px solid #bfdbfe !important;
-        padding: 5px 14px !important;
+        color: var(--accent) !important;
+        background: #eff6ff !important;
+        border: 1px solid #dbeafe !important;
+        padding: 4px 12px !important;
         border-radius: 20px !important;
         margin-bottom: 12px !important;
     }
@@ -1280,16 +1230,16 @@
         overflow-y: hidden !important;
         -webkit-overflow-scrolling: touch !important;
         padding: 16px 0 !important;
-        background: rgba(226, 232, 240, 0.5) !important;
-        border-radius: 12px !important;
-        border: 1px solid var(--glass-border) !important;
+        background: #f1f5f9 !important;
+        border-radius: var(--radius-md) !important;
+        border: 1px solid var(--border) !important;
         display: block !important;
         box-sizing: border-box !important;
         text-align: center !important;
     }
 
-    .ll-scroll-wrapper::-webkit-scrollbar { height: 8px !important; }
-    .ll-scroll-wrapper::-webkit-scrollbar-track { background: rgba(226, 232, 240, 0.8) !important; border-radius: 6px !important; }
+    .ll-scroll-wrapper::-webkit-scrollbar { height: 7px !important; }
+    .ll-scroll-wrapper::-webkit-scrollbar-track { background: #e2e8f0 !important; border-radius: 6px !important; }
     .ll-scroll-wrapper::-webkit-scrollbar-thumb { background: #94a3b8 !important; border-radius: 6px !important; }
 
     #llItemsPrintContainer, 
@@ -1314,7 +1264,7 @@
         margin: 0 auto 24px auto !important;
         background: #ffffff !important;
         box-sizing: border-box !important;
-        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12) !important;
+        box-shadow: var(--shadow-md) !important;
         display: block !important;
         overflow: hidden !important;
         position: relative !important;
@@ -1349,27 +1299,27 @@
     }
 
     .ll-item-subhead {
-        font-size: 12px !important;
+        font-size: 11.5px !important;
         font-weight: 700 !important;
         text-transform: uppercase !important;
-        color: #64748b !important;
+        color: var(--text-muted) !important;
         letter-spacing: 1px !important;
         margin-bottom: 2px !important;
         line-height: 1.2 !important;
     }
 
     .ll-item-festname {
-        font-size: 14px !important;
+        font-size: 13.5px !important;
         font-weight: 800 !important;
-        color: #1e3a8a !important;
+        color: var(--corner-accent) !important;
         margin-bottom: 6px !important;
         line-height: 1.2 !important;
     }
 
     .ll-item-mainhead {
-        font-size: 24px !important;
+        font-size: 23px !important;
         font-weight: 900 !important;
-        color: #0f172a !important;
+        color: var(--text-main) !important;
         text-transform: uppercase !important;
         letter-spacing: 0.8px !important;
         line-height: 1.2 !important;
@@ -1424,7 +1374,7 @@
     .ll-lot-number {
         font-size: 32px !important;
         font-weight: 900 !important;
-        color: #0f172a !important;
+        color: var(--text-main) !important;
         line-height: 1 !important;
         margin: 2px 0 !important;
         display: block !important;
@@ -1433,7 +1383,7 @@
     .ll-lot-meta {
         font-size: 8.5px !important;
         font-weight: 700 !important;
-        color: #64748b !important;
+        color: var(--text-muted) !important;
         text-transform: uppercase !important;
         line-height: 1.15 !important;
         width: 100% !important;
@@ -1446,7 +1396,7 @@
     }
 
     .ll-lot-meta b {
-        color: #1e3a8a !important;
+        color: var(--corner-accent) !important;
         font-size: 10px !important;
         font-weight: 800 !important;
         display: block !important;
@@ -1465,9 +1415,7 @@
     }
 
     /* Print Output (Strict A4 Portrait with 2cm Margins) */
-    #llPrintModal {
-        display: none;
-    }
+    #llPrintModal { display: none; }
 
     @media print {
         body.printing-ll-portrait {
@@ -1487,7 +1435,7 @@
 
         body.printing-ll-portrait #llPrintModal.active-print,
         body.printing-ll-portrait #llPrintModal.active-print * {
-            visibility: visible !important;
+            visibility: visible !important; 
         }
 
         body.printing-ll-portrait #llPrintModal.active-print {
@@ -1529,25 +1477,19 @@
     .rec-fest-head.collapsible-header {
         cursor: pointer !important;
         user-select: none;
-        transition: background 0.15s ease, filter 0.15s ease, transform 0.1s ease;
+        transition: background 0.12s ease;
     }
-    .category-main-head.collapsible-header:hover,
-    .rec-classification-head.collapsible-header:hover {
-        filter: brightness(1.15);
-    }
+    .category-main-head.collapsible-header:hover { background: #1e293b !important; }
+    .rec-classification-head.collapsible-header:hover { background: #1e293b !important; }
     .item-sub-head.collapsible-header:hover,
-    .rec-fest-head.collapsible-header:hover {
-        filter: brightness(0.96);
-    }
+    .rec-fest-head.collapsible-header:hover { background: #f8fafc !important; }
 
     .collapse-chevron {
-        transition: transform 0.25s ease;
-        font-size: 13px;
+        transition: transform 0.2s ease;
+        font-size: 12px;
         margin-left: 10px;
     }
-    .collapse-chevron.collapsed {
-        transform: rotate(-90deg);
-    }
+    .collapse-chevron.collapsed { transform: rotate(-90deg); }
 
     .custom-search-select-wrapper {
         position: relative;
@@ -1562,36 +1504,30 @@
         max-height: 220px;
         overflow-y: auto;
         background: #ffffff !important;
-        border: 1.5px solid #2563eb;
-        border-radius: 0 0 10px 10px;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25) !important;
+        border: 1px solid var(--border-focus);
+        border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+        box-shadow: var(--shadow-lg) !important;
         z-index: 999999 !important;
         display: none;
     }
     .custom-search-dropdown-item {
-        padding: 10px 14px;
+        padding: 9px 12px;
         cursor: pointer;
         font-size: 13px;
-        border-bottom: 1px solid #f1f5f9;
-        color: #1e293b;
+        border-bottom: 1px solid var(--border-subtle);
+        color: var(--text-main);
         text-align: left;
     }
     .custom-search-dropdown-item:hover, 
     .custom-search-dropdown-item.active {
         background: #eff6ff;
-        color: #2563eb;
+        color: var(--accent);
         font-weight: 700;
     }
 
     @keyframes popIn {
-        0% {
-            opacity: 0;
-            transform: scale(0.92) translateY(-10px);
-        }
-        100% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
+        0% { opacity: 0; transform: scale(0.96) translateY(-6px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
     }
 
     #itemModalOverlay {
@@ -1600,9 +1536,7 @@
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        background: rgba(15, 23, 42, 0.6) !important;
-        backdrop-filter: blur(6px) !important;
-        -webkit-backdrop-filter: blur(6px) !important;
+        background: rgba(15, 23, 42, 0.4) !important;
         z-index: 99999 !important;
         display: none;
         justify-content: center;
@@ -1613,15 +1547,15 @@
 
     #itemFormBox {
         background: #ffffff !important;
-        border-radius: 16px !important;
+        border-radius: var(--radius-lg) !important;
         width: 100% !important;
-        max-width: 560px !important;
-        padding: 24px 26px !important;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25) !important;
-        border: 1px solid var(--glass-border) !important;
-        animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+        max-width: 550px !important;
+        padding: 24px !important;
+        box-shadow: var(--shadow-lg) !important;
+        border: 1px solid var(--border) !important;
+        animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
     }
-</style>
+</style>  
 </head>
 <body>
 
@@ -2833,25 +2767,28 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // --- 2. GLOBAL CONSTANTS & APP STATE ---
-    // --- SORTED GLOBALLY (A-Z) ---
-const classificationMap = {
-    "Fest": ["IT Fest", "Maths Fest", "Science Fest", "Social Science Fest", "Work Experience Fest"],
-    "Kalothswom": ["Arabic Kalothswom", "General Kalothswom", "Sanskrit Kalothswom"],
-    "Sports": ["Sports Day"]
-};
+    // --- 2. GLOBAL CONSTANTS & DYNAMIC APP STATE ---
+    const defaultClassificationMap = {
+        "Fest": ["IT Fest", "Maths Fest", "Science Fest", "Social Science Fest", "Work Experience Fest"],
+        "Kalothswom": ["Arabic Kalothswom", "General Kalothswom", "Sanskrit Kalothswom"],
+        "Sports": ["Sports Day"]
+    };
 
-const allFestNames = [
-    "Arabic Kalothswom",
-    "General Kalothswom", 
-    "IT Fest", 
-    "Maths Fest", 
-    "Sanskrit Kalothswom", 
-    "Science Fest", 
-    "Social Science Fest", 
-    "Sports Day",
-    "Work Experience Fest"
-];
+    const defaultAllFestNames = [
+        "Arabic Kalothswom",
+        "General Kalothswom", 
+        "IT Fest", 
+        "Maths Fest", 
+        "Sanskrit Kalothswom", 
+        "Science Fest", 
+        "Social Science Fest", 
+        "Sports Day",
+        "Work Experience Fest"
+    ];
+
+    // Dynamic state that gets restored from Firestore on refresh
+    let classificationMap = JSON.parse(JSON.stringify(defaultClassificationMap));
+    let allFestNames = [...defaultAllFestNames];
 
     let dbStudents = [], dbFests = [], dbRegistrations = [], dbUsers = [], dbJudges = [], dbJudgeScores = [], dbPublishedResults = [];
     let dbSettings = { 
@@ -2885,6 +2822,13 @@ const allFestNames = [
     function isFestEnabled(festName) {
         if (!festName) return false;
         return dbSettings["Fest_" + festName] !== "DISABLED";
+    }
+
+    // Helper: Checks if a festival has at least 1 item in dbFests
+    function festHasItems(festName) {
+        if (!festName) return false;
+        const target = String(festName).trim().toLowerCase();
+        return dbFests.some(f => String(f["Fest Name"] || "").trim().toLowerCase() === target);
     }
 
 
@@ -3037,7 +2981,8 @@ const allFestNames = [
         });
     }
 
-    // --- 7. INITIALIZATION ---
+    
+    // --- 7. INITIALIZATION (RESTORES DYNAMIC FESTS & PURGES HIDDEN ONES) ---
     window.onload = async function() {
         try {
             const [stdSnap, festSnap, regSnap, userSnap, judgeSnap, scoresSnap, pubSnap, setSnap] = await Promise.all([
@@ -3069,29 +3014,80 @@ const allFestNames = [
             if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
             if (!dbSettings.Student_Allowed_Tabs) dbSettings.Student_Allowed_Tabs = ["RegTab", "RecTab", "ResultTab", "SubDistrictTab"];
             if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementTab"];
+            if (!dbSettings.HiddenFests) dbSettings.HiddenFests = [];
 
-            const classes = [...new Set(dbStudents.map(s => s["Class"]))].filter(Boolean).sort();
-            classes.forEach(c => document.getElementById('filterClass').innerHTML += `<option value="${c}">${c}</option>`);
-            const divs = [...new Set(dbStudents.map(s => s["Division"]))].filter(Boolean).sort();
-            divs.forEach(d => document.getElementById('filterDivision').innerHTML += `<option value="${d}">${d}</option>`);
+            // 1. RESTORE SAVED DYNAMIC FESTIVALS & MAPPINGS FROM FIRESTORE
+            if (dbSettings.AllFestNames && Array.isArray(dbSettings.AllFestNames) && dbSettings.AllFestNames.length > 0) {
+                allFestNames = [...dbSettings.AllFestNames];
+            }
+            if (dbSettings.ClassificationMap && typeof dbSettings.ClassificationMap === 'object') {
+                classificationMap = JSON.parse(JSON.stringify(dbSettings.ClassificationMap));
+            }
 
+            // 2. CRITICAL: PURGE ALL OLD / REPLACED FESTIVALS IN HiddenFests
+            const hiddenList = dbSettings.HiddenFests || [];
+            allFestNames = allFestNames.filter(f => !hiddenList.includes(f));
+            
+            Object.keys(classificationMap).forEach(cat => {
+                classificationMap[cat] = classificationMap[cat].filter(f => !hiddenList.includes(f));
+            });
+
+            // 3. SYNCHRONIZE ANY ACTIVE FESTS FROM dbFests (EXCLUDING HIDDEN ONES)
+            dbFests.forEach(f => {
+                const fName = f["Fest Name"];
+                if (fName && !hiddenList.includes(fName) && !allFestNames.includes(fName)) {
+                    allFestNames.push(fName);
+                    const cat = f["Festival Category"] || getFestivalCategory(fName);
+                    if (!classificationMap[cat]) classificationMap[cat] = [];
+                    if (!classificationMap[cat].includes(fName)) classificationMap[cat].push(fName);
+                }
+            });
+
+            // Sort alphabetically A-Z
+            allFestNames.sort((a, b) => a.localeCompare(b));
+            Object.keys(classificationMap).forEach(cat => {
+                classificationMap[cat].sort((a, b) => a.localeCompare(b));
+            });
+
+            // 4. POPULATE CLASS & DIVISION FILTER DROPDOWNS
+            const classFilter = document.getElementById('filterClass');
+            if (classFilter) {
+                classFilter.innerHTML = '<option value="ALL">All Classes</option>';
+                const classes = [...new Set(dbStudents.map(s => s["Class"]))].filter(Boolean).sort();
+                classes.forEach(c => classFilter.innerHTML += `<option value="${c}">${c}</option>`);
+            }
+
+            const divFilter = document.getElementById('filterDivision');
+            if (divFilter) {
+                divFilter.innerHTML = '<option value="ALL">All Divisions</option>';
+                const divs = [...new Set(dbStudents.map(s => s["Division"]))].filter(Boolean).sort();
+                divs.forEach(d => divFilter.innerHTML += `<option value="${d}">${d}</option>`);
+            }
+
+            // 5. POPULATE REPORT FEST SELECT DROPDOWN (ONLY ENABLED & NON-HIDDEN FESTS)
             const repFestSelect = document.getElementById('reportFestSelect');
             if (repFestSelect) {
-                allFestNames.forEach(f => {
+                repFestSelect.innerHTML = '<option value="ALL">-- All Enabled Fests --</option>';
+                allFestNames.filter(isFestEnabled).forEach(f => {
                     repFestSelect.innerHTML += `<option value="${f}">${f}</option>`;
                 });
             }
 
-            // Proper check for showing Results NEW badge on load
+            // 6. POPULATE REGISTRATION CLASSIFICATION DROPDOWN
+            populateClassificationDropdown();
+
+            // 7. CHECK RESULTS "NEW" BADGE STATUS
             const lastSeen = parseInt(localStorage.getItem("uthsav_last_seen_results_count") || "0", 10);
             if (dbPublishedResults.length > 0 && dbPublishedResults.length > lastSeen) {
                 const b = document.getElementById('resultNewBadge');
                 if (b) b.style.display = 'inline-block';
             }
 
+            // 8. APPLY SECURITY POLICIES & DISMISS LOADER
             applySecurityProtection();
             hideLoader();
 
+            // 9. RESTORE OFFICIAL SESSION IF SAVED
             const saved = localStorage.getItem("uthsavOfficial");
             if (saved) { 
                 let u = JSON.parse(saved); 
@@ -3099,7 +3095,7 @@ const allFestNames = [
             }
         } catch (err) {
             hideLoader();
-            console.error(err);
+            console.error("Initialization Error:", err);
             showCustomDialog("System Error", "Database could not be loaded. Please check console.", "danger");
         }
     };
@@ -3264,8 +3260,8 @@ const allFestNames = [
         window.location.reload();
     }
 
-    // --- 9. TAB 1: REGISTRATION & STUDENT MASTER DIRECTORY ---
-    // DYNAMICALLY FILTER CLASSIFICATIONS BASED ON ENABLED FESTS
+   
+    // Hides categories if all their fests have 0 items
     function populateClassificationDropdown() {
         const classSelect = document.getElementById('festClassification');
         if (!classSelect) return;
@@ -3273,9 +3269,11 @@ const allFestNames = [
         classSelect.innerHTML = '<option value="">-- Select Classification --</option>';
 
         Object.keys(classificationMap).forEach(cat => {
-            // Only show category if at least ONE fest under it is ticked/enabled
-            const hasTickedFest = classificationMap[cat].some(f => dbSettings["Fest_" + f] !== "DISABLED");
-            if (hasTickedFest) {
+            // Only show category if it has at least ONE enabled fest WITH items
+            const hasValidFest = classificationMap[cat].some(f => 
+                isFestEnabled(f) && festHasItems(f)
+            );
+            if (hasValidFest) {
                 classSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
             }
         });
@@ -3291,23 +3289,24 @@ const allFestNames = [
         }
     }
 
+    // Hides fests with 0 items from the Registration Fest dropdown
     function onClassificationChanged() {
-    const classification = document.getElementById('festClassification').value;
-    const festDropdown = document.getElementById('festName');
-    const itemSelect = document.getElementById('itemSelect');
-    festDropdown.innerHTML = '<option value="">-- Select Fest --</option>';
-    itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
+        const classification = document.getElementById('festClassification').value;
+        const festDropdown = document.getElementById('festName');
+        const itemSelect = document.getElementById('itemSelect');
+        festDropdown.innerHTML = '<option value="">-- Select Fest --</option>';
+        itemSelect.innerHTML = '<option value="">-- Select Item --</option>';
 
-    if (!classification) return;
+        if (!classification) return;
 
-    // Sort fests A-Z
-    const validFests = [...(classificationMap[classification] || [])].sort((a, b) => a.localeCompare(b));
-    validFests.forEach(f => {
-        if (dbSettings["Fest_" + f] !== "DISABLED") {
-            festDropdown.innerHTML += `<option value="${f}">${f}</option>`;
-        }
-    });
-}
+        const validFests = [...(classificationMap[classification] || [])].sort((a, b) => a.localeCompare(b));
+        validFests.forEach(f => {
+            // ONLY show enabled fests that have at least 1 item
+            if (isFestEnabled(f) && festHasItems(f)) {
+                festDropdown.innerHTML += `<option value="${f}">${f}</option>`;
+            }
+        });
+    }
 
 function populateItems() {
     const fest = document.getElementById('festName').value;
@@ -6207,12 +6206,12 @@ const qualifiedList = dbPublishedResults.filter(r =>
             document.getElementById('regClosedMsg').style.display = 'none';
         }
 
-        // Populate enabled fests inside the Tab 2 Admin Report filter dropdown
+        // Populate enabled fests with items in the Report dropdown
         const repFestSelect = document.getElementById('reportFestSelect');
         if (repFestSelect) {
             const curRepVal = repFestSelect.value;
             repFestSelect.innerHTML = '<option value="ALL">-- All Enabled Fests --</option>';
-            allFestNames.filter(isFestEnabled).forEach(f => {
+            allFestNames.filter(f => isFestEnabled(f) && festHasItems(f)).forEach(f => {
                 repFestSelect.innerHTML += `<option value="${f}">${f}</option>`;
             });
             if ([...repFestSelect.options].some(o => o.value === curRepVal)) {
@@ -6229,7 +6228,8 @@ const qualifiedList = dbPublishedResults.filter(r =>
 
         const festGrid = document.getElementById('adminFestList');
         festGrid.innerHTML = "";
-        allFestNames.forEach(f => {
+        // Only show fests with items in Enabled Fests toggles
+        allFestNames.filter(festHasItems).forEach(f => {
             const isChecked = dbSettings["Fest_" + f] !== "DISABLED" ? "checked" : "";
             festGrid.innerHTML += `
                 <div class="fest-toggle">
@@ -6240,7 +6240,7 @@ const qualifiedList = dbPublishedResults.filter(r =>
 
         const cSel = document.getElementById('convenorFestSelect');
         cSel.innerHTML = '<option value="">-- Choose Fest --</option>';
-        allFestNames.forEach(f => {
+        allFestNames.filter(festHasItems).forEach(f => {
             cSel.innerHTML += `<option value="${f}">${f}</option>`;
         });
         renderConvenorsTable();
@@ -6251,16 +6251,14 @@ const qualifiedList = dbPublishedResults.filter(r =>
         renderAdminItemsTable();
     }
 
-    // --- FEST & CONVENOR MANAGEMENT LOGIC ---
-    let selectedEditingFestOldName = null;
-
     function renderConvenorsTable() {
         const tbody = document.getElementById('convenorsTbody');
         if (!tbody) return;
         tbody.innerHTML = "";
         const convenors = dbSettings.FestConvenors || {};
 
-        allFestNames.forEach(f => {
+        // Only show fests with items in the convenors table
+        allFestNames.filter(festHasItems).forEach(f => {
             const conv = convenors[f] || "THEJAS R";
             tbody.innerHTML += `
                 <tr>
@@ -6322,43 +6320,87 @@ const qualifiedList = dbPublishedResults.filter(r =>
             return showCustomDialog("Incomplete Details", "Please provide both the Fest Name and Convenor Name.", "warning");
         }
 
-        // SCENARIO 1: FEST NAME HAS BEEN RENAMED
+        // SCENARIO 1: FESTIVAL RENAMED / REPLACED
         if (oldFest && newFest !== oldFest) {
             showCustomDialog(
                 "Rename Festival?",
-                `⚠️ Are you sure you want to rename <b>"${oldFest}"</b> to <b>"${newFest}"</b>?<br><br>` +
-                `This will automatically update all items, participant registrations, marks, and published results linked to this festival.`,
+                `⚠️ Rename <b>"${oldFest}"</b> to <b>"${newFest}"</b>?<br><br>` +
+                `<b>"${oldFest}"</b> will be permanently hidden and replaced by <b>"${newFest}"</b> across all registrations, items, and certificates.`,
                 "warning",
                 async () => {
-                    showLoader(`Renaming festival from "${oldFest}" to "${newFest}"...`);
+                    showLoader(`Renaming "${oldFest}" to "${newFest}"...`);
                     try {
                         const batch = db.batch();
 
                         // 1. Update items in 'fests' collection
-                        const festItemsSnap = await db.collection("fests").where("Fest Name", "==", oldFest).get();
+                        const festItemsSnap = await db.collection("fests").get();
                         festItemsSnap.docs.forEach(doc => {
-                            batch.update(doc.ref, { "Fest Name": newFest });
+                            if (String(doc.data()["Fest Name"] || "").trim() === oldFest.trim()) {
+                                batch.update(doc.ref, { 
+                                    "Fest Name": newFest,
+                                    "Festival Category": getFestivalCategory(newFest)
+                                });
+                            }
                         });
 
                         // 2. Update registrations in 'registrations' collection
-                        const regSnap = await db.collection("registrations").where("Name of Fest", "==", oldFest).get();
+                        const regSnap = await db.collection("registrations").get();
                         regSnap.docs.forEach(doc => {
-                            batch.update(doc.ref, { "Name of Fest": newFest });
+                            if (String(doc.data()["Name of Fest"] || "").trim() === oldFest.trim()) {
+                                batch.update(doc.ref, { 
+                                    "Name of Fest": newFest,
+                                    "Festival Classification": getFestivalCategory(newFest),
+                                    "Festival Category": getFestivalCategory(newFest)
+                                });
+                            }
                         });
 
                         // 3. Update scores in 'judge_scores' collection
-                        const scoreSnap = await db.collection("judge_scores").where("festName", "==", oldFest).get();
+                        const scoreSnap = await db.collection("judge_scores").get();
                         scoreSnap.docs.forEach(doc => {
-                            batch.update(doc.ref, { "festName": newFest });
+                            if (String(doc.data().festName || "").trim() === oldFest.trim()) {
+                                batch.update(doc.ref, { 
+                                    festName: newFest,
+                                    festCategory: getFestivalCategory(newFest)
+                                });
+                            }
                         });
 
                         // 4. Update results in 'published_results' collection
-                        const pubSnap = await db.collection("published_results").where("festName", "==", oldFest).get();
+                        const pubSnap = await db.collection("published_results").get();
                         pubSnap.docs.forEach(doc => {
-                            batch.update(doc.ref, { "festName": newFest });
+                            if (String(doc.data().festName || "").trim() === oldFest.trim()) {
+                                batch.update(doc.ref, { 
+                                    festName: newFest,
+                                    festCategory: getFestivalCategory(newFest)
+                                });
+                            }
                         });
 
-                        // 5. Update settings (Convenor & Fest Enabled State)
+                        // 5. Track in HiddenFests so old name NEVER reappears
+                        if (!dbSettings.HiddenFests) dbSettings.HiddenFests = [];
+                        if (!dbSettings.HiddenFests.includes(oldFest)) {
+                            dbSettings.HiddenFests.push(oldFest);
+                        }
+                        // If newFest was previously in HiddenFests, unhide it
+                        dbSettings.HiddenFests = dbSettings.HiddenFests.filter(f => f !== newFest);
+
+                        // 6. Update allFestNames in memory (remove old, insert new)
+                        allFestNames = allFestNames.filter(f => f !== oldFest);
+                        if (!allFestNames.includes(newFest)) allFestNames.push(newFest);
+                        allFestNames.sort((a, b) => a.localeCompare(b));
+
+                        // 7. Update classificationMap in memory
+                        const targetCategory = getFestivalCategory(newFest);
+                        Object.keys(classificationMap).forEach(cat => {
+                            classificationMap[cat] = classificationMap[cat].filter(f => f !== oldFest);
+                            if (cat === targetCategory && !classificationMap[cat].includes(newFest)) {
+                                classificationMap[cat].push(newFest);
+                            }
+                            classificationMap[cat].sort((a, b) => a.localeCompare(b));
+                        });
+
+                        // 8. Update convenors and enabled states
                         if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
                         dbSettings.FestConvenors[newFest] = convenor;
                         delete dbSettings.FestConvenors[oldFest];
@@ -6366,34 +6408,57 @@ const qualifiedList = dbPublishedResults.filter(r =>
                         dbSettings["Fest_" + newFest] = dbSettings["Fest_" + oldFest] || "ENABLED";
                         delete dbSettings["Fest_" + oldFest];
 
-                        batch.set(db.collection("config").doc("settings"), dbSettings, { merge: true });
+                        dbSettings.AllFestNames = allFestNames;
+                        dbSettings.ClassificationMap = classificationMap;
 
-                        // Commit all database changes
+                        // 9. Permanently delete old keys from Firestore document using FieldValue.delete()
+                        const settingsUpdate = {
+                            AllFestNames: allFestNames,
+                            ClassificationMap: classificationMap,
+                            HiddenFests: dbSettings.HiddenFests,
+                            [`FestConvenors.${newFest}`]: convenor,
+                            [`FestConvenors.${oldFest}`]: firebase.firestore.FieldValue.delete(),
+                            [`Fest_${newFest}`]: "ENABLED",
+                            [`Fest_${oldFest}`]: firebase.firestore.FieldValue.delete()
+                        };
+
+                        batch.update(db.collection("config").doc("settings"), settingsUpdate);
+
+                        // Commit entire batch
                         await batch.commit();
 
-                        // 6. Update local memory arrays
-                        dbFests.forEach(f => { if (f["Fest Name"] === oldFest) f["Fest Name"] = newFest; });
-                        dbRegistrations.forEach(r => { if (r["Name of Fest"] === oldFest) r["Name of Fest"] = newFest; });
-                        dbJudgeScores.forEach(s => { if (s.festName === oldFest) s.festName = newFest; });
-                        dbPublishedResults.forEach(p => { if (p.festName === oldFest) p.festName = newFest; });
-
-                        // Update allFestNames global array
-                        const fIdx = allFestNames.indexOf(oldFest);
-                        if (fIdx !== -1) allFestNames[fIdx] = newFest;
-                        allFestNames.sort((a, b) => a.localeCompare(b));
-
-                        // Update classificationMap
-                        Object.keys(classificationMap).forEach(cat => {
-                            const cIdx = classificationMap[cat].indexOf(oldFest);
-                            if (cIdx !== -1) classificationMap[cat][cIdx] = newFest;
-                            classificationMap[cat].sort((a, b) => a.localeCompare(b));
+                        // 10. Synchronize local memory data
+                        dbFests.forEach(f => { 
+                            if (String(f["Fest Name"] || "").trim() === oldFest.trim()) {
+                                f["Fest Name"] = newFest;
+                                f["Festival Category"] = targetCategory;
+                            }
+                        });
+                        dbRegistrations.forEach(r => { 
+                            if (String(r["Name of Fest"] || "").trim() === oldFest.trim()) {
+                                r["Name of Fest"] = newFest;
+                                r["Festival Classification"] = targetCategory;
+                            }
+                        });
+                        dbJudgeScores.forEach(s => { 
+                            if (String(s.festName || "").trim() === oldFest.trim()) {
+                                s.festName = newFest;
+                                s.festCategory = targetCategory;
+                            }
+                        });
+                        dbPublishedResults.forEach(p => { 
+                            if (String(p.festName || "").trim() === oldFest.trim()) {
+                                p.festName = newFest;
+                                p.festCategory = targetCategory;
+                            }
                         });
 
                         hideLoader();
                         cancelFestEdit();
+                        populateClassificationDropdown();
                         renderAdminPanel();
                         applySettingsToUI();
-                        showCustomDialog("Renamed Successfully", `Festival successfully renamed to <b>${newFest}</b> with Convenor <b>${convenor}</b>.`, "success");
+                        showCustomDialog("Renamed Successfully", `<b>"${oldFest}"</b> has been removed and replaced by <b>"${newFest}"</b>.`, "success");
                     } catch (e) {
                         hideLoader();
                         console.error("Fest rename error:", e);
@@ -6405,7 +6470,7 @@ const qualifiedList = dbPublishedResults.filter(r =>
             return;
         }
 
-        // SCENARIO 2: ONLY CONVENOR UPDATED (FEST NAME UNCHANGED)
+        // SCENARIO 2: ONLY CONVENOR UPDATED (NO NAME CHANGE)
         const targetFest = oldFest || newFest;
         showLoader("Saving Convenor Details...");
         try {
@@ -7066,7 +7131,6 @@ document.addEventListener('keydown', (e) => {
         );
     }
 
-    // --- L&L (LABELS & LOTS) TAB LOGIC ---
     function initLLTab() {
         const itemFestSel = document.getElementById('llItemFestFilter');
         const lotFestSel = document.getElementById('llLotFestFilter');
@@ -7074,7 +7138,8 @@ document.addEventListener('keydown', (e) => {
         itemFestSel.innerHTML = '<option value="ALL">All Fests</option>';
         lotFestSel.innerHTML = '<option value="ALL">All Fests</option>';
 
-        allFestNames.filter(isFestEnabled).forEach(f => {
+        // Only list fests that are enabled AND have items
+        allFestNames.filter(f => isFestEnabled(f) && festHasItems(f)).forEach(f => {
             itemFestSel.innerHTML += `<option value="${f}">${f}</option>`;
             lotFestSel.innerHTML += `<option value="${f}">${f}</option>`;
         });
