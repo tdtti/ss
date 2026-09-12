@@ -1644,12 +1644,7 @@
     .admin-stat-val.present { color: #059669; }
     .admin-stat-val.absent { color: #dc2626; }
 
-    option[value="Fest"] {
-    display: none !important;}
-
-    option[value="Sports"] {
-    display: none !important;}
-
+    
 /* Pulsing Green LED for Active Judge Evaluation */
     .led-green-pulse {
         background-color: #10b981;
@@ -1674,13 +1669,17 @@
 
     .eval-active-pill {
         display: inline-flex;
-        align-items: center;
-        background: #ecfdf5;
-        border: 1px solid #a7f3d0;
+        align-items: center;           
         padding: 2px 7px;
         border-radius: 12px;
         gap: 5px;
     }    
+
+    option[value="Fest"] {
+    display: none !important;}
+
+    option[value="Sports"] {
+    display: none !important;}
 
 </style>  
 </head>
@@ -4846,14 +4845,18 @@ function autoGenerateContinuousLots(randomize = false) {
         if (adminOverview) adminOverview.style.display = 'none';
         if (judgeWorkflow) judgeWorkflow.style.display = 'block';
 
+       // JUDGE VIEW: Show ONLY items that are ACTIVE and NOT yet COMPLETED
         const currentJudge = dbJudges.find(j => 
             (j.phone && currentUser.id && String(j.phone).trim() === String(currentUser.id).trim()) || 
             (j.name && currentUser.name && String(j.name).toLowerCase() === String(currentUser.name).toLowerCase())
         );
         const assigned = currentJudge ? (currentJudge.assignedItems || []) : [];
+
+        // Filter: Must be assigned, ACTIVE, and NOT in CompletedProgrammes
         const itemsToShow = dbFests.filter(f => 
             assigned.includes(f["Item Code"]) && 
-            ((dbSettings.ActiveProgrammes || []).includes(f["Item Code"]) || (dbSettings.CompletedProgrammes || []).includes(f["Item Code"]))
+            (dbSettings.ActiveProgrammes || []).includes(f["Item Code"]) &&
+            !(dbSettings.CompletedProgrammes || []).includes(f["Item Code"])
         );
 
         allJudgeSortedItems = itemsToShow.filter(f => isFestEnabled(f["Fest Name"])).sort((a, b) => 
@@ -4951,7 +4954,7 @@ function autoGenerateContinuousLots(randomize = false) {
                                 ${isBeingEvaluated ? `
                                     <span class="eval-active-pill" title="Judge ${activeJudgeName} is currently evaluating this item!">
                                         <span class="led-indicator led-green-pulse"></span>
-                                        <span style="font-size:10px; font-weight:800; color:#059669;">EVALUATING</span>
+                                        <span style="font-size:10px; font-weight:800; color:#059669;"></span>
                                     </span>
                                 ` : ''}
                                 <span style="font-size:11px; font-weight:700; color:var(--text-muted); font-family:monospace;">[${code}]</span>
@@ -5021,7 +5024,8 @@ function renderJudgeDropdownList(items) {
     if (!list) return;
     list.innerHTML = '';
     if (items.length === 0) {
-        list.innerHTML = '<div style="padding:10px; color:#94a3b8; font-size:12px; text-align:center;">No active/completed items available</div>';
+        list.innerHTML = '<div style="padding:12px; color:#059669; font-size:12.5px; font-weight:700; text-align:center;">' +
+                         '<i class="fas fa-check-circle"></i> All allotted items completed!</div>';
         return;
     }
     items.forEach(item => {
@@ -5325,7 +5329,7 @@ document.addEventListener('click', (e) => {
             <div class="single-lot-box" data-unitid="${unit.id}">
                 <div class="single-lot-header">
                     <div>
-                        <span style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase;">Evaluating</span>
+                        <span style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase;"></span>
                         <h2 style="margin:2px 0 0 0; font-size:24px; font-weight:900; color:#0f172a;">
                             Lot No: <span style="color:var(--primary);">${unit["Lot Number"] || 'Unassigned'}</span>
                         </h2>
@@ -5583,9 +5587,42 @@ document.addEventListener('click', (e) => {
                         "success"
                     );
 
-                    // 6. Refresh UI components
-                    setupJudgeSheet();
+                    // 6. INSTANTLY CLEAR SELECTION & EXCLUDE FROM JUDGE DROPDOWN
+                    const searchInput = document.getElementById('judgeActiveItemsSearchInput');
+                    const hiddenSelect = document.getElementById('judgeActiveItemsSelect');
+                    const festMeta = document.getElementById('judgeItemFestMeta');
+                    const codeMeta = document.getElementById('judgeItemCodeMeta');
+
+                    if (searchInput) searchInput.value = "";
+                    if (hiddenSelect) hiddenSelect.value = "";
+                    if (festMeta) festMeta.value = "";
+                    if (codeMeta) codeMeta.value = "";
+
+                    // Hide scoring panels and finalized banners
+                    document.getElementById('singleLotSection').style.display = 'none';
+                    document.getElementById('finalizeJudgementSection').style.display = 'none';
+                    document.getElementById('judgementLockedBanner').style.display = 'none';
+
+                    // Reset criteria lock state
+                    document.getElementById('btnConfirmCriteria').style.display = 'inline-flex';
+                    document.getElementById('criteriaConfirmedBadge').style.display = 'none';
+
+                    // Reset judge session memory
+                    currentJudgeSession = {
+                        itemCode: "",
+                        criteriaConfirmed: false,
+                        units: [],
+                        savedUnitIds: new Set(),
+                        unitScores: {},
+                        isAbsent: false
+                    };
+
+                    // Re-render dropdown without the completed item
                     initJudgementTab();
+
+                    if (typeof loadEventMgmtItemDetails === "function") {
+                        loadEventMgmtItemDetails();
+                    }
                     if (typeof loadEventMgmtItemDetails === "function") {
                         loadEventMgmtItemDetails();
                     }
