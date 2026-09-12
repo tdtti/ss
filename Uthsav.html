@@ -55,7 +55,6 @@
     
     body { 
         font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-        /* Atmospheric Ambient Gradient shines through frosted glass */
         background: radial-gradient(at 0% 0%, #e0e7ff 0px, transparent 50%), 
                     radial-gradient(at 100% 0%, #fae8ff 0px, transparent 45%), 
                     radial-gradient(at 100% 100%, #dbeafe 0px, transparent 50%), 
@@ -78,12 +77,12 @@
         justify-content: center; 
         align-items: center; 
         min-height: 100vh; 
-        background: #ffffff !important; /* Full pure white background */
+        background: #ffffff !important;
         padding: 20px;
         position: relative;
     }
     #loginScreen::before {
-        display: none !important; /* Removes any dark background glow */
+        display: none !important;
     }
     .login-box { 
         background: #ffffff !important; 
@@ -196,7 +195,7 @@
     }
 
     /* ==========================================================================
-       2. FLATTENED GLASS WRAPPER (NO CONTAINERS INSIDE CONTAINERS)
+       2. FLATTENED GLASS WRAPPER & CONTROLS
        ========================================================================== */
     #appScreen { 
         display: none; 
@@ -249,7 +248,6 @@
         box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
     }
 
-    /* ELIMINATED REDUNDANT NESTING: Canvas is completely flat */
     .main-content { 
         width: 100%; 
         background: transparent !important; 
@@ -271,11 +269,9 @@
         z-index: 1;
         overflow: visible !important;
     }
-
     .section:focus-within {
-    z-index: 50 !important;
+        z-index: 50 !important;
     }
-
     .section-title { 
         margin: 0 0 16px 0; 
         color: var(--primary); 
@@ -290,7 +286,6 @@
         flex-wrap: wrap;
     }
 
-    /* Frosted Inputs & Controls */
     .form-group { display: flex; flex-direction: column; margin-bottom: 15px; }
     .form-group label { font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #334155; }
     input, select, textarea { 
@@ -311,11 +306,8 @@
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
     .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; width: 100%; }
-    .row, .form-group {
-    position: relative;
-    overflow: visible !important;
-}
-    /* Frosted Glass Buttons */
+    .row, .form-group { position: relative; overflow: visible !important; }
+
     .submit-btn { 
         background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(29, 78, 216, 0.95));
         backdrop-filter: blur(8px);
@@ -358,7 +350,6 @@
     .action-btn.gold { background: linear-gradient(135deg, rgba(217, 119, 6, 0.9), rgba(180, 83, 9, 0.9)); color: white; box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3); }
     .action-btn:disabled { background: rgba(203, 213, 225, 0.6) !important; color: #94a3b8 !important; cursor: not-allowed; box-shadow: none; }
 
-    /* Frosted Segmented Tap Buttons */
     .tap-switch-group { 
         display: inline-flex; 
         background: rgba(255, 255, 255, 0.5); 
@@ -433,7 +424,6 @@
     }
     .tabcontent { display: none; width: 100%; }
 
-    /* Pill Notification Badge */
     .tab-badge-notification {
         position: absolute;
         top: -3px;
@@ -487,7 +477,7 @@
 
     /* ==========================================================================
        4. CARDS, GRIDS & 100% FULL-WIDTH BANNERS
-       ========================================================================== */
+       ========================================================================= */
     .filters { 
         display: flex; 
         gap: 10px; 
@@ -548,7 +538,6 @@
     .record-card .label { color: var(--muted); font-weight: normal; }
     .record-card .timestamp { font-size: 11px; color: #94a3b8; }
 
-    /* 100% Full-Width Category Headers */
     #cardsInd, #cardsGrp { display: block !important; width: 100% !important; }
     .rec-classification-head {
         background: var(--primary-glass);
@@ -612,7 +601,6 @@
         background: rgba(255, 255, 255, 0.75); 
     }
 
-    /* Badges */
     .badge-place { 
         padding: 2px 9px; 
         border-radius: 6px; 
@@ -772,7 +760,6 @@
     .dialog-btn-confirm { background: var(--primary-glass); color: #fff; }
     .dialog-btn-cancel { background: rgba(226, 232, 240, 0.8); color: #334155; }
 
-    /* Top Progress Bar & Blur Freeze */
     #loadingOverlay { 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
         background: rgba(241, 245, 249, 0.4); 
@@ -810,7 +797,7 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     /* ==========================================================================
-       7. CERTIFICATE MODAL & STRICT A4 LANDSCAPE PRINT
+       7. CERTIFICATE MODAL & STRICT 1-PAGE A4 LANDSCAPE PRINT
        ========================================================================== */
     #certModal, #reportModal, #subDistrictModal {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -841,9 +828,18 @@
         color: var(--muted); background: rgba(255, 255, 255, 0.7); padding: 3px 10px; border-radius: 20px; border: 1px solid var(--glass-border); margin-top: 6px;
     }
 
-    /* A4 Landscape Dimensions: 1020px x 720px */
+    .cert-container {
+        width: 1020px;
+        min-width: 1020px;
+        height: 720px;
+        background: #ffffff;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        margin: 0 auto;
+        position: relative;
+        box-sizing: border-box;
+    }
     .cert-outer-frame {
-        border: 6px solid var(--gold); /* Golden outer border instead of black */
+        border: 6px solid var(--gold);
         height: 100%; 
         width: 100%; 
         padding: 6px;
@@ -851,7 +847,6 @@
         position: relative; 
         background: #fff;
     }
-    
     .cert-inner-frame {
         border: 2px solid var(--gold); 
         outline: 1px dashed rgba(180, 83, 9, 0.6); 
@@ -867,12 +862,11 @@
         background: radial-gradient(circle at center, #ffffff 65%, #fdfbf7 100%);
     }
 
-    /* CORNERS: SOLID VAR(--ACCENT) INSTEAD OF BLACK */
     .cert-corner { 
         position: absolute; 
         width: 24px; 
         height: 24px; 
-        border-color: var(--accent); /* Uses solid var(--accent) */
+        border-color: var(--accent);
         border-style: solid; 
     }
     .corner-tl { top: -2px; left: -2px; border-width: 4px 0 0 4px; }
@@ -936,39 +930,133 @@
     .cert-gold-seal i { font-size: 18px; }
     .cert-gold-seal span { font-size: 7.5px; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
 
-    /* Clean Print Format (A4 Landscape) */
-    @page { size: 297mm 210mm landscape; margin: 0mm; }
+    /* ==========================================================================
+       8. STRICT 1-PAGE A4 LANDSCAPE PRINT RULES
+       ========================================================================== */
+    @page { 
+        size: 297mm 210mm landscape !important; 
+        margin: 0mm !important; 
+    }
+
     @media print {
         body * { visibility: hidden !important; }
-        html, body {
-            width: 297mm !important; height: 210mm !important; margin: 0 !important; padding: 0 !important;
-            background: #fff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+        
+        /* Force single page landscape canvas without spilling */
+        html, body.printing-cert {
+            width: 297mm !important;
+            height: 210mm !important;
+            max-height: 210mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            background: #fff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
-        #certModal.active-print, #certModal.active-print * { visibility: visible !important; }
-        #certModal.active-print {
-            position: fixed !important; left: 0 !important; top: 0 !important; width: 297mm !important; height: 210mm !important;
-            margin: 0 !important; padding: 0 !important; background: #fff !important; display: block !important;
-            box-shadow: none !important;
-        }
-        #certModal.active-print .cert-modal-content {
-            border: none !important; box-shadow: none !important; padding: 0 !important; width: 297mm !important; height: 210mm !important;
-            background: #fff !important; backdrop-filter: none !important;
-        }
-        #certModal.active-print .cert-scroll-wrapper { overflow: visible !important; background: none !important; padding: 0 !important; }
-        #certModal.active-print .cert-container {
-            width: 297mm !important; height: 210mm !important; padding: 8mm !important; margin: 0 !important; box-shadow: none !important;
-        }
-        .cert-congrats-animated { -webkit-text-fill-color: #be185d !important; animation: none !important; }
-        .no-print, .cert-mobile-hint { display: none !important; }
 
+        /* Completely collapse all background containers so 0 extra pages exist */
+        body.printing-cert #appScreen,
+        body.printing-cert #loginScreen,
+        body.printing-cert #customDialogOverlay,
+        body.printing-cert #loadingOverlay,
+        body.printing-cert #reportModal,
+        body.printing-cert #subDistrictModal,
+        body.printing-cert #llPrintModal {
+            display: none !important;
+        }
+
+        /* Absolute positioning stops Chromium from repeating fixed elements across pages */
+        body.printing-cert #certModal.active-print, 
+        body.printing-cert #certModal.active-print * { 
+            visibility: visible !important; 
+        }
+
+        body.printing-cert #certModal.active-print {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 297mm !important;
+            height: 208mm !important; /* 2mm buffer strictly prevents subpixel overflow */
+            max-height: 208mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            display: block !important;
+            box-shadow: none !important;
+            overflow: hidden !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }
+
+        body.printing-cert #certModal.active-print .cert-modal-content {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            width: 297mm !important;
+            height: 208mm !important;
+            max-height: 208mm !important;
+            background: #fff !important;
+            backdrop-filter: none !important;
+            overflow: hidden !important;
+        }
+
+        body.printing-cert #certModal.active-print .cert-scroll-wrapper { 
+            overflow: visible !important; 
+            background: none !important; 
+            padding: 0 !important; 
+        }
+
+        body.printing-cert #certModal.active-print .cert-container {
+            width: 297mm !important;
+            height: 208mm !important;
+            max-height: 208mm !important;
+            padding: 6mm 8mm !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            overflow: hidden !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        body.printing-cert #certModal.active-print .cert-outer-frame {
+            height: 100% !important;
+            max-height: 100% !important;
+            overflow: hidden !important;
+        }
+
+        body.printing-cert #certModal.active-print .cert-inner-frame {
+            height: 100% !important;
+            max-height: 100% !important;
+            padding: 16px 26px 14px !important;
+            overflow: hidden !important;
+        }
+
+        .cert-congrats-animated { 
+            -webkit-text-fill-color: #be185d !important; 
+            animation: none !important; 
+        }
+        
+        .no-print, .cert-mobile-hint { 
+            display: none !important; 
+        }
+
+        /* Landscape Reports Handling */
         #reportModal.active-print, #reportModal.active-print *,
-        #subDistrictModal.active-print, #subDistrictModal.active-print * { visibility: visible !important; }
+        #subDistrictModal.active-print, #subDistrictModal.active-print * { 
+            visibility: visible !important; 
+        }
         #reportModal.active-print, #subDistrictModal.active-print {
-            position: absolute !important; left: 0 !important; top: 0 !important; background: #fff !important; width: 100% !important; display: block !important;
+            position: absolute !important; 
+            left: 0 !important; 
+            top: 0 !important; 
+            background: #fff !important; 
+            width: 100% !important; 
+            display: block !important;
         }
     }
 
-    /* Minimal Glass Report Modals */
     #reportModal .report-modal-content, #subDistrictModal .report-modal-content {
         background: rgba(255, 255, 255, 0.94) !important; 
         backdrop-filter: blur(16px);
@@ -983,7 +1071,6 @@
         border-bottom: 1px solid #e2e8f0;
     }
 
-    /* Mobile Adaptations */
     @media (max-width: 768px) {
         #appScreen { padding: 10px; }
         .app-header { flex-direction: column; text-align: center; }
@@ -994,7 +1081,9 @@
         .section { padding: 16px; border-radius: 12px; }
     }
 
-    /* BLIND JUDGING CARDS FOR MARKS ENTRY */
+    /* ==========================================================================
+       9. SCORING, LOT ALLOTMENT & ATTENDANCE
+       ========================================================================== */
     .scoring-cards-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -1075,9 +1164,6 @@
         color: var(--primary);
     }
 
-    /* ==========================================================================
-       SINGLE LOT EVALUATION & ATTENDANCE STYLES
-       ========================================================================== */
     .lot-progress-pill {
         background: #0f172a;
         color: #ffffff !important;
@@ -1130,690 +1216,411 @@
     }
 
     /* ==========================================================================
-   L&L (LABELS & LOTS) STYLING (A4 PORTRAIT - 2CM MARGINS)
-   ========================================================================== */
-#LLTab {
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-#llItemsPrintSection,
-#llLotsPrintSection {
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important; /* Locks screen width to viewport */
-}
-
-/* 2. Responsive Toolbar (wraps dropdowns cleanly on mobile) */
-.ll-toolbar {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    flex-wrap: wrap !important;
-    gap: 10px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    padding: 12px 16px !important;
-    background: rgba(255, 255, 255, 0.85) !important;
-    border-radius: 12px !important;
-    border: 1px solid var(--glass-border) !important;
-}
-
-.ll-toolbar > div {
-    display: flex !important;
-    align-items: center !important;
-    flex-wrap: wrap !important;
-    gap: 8px !important;
-    max-width: 100% !important;
-}
-
-.ll-toolbar select {
-    max-width: 100% !important;
-    font-size: 12px !important;
-}
-
-/* 3. Mobile Sideways Hint Pill */
-.ll-mobile-hint {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    font-size: 11.5px !important;
-    font-weight: 700 !important;
-    color: #1e3a8a !important;
-    background: #e0e7ff !important;
-    border: 1px solid #bfdbfe !important;
-    padding: 5px 14px !important;
-    border-radius: 20px !important;
-    margin-bottom: 12px !important;
-}
-
-/* 4. Strict Horizontal Scroll Wrapper */
-.ll-scroll-wrapper {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    -webkit-overflow-scrolling: touch !important; /* iOS momentum scrolling */
-    overscroll-behavior-x: contain !important;
-    padding: 16px 8px !important;
-    background: rgba(226, 232, 240, 0.5) !important;
-    border-radius: 12px !important;
-    border: 1px solid var(--glass-border) !important;
-    display: block !important;
-    box-sizing: border-box !important;
-    text-align: center !important;
-}
-
-/* Custom Visible Scrollbar for mobile/touch detection */
-.ll-scroll-wrapper::-webkit-scrollbar {
-    height: 8px !important;
-}
-.ll-scroll-wrapper::-webkit-scrollbar-track {
-    background: rgba(226, 232, 240, 0.8) !important;
-    border-radius: 6px !important;
-}
-.ll-scroll-wrapper::-webkit-scrollbar-thumb {
-    background: #94a3b8 !important;
-    border-radius: 6px !important;
-}
-.ll-scroll-wrapper::-webkit-scrollbar-thumb:hover {
-    background: #64748b !important;
-}
-.ll-page {
-    width: 170mm; /* 210mm A4 width minus 40mm (2cm margins each side) */
-    min-height: 257mm; /* 297mm A4 height minus 40mm (2cm margins top/bottom) */
-    margin: 0 auto 25px auto;
-    background: #ffffff;
-    padding: 0;
-    box-sizing: border-box;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-/* SECTION 1: 4 ITEM LABELS PER A4 PAGE (1 col x 4 rows) */
-.ll-items-grid {
-    display: flex;
-    flex-direction: column;
-    height: 257mm;
-    width: 100%;
-    box-sizing: border-box;
-}
-.ll-item-label {
-    height: 64.25mm; /* Exactly 1/4 of printable height */
-    width: 100%;
-    box-sizing: border-box;
-    border: 1.5px dashed #475569; /* Outer border & cutting line */
-    padding: 12px 18px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    background: #fff;
-}
-.ll-item-subhead {
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #475569;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-}
-.ll-item-festname {
-    font-size: 15px;
-    font-weight: 800;
-    color: #1e3a8a;
-    margin-bottom: 8px;
-}
-.ll-item-mainhead {
-    font-size: 26px;
-    font-weight: 900;
-    color: #0f172a;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-/* SECTION 2: 8 LOT NUMBERS PER A4 PAGE (2 cols x 4 rows) */
-/* ==========================================================================
-   FIXED SECTION 2: LOT NUMBERS (STRICT 2x4 GRID - ZERO OVERFLOW)
-   ========================================================================== */
-
-/* Parent containers centered inside scroller */
-#llItemsPrintContainer, 
-#llLotsPrintContainer {
-    display: inline-flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    min-width: 100% !important;
-    width: max-content !important; /* Expands to fit 170mm without bleeding parent */
-    box-sizing: border-box !important;
-    margin: 0 auto !important;
-    padding: 0 10px !important;
-}
-
-/* 6. Preview A4 Sheet Container */
-.ll-page {
-    width: 170mm !important;
-    min-width: 170mm !important;
-    max-width: 170mm !important;
-    height: 257mm !important;
-    min-height: 257mm !important;
-    max-height: 257mm !important;
-    margin: 0 auto 24px auto !important;
-    background: #ffffff !important;
-    box-sizing: border-box !important;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12) !important;
-    display: block !important;
-    overflow: hidden !important;
-    position: relative !important;
-    flex-shrink: 0 !important;
-}
-
-/* Strict 2-column by 4-row grid bounded strictly by parent height */
-.ll-lots-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
-    height: 100% !important;
-    width: 100% !important;
-    max-width: 170mm !important;
-    max-height: 257mm !important;
-    box-sizing: border-box !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Individual cell strictly bounded to 1/2 width and 1/4 height */
-.ll-lot-label {
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;   /* CRITICAL: stops text from pushing width */
-    min-height: 0 !important;  /* stops content from pushing height */
-    box-sizing: border-box !important;
-    border: 1.5px dashed #475569 !important;
-    padding: 6px 10px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    text-align: center !important;
-    position: relative !important;
-    background: #ffffff !important;
-    overflow: hidden !important; /* guarantees zero spill */
-}
-
-/* Proportional Lot Number font */
-.ll-lot-number {
-    font-size: 40px !important;
-    font-weight: 900 !important;
-    color: #0f172a !important;
-    line-height: 1 !important;
-    margin: auto 0 !important;
-}
-
-/* Wrapped small metadata text */
-.ll-lot-meta {
-    font-size: 10px !important;
-    font-weight: 700 !important;
-    color: #64748b !important;
-    text-transform: uppercase !important;
-    line-height: 1.25 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-    white-space: normal !important;
-}
-
-.ll-lot-meta b {
-    color: #1e293b !important;
-    font-size: 10.5px !important;
-    display: block !important;
-    margin-top: 2px !important;
-}
-
-/* Scissors cutting indicators */
-.ll-cut-guide {
-    position: absolute;
-    font-size: 10px;
-    color: #94a3b8;
-}
-.ll-cut-top { top: 2px; right: 4px; }
-
-/* STRICT A4 PORTRAIT PRINTING (2CM MARGINS ALL SIDES) */
-@media print {
-    @page {
-        size: 210mm 297mm portrait !important;
-        margin: 20mm !important; /* Exactly 2.00 cm on all four sides */
-    }
-
-    body.printing-ll-portrait {
-        background: #ffffff !important;
-        margin: 0 !important;
-        padding: 0 !important;
+       10. L&L (LABELS & LOTS) RESPONSIVE PREVIEW & PRINT FIX
+       ========================================================================== */
+    #LLTab {
         width: 100% !important;
-        height: 100% !important;
-    }
-
-    body.printing-ll-portrait #appScreen,
-    body.printing-ll-portrait .app-header,
-    body.printing-ll-portrait .tab,
-    body.printing-ll-portrait .no-print,
-    body.printing-ll-portrait .ll-toolbar,
-    body.printing-ll-portrait .ll-mobile-hint {
-        display: none !important;
-    }
-
-    body.printing-ll-portrait #llPrintModal.active-print,
-    body.printing-ll-portrait #llPrintModal.active-print * {
-        visibility: visible !important;
-    }
-
-    body.printing-ll-portrait #llPrintModal.active-print {
-        display: block !important;
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* Page container takes exactly 100% of printable height and width */
-    body.printing-ll-portrait #llPrintModal.active-print .ll-page {
-        width: 100% !important;
-        height: 100% !important;
-        min-height: 100% !important;
-        max-height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        box-shadow: none !important;
-        page-break-after: always !important;
-        break-after: page !important;
-        overflow: hidden !important;
-        box-sizing: border-box !important;
-    }
-
-    body.printing-ll-portrait #llPrintModal.active-print .ll-page:last-child {
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-    }
-
-    /* 2 Columns x 4 Rows filling 100% of the printable canvas */
-    body.printing-ll-portrait #llPrintModal.active-print .ll-lots-grid {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
-        width: 100% !important;
-        height: 100% !important;
         max-width: 100% !important;
-        max-height: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    #llItemsPrintSection,
+    #llLotsPrintSection {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+
+    .ll-toolbar {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 12px 16px !important;
+        background: rgba(255, 255, 255, 0.85) !important;
+        border-radius: 12px !important;
+        border: 1px solid var(--glass-border) !important;
+    }
+
+    .ll-toolbar > div {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        max-width: 100% !important;
+    }
+
+    .ll-toolbar select {
+        max-width: 100% !important;
+        font-size: 12px !important;
+    }
+
+    .ll-mobile-hint {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        font-size: 11.5px !important;
+        font-weight: 700 !important;
+        color: #1e3a8a !important;
+        background: #e0e7ff !important;
+        border: 1px solid #bfdbfe !important;
+        padding: 5px 14px !important;
+        border-radius: 20px !important;
+        margin-bottom: 12px !important;
+    }
+
+    .ll-scroll-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 16px 0 !important;
+        background: rgba(226, 232, 240, 0.5) !important;
+        border-radius: 12px !important;
+        border: 1px solid var(--glass-border) !important;
+        display: block !important;
+        box-sizing: border-box !important;
+        text-align: center !important;
+    }
+
+    .ll-scroll-wrapper::-webkit-scrollbar { height: 8px !important; }
+    .ll-scroll-wrapper::-webkit-scrollbar-track { background: rgba(226, 232, 240, 0.8) !important; border-radius: 6px !important; }
+    .ll-scroll-wrapper::-webkit-scrollbar-thumb { background: #94a3b8 !important; border-radius: 6px !important; }
+
+    #llItemsPrintContainer, 
+    #llLotsPrintContainer {
+        display: inline-flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        min-width: 100% !important;
+        width: max-content !important;
+        box-sizing: border-box !important;
+        margin: 0 auto !important;
+        padding: 0 10px !important;
+    }
+
+    .ll-page {
+        width: 170mm !important;
+        min-width: 170mm !important;
+        max-width: 170mm !important;
+        height: 252mm !important;
+        min-height: 252mm !important;
+        max-height: 252mm !important;
+        margin: 0 auto 24px auto !important;
+        background: #ffffff !important;
+        box-sizing: border-box !important;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12) !important;
+        display: block !important;
+        overflow: hidden !important;
+        position: relative !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Section 1: Participating Items (1 Column x 4 Rows) */
+    .ll-items-grid {
+        display: grid !important;
+        grid-template-rows: repeat(4, 25%) !important;
+        height: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .ll-item-label {
+        width: 100% !important;
+        height: 100% !important;
+        box-sizing: border-box !important;
+        border: 1.5px dashed #475569 !important;
+        padding: 8px 14px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        text-align: center !important;
+        position: relative !important;
+        background: #ffffff !important;
+        overflow: hidden !important;
+    }
+
+    .ll-item-subhead {
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        color: #64748b !important;
+        letter-spacing: 1px !important;
+        margin-bottom: 2px !important;
+        line-height: 1.2 !important;
+    }
+
+    .ll-item-festname {
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        color: #1e3a8a !important;
+        margin-bottom: 6px !important;
+        line-height: 1.2 !important;
+    }
+
+    .ll-item-mainhead {
+        font-size: 24px !important;
+        font-weight: 900 !important;
+        color: #0f172a !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.8px !important;
+        line-height: 1.2 !important;
+    }
+
+    /* Section 2: Lot Numbers (Strict 2 Columns x 4 Rows = 50% Width x 25% Height) */
+    .ll-lots-grid {
+        display: grid !important;
+        grid-template-columns: 50% 50% !important;
+        grid-template-rows: 25% 25% 25% 25% !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 170mm !important;
+        max-height: 252mm !important;
         box-sizing: border-box !important;
         margin: 0 !important;
         padding: 0 !important;
         overflow: hidden !important;
     }
 
-    body.printing-ll-portrait #llPrintModal.active-print .ll-lot-label {
+    .ll-lot-label {
         width: 100% !important;
         height: 100% !important;
         min-width: 0 !important;
         min-height: 0 !important;
         box-sizing: border-box !important;
         border: 1.5px dashed #475569 !important;
-        padding: 4px !important;
+        padding: 4px 6px !important;
+        position: relative !important;
+        background: #ffffff !important;
         overflow: hidden !important;
-    }
-
-    body.printing-ll-portrait #llPrintModal.active-print .ll-lot-card {
-        width: 100% !important;
-        height: 100% !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: space-evenly !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    .ll-lot-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
         align-items: center !important;
         text-align: center !important;
-        box-sizing: border-box !important;
         overflow: hidden !important;
+        gap: 2px !important;
     }
 
-    body.printing-ll-portrait #llPrintModal.active-print .ll-lot-number {
-        font-size: 36px !important;
+    .ll-lot-number {
+        font-size: 32px !important;
         font-weight: 900 !important;
-        margin: 2px 0 !important;
+        color: #0f172a !important;
         line-height: 1 !important;
-    }
-
-    body.printing-ll-portrait #llPrintModal.active-print .ll-lot-meta {
-        font-size: 9px !important;
-        max-width: 95% !important;
-        line-height: 1.2 !important;
-    }
-}
-    .ll-print-area {
+        margin: 2px 0 !important;
         display: block !important;
-        visibility: visible !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    .ll-print-area * {
-        visibility: visible !important;
-    }
-    .ll-page {
-        width: 170mm !important;
-        height: 257mm !important;
-        min-height: 257mm !important;
-        margin: 0 auto !important;
-        box-shadow: none !important;
-        page-break-after: always !important;
-        break-after: page !important;
-    }
-    .ll-page:last-child {
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-    }
-}
-
-/* ==========================================================================
-   L&L (LABELS & LOTS) - STRICT A4 (2.00 CM MARGINS & 100% CONTAINER FIT)
-   ========================================================================== */
-
-/* 1. Preview Container on Screen (A4: 210mm - 40mm = 170mm, 297mm - 40mm = 257mm) */
-.ll-page {
-    width: 170mm !important;
-    min-width: 170mm !important;
-    max-width: 170mm !important;
-    height: 257mm !important;
-    min-height: 257mm !important;
-    max-height: 257mm !important;
-    margin: 0 auto 24px auto !important;
-    background: #ffffff !important;
-    box-sizing: border-box !important;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.12) !important;
-    display: block !important;
-    overflow: hidden !important;
-    position: relative !important;
-}
-
-/* 2. Section 1: Participating Items (1 Column x 4 Rows = 100% Filled) */
-.ll-items-grid {
-    display: grid !important;
-    grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
-    height: 100% !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.ll-item-label {
-    width: 100% !important;
-    height: 100% !important;
-    box-sizing: border-box !important;
-    border: 1.5px dashed #475569 !important;
-    padding: 8px 14px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    align-items: center !important;
-    text-align: center !important;
-    position: relative !important;
-    background: #ffffff !important;
-    overflow: hidden !important;
-}
-
-/* 3. Section 2: Lot Numbers (2 Columns x 4 Rows = Strict 8 Grid Cells) */
-.ll-lots-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
-    width: 100% !important;
-    height: 100% !important;
-    box-sizing: border-box !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-}
-
-.ll-lot-label {
-    width: 100% !important;
-    height: 100% !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    box-sizing: border-box !important;
-    border: 1.5px dashed #475569 !important;
-    padding: 4px !important;
-    position: relative !important;
-    background: #ffffff !important;
-    overflow: hidden !important;
-}
-
-/* Strict Inner Card Container prevents any spillover */
-.ll-lot-card {
-    width: 100% !important;
-    height: 100% !important;
-    box-sizing: border-box !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-evenly !important;
-    align-items: center !important;
-    text-align: center !important;
-    overflow: hidden !important;
-}
-
-.ll-lot-number {
-    font-size: 34px !important;
-    font-weight: 900 !important;
-    color: #0f172a !important;
-    line-height: 1 !important;
-    margin: 2px 0 !important;
-}
-
-.ll-lot-meta {
-    font-size: 9px !important;
-    font-weight: 700 !important;
-    color: #64748b !important;
-    text-transform: uppercase !important;
-    line-height: 1.2 !important;
-    width: 100% !important;
-    max-width: 95% !important;
-    word-break: break-word !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: normal !important;
-}
-
-.ll-lot-meta b {
-    color: #1e3a8a !important;
-    font-size: 10.5px !important;
-    display: block !important;
-    margin-top: 2px !important;
-}
-
-/* 4. Strict Print Engine (100% Height/Width with 2.00 cm Page Margins) */
-@media print {
-    @page {
-        size: 210mm 297mm portrait;
-        margin: 20mm !important; /* 2.00 cm on all 4 sides */
     }
 
-    body.printing-ll-portrait {
-        background: #ffffff !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    body.printing-ll-portrait #appScreen,
-    body.printing-ll-portrait .app-header,
-    body.printing-ll-portrait .tab,
-    body.printing-ll-portrait .no-print {
-        display: none !important;
-    }
-
-    body.printing-ll-portrait #llPrintModal.active-print,
-    body.printing-ll-portrait #llPrintModal.active-print * {
-        visibility: visible !important;
-    }
-
-    body.printing-ll-portrait #llPrintModal.active-print {
-        display: block !important;
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
+    .ll-lot-meta {
+        font-size: 8.5px !important;
+        font-weight: 700 !important;
+        color: #64748b !important;
+        text-transform: uppercase !important;
+        line-height: 1.15 !important;
         width: 100% !important;
-        height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    body.printing-ll-portrait #llPrintModal.active-print .ll-page {
-        width: 100% !important;
-        height: 100% !important;
         max-width: 100% !important;
-        max-height: 100% !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+        white-space: normal !important;
         margin: 0 !important;
         padding: 0 !important;
-        box-shadow: none !important;
-        page-break-after: always !important;
-        break-after: page !important;
-        overflow: hidden !important;
     }
 
-    body.printing-ll-portrait #llPrintModal.active-print .ll-page:last-child {
-        page-break-after: avoid !important;
-        break-after: avoid !important;
+    .ll-lot-meta b {
+        color: #1e3a8a !important;
+        font-size: 10px !important;
+        font-weight: 800 !important;
+        display: block !important;
+        margin-top: 2px !important;
+        line-height: 1.15 !important;
+        word-break: break-word !important;
     }
-}
 
-/* Collapsible Header Styles for Results Tab */
-.category-main-head.collapsible-header,
-.item-sub-head.collapsible-header {
-    cursor: pointer !important;
-    user-select: none;
-    transition: background 0.15s ease, transform 0.1s ease;
-}
-.category-main-head.collapsible-header:hover {
-    filter: brightness(1.15);
-}
-.item-sub-head.collapsible-header:hover {
-    filter: brightness(0.96);
-}
-.collapse-chevron {
-    transition: transform 0.25s ease;
-    font-size: 13px;
-    margin-left: 10px;
-}
-.collapse-chevron.collapsed {
-    transform: rotate(-90deg);
-}
-
-/* Reusable Custom Searchable Select Dropdown */
-.custom-search-select-wrapper {
-    position: relative;
-    width: 100%;
-    z-index: 60;
-}
-.custom-search-dropdown-list {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    max-height: 220px;
-    overflow-y: auto;
-    background: #ffffff !important;
-    border: 1.5px solid #2563eb;
-    border-radius: 0 0 10px 10px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25) !important;
-    z-index: 999999 !important;
-    display: none;
-}
-.custom-search-dropdown-item {
-    padding: 10px 14px;
-    cursor: pointer;
-    font-size: 13px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #1e293b;
-    text-align: left;
-}
-.custom-search-dropdown-item:hover, 
-.custom-search-dropdown-item.active {
-    background: #eff6ff;
-    color: #2563eb;
-    font-weight: 700;
-}
-
-/* Tab 2: Collapsible Headers & Chevron Styling */
-.rec-classification-head.collapsible-header,
-.rec-fest-head.collapsible-header {
-    cursor: pointer !important;
-    user-select: none;
-    transition: filter 0.15s ease;
-}
-
-.rec-classification-head.collapsible-header:hover {
-    filter: brightness(1.15);
-}
-
-.rec-fest-head.collapsible-header:hover {
-    filter: brightness(0.96);
-}
-
-.collapse-chevron {
-    transition: transform 0.25s ease;
-    font-size: 13px;
-}
-
-.collapse-chevron.collapsed {
-    transform: rotate(-90deg);
-}
-
-
-/* Instant Popup Animation & Backdrop for Edit Modal */
-@keyframes popIn {
-    0% {
-        opacity: 0;
-        transform: scale(0.92) translateY(-10px);
+    .ll-cut-guide {
+        position: absolute !important;
+        top: 2px !important;
+        right: 4px !important;
+        font-size: 8px !important;
+        color: #94a3b8 !important;
+        pointer-events: none !important;
     }
-    100% {
-        opacity: 1;
-        transform: scale(1) translateY(0);
+
+    /* Print Output (Strict A4 Portrait with 2cm Margins) */
+    #llPrintModal {
+        display: none;
     }
-}
 
-#itemModalOverlay {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    background: rgba(15, 23, 42, 0.6) !important;
-    backdrop-filter: blur(6px) !important;
-    -webkit-backdrop-filter: blur(6px) !important;
-    z-index: 99999 !important;
-    display: none;
-    justify-content: center;
-    align-items: center;
-    padding: 16px;
-    box-sizing: border-box;
-}
+    @media print {
+        body.printing-ll-portrait {
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
 
-#itemFormBox {
-    background: #ffffff !important;
-    border-radius: 16px !important;
-    width: 100% !important;
-    max-width: 560px !important;
-    padding: 24px 26px !important;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25) !important;
-    border: 1px solid var(--glass-border) !important;
-    animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-}
+        body.printing-ll-portrait #appScreen,
+        body.printing-ll-portrait .app-header,
+        body.printing-ll-portrait .tab,
+        body.printing-ll-portrait .no-print,
+        body.printing-ll-portrait .ll-toolbar,
+        body.printing-ll-portrait .ll-mobile-hint {
+            display: none !important;
+        }
 
+        body.printing-ll-portrait #llPrintModal.active-print,
+        body.printing-ll-portrait #llPrintModal.active-print * {
+            visibility: visible !important;
+        }
+
+        body.printing-ll-portrait #llPrintModal.active-print {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+
+        body.printing-ll-portrait #llPrintModal.active-print .ll-page {
+            width: 170mm !important;
+            height: 252mm !important;
+            max-height: 252mm !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            overflow: hidden !important;
+        }
+
+        body.printing-ll-portrait #llPrintModal.active-print .ll-page:last-child {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }
+    }
+
+    /* ==========================================================================
+       11. COLLAPSIBLE HEADERS, DROPDOWNS & MODAL ANIMATIONS
+       ========================================================================== */
+    .category-main-head.collapsible-header,
+    .item-sub-head.collapsible-header,
+    .rec-classification-head.collapsible-header,
+    .rec-fest-head.collapsible-header {
+        cursor: pointer !important;
+        user-select: none;
+        transition: background 0.15s ease, filter 0.15s ease, transform 0.1s ease;
+    }
+    .category-main-head.collapsible-header:hover,
+    .rec-classification-head.collapsible-header:hover {
+        filter: brightness(1.15);
+    }
+    .item-sub-head.collapsible-header:hover,
+    .rec-fest-head.collapsible-header:hover {
+        filter: brightness(0.96);
+    }
+
+    .collapse-chevron {
+        transition: transform 0.25s ease;
+        font-size: 13px;
+        margin-left: 10px;
+    }
+    .collapse-chevron.collapsed {
+        transform: rotate(-90deg);
+    }
+
+    .custom-search-select-wrapper {
+        position: relative;
+        width: 100%;
+        z-index: 60;
+    }
+    .custom-search-dropdown-list {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 220px;
+        overflow-y: auto;
+        background: #ffffff !important;
+        border: 1.5px solid #2563eb;
+        border-radius: 0 0 10px 10px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25) !important;
+        z-index: 999999 !important;
+        display: none;
+    }
+    .custom-search-dropdown-item {
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: 13px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #1e293b;
+        text-align: left;
+    }
+    .custom-search-dropdown-item:hover, 
+    .custom-search-dropdown-item.active {
+        background: #eff6ff;
+        color: #2563eb;
+        font-weight: 700;
+    }
+
+    @keyframes popIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.92) translateY(-10px);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    #itemModalOverlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: rgba(15, 23, 42, 0.6) !important;
+        backdrop-filter: blur(6px) !important;
+        -webkit-backdrop-filter: blur(6px) !important;
+        z-index: 99999 !important;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+    }
+
+    #itemFormBox {
+        background: #ffffff !important;
+        border-radius: 16px !important;
+        width: 100% !important;
+        max-width: 560px !important;
+        padding: 24px 26px !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25) !important;
+        border: 1px solid var(--glass-border) !important;
+        animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    }
 </style>
 </head>
 <body>
@@ -2600,47 +2407,44 @@
 
             <!-- FEST CONVENOR MANAGEMENT -->
             <div class="section">
-                <h4 class="section-title"><i class="fas fa-user-tie"></i> Fest Convenor Management</h4>
-                <p style="font-size:13px; color:#666; margin-bottom:15px;">Set, modify, or delete the designated Convenor for each fest. This name will automatically appear on the Certificate of Merit.</p>
-                <div class="row">
-    <!-- 1. SELECT FEST TO MODIFY -->
-    <div class="form-group">
-        <label>Select Fest</label>
-        <select id="convenorFestSelect" onchange="onConvenorFestSelectChange(this.value)">
-            <option value="">-- Choose Fest to Edit --</option>
-        </select>
-    </div>
+                <h4 class="section-title"><i class="fas fa-user-tie"></i> Fest & Convenor Management</h4>
+                <p style="font-size:13px; color:#666; margin-bottom:15px;">
+                    Select a festival to modify its <b>Fest Name</b> and/or assigned <b>Convenor Name</b>. Renaming a fest automatically updates all associated items, registrations, and certificates.
+                </p>
+                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="form-group">
+                        <label>Select Festival</label>
+                        <select id="convenorFestSelect" onchange="onConvenorFestSelectChange()">
+                            <option value="">-- Choose Fest --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fest Name (Editable)</label>
+                        <input type="text" id="convenorFestNameInput" placeholder="e.g. General Kalothswom">
+                    </div>
+                    <div class="form-group">
+                        <label>Convenor Name</label>
+                        <input type="text" id="convenorNameInput" placeholder="e.g. THEJAS R">
+                    </div>
+                    <div class="form-group" style="justify-content: flex-end;">
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" id="btnCancelFestEdit" class="action-btn secondary" style="display:none;" onclick="cancelFestEdit()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button type="button" id="btnSaveFestConvenor" class="action-btn success" onclick="saveFestAndConvenor()">
+                                <i class="fas fa-save"></i> Save / Update
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- 2. EDITABLE FEST NAME -->
-    <div class="form-group">
-        <label>Fest Name (Editable)</label>
-        <input type="text" id="convenorFestNameInput" placeholder="e.g. General Kalothswom">
-    </div>
-
-    <!-- 3. ASSIGNED CONVENOR NAME -->
-    <div class="form-group">
-        <label>Convenor Name</label>
-        <input type="text" id="convenorNameInput" placeholder="e.g. THEJAS R">
-    </div>
-</div>
-
-<!-- ACTION BUTTONS -->
-<div style="display:flex; justify-content:flex-end; gap:10px; margin-top:6px; margin-bottom:15px;">
-    <button type="button" id="btnCancelConvenorEdit" class="action-btn secondary" style="display:none;" onclick="cancelConvenorEdit()">
-        <i class="fas fa-times"></i> Cancel
-    </button>
-    <button type="button" id="btnSaveConvenor" class="action-btn success" onclick="saveFestConvenor()">
-        <i class="fas fa-save"></i> Save Fest & Convenor
-    </button>
-</div>
-
-                <div class="table-responsive">
+                <div class="table-responsive" style="margin-top:10px;">
                     <table>
                         <thead>
                             <tr>
                                 <th>Fest Name</th>
                                 <th>Assigned Convenor</th>
-                                <th>Actions</th>
+                                <th style="width:130px; text-align:center;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="convenorsTbody"></tbody>
@@ -4303,9 +4107,20 @@ function toggleRecSection(headerEl) {
     function printModalDocument(modalId) {
         const modal = document.getElementById(modalId);
         if (!modal) return;
+
+        // Apply dedicated printing class to body
+        const isCert = (modalId === 'certModal');
+        if (isCert) {
+            document.body.classList.add('printing-cert');
+        }
+
         modal.classList.add('active-print');
         window.print();
         modal.classList.remove('active-print');
+
+        if (isCert) {
+            document.body.classList.remove('printing-cert');
+        }
     }
 
 // --- RESTRUCTURED JUDGE ALLOTMENT CONTROLLER ---
@@ -6436,8 +6251,12 @@ const qualifiedList = dbPublishedResults.filter(r =>
         renderAdminItemsTable();
     }
 
+    // --- FEST & CONVENOR MANAGEMENT LOGIC ---
+    let selectedEditingFestOldName = null;
+
     function renderConvenorsTable() {
         const tbody = document.getElementById('convenorsTbody');
+        if (!tbody) return;
         tbody.innerHTML = "";
         const convenors = dbSettings.FestConvenors || {};
 
@@ -6447,12 +6266,12 @@ const qualifiedList = dbPublishedResults.filter(r =>
                 <tr>
                     <td><b>${f}</b></td>
                     <td>${conv}</td>
-                    <td>
-                        <div style="display:flex; gap:6px;">
-                            <button class="action-btn" style="padding:4px 8px; font-size:12px;" onclick="editFestConvenor('${f}')" title="Modify Convenor">
-                                <i class="fas fa-edit"></i>
+                    <td style="text-align:center;">
+                        <div style="display:inline-flex; gap:6px;">
+                            <button class="action-btn" style="padding:4px 8px; font-size:12px;" onclick="editFestConvenor('${f}')" title="Modify Fest & Convenor">
+                                <i class="fas fa-edit"></i> Edit
                             </button>
-                            <button class="action-btn danger" style="padding:4px 8px; font-size:12px;" onclick="deleteFestConvenor('${f}')" title="Reset/Delete Convenor">
+                            <button class="action-btn danger" style="padding:4px 8px; font-size:12px;" onclick="deleteFestConvenor('${f}')" title="Reset Convenor">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -6462,164 +6281,153 @@ const qualifiedList = dbPublishedResults.filter(r =>
         });
     }
 
-    let editingOldFestName = null;
-
-// Populate inputs when selecting a fest from dropdown
-function onConvenorFestSelectChange(festName) {
-    if (!festName) {
-        cancelConvenorEdit();
-        return;
-    }
-    editingOldFestName = festName;
-    document.getElementById('convenorFestNameInput').value = festName;
-    document.getElementById('convenorNameInput').value = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) || "THEJAS R";
-    document.getElementById('btnCancelConvenorEdit').style.display = 'inline-flex';
-    document.getElementById('btnSaveConvenor').innerHTML = `<i class="fas fa-save"></i> Update Fest & Convenor`;
-}
-
-// Populate inputs when clicking the edit button in the table
-function editFestConvenor(festName) {
-    const sel = document.getElementById('convenorFestSelect');
-    if (sel) sel.value = festName;
-    onConvenorFestSelectChange(festName);
-    const input = document.getElementById('convenorFestNameInput');
-    if (input) {
-        input.focus();
-        input.select();
-    }
-}
-
-// Reset form
-function cancelConvenorEdit() {
-    editingOldFestName = null;
-    document.getElementById('convenorFestSelect').value = "";
-    document.getElementById('convenorFestNameInput').value = "";
-    document.getElementById('convenorNameInput').value = "";
-    document.getElementById('btnCancelConvenorEdit').style.display = 'none';
-    document.getElementById('btnSaveConvenor').innerHTML = `<i class="fas fa-save"></i> Save Fest & Convenor`;
-}
-
-// Save or Rename Fest & Convenor (Syncs Globally)
-async function saveFestConvenor() {
-    const oldFest = editingOldFestName || document.getElementById('convenorFestSelect').value;
-    const newFest = document.getElementById('convenorFestNameInput').value.trim();
-    const newConv = document.getElementById('convenorNameInput').value.trim();
-
-    if (!newFest || !newConv) {
-        return showCustomDialog("Incomplete Details", "Both Fest Name and Convenor Name are required.", "warning");
+    function onConvenorFestSelectChange() {
+        const selected = document.getElementById('convenorFestSelect').value;
+        if (!selected) {
+            cancelFestEdit();
+            return;
+        }
+        editFestConvenor(selected);
     }
 
-    if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
 
-    showLoader(oldFest && oldFest !== newFest ? "Renaming Fest Globally..." : "Saving Convenor...");
+    function editFestConvenor(festName) {
+        selectedEditingFestOldName = festName;
+        document.getElementById('convenorFestSelect').value = festName;
+        document.getElementById('convenorFestNameInput').value = festName;
+        document.getElementById('convenorNameInput').value = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) || "THEJAS R";
 
-    try {
-        const batch = db.batch();
+        document.getElementById('btnCancelFestEdit').style.display = 'inline-flex';
+        document.getElementById('btnSaveFestConvenor').innerHTML = `<i class="fas fa-save"></i> Update Fest & Convenor`;
+        
+        // Scroll to form smoothly
+        document.getElementById('convenorFestNameInput').focus();
+    }
 
-        // 1. IF FEST NAME WAS RENAMED: Update all linked database records
-        if (oldFest && oldFest !== newFest) {
-            // Update fests collection
-            const festsSnap = await db.collection("fests").where("Fest Name", "==", oldFest).get();
-            festsSnap.docs.forEach(doc => {
-                batch.update(doc.ref, { 
-                    "Fest Name": newFest, 
-                    "Festival Category": getFestivalCategory(newFest) 
-                });
-            });
+    function cancelFestEdit() {
+        selectedEditingFestOldName = null;
+        document.getElementById('convenorFestSelect').value = "";
+        document.getElementById('convenorFestNameInput').value = "";
+        document.getElementById('convenorNameInput').value = "";
+        document.getElementById('btnCancelFestEdit').style.display = 'none';
+        document.getElementById('btnSaveFestConvenor').innerHTML = `<i class="fas fa-save"></i> Save / Update`;
+    }
 
-            // Update registrations collection
-            const regSnap = await db.collection("registrations").where("Name of Fest", "==", oldFest).get();
-            regSnap.docs.forEach(doc => {
-                batch.update(doc.ref, { "Name of Fest": newFest });
-            });
+    async function saveFestAndConvenor() {
+        const oldFest = selectedEditingFestOldName || document.getElementById('convenorFestSelect').value;
+        const newFest = document.getElementById('convenorFestNameInput').value.trim();
+        const convenor = document.getElementById('convenorNameInput').value.trim();
 
-            // Update published results collection
-            const pubSnap = await db.collection("published_results").where("festName", "==", oldFest).get();
-            pubSnap.docs.forEach(doc => {
-                batch.update(doc.ref, { "festName": newFest, "festCategory": getFestivalCategory(newFest) });
-            });
-
-            // Update judge scores collection
-            const scoresSnap = await db.collection("judge_scores").where("festName", "==", oldFest).get();
-            scoresSnap.docs.forEach(doc => {
-                batch.update(doc.ref, { "festName": newFest, "festCategory": getFestivalCategory(newFest) });
-            });
-
-            // Update allFestNames array in memory
-            const fIndex = allFestNames.indexOf(oldFest);
-            if (fIndex !== -1) {
-                allFestNames[fIndex] = newFest;
-                allFestNames.sort((a, b) => a.localeCompare(b));
-            }
-
-            // Update classificationMap in memory
-            Object.keys(classificationMap).forEach(cat => {
-                const cIndex = classificationMap[cat].indexOf(oldFest);
-                if (cIndex !== -1) {
-                    classificationMap[cat][cIndex] = newFest;
-                    classificationMap[cat].sort((a, b) => a.localeCompare(b));
-                }
-            });
-
-            // Update local in-memory datasets
-            dbFests.forEach(f => {
-                if (f["Fest Name"] === oldFest) {
-                    f["Fest Name"] = newFest;
-                    f["Festival Category"] = getFestivalCategory(newFest);
-                }
-            });
-            dbRegistrations.forEach(r => {
-                if (r["Name of Fest"] === oldFest) r["Name of Fest"] = newFest;
-            });
-            dbPublishedResults.forEach(p => {
-                if (p.festName === oldFest) {
-                    p.festName = newFest;
-                    p.festCategory = getFestivalCategory(newFest);
-                }
-            });
-            dbJudgeScores.forEach(s => {
-                if (s.festName === oldFest) {
-                    s.festName = newFest;
-                    s.festCategory = getFestivalCategory(newFest);
-                }
-            });
-
-            // Migrate enabled status in settings
-            dbSettings["Fest_" + newFest] = dbSettings["Fest_" + oldFest] || "ENABLED";
-            delete dbSettings["Fest_" + oldFest];
-            delete dbSettings.FestConvenors[oldFest];
+        if (!newFest || !convenor) {
+            return showCustomDialog("Incomplete Details", "Please provide both the Fest Name and Convenor Name.", "warning");
         }
 
-        // 2. Set Convenor Name
-        dbSettings.FestConvenors[newFest] = newConv;
+        // SCENARIO 1: FEST NAME HAS BEEN RENAMED
+        if (oldFest && newFest !== oldFest) {
+            showCustomDialog(
+                "Rename Festival?",
+                `⚠️ Are you sure you want to rename <b>"${oldFest}"</b> to <b>"${newFest}"</b>?<br><br>` +
+                `This will automatically update all items, participant registrations, marks, and published results linked to this festival.`,
+                "warning",
+                async () => {
+                    showLoader(`Renaming festival from "${oldFest}" to "${newFest}"...`);
+                    try {
+                        const batch = db.batch();
 
-        // Save updated settings to Firestore
-        batch.set(db.collection("config").doc("settings"), dbSettings, { merge: true });
-        await batch.commit();
+                        // 1. Update items in 'fests' collection
+                        const festItemsSnap = await db.collection("fests").where("Fest Name", "==", oldFest).get();
+                        festItemsSnap.docs.forEach(doc => {
+                            batch.update(doc.ref, { "Fest Name": newFest });
+                        });
 
-        hideLoader();
-        cancelConvenorEdit();
+                        // 2. Update registrations in 'registrations' collection
+                        const regSnap = await db.collection("registrations").where("Name of Fest", "==", oldFest).get();
+                        regSnap.docs.forEach(doc => {
+                            batch.update(doc.ref, { "Name of Fest": newFest });
+                        });
 
-        // Refresh UI components across tabs
-        renderAdminPanel();
-        applySettingsToUI();
-        if (typeof renderTables === "function") renderTables();
-        if (typeof renderResults === "function") renderResults();
+                        // 3. Update scores in 'judge_scores' collection
+                        const scoreSnap = await db.collection("judge_scores").where("festName", "==", oldFest).get();
+                        scoreSnap.docs.forEach(doc => {
+                            batch.update(doc.ref, { "festName": newFest });
+                        });
 
-        showCustomDialog("Updated", `Fest: <b>${newFest}</b> & Convenor: <b>${newConv}</b> updated successfully.`, "success");
-    } catch (err) {
-        hideLoader();
-        console.error(err);
-        showCustomDialog("Error", "Could not update Fest and Convenor.", "danger");
+                        // 4. Update results in 'published_results' collection
+                        const pubSnap = await db.collection("published_results").where("festName", "==", oldFest).get();
+                        pubSnap.docs.forEach(doc => {
+                            batch.update(doc.ref, { "festName": newFest });
+                        });
+
+                        // 5. Update settings (Convenor & Fest Enabled State)
+                        if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
+                        dbSettings.FestConvenors[newFest] = convenor;
+                        delete dbSettings.FestConvenors[oldFest];
+
+                        dbSettings["Fest_" + newFest] = dbSettings["Fest_" + oldFest] || "ENABLED";
+                        delete dbSettings["Fest_" + oldFest];
+
+                        batch.set(db.collection("config").doc("settings"), dbSettings, { merge: true });
+
+                        // Commit all database changes
+                        await batch.commit();
+
+                        // 6. Update local memory arrays
+                        dbFests.forEach(f => { if (f["Fest Name"] === oldFest) f["Fest Name"] = newFest; });
+                        dbRegistrations.forEach(r => { if (r["Name of Fest"] === oldFest) r["Name of Fest"] = newFest; });
+                        dbJudgeScores.forEach(s => { if (s.festName === oldFest) s.festName = newFest; });
+                        dbPublishedResults.forEach(p => { if (p.festName === oldFest) p.festName = newFest; });
+
+                        // Update allFestNames global array
+                        const fIdx = allFestNames.indexOf(oldFest);
+                        if (fIdx !== -1) allFestNames[fIdx] = newFest;
+                        allFestNames.sort((a, b) => a.localeCompare(b));
+
+                        // Update classificationMap
+                        Object.keys(classificationMap).forEach(cat => {
+                            const cIdx = classificationMap[cat].indexOf(oldFest);
+                            if (cIdx !== -1) classificationMap[cat][cIdx] = newFest;
+                            classificationMap[cat].sort((a, b) => a.localeCompare(b));
+                        });
+
+                        hideLoader();
+                        cancelFestEdit();
+                        renderAdminPanel();
+                        applySettingsToUI();
+                        showCustomDialog("Renamed Successfully", `Festival successfully renamed to <b>${newFest}</b> with Convenor <b>${convenor}</b>.`, "success");
+                    } catch (e) {
+                        hideLoader();
+                        console.error("Fest rename error:", e);
+                        showCustomDialog("Error", "Could not complete festival rename.", "danger");
+                    }
+                },
+                true
+            );
+            return;
+        }
+
+        // SCENARIO 2: ONLY CONVENOR UPDATED (FEST NAME UNCHANGED)
+        const targetFest = oldFest || newFest;
+        showLoader("Saving Convenor Details...");
+        try {
+            if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
+            dbSettings.FestConvenors[targetFest] = convenor;
+
+            await db.collection("config").doc("settings").set(dbSettings, { merge: true });
+            hideLoader();
+            cancelFestEdit();
+            renderConvenorsTable();
+            showCustomDialog("Saved", `Convenor for <b>${targetFest}</b> updated to <b>${convenor}</b>.`, "success");
+        } catch (e) {
+            hideLoader();
+            console.error(e);
+            showCustomDialog("Error", "Could not save convenor details.", "danger");
+        }
     }
-}
-
-    
 
     async function deleteFestConvenor(festName) {
         showCustomDialog(
             "Reset Convenor?", 
-            `Reset Convenor for <b>${festName}</b> back to default?`, 
+            `Reset Convenor for <b>${festName}</b> back to default (THEJAS R)?`, 
             "warning", 
             async () => {
                 if (dbSettings.FestConvenors) {
@@ -6627,8 +6435,9 @@ async function saveFestConvenor() {
                     showLoader("Resetting Convenor...");
                     await db.collection("config").doc("settings").set(dbSettings, { merge: true });
                     hideLoader();
+                    cancelFestEdit();
                     renderConvenorsTable();
-                    showCustomDialog("Reset Done", `Convenor for ${festName} reset.`, "success");
+                    showCustomDialog("Reset Done", `Convenor for <b>${festName}</b> reset to default.`, "success");
                 }
             }, 
             true
