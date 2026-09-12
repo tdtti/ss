@@ -2524,10 +2524,10 @@
                     <div class="form-group">
                         <label>Festival Classification</label>
                         <select id="convenorFestCategorySelect">
-                            <option value="Kalothswom">KALOTHSWO </option>
-                            <option value="Fest">SASTHROTHSWOM </option>
-                            <option value="Sports">SPORTS </option>
-                        </select>
+    <option value="Kalothswom">KALOTHSWOM</option>
+    <option value="Fest">SASTHROTHSWOM</option>
+    <option value="Sports">SPORTS</option>
+</select>
                     </div>
                     <div class="form-group">
                         <label>Convenor Name</label>
@@ -3441,15 +3441,15 @@
         clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             sessionSeconds++;
-            document.getElementById('sessionTimer').innerText = new Date(sessionSeconds * 10).toISOString().slice(11, 19);
-        }, 150);
+            document.getElementById('sessionTimer').innerText = new Date(sessionSeconds * 1000).toISOString().slice(11, 19);
+        }, 1000); // Corrected: 1000ms
     }
 
     async function logout() {
         clearInterval(timerInterval);
         clearInterval(judgeHeartbeatTimer);
 
-        // Instantly turn off green LED on Admin screen before logging out
+        // Turn off LED on Admin screen instantly
         if (currentUser && currentUser.role === "Judge") {
             showLoader("Signing out...");
             await clearJudgePresence();
@@ -4875,7 +4875,9 @@ function autoGenerateContinuousLots(randomize = false) {
         renderCriteriaChips(false);
     }
 
-    // --- ADMIN DASHBOARD RENDERER FOR JUDGEMENT TAB ---
+    // ==========================================================================
+    // ADMIN LIVE JUDGEMENT DASHBOARD RENDERER
+    // ==========================================================================
     function renderAdminJudgementDashboard() {
         const completedContainer = document.getElementById('adminCompletedCards');
         const activeContainer = document.getElementById('adminActiveCards');
@@ -4883,16 +4885,21 @@ function autoGenerateContinuousLots(randomize = false) {
 
         if (!completedContainer || !activeContainer || !inactiveContainer) return;
 
+        // Clear containers before rendering
         completedContainer.innerHTML = "";
         activeContainer.innerHTML = "";
         inactiveContainer.innerHTML = "";
 
-        const items = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
+        // Only include fests that are enabled
+        const items = dbFests.filter(f => isFestEnabled(f["Fest Name"])).sort((a, b) => 
+            String(a["Item"] || "").localeCompare(String(b["Item"] || ""))
+        );
         
         const completedItems = [];
         const activeItems = [];
         const inactiveItems = [];
 
+        // Categorize into the 3 status buckets
         items.forEach(f => {
             const status = getItemLiveStatus(f["Item Code"]);
             if (status === "COMPLETED") completedItems.push(f);
@@ -4900,33 +4907,36 @@ function autoGenerateContinuousLots(randomize = false) {
             else inactiveItems.push(f);
         });
 
-        // Update count badges
-        document.getElementById('badgeCompletedCount').innerText = `${completedItems.length} Items`;
-        document.getElementById('badgeActiveCount').innerText = `${activeItems.length} Items`;
-        document.getElementById('badgeInactiveCount').innerText = `${inactiveItems.length} Items`;
+        // Update count badges on section headers
+        const badgeCompleted = document.getElementById('badgeCompletedCount');
+        const badgeActive = document.getElementById('badgeActiveCount');
+        const badgeInactive = document.getElementById('badgeInactiveCount');
 
+        if (badgeCompleted) badgeCompleted.innerText = `${completedItems.length} Items`;
+        if (badgeActive) badgeActive.innerText = `${activeItems.length} Items`;
+        if (badgeInactive) badgeInactive.innerText = `${inactiveItems.length} Items`;
+
+        // Card Generator (Strictly Blind Judging - No student names or admission numbers)
         const createCardHTML = (f, statusClass) => {
             const code = f["Item Code"];
             const festName = f["Fest Name"];
             const itemName = f["Item"];
             const category = f["Category"] || "General";
 
-            // CHECK IF ANY JUDGE CURRENTLY HAS THIS ITEM SELECTED
+            // 1. Check Live Judge Presence with 15-Second Inactivity Cutoff
             const livePresence = dbSettings.LiveJudgeActiveItems && dbSettings.LiveJudgeActiveItems[code];
-            
-            // INACTIVITY CHECK: Ping must be fresher than 60 seconds
             const now = Date.now();
             const lastPing = livePresence ? (livePresence.lastPing || livePresence.selectedAt || 0) : 0;
-            const isFresh = livePresence && (now - lastPing < 60000); // 60s inactivity threshold
+            const isFresh = livePresence && (now - lastPing < 15000); // 15-second freshness threshold
             
             const isBeingEvaluated = !!livePresence && isFresh;
             const activeJudgeName = livePresence ? (livePresence.judgeName || "Judge") : "";
 
-            // Registrations for this item
+            // 2. Count Total Participants Registered
             const regs = dbRegistrations.filter(r => r["Item Code"] === code || r["Item"] === itemName);
             const totalParticipants = regs.length;
 
-            // Competing units
+            // 3. Count Competing Units & Allotted Lots
             const unitMap = new Map();
             regs.forEach(r => {
                 const isGroup = parseInt(r["No of Participants"] || 1) > 1;
@@ -4937,7 +4947,7 @@ function autoGenerateContinuousLots(randomize = false) {
             });
             const totalLots = Array.from(unitMap.values()).filter(l => l && String(l).trim() !== "").length;
 
-            // Attendance & Scores from judge evaluations
+            // 4. Calculate Attendance (Present & Absent) from Evaluations
             const scores = dbJudgeScores.filter(s => s.itemCode === code);
             const evaluatedUnitMap = new Map();
             scores.forEach(s => {
@@ -4953,7 +4963,7 @@ function autoGenerateContinuousLots(randomize = false) {
                 else presentCount++;
             });
 
-            // Assigned Judges
+            // 5. Assigned Judges
             const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(code)).map(j => j.name);
             const judgeListText = assignedJudges.length > 0 ? assignedJudges.join(", ") : "No judge allotted";
 
@@ -4963,12 +4973,12 @@ function autoGenerateContinuousLots(randomize = false) {
                         <div class="admin-judge-card-header">
                             <span class="fest-badge">${festName}</span>
                             
-                            <!-- GREEN LED NEAR THE ITEM NUMBER -->
+                            <!-- PULSING GREEN LED NEAR ITEM CODE (ACTIVE ONLY WHEN JUDGE IS PRESENT) -->
                             <div style="display:flex; align-items:center; gap:6px;">
                                 ${isBeingEvaluated ? `
-                                    <span class="eval-active-pill" title="Judge ${activeJudgeName} is currently evaluating this item!">
+                                    <span class="eval-active-pill" data-itemcode="${code}" title="Judge ${activeJudgeName} is currently evaluating this item!">
                                         <span class="led-indicator led-green-pulse"></span>
-                                        <span style="font-size:10px; font-weight:800; color:#059669;"></span>
+                                        <span style="font-size:10px; font-weight:800; color:#059669;">EVALUATING</span>
                                     </span>
                                 ` : ''}
                                 <span style="font-size:11px; font-weight:700; color:var(--text-muted); font-family:monospace;">[${code}]</span>
@@ -4978,7 +4988,7 @@ function autoGenerateContinuousLots(randomize = false) {
                         <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Category: <b>${category}</b></div>
                     </div>
 
-                    <!-- BLIND STATS GRID -->
+                    <!-- BLIND STATS GRID (COMPLIANT WITH BLIND JUDGING) -->
                     <div class="admin-stats-grid">
                         <div class="admin-stat-item">
                             <span class="admin-stat-label">Participants:</span>
@@ -5005,7 +5015,7 @@ function autoGenerateContinuousLots(randomize = false) {
             `;
         };
 
-        // Render Active Cards
+        // Render Active Programmes (Green LED Section)
         if (activeItems.length === 0) {
             activeContainer.innerHTML = '<p style="color:#94a3b8; font-size:13px; padding:10px; width:100%;">No programmes currently active.</p>';
         } else {
@@ -5014,7 +5024,7 @@ function autoGenerateContinuousLots(randomize = false) {
             });
         }
 
-        // Render Completed Cards
+        // Render Completed Programmes (Orange LED Section)
         if (completedItems.length === 0) {
             completedContainer.innerHTML = '<p style="color:#94a3b8; font-size:13px; padding:10px; width:100%;">No completed items yet.</p>';
         } else {
@@ -5023,7 +5033,7 @@ function autoGenerateContinuousLots(randomize = false) {
             });
         }
 
-        // Render Inactive Cards
+        // Render Inactive Programmes (Grey LED Section)
         if (inactiveItems.length === 0) {
             inactiveContainer.innerHTML = '<p style="color:#94a3b8; font-size:13px; padding:10px; width:100%;">No inactive items.</p>';
         } else {
@@ -5113,11 +5123,11 @@ async function broadcastJudgeActiveSelection(newCode, prevCode) {
 }
 
 // ==========================================================================
-    // JUDGE PRESENCE, HEARTBEAT & INACTIVITY HANDLERS
+    // INSTANT JUDGE PRESENCE, MINIMIZE & INACTIVITY HANDLERS
     // ==========================================================================
     let judgeHeartbeatTimer = null;
 
-    // Clears all active presence for this judge in Firestore
+    // 1. Instantly clears judge presence from Firestore
     async function clearJudgePresence() {
         if (!currentUser || currentUser.role !== "Judge") return;
         clearInterval(judgeHeartbeatTimer);
@@ -5125,7 +5135,7 @@ async function broadcastJudgeActiveSelection(newCode, prevCode) {
             const updates = {};
             const liveMap = dbSettings.LiveJudgeActiveItems || {};
             
-            // Find all items attributed to this judge
+            // Wipe any active item tied to this judge
             Object.keys(liveMap).forEach(code => {
                 const item = liveMap[code];
                 if (item && (item.judgePhone === currentUser.id || item.judgeName === currentUser.name)) {
@@ -5133,9 +5143,9 @@ async function broadcastJudgeActiveSelection(newCode, prevCode) {
                 }
             });
 
-            const currentSelectedCode = document.getElementById('judgeActiveItemsSelect')?.value;
-            if (currentSelectedCode && !updates[`LiveJudgeActiveItems.${currentSelectedCode}`]) {
-                updates[`LiveJudgeActiveItems.${currentSelectedCode}`] = firebase.firestore.FieldValue.delete();
+            const currentCode = document.getElementById('judgeActiveItemsSelect')?.value;
+            if (currentCode && !updates[`LiveJudgeActiveItems.${currentCode}`]) {
+                updates[`LiveJudgeActiveItems.${currentCode}`] = firebase.firestore.FieldValue.delete();
             }
 
             if (Object.keys(updates).length > 0) {
@@ -5146,12 +5156,14 @@ async function broadcastJudgeActiveSelection(newCode, prevCode) {
         }
     }
 
-    // Sends a heartbeat ping every 25s while the judge is actively on the page
+    // 2. Heartbeat: Pings every 8 seconds while the tab is active
     function startJudgeHeartbeat(code) {
         clearInterval(judgeHeartbeatTimer);
         if (!code || !currentUser || currentUser.role !== "Judge") return;
 
         judgeHeartbeatTimer = setInterval(async () => {
+            // Do not send heartbeat if minimized or screen is locked
+            if (document.hidden) return;
             try {
                 await db.collection("config").doc("settings").update({
                     [`LiveJudgeActiveItems.${code}.lastPing`]: Date.now()
@@ -5159,15 +5171,45 @@ async function broadcastJudgeActiveSelection(newCode, prevCode) {
             } catch (e) {
                 clearInterval(judgeHeartbeatTimer);
             }
-        }, 150); // 25 seconds
+        }, 8000); // 8-second interval
     }
 
-    // Clear presence immediately if judge closes the browser tab or window
+    // 3. INSTANT MINIMIZE / APP SWITCH / PHONE SCREEN LOCK DETECTION
+    document.addEventListener('visibilitychange', async () => {
+        if (!currentUser || currentUser.role !== "Judge") return;
+        const code = document.getElementById('judgeActiveItemsSelect')?.value;
+
+        if (document.hidden) {
+            // Judge minimized browser, switched tabs, or locked phone -> TURN OFF LED INSTANTLY
+            await clearJudgePresence();
+        } else if (code) {
+            // Judge returned to the portal -> TURN LED BACK ON INSTANTLY
+            broadcastJudgeActiveSelection(code, null);
+            startJudgeHeartbeat(code);
+        }
+    });
+
+    // 4. INSTANT BROWSER TAB CLOSE / NAVIGATION
+    window.addEventListener('pagehide', () => {
+        if (currentUser && currentUser.role === "Judge") {
+            clearJudgePresence();
+        }
+    });
+
     window.addEventListener('beforeunload', () => {
         if (currentUser && currentUser.role === "Judge") {
             clearJudgePresence();
         }
     });
+
+    // 5. INSTANT NETWORK DISCONNECTION (OFFLINE)
+    window.addEventListener('offline', () => {
+        if (currentUser && currentUser.role === "Judge") {
+            clearInterval(judgeHeartbeatTimer);
+        }
+    });
+
+    
 
 
 // Global click listener to automatically close dropdowns when clicking outside
@@ -7878,14 +7920,32 @@ document.addEventListener('keydown', (e) => {
     }
 
 
-    // Auto-check for judge inactivity on Admin dashboard every 15s
+    // Auto-check for judge inactivity / disconnection every 3 seconds (Memory-only check)
     setInterval(() => {
         const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
         const jTab = document.getElementById('JudgementTab');
+        
         if (isAdmin && jTab && jTab.style.display === 'block') {
-            renderAdminJudgementDashboard();
+            const now = Date.now();
+            const liveMap = dbSettings.LiveJudgeActiveItems || {};
+            let hasExpired = false;
+
+            // Check if any displayed evaluating LED has exceeded the 15-second cutoff
+            document.querySelectorAll('.eval-active-pill').forEach(pill => {
+                const code = pill.dataset.itemcode;
+                const presence = liveMap[code];
+                const lastPing = presence ? (presence.lastPing || presence.selectedAt || 0) : 0;
+                if (!presence || (now - lastPing >= 15000)) {
+                    hasExpired = true;
+                }
+            });
+
+            // Only re-render if an active LED needs to be turned off
+            if (hasExpired) {
+                renderAdminJudgementDashboard();
+            }
         }
-    }, 150);
+    }, 3000); // 3 seconds
 
 
 </script>
