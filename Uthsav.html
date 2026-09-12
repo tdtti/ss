@@ -3244,6 +3244,7 @@
             }
 
             // 8. APPLY SECURITY POLICIES & DISMISS LOADER
+            setupRealtimeJudgementSync();
             applySecurityProtection();
             hideLoader();
 
@@ -3385,6 +3386,7 @@
 
         // Apply all button and tab permissions dynamically
         applySettingsToUI();
+        setupRealtimeJudgementSync(); 
 
         // Determine default landing tab based on role and active permissions
         if (isJudge) {
@@ -7618,6 +7620,58 @@ document.addEventListener('keydown', (e) => {
     modal.innerHTML = '';
     if (tempStyle) tempStyle.remove();
 }
+
+// ==========================================================================
+    // REAL-TIME LIVE SYNC BETWEEN JUDGES & ADMIN
+    // ==========================================================================
+    let isRealtimeSyncActive = false;
+
+    function setupRealtimeJudgementSync() {
+        if (isRealtimeSyncActive) return;
+        isRealtimeSyncActive = true;
+
+        // 1. Live Listener for Program State (Active / Completed transitions)
+        db.collection("config").doc("settings").onSnapshot(doc => {
+            if (!doc.exists) return;
+            const liveSettings = doc.data();
+            dbSettings = { ...dbSettings, ...liveSettings };
+
+            const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
+            if (isAdmin) {
+                // If Admin is currently on Judgement Tab, re-render cards live
+                const judgeTab = document.getElementById('JudgementTab');
+                if (judgeTab && judgeTab.style.display === 'block') {
+                    renderAdminJudgementDashboard();
+                }
+                // If Admin is on Event Management Tab, update status live
+                const emTab = document.getElementById('EventMgmtTab');
+                if (emTab && emTab.style.display === 'block') {
+                    loadEventMgmtItemDetails();
+                }
+            }
+        }, err => console.error("Realtime settings sync error:", err));
+
+        // 2. Live Listener for Judge Scores & Lock Events
+        db.collection("judge_scores").onSnapshot(snapshot => {
+            // Update in-memory scores array live
+            dbJudgeScores = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+
+            const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
+            if (isAdmin) {
+                // Instantly update Judgement Dashboard with latest Present/Absent & Completed stats
+                const judgeTab = document.getElementById('JudgementTab');
+                if (judgeTab && judgeTab.style.display === 'block') {
+                    renderAdminJudgementDashboard();
+                }
+                // Also update Tabulation Tab in real-time if open
+                const tabTab = document.getElementById('TabulationTab');
+                if (tabTab && tabTab.style.display === 'block') {
+                    renderTabulation();
+                }
+            }
+        }, err => console.error("Realtime judge scores sync error:", err));
+    }
+
 </script>
 </body>
 </html>
