@@ -2345,7 +2345,7 @@
                 <p style="font-size:13px; color:#666; margin-bottom:15px;">
                     Select a festival to modify its <b>Fest Name</b> and/or assigned <b>Convenor Name</b>. Renaming a fest automatically updates all associated items, registrations, and certificates.
                 </p>
-                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                     <div class="form-group">
                         <label>Select Festival</label>
                         <select id="convenorFestSelect" onchange="onConvenorFestSelectChange()">
@@ -2354,7 +2354,16 @@
                     </div>
                     <div class="form-group">
                         <label>Fest Name (Editable)</label>
-                        <input type="text" id="convenorFestNameInput" placeholder="e.g. General Kalothswom">
+                        <input type="text" id="convenorFestNameInput" placeholder="Enter Fest Name">
+                    </div>
+                    <!-- EXPLICIT CLASSIFICATION SELECTOR -->
+                    <div class="form-group">
+                        <label>Festival Classification</label>
+                        <select id="convenorFestCategorySelect">
+                            <option value="Kalothswom">KALOTHSWO </option>
+                            <option value="Fest">SASTHROTHSWOM </option>
+                            <option value="Sports">SPORTS </option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Convenor Name</label>
@@ -2810,11 +2819,27 @@
     let editingUserId = null;
     let editingStudentDocId = null;
 
+    // Enhanced Category Lookup: Checks classificationMap first so renamed fests keep their category
     function getFestivalCategory(festName) {
-        if (!festName) return "Fest";
-        const f = String(festName || "").trim().toLowerCase();
-        if (f.includes("kalothswom")) return "Kalothswom";
-        if (f.includes("sports")) return "Sports";
+        if (!festName) return "Kalothswom";
+        const clean = String(festName).trim().toLowerCase();
+
+        // 1. Check dynamic classificationMap directly
+        if (typeof classificationMap === 'object') {
+            for (const cat of Object.keys(classificationMap)) {
+                if (classificationMap[cat].some(f => String(f).trim().toLowerCase() === clean)) {
+                    return cat;
+                }
+            }
+        }
+
+        // 2. Intelligent keyword fallback
+        if (clean.includes("kalothswom") || clean.includes("kalolsav") || clean.includes("kalotsav") || clean.includes("sargotsav")) {
+            return "Kalothswom";
+        }
+        if (clean.includes("sports") || clean.includes("athletic") || clean.includes("meet")) {
+            return "Sports";
+        }
         return "Fest";
     }
 
@@ -6293,12 +6318,16 @@ const qualifiedList = dbPublishedResults.filter(r =>
         selectedEditingFestOldName = festName;
         document.getElementById('convenorFestSelect').value = festName;
         document.getElementById('convenorFestNameInput').value = festName;
+        
+        // Detect and set the correct Classification (Kalothswom, Fest, or Sports)
+        const currentCat = getFestivalCategory(festName);
+        const catSelect = document.getElementById('convenorFestCategorySelect');
+        if (catSelect) catSelect.value = currentCat;
+
         document.getElementById('convenorNameInput').value = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) || "THEJAS R";
 
         document.getElementById('btnCancelFestEdit').style.display = 'inline-flex';
         document.getElementById('btnSaveFestConvenor').innerHTML = `<i class="fas fa-save"></i> Update Fest & Convenor`;
-        
-        // Scroll to form smoothly
         document.getElementById('convenorFestNameInput').focus();
     }
 
@@ -6307,6 +6336,8 @@ const qualifiedList = dbPublishedResults.filter(r =>
         document.getElementById('convenorFestSelect').value = "";
         document.getElementById('convenorFestNameInput').value = "";
         document.getElementById('convenorNameInput').value = "";
+        const catSelect = document.getElementById('convenorFestCategorySelect');
+        if (catSelect) catSelect.value = "Kalothswom";
         document.getElementById('btnCancelFestEdit').style.display = 'none';
         document.getElementById('btnSaveFestConvenor').innerHTML = `<i class="fas fa-save"></i> Save / Update`;
     }
@@ -6315,30 +6346,40 @@ const qualifiedList = dbPublishedResults.filter(r =>
         const oldFest = selectedEditingFestOldName || document.getElementById('convenorFestSelect').value;
         const newFest = document.getElementById('convenorFestNameInput').value.trim();
         const convenor = document.getElementById('convenorNameInput').value.trim();
+        const targetCategory = document.getElementById('convenorFestCategorySelect')?.value || getFestivalCategory(oldFest) || "Kalothswom";
 
         if (!newFest || !convenor) {
             return showCustomDialog("Incomplete Details", "Please provide both the Fest Name and Convenor Name.", "warning");
         }
 
-        // SCENARIO 1: FESTIVAL RENAMED / REPLACED
-        if (oldFest && newFest !== oldFest) {
+        const isRenamed = oldFest && (newFest !== oldFest);
+        const oldCategory = oldFest ? getFestivalCategory(oldFest) : targetCategory;
+        const isCategoryChanged = oldCategory !== targetCategory;
+
+        // SCENARIO 1: FESTIVAL RENAMED OR CATEGORY CHANGED (E.G. MOVED TO KALOTHSWOM)
+        if (isRenamed || isCategoryChanged) {
+            const promptTitle = isRenamed ? "Rename Festival?" : "Change Classification?";
+            const promptMsg = isRenamed 
+                ? `Update <b>"${oldFest}"</b> to <b>"${newFest}"</b> under <b>${targetCategory}</b>?<br><br>All registered items, marks, and certificates will be updated to <b>${targetCategory}</b>.`
+                : `Move festival <b>"${newFest}"</b> from <b>${oldCategory}</b> to <b>${targetCategory}</b> across all records?`;
+
             showCustomDialog(
-                "Rename Festival?",
-                `⚠️ Rename <b>"${oldFest}"</b> to <b>"${newFest}"</b>?<br><br>` +
-                `<b>"${oldFest}"</b> will be permanently hidden and replaced by <b>"${newFest}"</b> across all registrations, items, and certificates.`,
+                promptTitle,
+                promptMsg,
                 "warning",
                 async () => {
-                    showLoader(`Renaming "${oldFest}" to "${newFest}"...`);
+                    showLoader(`Updating festival records to ${targetCategory}...`);
                     try {
                         const batch = db.batch();
+                        const searchTarget = (oldFest || newFest).trim();
 
                         // 1. Update items in 'fests' collection
                         const festItemsSnap = await db.collection("fests").get();
                         festItemsSnap.docs.forEach(doc => {
-                            if (String(doc.data()["Fest Name"] || "").trim() === oldFest.trim()) {
+                            if (String(doc.data()["Fest Name"] || "").trim() === searchTarget) {
                                 batch.update(doc.ref, { 
                                     "Fest Name": newFest,
-                                    "Festival Category": getFestivalCategory(newFest)
+                                    "Festival Category": targetCategory
                                 });
                             }
                         });
@@ -6346,11 +6387,11 @@ const qualifiedList = dbPublishedResults.filter(r =>
                         // 2. Update registrations in 'registrations' collection
                         const regSnap = await db.collection("registrations").get();
                         regSnap.docs.forEach(doc => {
-                            if (String(doc.data()["Name of Fest"] || "").trim() === oldFest.trim()) {
+                            if (String(doc.data()["Name of Fest"] || "").trim() === searchTarget) {
                                 batch.update(doc.ref, { 
                                     "Name of Fest": newFest,
-                                    "Festival Classification": getFestivalCategory(newFest),
-                                    "Festival Category": getFestivalCategory(newFest)
+                                    "Festival Classification": targetCategory,
+                                    "Festival Category": targetCategory
                                 });
                             }
                         });
@@ -6358,10 +6399,10 @@ const qualifiedList = dbPublishedResults.filter(r =>
                         // 3. Update scores in 'judge_scores' collection
                         const scoreSnap = await db.collection("judge_scores").get();
                         scoreSnap.docs.forEach(doc => {
-                            if (String(doc.data().festName || "").trim() === oldFest.trim()) {
+                            if (String(doc.data().festName || "").trim() === searchTarget) {
                                 batch.update(doc.ref, { 
                                     festName: newFest,
-                                    festCategory: getFestivalCategory(newFest)
+                                    festCategory: targetCategory
                                 });
                             }
                         });
@@ -6369,85 +6410,83 @@ const qualifiedList = dbPublishedResults.filter(r =>
                         // 4. Update results in 'published_results' collection
                         const pubSnap = await db.collection("published_results").get();
                         pubSnap.docs.forEach(doc => {
-                            if (String(doc.data().festName || "").trim() === oldFest.trim()) {
+                            if (String(doc.data().festName || "").trim() === searchTarget) {
                                 batch.update(doc.ref, { 
                                     festName: newFest,
-                                    festCategory: getFestivalCategory(newFest)
+                                    festCategory: targetCategory
                                 });
                             }
                         });
 
-                        // 5. Track in HiddenFests so old name NEVER reappears
+                        // 5. Track in HiddenFests if renamed
                         if (!dbSettings.HiddenFests) dbSettings.HiddenFests = [];
-                        if (!dbSettings.HiddenFests.includes(oldFest)) {
-                            dbSettings.HiddenFests.push(oldFest);
+                        if (isRenamed) {
+                            if (!dbSettings.HiddenFests.includes(oldFest)) dbSettings.HiddenFests.push(oldFest);
                         }
-                        // If newFest was previously in HiddenFests, unhide it
                         dbSettings.HiddenFests = dbSettings.HiddenFests.filter(f => f !== newFest);
 
-                        // 6. Update allFestNames in memory (remove old, insert new)
+                        // 6. Update allFestNames in memory
                         allFestNames = allFestNames.filter(f => f !== oldFest);
                         if (!allFestNames.includes(newFest)) allFestNames.push(newFest);
                         allFestNames.sort((a, b) => a.localeCompare(b));
 
-                        // 7. Update classificationMap in memory
-                        const targetCategory = getFestivalCategory(newFest);
+                        // 7. Update classificationMap: remove from all other categories, place in targetCategory
                         Object.keys(classificationMap).forEach(cat => {
-                            classificationMap[cat] = classificationMap[cat].filter(f => f !== oldFest);
-                            if (cat === targetCategory && !classificationMap[cat].includes(newFest)) {
-                                classificationMap[cat].push(newFest);
-                            }
+                            classificationMap[cat] = classificationMap[cat].filter(f => f !== oldFest && f !== newFest);
+                        });
+                        if (!classificationMap[targetCategory]) classificationMap[targetCategory] = [];
+                        if (!classificationMap[targetCategory].includes(newFest)) {
+                            classificationMap[targetCategory].push(newFest);
+                        }
+                        Object.keys(classificationMap).forEach(cat => {
                             classificationMap[cat].sort((a, b) => a.localeCompare(b));
                         });
 
-                        // 8. Update convenors and enabled states
+                        // 8. Update convenors and settings
                         if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
                         dbSettings.FestConvenors[newFest] = convenor;
-                        delete dbSettings.FestConvenors[oldFest];
-
-                        dbSettings["Fest_" + newFest] = dbSettings["Fest_" + oldFest] || "ENABLED";
-                        delete dbSettings["Fest_" + oldFest];
+                        if (isRenamed) delete dbSettings.FestConvenors[oldFest];
 
                         dbSettings.AllFestNames = allFestNames;
                         dbSettings.ClassificationMap = classificationMap;
 
-                        // 9. Permanently delete old keys from Firestore document using FieldValue.delete()
                         const settingsUpdate = {
                             AllFestNames: allFestNames,
                             ClassificationMap: classificationMap,
                             HiddenFests: dbSettings.HiddenFests,
                             [`FestConvenors.${newFest}`]: convenor,
-                            [`FestConvenors.${oldFest}`]: firebase.firestore.FieldValue.delete(),
-                            [`Fest_${newFest}`]: "ENABLED",
-                            [`Fest_${oldFest}`]: firebase.firestore.FieldValue.delete()
+                            [`Fest_${newFest}`]: "ENABLED"
                         };
+                        if (isRenamed) {
+                            settingsUpdate[`FestConvenors.${oldFest}`] = firebase.firestore.FieldValue.delete();
+                            settingsUpdate[`Fest_${oldFest}`] = firebase.firestore.FieldValue.delete();
+                        }
 
                         batch.update(db.collection("config").doc("settings"), settingsUpdate);
 
-                        // Commit entire batch
                         await batch.commit();
 
-                        // 10. Synchronize local memory data
+                        // 9. Update local memory objects
                         dbFests.forEach(f => { 
-                            if (String(f["Fest Name"] || "").trim() === oldFest.trim()) {
+                            if (String(f["Fest Name"] || "").trim() === searchTarget) {
                                 f["Fest Name"] = newFest;
                                 f["Festival Category"] = targetCategory;
                             }
                         });
                         dbRegistrations.forEach(r => { 
-                            if (String(r["Name of Fest"] || "").trim() === oldFest.trim()) {
+                            if (String(r["Name of Fest"] || "").trim() === searchTarget) {
                                 r["Name of Fest"] = newFest;
                                 r["Festival Classification"] = targetCategory;
                             }
                         });
                         dbJudgeScores.forEach(s => { 
-                            if (String(s.festName || "").trim() === oldFest.trim()) {
+                            if (String(s.festName || "").trim() === searchTarget) {
                                 s.festName = newFest;
                                 s.festCategory = targetCategory;
                             }
                         });
                         dbPublishedResults.forEach(p => { 
-                            if (String(p.festName || "").trim() === oldFest.trim()) {
+                            if (String(p.festName || "").trim() === searchTarget) {
                                 p.festName = newFest;
                                 p.festCategory = targetCategory;
                             }
@@ -6458,11 +6497,11 @@ const qualifiedList = dbPublishedResults.filter(r =>
                         populateClassificationDropdown();
                         renderAdminPanel();
                         applySettingsToUI();
-                        showCustomDialog("Renamed Successfully", `<b>"${oldFest}"</b> has been removed and replaced by <b>"${newFest}"</b>.`, "success");
+                        showCustomDialog("Updated Successfully", `Festival <b>"${newFest}"</b> is now classified under <b>${targetCategory}</b>.`, "success");
                     } catch (e) {
                         hideLoader();
-                        console.error("Fest rename error:", e);
-                        showCustomDialog("Error", "Could not complete festival rename.", "danger");
+                        console.error("Fest update error:", e);
+                        showCustomDialog("Error", "Could not update festival classification.", "danger");
                     }
                 },
                 true
@@ -6470,7 +6509,7 @@ const qualifiedList = dbPublishedResults.filter(r =>
             return;
         }
 
-        // SCENARIO 2: ONLY CONVENOR UPDATED (NO NAME CHANGE)
+        // SCENARIO 2: ONLY CONVENOR NAME CHANGED
         const targetFest = oldFest || newFest;
         showLoader("Saving Convenor Details...");
         try {
