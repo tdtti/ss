@@ -2157,6 +2157,10 @@
                 <input type="hidden" id="judgeItemAllotSelect">
                 <div id="allotItemDropdownList" class="custom-search-dropdown-list"></div>
             </div>
+            <!-- MASTER JUDGE CHECKBOX -->
+            <label style="font-size:12px; font-weight:700; color:var(--purple); margin-top:6px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="checkbox" id="isMasterJudgeCheckbox"> Designate as Master Judge (Chief Judge) for this item
+            </label>
         </div>
     </div>
 
@@ -4468,27 +4472,53 @@ async function saveJudgeRecord() {
 
 async function performJudgeAllotment(existing, name, phone, itemCode) {
     showLoader("Allotting Judge...");
+    const isMaster = document.getElementById('isMasterJudgeCheckbox')?.checked || false;
     try {
         if (existing) {
             const assigned = existing.assignedItems || [];
             if (!assigned.includes(itemCode)) assigned.push(itemCode);
-            await db.collection("judges").doc(existing.id).update({ assignedItems: assigned, active: true, name: name });
+            
+            const masterList = existing.masterItems || [];
+            if (isMaster && !masterList.includes(itemCode)) masterList.push(itemCode);
+            if (!isMaster && masterList.includes(itemCode)) {
+                const idx = masterList.indexOf(itemCode);
+                masterList.splice(idx, 1);
+            }
+
+            await db.collection("judges").doc(existing.id).update({ 
+                assignedItems: assigned, 
+                masterItems: masterList,
+                active: true, 
+                name: name 
+            });
             existing.assignedItems = assigned;
+            existing.masterItems = masterList;
             existing.name = name;
         } else {
             const docRef = await db.collection("judges").add({
                 name,
                 phone,
                 assignedItems: [itemCode],
+                masterItems: isMaster ? [itemCode] : [],
                 active: true
             });
-            dbJudges.push({ id: docRef.id, name, phone, assignedItems: [itemCode], active: true });
+            dbJudges.push({ 
+                id: docRef.id, 
+                name, 
+                phone, 
+                assignedItems: [itemCode], 
+                masterItems: isMaster ? [itemCode] : [], 
+                active: true 
+            });
         }
         hideLoader();
         resetJudgeAllotmentForm();
+        if (document.getElementById('isMasterJudgeCheckbox')) {
+            document.getElementById('isMasterJudgeCheckbox').checked = false;
+        }
         initEventMgmtTab();
         renderUserTable();
-        showCustomDialog("Judge Allotted", `Judge <b>${name}</b> successfully allotted to <b>[${itemCode}]</b>.`, "success");
+        showCustomDialog("Judge Allotted", `Judge <b>${name}</b> allotted to <b>[${itemCode}]</b>${isMaster ? ' as <b>Master Judge</b>' : ''}.`, "success");
     } catch (e) {
         hideLoader();
         console.error(e);
@@ -4802,9 +4832,6 @@ function autoGenerateContinuousLots(randomize = false) {
 }
 
     
-
-    
-
     function renderJudgesList() {
         const tbody = document.getElementById('judgesTbody');
         tbody.innerHTML = "";
@@ -4813,16 +4840,46 @@ function autoGenerateContinuousLots(randomize = false) {
             return;
         }
         dbJudges.forEach(j => {
+            const itemsText = (j.assignedItems || []).map(code => {
+                const isMaster = (j.masterItems || []).includes(code);
+                return isMaster ? `<b>${code} <span style="color:#7c3aed; font-size:10px;">[MASTER]</span></b>` : code;
+            }).join(', ') || 'None';
+
             tbody.innerHTML += `
                 <tr>
                     <td><b>${j.name}</b></td>
                     <td>${j.phone}</td>
-                    <td>${(j.assignedItems || []).join(', ') || 'None'}</td>
+                    <td>${itemsText}</td>
                     <td><span style="color:${j.active ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${j.active ? 'Active' : 'Disabled'}</span></td>
-                    <td><button class="logout-btn" style="font-size:11px; padding:4px 8px;" onclick="deleteJudge('${j.id}')"><i class="fas fa-trash-alt"></i></button></td>
+                    <td style="text-align:center;"><button class="logout-btn" style="font-size:11px; padding:4px 8px;" onclick="deleteJudge('${j.id}')"><i class="fas fa-trash-alt"></i></button></td>
                 </tr>
             `;
         });
+    }
+
+    // Helper: Checks if this judge is the Master Judge for a given item
+    function isJudgeMasterForItem(judgeUser, itemCode) {
+        if (!judgeUser) return false;
+        const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(itemCode));
+        
+        // Single judge is automatically the sole master
+        if (assignedJudges.length <= 1) return true;
+
+        // Check if explicitly marked in masterItems array
+        const judgeDoc = dbJudges.find(j => 
+            (j.phone && String(j.phone).trim() === String(judgeUser.id).trim()) || 
+            (j.name && String(j.name).toLowerCase() === String(judgeUser.name).toLowerCase())
+        );
+        if (judgeDoc && (judgeDoc.masterItems || []).includes(itemCode)) {
+            return true;
+        }
+
+        // Fallback: If not explicitly set, the 1st allotted judge is Master Judge
+        const firstAllotted = assignedJudges[0];
+        return firstAllotted && (
+            String(firstAllotted.phone).trim() === String(judgeUser.id).trim() ||
+            String(firstAllotted.name).toLowerCase() === String(judgeUser.name).toLowerCase()
+        );
     }
 
     async function deleteJudge(id) {
@@ -5285,8 +5342,11 @@ document.addEventListener('click', (e) => {
         isAbsent: false
     };
 
+    // ==========================================================================
+    // SETUP JUDGE SHEET (WITH MASTER VS PANEL JUDGE ROLES)
+    // ==========================================================================
     function setupJudgeSheet() {
-        const code = document.getElementById('judgeActiveItemsSelect').value;
+        const code = document.getElementById('judgeActiveItemsSelect')?.value;
         const fMeta = document.getElementById('judgeItemFestMeta');
         const cMeta = document.getElementById('judgeItemCodeMeta');
         const lockBanner = document.getElementById('judgementLockedBanner');
@@ -5295,8 +5355,10 @@ document.addEventListener('click', (e) => {
         const finalizeSec = document.getElementById('finalizeJudgementSection');
         const confirmBtn = document.getElementById('btnConfirmCriteria');
         const confirmedBadge = document.getElementById('criteriaConfirmedBadge');
+        const finalizeBtn = document.getElementById('btnFinalizeJudgement');
+        const signingStatus = document.getElementById('judgeSigningStatus');
 
-        // Reset state
+        // 1. Reset current session state
         currentJudgeSession = {
             itemCode: code,
             criteriaConfirmed: false,
@@ -5307,21 +5369,22 @@ document.addEventListener('click', (e) => {
         };
 
         if (!code) {
-            fMeta.value = ""; cMeta.value = "";
-            lockBanner.style.display = 'none';
-            singleLotSec.style.display = 'none';
-            finalizeSec.style.display = 'none';
+            if (fMeta) fMeta.value = ""; 
+            if (cMeta) cMeta.value = "";
+            if (lockBanner) lockBanner.style.display = 'none';
+            if (singleLotSec) singleLotSec.style.display = 'none';
+            if (finalizeSec) finalizeSec.style.display = 'none';
             return;
         }
 
         const festObj = dbFests.find(f => f["Item Code"] === code);
-        fMeta.value = festObj ? `${getFestivalCategory(festObj["Fest Name"]).toUpperCase()} - ${festObj["Fest Name"]}` : "";
-        cMeta.value = code;
+        if (fMeta) fMeta.value = festObj ? `${getFestivalCategory(festObj["Fest Name"]).toUpperCase()} - ${festObj["Fest Name"]}` : "";
+        if (cMeta) cMeta.value = code;
 
         const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
         const isReadOnlyAdmin = isAdmin && (dbSettings.Admin_ReadOnly_Judgement !== "DISABLED");
 
-        // Load units for this item
+        // 2. Load and group competing units (Teams vs Individuals)
         const candidates = dbRegistrations.filter(r => (r["Item Code"] === code || r["Item"] === code));
         const units = [];
         candidates.forEach(c => {
@@ -5337,35 +5400,71 @@ document.addEventListener('click', (e) => {
         units.sort((a, b) => String(a["Lot Number"] || "999").localeCompare(String(b["Lot Number"] || "999"), undefined, { numeric: true }));
         currentJudgeSession.units = units;
 
-        // Check if previously locked in database
+        // 3. Check if scores have already been locked by this judge or finalized overall
         let existingScores = dbJudgeScores.filter(s => s.itemCode === code);
         if (!isAdmin) {
-            existingScores = existingScores.filter(s => String(s.judgePhone || "").trim() === String(currentUser.id || "").trim() || String(s.judgeName || "").trim().toLowerCase() === String(currentUser.name || "").trim().toLowerCase());
+            existingScores = existingScores.filter(s => 
+                String(s.judgePhone || "").trim() === String(currentUser.id || "").trim() || 
+                String(s.judgeName || "").trim().toLowerCase() === String(currentUser.name || "").trim().toLowerCase()
+            );
         }
         const isLocked = existingScores.length > 0 && existingScores[0].locked === true;
-        lockBanner.style.display = isLocked ? 'block' : 'none';
+        if (lockBanner) lockBanner.style.display = isLocked ? 'block' : 'none';
 
+        // 4. Configure Master Judge vs Panel Judge button and messaging
+        const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(code));
+        const isMultiJudge = assignedJudges.length > 1;
+        const isMaster = typeof isJudgeMasterForItem === "function" ? isJudgeMasterForItem(currentUser, code) : true;
+
+        if (finalizeBtn) {
+            finalizeBtn.disabled = isLocked || isReadOnlyAdmin;
+
+            if (isMultiJudge && !isMaster) {
+                // Panel Judge mode: Submits individual scorecard only
+                finalizeBtn.className = "action-btn success";
+                finalizeBtn.innerHTML = `<i class="fas fa-check-double"></i> Submit My Evaluation`;
+
+                if (signingStatus) {
+                    const masterDoc = assignedJudges.find(j => (j.masterItems || []).includes(code)) || assignedJudges[0];
+                    const masterName = masterDoc ? masterDoc.name : "Master Judge";
+                    signingStatus.innerHTML = isLocked
+                        ? `Your scorecard has been submitted. Waiting for Master Judge (<b>${masterName}</b>) to finalize.`
+                        : `Panel Judge Mode: All lots scored. Master Judge (<b>${masterName}</b>) will lock the final event.`;
+                }
+            } else {
+                // Master Judge or Sole Judge mode: Officially finalizes event
+                finalizeBtn.className = "action-btn danger";
+                finalizeBtn.innerHTML = `<i class="fas fa-lock"></i> Finalize & Lock Judgement${isMultiJudge ? ' (Master Judge)' : ''}`;
+
+                if (signingStatus) {
+                    if (isLocked) {
+                        signingStatus.innerText = `Finalized & Locked by ${existingScores[0].judgeName} at ${existingScores[0].timestamp}`;
+                    } else if (isReadOnlyAdmin) {
+                        signingStatus.innerText = "Admin View Mode (Scoring is disabled for admins)";
+                    } else {
+                        signingStatus.innerText = `All lots scored. Ready to officially finalize and lock.`;
+                    }
+                }
+            }
+        }
+
+        // 5. If already locked or admin view: Lock controls and hide entry inputs
         if (isLocked || isReadOnlyAdmin) {
-            // Already locked or admin read-only view
             currentJudgeSession.criteriaConfirmed = true;
             renderCriteriaChips(true);
-            confirmBtn.style.display = 'none';
-            confirmedBadge.style.display = 'block';
-            singleLotSec.style.display = 'none';
-            finalizeSec.style.display = isLocked ? 'block' : 'none';
-            document.getElementById('btnFinalizeJudgement').disabled = true;
-            document.getElementById('judgeSigningStatus').innerText = isLocked 
-                ? `Finalized & Locked by ${existingScores[0].judgeName} at ${existingScores[0].timestamp}` 
-                : "Admin View Mode (Scoring is disabled for admins)";
+            if (confirmBtn) confirmBtn.style.display = 'none';
+            if (confirmedBadge) confirmedBadge.style.display = 'block';
+            if (singleLotSec) singleLotSec.style.display = 'none';
+            if (finalizeSec) finalizeSec.style.display = isLocked ? 'block' : 'none';
             return;
         }
 
-        // Fresh / In-Progress Judgement
+        // 6. Fresh / In-Progress Judgement: Reset panels
         renderCriteriaChips(false);
-        confirmBtn.style.display = 'inline-flex';
-        confirmedBadge.style.display = 'none';
-        singleLotSec.style.display = 'none';
-        finalizeSec.style.display = 'none';
+        if (confirmBtn) confirmBtn.style.display = 'inline-flex';
+        if (confirmedBadge) confirmedBadge.style.display = 'none';
+        if (singleLotSec) singleLotSec.style.display = 'none';
+        if (finalizeSec) finalizeSec.style.display = 'none';
     }
 
     // CONFIRM CRITERIA HANDLER
@@ -5594,30 +5693,61 @@ document.addEventListener('click', (e) => {
         const itemName = festObj ? festObj["Item"] : cleanCode;
         const totalUnits = currentJudgeSession.units ? currentJudgeSession.units.length : 0;
 
-        // 1. Validation: Ensure all lots/candidates have been evaluated and saved
+        // 1. Validation: All lots must be scored
         if (currentJudgeSession.savedUnitIds.size < totalUnits) {
             return showCustomDialog(
                 "Evaluation Incomplete",
-                `Please evaluate and save all lots before locking.<br><br>` +
+                `Please evaluate and save all lots before submitting.<br><br>` +
                 `Scored: <b>${currentJudgeSession.savedUnitIds.size} of ${totalUnits} lots</b>.`,
                 "warning"
             );
         }
 
-        // 2. Confirmation prompt before locking
+        const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(cleanCode));
+        const isMultiJudge = assignedJudges.length > 1;
+        const isMaster = isJudgeMasterForItem(currentUser, cleanCode);
+
+        // 2. RESTRICTION: Master Judge cannot finalize until all other panel judges have submitted
+        if (isMultiJudge && isMaster) {
+            const otherJudges = assignedJudges.filter(j => 
+                String(j.phone).trim() !== String(currentUser.id).trim() && 
+                String(j.name).toLowerCase() !== String(currentUser.name).toLowerCase()
+            );
+
+            const pendingJudges = otherJudges.filter(j => 
+                !dbJudgeScores.some(s => s.itemCode === cleanCode && (
+                    String(s.judgePhone).trim() === String(j.phone).trim() ||
+                    String(s.judgeName).toLowerCase() === String(j.name).toLowerCase()
+                ))
+            );
+
+            if (pendingJudges.length > 0) {
+                return showCustomDialog(
+                    "Waiting for Panel Judges",
+                    `⚠️ As the <b>Master Judge</b>, you can only finalize after all panel judges have submitted their scores.<br><br>` +
+                    `<b>Pending Judges:</b><br>${pendingJudges.map(j => `&bull; ${j.name} (${j.phone})`).join("<br>")}`,
+                    "warning"
+                );
+            }
+        }
+
+        // 3. Confirmation Dialog
+        const promptTitle = (isMultiJudge && !isMaster) ? "Submit Your Evaluation?" : "Lock Judgement Submission?";
+        const promptMsg = (isMultiJudge && !isMaster)
+            ? `Submit your official scores for <b>${itemName} [${cleanCode}]</b>?<br><br>Your scores will be saved. The <b>Master Judge</b> will finalize the overall competition.`
+            : `Finalize and permanently lock scores for <b>${itemName} [${cleanCode}]</b>?<br><br>All panel judge scores will be locked and results made ready for tabulation.`;
+
         showCustomDialog(
-            "Lock Judgement Submission?",
-            `Finalize and permanently lock scores for <b>${itemName} [${cleanCode}]</b>?<br><br>` +
-            `All lot scores will be recorded and officially signed by <b>${currentUser.name} (${currentUser.id})</b>.<br><br>` +
-            `<i>Once locked, marks cannot be altered without administrator reset.</i>`,
+            promptTitle,
+            promptMsg,
             "warning",
             async () => {
-                showLoader("Submitting & Locking Judgement...");
+                showLoader("Submitting Scores...");
                 try {
                     const batch = db.batch();
                     const timestamp = new Date().toLocaleString('en-IN');
 
-                    // 3. Batch commit all individual lot scores
+                    // 4. Save current judge's scores
                     currentJudgeSession.units.forEach(unit => {
                         const scoreData = currentJudgeSession.unitScores[unit.id];
                         if (!scoreData) return;
@@ -5652,34 +5782,29 @@ document.addEventListener('click', (e) => {
                         dbJudgeScores.push({ ...scoreDoc, id: ref.id });
                     });
 
-                    // 4. Update System Settings (Move from Active to Completed)
-                    if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
-                    if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
+                    // 5. If MASTER JUDGE or SOLE JUDGE: Move to CompletedProgrammes & Lock overall
+                    if (!isMultiJudge || isMaster) {
+                        if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
+                        if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
 
-                    // Add to CompletedProgrammes list
-                    if (!dbSettings.CompletedProgrammes.some(c => String(c).trim().toLowerCase() === cleanCode.toLowerCase())) {
-                        dbSettings.CompletedProgrammes.push(cleanCode);
+                        if (!dbSettings.CompletedProgrammes.some(c => String(c).trim().toLowerCase() === cleanCode.toLowerCase())) {
+                            dbSettings.CompletedProgrammes.push(cleanCode);
+                        }
+
+                        dbSettings.ActiveProgrammes = dbSettings.ActiveProgrammes.filter(
+                            c => String(c).trim().toLowerCase() !== cleanCode.toLowerCase()
+                        );
+
+                        // Turn off live presence LED in settings
+                        const settingsDocRef = db.collection("config").doc("settings");
+                        batch.update(settingsDocRef, {
+                            CompletedProgrammes: dbSettings.CompletedProgrammes,
+                            ActiveProgrammes: dbSettings.ActiveProgrammes,
+                            [`LiveJudgeActiveItems.${cleanCode}`]: firebase.firestore.FieldValue.delete()
+                        });
                     }
 
-                    // Remove from ActiveProgrammes list
-                    dbSettings.ActiveProgrammes = dbSettings.ActiveProgrammes.filter(
-                        c => String(c).trim().toLowerCase() !== cleanCode.toLowerCase()
-                    );
-
-                    // Turn off the evaluating green LED in local memory
-                    if (dbSettings.LiveJudgeActiveItems && dbSettings.LiveJudgeActiveItems[cleanCode]) {
-                        delete dbSettings.LiveJudgeActiveItems[cleanCode];
-                    }
-
-                    // Update settings in Firestore & delete the active judge presence key
-                    const settingsDocRef = db.collection("config").doc("settings");
-                    batch.update(settingsDocRef, {
-                        CompletedProgrammes: dbSettings.CompletedProgrammes,
-                        ActiveProgrammes: dbSettings.ActiveProgrammes,
-                        [`LiveJudgeActiveItems.${cleanCode}`]: firebase.firestore.FieldValue.delete()
-                    });
-
-                    // 5. Audit Logging for Administrator visibility
+                    // 6. Audit Log
                     const logRef = db.collection("judge_logs").doc();
                     batch.set(logRef, {
                         timestamp: timestamp,
@@ -5688,20 +5813,21 @@ document.addEventListener('click', (e) => {
                         itemCode: cleanCode,
                         itemName: itemName,
                         criteriaCount: currentJudgeCriteria.length,
-                        status: "Judgement Locked & Completed"
+                        status: (isMultiJudge && !isMaster) ? "Panel Scorecard Submitted" : "Judgement Finalized & Locked (Master Judge)"
                     });
 
-                    // Execute batch commit
                     await batch.commit();
 
                     hideLoader();
                     showCustomDialog(
-                        "Judgement Completed",
-                        `All scores for <b>${itemName}</b> have been locked and submitted successfully.`,
+                        (isMultiJudge && !isMaster) ? "Evaluation Submitted" : "Judgement Completed",
+                        (isMultiJudge && !isMaster)
+                            ? `Your scorecard for <b>${itemName}</b> has been submitted successfully.`
+                            : `All scores for <b>${itemName}</b> have been locked and submitted by the Master Judge.`,
                         "success"
                     );
 
-                    // 6. INSTANTLY CLEAR SELECTION & EXCLUDE FROM JUDGE DROPDOWN
+                    // 7. Clear inputs and purge from judge dropdown
                     const searchInput = document.getElementById('judgeActiveItemsSearchInput');
                     const hiddenSelect = document.getElementById('judgeActiveItemsSelect');
                     const festMeta = document.getElementById('judgeItemFestMeta');
@@ -5712,16 +5838,13 @@ document.addEventListener('click', (e) => {
                     if (festMeta) festMeta.value = "";
                     if (codeMeta) codeMeta.value = "";
 
-                    // Hide scoring panels and finalized banners
                     document.getElementById('singleLotSection').style.display = 'none';
                     document.getElementById('finalizeJudgementSection').style.display = 'none';
                     document.getElementById('judgementLockedBanner').style.display = 'none';
 
-                    // Reset criteria lock state
                     document.getElementById('btnConfirmCriteria').style.display = 'inline-flex';
                     document.getElementById('criteriaConfirmedBadge').style.display = 'none';
 
-                    // Reset judge session memory
                     currentJudgeSession = {
                         itemCode: "",
                         criteriaConfirmed: false,
@@ -5731,19 +5854,15 @@ document.addEventListener('click', (e) => {
                         isAbsent: false
                     };
 
-                    // Re-render dropdown without the completed item
                     initJudgementTab();
 
                     if (typeof loadEventMgmtItemDetails === "function") {
                         loadEventMgmtItemDetails();
                     }
-                    if (typeof loadEventMgmtItemDetails === "function") {
-                        loadEventMgmtItemDetails();
-                    }
                 } catch (err) {
                     hideLoader();
-                    console.error("Judgement locking error:", err);
-                    showCustomDialog("Submission Error", "Could not complete judgement locking. Please try again.", "danger");
+                    console.error("Judgement submission error:", err);
+                    showCustomDialog("Submission Error", "Could not submit scores. Please try again.", "danger");
                 }
             },
             true
