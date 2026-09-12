@@ -2603,20 +2603,36 @@
                 <h4 class="section-title"><i class="fas fa-user-tie"></i> Fest Convenor Management</h4>
                 <p style="font-size:13px; color:#666; margin-bottom:15px;">Set, modify, or delete the designated Convenor for each fest. This name will automatically appear on the Certificate of Merit.</p>
                 <div class="row">
-                    <div class="form-group">
-                        <label>Select Fest</label>
-                        <select id="convenorFestSelect">
-                            <option value="">-- Choose Fest --</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Convenor Name</label>
-                        <input type="text" id="convenorNameInput" placeholder="e.g. THEJAS R">
-                    </div>
-                    <div class="form-group" style="justify-content: flex-end;">
-                        <button class="action-btn success" onclick="saveFestConvenor()"><i class="fas fa-check"></i> Save Convenor</button>
-                    </div>
-                </div>
+    <!-- 1. SELECT FEST TO MODIFY -->
+    <div class="form-group">
+        <label>Select Fest</label>
+        <select id="convenorFestSelect" onchange="onConvenorFestSelectChange(this.value)">
+            <option value="">-- Choose Fest to Edit --</option>
+        </select>
+    </div>
+
+    <!-- 2. EDITABLE FEST NAME -->
+    <div class="form-group">
+        <label>Fest Name (Editable)</label>
+        <input type="text" id="convenorFestNameInput" placeholder="e.g. General Kalothswom">
+    </div>
+
+    <!-- 3. ASSIGNED CONVENOR NAME -->
+    <div class="form-group">
+        <label>Convenor Name</label>
+        <input type="text" id="convenorNameInput" placeholder="e.g. THEJAS R">
+    </div>
+</div>
+
+<!-- ACTION BUTTONS -->
+<div style="display:flex; justify-content:flex-end; gap:10px; margin-top:6px; margin-bottom:15px;">
+    <button type="button" id="btnCancelConvenorEdit" class="action-btn secondary" style="display:none;" onclick="cancelConvenorEdit()">
+        <i class="fas fa-times"></i> Cancel
+    </button>
+    <button type="button" id="btnSaveConvenor" class="action-btn success" onclick="saveFestConvenor()">
+        <i class="fas fa-save"></i> Save Fest & Convenor
+    </button>
+</div>
 
                 <div class="table-responsive">
                     <table>
@@ -6446,26 +6462,159 @@ const qualifiedList = dbPublishedResults.filter(r =>
         });
     }
 
-    function editFestConvenor(festName) {
-        document.getElementById('convenorFestSelect').value = festName;
-        document.getElementById('convenorNameInput').value = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) || "THEJAS R";
+    let editingOldFestName = null;
+
+// Populate inputs when selecting a fest from dropdown
+function onConvenorFestSelectChange(festName) {
+    if (!festName) {
+        cancelConvenorEdit();
+        return;
+    }
+    editingOldFestName = festName;
+    document.getElementById('convenorFestNameInput').value = festName;
+    document.getElementById('convenorNameInput').value = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) || "THEJAS R";
+    document.getElementById('btnCancelConvenorEdit').style.display = 'inline-flex';
+    document.getElementById('btnSaveConvenor').innerHTML = `<i class="fas fa-save"></i> Update Fest & Convenor`;
+}
+
+// Populate inputs when clicking the edit button in the table
+function editFestConvenor(festName) {
+    const sel = document.getElementById('convenorFestSelect');
+    if (sel) sel.value = festName;
+    onConvenorFestSelectChange(festName);
+    const input = document.getElementById('convenorFestNameInput');
+    if (input) {
+        input.focus();
+        input.select();
+    }
+}
+
+// Reset form
+function cancelConvenorEdit() {
+    editingOldFestName = null;
+    document.getElementById('convenorFestSelect').value = "";
+    document.getElementById('convenorFestNameInput').value = "";
+    document.getElementById('convenorNameInput').value = "";
+    document.getElementById('btnCancelConvenorEdit').style.display = 'none';
+    document.getElementById('btnSaveConvenor').innerHTML = `<i class="fas fa-save"></i> Save Fest & Convenor`;
+}
+
+// Save or Rename Fest & Convenor (Syncs Globally)
+async function saveFestConvenor() {
+    const oldFest = editingOldFestName || document.getElementById('convenorFestSelect').value;
+    const newFest = document.getElementById('convenorFestNameInput').value.trim();
+    const newConv = document.getElementById('convenorNameInput').value.trim();
+
+    if (!newFest || !newConv) {
+        return showCustomDialog("Incomplete Details", "Both Fest Name and Convenor Name are required.", "warning");
     }
 
-    async function saveFestConvenor() {
-        const fest = document.getElementById('convenorFestSelect').value;
-        const name = document.getElementById('convenorNameInput').value.trim();
-        if (!fest || !name) return showCustomDialog("Incomplete Details", "Please choose a fest and type the Convenor name.", "warning");
+    if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
 
-        if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
-        dbSettings.FestConvenors[fest] = name;
+    showLoader(oldFest && oldFest !== newFest ? "Renaming Fest Globally..." : "Saving Convenor...");
 
-        showLoader("Saving Convenor...");
-        await db.collection("config").doc("settings").set(dbSettings, { merge: true });
+    try {
+        const batch = db.batch();
+
+        // 1. IF FEST NAME WAS RENAMED: Update all linked database records
+        if (oldFest && oldFest !== newFest) {
+            // Update fests collection
+            const festsSnap = await db.collection("fests").where("Fest Name", "==", oldFest).get();
+            festsSnap.docs.forEach(doc => {
+                batch.update(doc.ref, { 
+                    "Fest Name": newFest, 
+                    "Festival Category": getFestivalCategory(newFest) 
+                });
+            });
+
+            // Update registrations collection
+            const regSnap = await db.collection("registrations").where("Name of Fest", "==", oldFest).get();
+            regSnap.docs.forEach(doc => {
+                batch.update(doc.ref, { "Name of Fest": newFest });
+            });
+
+            // Update published results collection
+            const pubSnap = await db.collection("published_results").where("festName", "==", oldFest).get();
+            pubSnap.docs.forEach(doc => {
+                batch.update(doc.ref, { "festName": newFest, "festCategory": getFestivalCategory(newFest) });
+            });
+
+            // Update judge scores collection
+            const scoresSnap = await db.collection("judge_scores").where("festName", "==", oldFest).get();
+            scoresSnap.docs.forEach(doc => {
+                batch.update(doc.ref, { "festName": newFest, "festCategory": getFestivalCategory(newFest) });
+            });
+
+            // Update allFestNames array in memory
+            const fIndex = allFestNames.indexOf(oldFest);
+            if (fIndex !== -1) {
+                allFestNames[fIndex] = newFest;
+                allFestNames.sort((a, b) => a.localeCompare(b));
+            }
+
+            // Update classificationMap in memory
+            Object.keys(classificationMap).forEach(cat => {
+                const cIndex = classificationMap[cat].indexOf(oldFest);
+                if (cIndex !== -1) {
+                    classificationMap[cat][cIndex] = newFest;
+                    classificationMap[cat].sort((a, b) => a.localeCompare(b));
+                }
+            });
+
+            // Update local in-memory datasets
+            dbFests.forEach(f => {
+                if (f["Fest Name"] === oldFest) {
+                    f["Fest Name"] = newFest;
+                    f["Festival Category"] = getFestivalCategory(newFest);
+                }
+            });
+            dbRegistrations.forEach(r => {
+                if (r["Name of Fest"] === oldFest) r["Name of Fest"] = newFest;
+            });
+            dbPublishedResults.forEach(p => {
+                if (p.festName === oldFest) {
+                    p.festName = newFest;
+                    p.festCategory = getFestivalCategory(newFest);
+                }
+            });
+            dbJudgeScores.forEach(s => {
+                if (s.festName === oldFest) {
+                    s.festName = newFest;
+                    s.festCategory = getFestivalCategory(newFest);
+                }
+            });
+
+            // Migrate enabled status in settings
+            dbSettings["Fest_" + newFest] = dbSettings["Fest_" + oldFest] || "ENABLED";
+            delete dbSettings["Fest_" + oldFest];
+            delete dbSettings.FestConvenors[oldFest];
+        }
+
+        // 2. Set Convenor Name
+        dbSettings.FestConvenors[newFest] = newConv;
+
+        // Save updated settings to Firestore
+        batch.set(db.collection("config").doc("settings"), dbSettings, { merge: true });
+        await batch.commit();
+
         hideLoader();
-        document.getElementById('convenorNameInput').value = "";
-        renderConvenorsTable();
-        showCustomDialog("Convenor Saved", `Convenor for <b>${fest}</b> updated to <b>${name}</b>.`, "success");
+        cancelConvenorEdit();
+
+        // Refresh UI components across tabs
+        renderAdminPanel();
+        applySettingsToUI();
+        if (typeof renderTables === "function") renderTables();
+        if (typeof renderResults === "function") renderResults();
+
+        showCustomDialog("Updated", `Fest: <b>${newFest}</b> & Convenor: <b>${newConv}</b> updated successfully.`, "success");
+    } catch (err) {
+        hideLoader();
+        console.error(err);
+        showCustomDialog("Error", "Could not update Fest and Convenor.", "danger");
     }
+}
+
+    
 
     async function deleteFestConvenor(festName) {
         showCustomDialog(
