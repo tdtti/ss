@@ -2264,49 +2264,74 @@
 </div>
             </div>
 
-            <div class="section">
-                <h4 class="section-title"><i class="fas fa-user-tie"></i> Judge Allotment & Activation</h4>
-                <div class="row">
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                        <label>Select Existing Registered Judge (Optional)</label>
-                        <select id="existingJudgeSelect" onchange="onExistingJudgeChosen()">
-                            <option value="">-- Or Choose Existing Registered Judge --</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Judge Full Name</label>
-                        <input type="text" id="newJudgeName" placeholder="e.g. Prof. Ramanathan">
-                    </div>
-                    <div class="form-group">
-                        <label>Phone Number</label>
-                        <input type="text" id="newJudgePhone" placeholder="Password">
-                    </div>
-                    <div class="form-group">
-                        <label>Allot Item</label>
-                        <select id="judgeItemAllotSelect">
-                            <option value="">-- Choose Item --</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="justify-content: flex-end;">
-                        <button class="action-btn" onclick="saveJudgeRecord()"><i class="fas fa-user-plus"></i> Allot / Register Judge</button>
-                    </div>
-                </div>
+            <!-- RESTRUCTURED JUDGE ALLOTMENT & ACTIVATION SECTION -->
+<div class="section" id="judgeAllotmentSection">
+    <h4 class="section-title"><i class="fas fa-user-tie"></i> Judge Allotment & Activation</h4>
+    <p style="font-size:12.5px; color:#64748b; margin:-8px 0 16px 0;">
+        Search existing registered judges or type new details, then search the item to allot.
+    </p>
 
-                <div class="table-responsive" style="margin-top:15px;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Judge Name</th>
-                                <th>Phone Number</th>
-                                <th>Allotted Items</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="judgesTbody"></tbody>
-                    </table>
-                </div>
+    <!-- ROW 1: SEARCH COMBOS -->
+    <div class="row" style="margin-bottom:14px;">
+        <!-- 1. INSTANT SEARCH EXISTING JUDGE -->
+        <div class="form-group">
+            <label><i class="fas fa-search"></i> Search Existing Registered Judge (Optional)</label>
+            <div class="custom-search-select-wrapper">
+                <input type="text" id="existingJudgeSearchInput" placeholder="🔍 Search judge by name or phone..." oninput="filterExistingJudgeSearch(this.value)" onfocus="openExistingJudgeDropdown()" autocomplete="off">
+                <div id="existingJudgeDropdownList" class="custom-search-dropdown-list"></div>
             </div>
+        </div>
+
+        <!-- 2. INSTANT SEARCH ALLOT ITEM (A-Z) -->
+        <div class="form-group">
+            <label><i class="fas fa-trophy"></i> Search & Allot Item (A-Z)</label>
+            <div class="custom-search-select-wrapper">
+                <input type="text" id="allotItemSearchInput" placeholder="🔍 Search item by name, code or fest..." oninput="filterAllotItemSearch(this.value)" onfocus="openAllotItemDropdown()" autocomplete="off">
+                <input type="hidden" id="judgeItemAllotSelect">
+                <div id="allotItemDropdownList" class="custom-search-dropdown-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 2: JUDGE CREDENTIALS -->
+    <div class="row" style="margin-bottom:14px;">
+        <div class="form-group">
+            <label>Judge Full Name</label>
+            <input type="text" id="newJudgeName" placeholder="e.g. Prof. Ramanathan">
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number (Login Password)</label>
+            <input type="text" id="newJudgePhone" placeholder="Enter Phone Number">
+        </div>
+    </div>
+
+    <!-- FORM ACTION BUTTONS -->
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:18px;">
+        <button type="button" class="action-btn secondary" onclick="resetJudgeAllotmentForm()">
+            <i class="fas fa-rotate-left"></i> Clear Form
+        </button>
+        <button type="button" class="action-btn success" onclick="saveJudgeRecord()">
+            <i class="fas fa-user-plus"></i> Allot / Register Judge
+        </button>
+    </div>
+
+    <!-- REGISTERED JUDGES TABLE -->
+    <div class="table-responsive" style="margin-top:10px;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Judge Name</th>
+                    <th>Phone Number</th>
+                    <th>Allotted Items</th>
+                    <th>Status</th>
+                    <th style="width:90px; text-align:center;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="judgesTbody"></tbody>
+        </table>
+    </div>
+</div>
         </div>
 
         <!-- TAB 4: JUDGEMENT TAB -->
@@ -4267,33 +4292,181 @@ function toggleRecSection(headerEl) {
         modal.classList.remove('active-print');
     }
 
-    // --- 11. EVENT MANAGEMENT TAB ---
-    let allEmSortedItems = [];
-
+// --- RESTRUCTURED JUDGE ALLOTMENT CONTROLLER ---
 function initEventMgmtTab() {
-    const judgeSel = document.getElementById('judgeItemAllotSelect');
-    const existJudgeSel = document.getElementById('existingJudgeSelect');
-
-    judgeSel.innerHTML = '<option value="">-- Choose Item --</option>';
-    existJudgeSel.innerHTML = '<option value="">-- Or Choose Existing Registered Judge --</option>';
-
-    // Filter enabled fests and sort alphabetically by Item Name
+    // 1. Sort items A-Z by Item Name
     allEmSortedItems = dbFests.filter(f => isFestEnabled(f["Fest Name"])).sort((a, b) => 
         String(a["Item"] || "").localeCompare(String(b["Item"] || ""))
     );
 
-    allEmSortedItems.forEach(f => {
-        const txt = `${f["Item"]} [${f["Item Code"] || 'N/A'}] (${f["Fest Name"]})`;
-        judgeSel.innerHTML += `<option value="${f["Item Code"]}">${txt}</option>`;
-    });
-
-    dbJudges.forEach(j => {
-        existJudgeSel.innerHTML += `<option value="${j.phone}">${j.name} (${j.phone})</option>`;
-    });
-
-    renderJudgesList();
+    // 2. Render dropdowns and table
     renderEmDropdownList(allEmSortedItems);
+    renderAllotItemDropdownList(allEmSortedItems);
+    renderExistingJudgeDropdownList(dbJudges);
+    renderJudgesList();
 }
+
+// 1. EXISTING JUDGE INSTANT SEARCH LOGIC
+function renderExistingJudgeDropdownList(judges) {
+    const list = document.getElementById('existingJudgeDropdownList');
+    if (!list) return;
+    list.innerHTML = '';
+    if (judges.length === 0) {
+        list.innerHTML = '<div style="padding:10px; color:#94a3b8; font-size:12px; text-align:center;">No registered judges found</div>';
+        return;
+    }
+    judges.forEach(j => {
+        const div = document.createElement('div');
+        div.className = 'custom-search-dropdown-item';
+        div.innerHTML = `<b>${j.name}</b> <span style="color:#64748b; font-size:11px;">(${j.phone})</span> &bull; <small style="color:#2563eb;">${(j.assignedItems || []).length} Items</small>`;
+        div.onclick = () => selectExistingJudge(j);
+        list.appendChild(div);
+    });
+}
+
+function openExistingJudgeDropdown() {
+    renderExistingJudgeDropdownList(dbJudges);
+    const list = document.getElementById('existingJudgeDropdownList');
+    if (list) {
+        list.style.display = 'block';
+        const section = list.closest('.section');
+        if (section) section.style.zIndex = '100';
+    }
+}
+
+function filterExistingJudgeSearch(query) {
+    const q = String(query || "").toLowerCase().trim();
+    const filtered = dbJudges.filter(j => 
+        String(j.name || "").toLowerCase().includes(q) ||
+        String(j.phone || "").toLowerCase().includes(q)
+    );
+    renderExistingJudgeDropdownList(filtered);
+    document.getElementById('existingJudgeDropdownList').style.display = 'block';
+}
+
+function selectExistingJudge(judge) {
+    document.getElementById('existingJudgeSearchInput').value = `${judge.name} (${judge.phone})`;
+    document.getElementById('newJudgeName').value = judge.name;
+    document.getElementById('newJudgePhone').value = judge.phone;
+    document.getElementById('existingJudgeDropdownList').style.display = 'none';
+}
+
+// 2. ALLOT ITEM INSTANT SEARCH LOGIC (SORTED A-Z)
+function renderAllotItemDropdownList(items) {
+    const list = document.getElementById('allotItemDropdownList');
+    if (!list) return;
+    list.innerHTML = '';
+    if (items.length === 0) {
+        list.innerHTML = '<div style="padding:10px; color:#94a3b8; font-size:12px; text-align:center;">No matching items found</div>';
+        return;
+    }
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'custom-search-dropdown-item';
+        div.innerHTML = `<b>${item["Item"]}</b> <span style="color:#64748b; font-size:11px;">[${item["Item Code"]}] (${item["Fest Name"]})</span>`;
+        div.onclick = () => selectAllotItem(item["Item Code"], `${item["Item"]} [${item["Item Code"]}]`);
+        list.appendChild(div);
+    });
+}
+
+function openAllotItemDropdown() {
+    renderAllotItemDropdownList(allEmSortedItems);
+    const list = document.getElementById('allotItemDropdownList');
+    if (list) {
+        list.style.display = 'block';
+        const section = list.closest('.section');
+        if (section) section.style.zIndex = '100';
+    }
+}
+
+function filterAllotItemSearch(query) {
+    const q = String(query || "").toLowerCase().trim();
+    const filtered = allEmSortedItems.filter(f => 
+        String(f["Item"] || "").toLowerCase().includes(q) ||
+        String(f["Item Code"] || "").toLowerCase().includes(q) ||
+        String(f["Fest Name"] || "").toLowerCase().includes(q)
+    );
+    renderAllotItemDropdownList(filtered);
+    document.getElementById('allotItemDropdownList').style.display = 'block';
+}
+
+function selectAllotItem(code, displayText) {
+    document.getElementById('judgeItemAllotSelect').value = code;
+    document.getElementById('allotItemSearchInput').value = displayText;
+    document.getElementById('allotItemDropdownList').style.display = 'none';
+}
+
+// 3. RESET FORM
+function resetJudgeAllotmentForm() {
+    document.getElementById('existingJudgeSearchInput').value = '';
+    document.getElementById('allotItemSearchInput').value = '';
+    document.getElementById('judgeItemAllotSelect').value = '';
+    document.getElementById('newJudgeName').value = '';
+    document.getElementById('newJudgePhone').value = '';
+    const d1 = document.getElementById('existingJudgeDropdownList');
+    const d2 = document.getElementById('allotItemDropdownList');
+    if (d1) d1.style.display = 'none';
+    if (d2) d2.style.display = 'none';
+}
+
+// 4. SAVE / ALLOT JUDGE
+async function saveJudgeRecord() {
+    const name = (document.getElementById('newJudgeName')?.value || "").trim();
+    const phone = (document.getElementById('newJudgePhone')?.value || "").trim();
+    const itemCode = document.getElementById('judgeItemAllotSelect')?.value;
+
+    if (!name || !phone || !itemCode) {
+        return showCustomDialog("Missing Data", "Please choose/enter Judge Name, Phone Number, and select an Item to allot.", "warning");
+    }
+
+    const targetFestItem = dbFests.find(f => f["Item Code"] === itemCode);
+    const itemName = targetFestItem ? targetFestItem["Item"] : itemCode;
+
+    let existing = dbJudges.find(j => String(j.phone || "").trim() === phone);
+    if (existing && existing.assignedItems && existing.assignedItems.includes(itemCode)) {
+        showCustomDialog(
+            "Duplicate Allotment",
+            `⚠️ Judge <b>${existing.name}</b> is already allotted to <b>${itemName} [${itemCode}]</b>.<br><br>Re-confirm this allotment?`,
+            "warning",
+            () => performJudgeAllotment(existing, name, phone, itemCode),
+            true
+        );
+        return;
+    }
+
+    performJudgeAllotment(existing, name, phone, itemCode);
+}
+
+async function performJudgeAllotment(existing, name, phone, itemCode) {
+    showLoader("Allotting Judge...");
+    try {
+        if (existing) {
+            const assigned = existing.assignedItems || [];
+            if (!assigned.includes(itemCode)) assigned.push(itemCode);
+            await db.collection("judges").doc(existing.id).update({ assignedItems: assigned, active: true, name: name });
+            existing.assignedItems = assigned;
+            existing.name = name;
+        } else {
+            const docRef = await db.collection("judges").add({
+                name,
+                phone,
+                assignedItems: [itemCode],
+                active: true
+            });
+            dbJudges.push({ id: docRef.id, name, phone, assignedItems: [itemCode], active: true });
+        }
+        hideLoader();
+        resetJudgeAllotmentForm();
+        initEventMgmtTab();
+        renderUserTable();
+        showCustomDialog("Judge Allotted", `Judge <b>${name}</b> successfully allotted to <b>[${itemCode}]</b>.`, "success");
+    } catch (e) {
+        hideLoader();
+        console.error(e);
+        showCustomDialog("Error", "Could not allot judge.", "danger");
+    }
+}
+
 
 function renderEmDropdownList(items) {
     const list = document.getElementById('emItemDropdownList');
@@ -4599,62 +4772,9 @@ function autoGenerateContinuousLots(randomize = false) {
     showCustomDialog("Lots Generated", msg, "info");
 }
 
-    async function saveJudgeRecord() {
-        const name = (document.getElementById('newJudgeName')?.value || "").trim();
-        const phone = (document.getElementById('newJudgePhone')?.value || "").trim();
-        const itemCode = document.getElementById('judgeItemAllotSelect').value;
+    
 
-        if (!name || !phone || !itemCode) {
-            return showCustomDialog("Missing Data", "Name, Phone and Allot Item must all be provided.", "warning");
-        }
-
-        const targetFestItem = dbFests.find(f => f["Item Code"] === itemCode);
-        const itemName = targetFestItem ? targetFestItem["Item"] : itemCode;
-
-        let existing = dbJudges.find(j => String(j.phone || "").trim() === phone);
-        if (existing && existing.assignedItems && existing.assignedItems.includes(itemCode)) {
-            showCustomDialog(
-                "Duplicate Item Warning",
-                `⚠️ Judge <b>${existing.name}</b> is already allotted to this exact item: <b>${itemName} [${itemCode}]</b>.<br><br>Do you still want to re-confirm and save this allotment?`,
-                "warning",
-                () => {
-                    performJudgeAllotment(existing, name, phone, itemCode);
-                },
-                true
-            );
-            return;
-        }
-
-        performJudgeAllotment(existing, name, phone, itemCode);
-    }
-
-    async function performJudgeAllotment(existing, name, phone, itemCode) {
-        showLoader("Allotting Judge...");
-        try {
-            if (existing) {
-                const assigned = existing.assignedItems || [];
-                if (!assigned.includes(itemCode)) assigned.push(itemCode);
-                await db.collection("judges").doc(existing.id).update({ assignedItems: assigned, active: true, name: name });
-                existing.assignedItems = assigned;
-                existing.name = name;
-            } else {
-                const docRef = await db.collection("judges").add({
-                    name,
-                    phone,
-                    assignedItems: [itemCode],
-                    active: true
-                });
-                dbJudges.push({ id: docRef.id, name, phone, assignedItems: [itemCode], active: true });
-            }
-            hideLoader();
-            initEventMgmtTab();
-            renderUserTable();
-            showCustomDialog("Judge Allotted", "Judge registered and item allotted. Reflected in User Management.", "success");
-        } catch (e) {
-            hideLoader();
-            showCustomDialog("Error", "Could not allot judge.", "danger");
-        }
-    }
+    
 
     function renderJudgesList() {
         const tbody = document.getElementById('judgesTbody');
@@ -4762,10 +4882,18 @@ function selectJudgeSearchItem(code, displayText) {
 // Global click listener to automatically close dropdowns when clicking outside
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.custom-search-select-wrapper')) {
-        const emList = document.getElementById('emItemDropdownList');
-        const judgeList = document.getElementById('judgeActiveItemsDropdownList');
-        if (emList) emList.style.display = 'none';
-        if (judgeList) judgeList.style.display = 'none';
+        const d1 = document.getElementById('emItemDropdownList');
+        const d2 = document.getElementById('judgeActiveItemsDropdownList');
+        const d3 = document.getElementById('existingJudgeDropdownList');
+        const d4 = document.getElementById('allotItemDropdownList');
+
+        [d1, d2, d3, d4].forEach(d => {
+            if (d) {
+                d.style.display = 'none';
+                const s = d.closest('.section');
+                if (s) s.style.zIndex = '';
+            }
+        });
     }
 });
 
