@@ -2298,13 +2298,17 @@
                     <p style="font-size:12px; color:var(--muted); margin-bottom:14px;">Grade thresholds: <b>&lt;30%: D</b> | <b>30%–59%: C</b> | <b>60%–79%: B</b> | <b>&ge;80%: A</b></p>
                     
                     <div id="criteriaConfirmArea" style="display:flex; justify-content:flex-end; align-items:center; gap:10px; border-top:1px solid #e2e8f0; padding-top:12px;">
-                        <button id="btnConfirmCriteria" class="action-btn success" style="padding:10px 22px; font-size:13.5px;" onclick="confirmJudgeCriteria()">
-                            <i class="fas fa-check-circle"></i> Confirm Criteria
-                        </button>
-                        <div id="criteriaConfirmedBadge" style="display:none; color:#059669; font-weight:700; font-size:13.5px;">
-                            <i class="fas fa-lock"></i> Criteria Confirmed & Locked
-                        </div>
-                    </div>
+    <button id="btnConfirmCriteria" class="action-btn success" style="padding:10px 22px; font-size:13.5px;" onclick="confirmJudgeCriteria()">
+        <i class="fas fa-check-circle"></i> Confirm Criteria
+    </button>
+    <div id="criteriaConfirmedBadge" style="display:none; color:#059669; font-weight:700; font-size:13.5px; align-items:center; gap:8px;">
+        <i class="fas fa-lock"></i> Criteria Confirmed & Locked
+    </div>
+    <!-- MASTER JUDGE EDIT CRITERIA BUTTON -->
+    <button id="btnEditCriteria" type="button" class="action-btn secondary" style="display:none; padding:7px 14px; font-size:12px;" onclick="unlockJudgeCriteria()">
+        <i class="fas fa-edit"></i> Edit Criteria
+    </button>
+</div>
                 </div>
 
                 <!-- SECTION 3: MARKS ENTRY (LOCKED UNTIL MASTER JUDGE CONFIRMS) -->
@@ -4701,21 +4705,22 @@ function selectEmSearchItem(code, displayText) {
     }
 
     async function toggleProgramStatus(targetState) {
-    const rawCode = document.getElementById('emItemSelect').value;
+    const rawCode = document.getElementById('emItemSelect')?.value;
     if (!rawCode) return showCustomDialog("Selection Needed", "Please select an item first.", "warning");
 
     const code = String(rawCode).trim();
     if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
     if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
     if (!dbSettings.PublishedItems) dbSettings.PublishedItems = [];
+    if (!dbSettings.ItemCriteriaConfirmed) dbSettings.ItemCriteriaConfirmed = {};
 
     const currentStatus = getItemLiveStatus(code);
 
-    // REACTIVATION FLOW: Clears all previous locks and scores so judges can re-evaluate
+    // 1. REACTIVATION FLOW: Clears all previous locks, scores, published results, and criteria locks
     if (targetState === 'ACTIVE' && currentStatus === 'COMPLETED') {
         showCustomDialog(
             "Reactivate Completed Programme?",
-            `The item <b>[${code}]</b> has completed judgement.<br><br>Reactivating it will <b>RESET and clear all submitted judge scores, locked marks, and published results</b> for this item so it can be re-evaluated.<br><br>Do you want to proceed?`,
+            `The item <b>[${code}]</b> has completed judgement.<br><br>Reactivating it will <b>RESET and clear all submitted judge scores, locked marks, published results, and criteria locks</b> for this item so it can be re-evaluated.<br><br>Do you want to proceed?`,
             "warning",
             async () => {
                 showLoader("Resetting & Reactivating Programme...");
@@ -4741,14 +4746,34 @@ function selectEmSearchItem(code, displayText) {
                         dbSettings.ActiveProgrammes.push(code);
                     }
 
-                    await db.collection("config").doc("settings").set(dbSettings, { merge: true });
+                    // 4. Reset criteria confirmation so Master Judge starts fresh
+                    dbSettings.ItemCriteriaConfirmed[code] = false;
+                    delete dbSettings[`ItemCriteriaConfirmed.${code}`];
+
+                    if (typeof currentJudgeSession !== "undefined" && currentJudgeSession.itemCode === code) {
+                        currentJudgeSession.criteriaConfirmed = false;
+                        currentJudgeSession.savedUnitIds = new Set();
+                        currentJudgeSession.unitScores = {};
+                    }
+
+                    // 5. Commit clean state to Firestore
+                    await db.collection("config").doc("settings").set({
+                        ActiveProgrammes: dbSettings.ActiveProgrammes,
+                        CompletedProgrammes: dbSettings.CompletedProgrammes,
+                        PublishedItems: dbSettings.PublishedItems,
+                        ItemCriteriaConfirmed: {
+                            [code]: false
+                        },
+                        [`ItemCriteriaConfirmed.${code}`]: firebase.firestore.FieldValue.delete(),
+                        [`LiveJudgeActiveItems.${code}`]: firebase.firestore.FieldValue.delete()
+                    }, { merge: true });
                     
                     hideLoader();
                     loadEventMgmtItemDetails();
-                    showCustomDialog("Programme Reactivated", `Item <b>[${code}]</b> is now ACTIVE and unlocked for marks entry.`, "success");
+                    showCustomDialog("Programme Reactivated", `Item <b>[${code}]</b> is now ACTIVE, criteria unlocked, and ready for fresh evaluation.`, "success");
                 } catch (err) {
                     hideLoader();
-                    console.error(err);
+                    console.error("Reactivation error:", err);
                     showCustomDialog("Error", "Could not complete programme reset.", "danger");
                 }
             },
@@ -4757,23 +4782,53 @@ function selectEmSearchItem(code, displayText) {
         return;
     }
 
-    // NORMAL ACTIVATION / DEACTIVATION
+    // 2. NORMAL ACTIVATION / DEACTIVATION
     if (targetState === 'ACTIVE') {
         if (!dbSettings.ActiveProgrammes.some(c => String(c).trim() === code)) {
             dbSettings.ActiveProgrammes.push(code);
         }
         dbSettings.CompletedProgrammes = dbSettings.CompletedProgrammes.filter(c => String(c).trim() !== code);
+
+        // Clear criteria lock when activating if no locked scores exist yet
+        const hasLockedScores = dbJudgeScores.some(s => s.itemCode === code && s.locked === true);
+        if (!hasLockedScores) {
+            dbSettings.ItemCriteriaConfirmed[code] = false;
+            delete dbSettings[`ItemCriteriaConfirmed.${code}`];
+
+            if (typeof currentJudgeSession !== "undefined" && currentJudgeSession.itemCode === code) {
+                currentJudgeSession.criteriaConfirmed = false;
+            }
+        }
     } else if (targetState === 'INACTIVE') {
         dbSettings.ActiveProgrammes = dbSettings.ActiveProgrammes.filter(c => String(c).trim() !== code);
     }
 
     showLoader("Updating Programme Status...");
-    await db.collection("config").doc("settings").set(dbSettings, { merge: true });
-    hideLoader();
-    loadEventMgmtItemDetails();
-    showCustomDialog("Updated", `Programme status set to ${targetState}.`, "success");
-}
+    try {
+        const hasLockedScores = dbJudgeScores.some(s => s.itemCode === code && s.locked === true);
+        const updates = {
+            ActiveProgrammes: dbSettings.ActiveProgrammes,
+            CompletedProgrammes: dbSettings.CompletedProgrammes,
+            ItemCriteriaConfirmed: dbSettings.ItemCriteriaConfirmed
+        };
 
+        // Ensure stale dot-keys are cleaned up in Firestore
+        if (targetState === 'ACTIVE' && !hasLockedScores) {
+            updates[`ItemCriteriaConfirmed.${code}`] = firebase.firestore.FieldValue.delete();
+            updates.ItemCriteriaConfirmed[code] = false;
+        }
+
+        await db.collection("config").doc("settings").set(updates, { merge: true });
+
+        hideLoader();
+        loadEventMgmtItemDetails();
+        showCustomDialog("Updated", `Programme status set to ${targetState}.`, "success");
+    } catch (e) {
+        hideLoader();
+        console.error("Status update error:", e);
+        showCustomDialog("Error", "Could not update programme status.", "danger");
+    }
+}
     async function saveSingleLot(regId) {
         const input = document.querySelector(`input[data-regid="${regId}"]`);
         if (!input) return;
@@ -5440,6 +5495,7 @@ function checkIsCriteriaConfirmed(code) {
     const finalizeSec = document.getElementById('finalizeJudgementSection');
     const confirmBtn = document.getElementById('btnConfirmCriteria');
     const confirmedBadge = document.getElementById('criteriaConfirmedBadge');
+    const editBtn = document.getElementById('btnEditCriteria');
     const addBtn = document.getElementById('btnAddCriterionBtn');
     const finalizeBtn = document.getElementById('btnFinalizeJudgement');
     const signingStatus = document.getElementById('judgeSigningStatus');
@@ -5466,10 +5522,15 @@ function checkIsCriteriaConfirmed(code) {
         return;
     }
 
-    // 1. PRESERVE ACTIVE SESSION: Do not wipe saved lots or confirmed status if already evaluating this item
-    const isSameItem = (currentJudgeSession.itemCode === code);
+    // Role detection
+    const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(code));
+    const isMultiJudge = assignedJudges.length > 1;
+    const isMaster = isJudgeMasterForItem(currentUser, code);
+
+    // Criteria confirmation status
     const isConfirmed = checkIsCriteriaConfirmed(code);
 
+    const isSameItem = (currentJudgeSession.itemCode === code);
     if (!isSameItem || forceReset) {
         currentJudgeSession = {
             itemCode: code,
@@ -5491,7 +5552,7 @@ function checkIsCriteriaConfirmed(code) {
     const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
     const isReadOnlyAdmin = isAdmin && (dbSettings.Admin_ReadOnly_Judgement !== "DISABLED");
 
-    // 2. Load and sort competing units
+    // Load competing units
     const candidates = dbRegistrations.filter(r => (r["Item Code"] === code || r["Item"] === code));
     const units = [];
     candidates.forEach(c => {
@@ -5506,7 +5567,7 @@ function checkIsCriteriaConfirmed(code) {
     units.sort((a, b) => String(a["Lot Number"] || "999").localeCompare(String(b["Lot Number"] || "999"), undefined, { numeric: true }));
     currentJudgeSession.units = units;
 
-    // 3. Check if already submitted by this judge
+    // Check submission status
     let userExistingScores = dbJudgeScores.filter(s => s.itemCode === code);
     if (!isAdmin) {
         userExistingScores = userExistingScores.filter(s => 
@@ -5528,18 +5589,13 @@ function checkIsCriteriaConfirmed(code) {
         }
     }
 
-    // 4. Role detection
-    const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(code));
-    const isMultiJudge = assignedJudges.length > 1;
-    const isMaster = isJudgeMasterForItem(currentUser, code);
-
     // Sync criteria definition
     const syncedCriteria = (dbSettings.ItemCriteria && dbSettings.ItemCriteria[code]) ? dbSettings.ItemCriteria[code] : null;
     if (syncedCriteria && Array.isArray(syncedCriteria) && syncedCriteria.length > 0) {
         currentJudgeCriteria = [...syncedCriteria];
     }
 
-    // Configure Submit / Finalize buttons
+    // Configure Finalize / Submit buttons
     if (finalizeBtn) {
         finalizeBtn.disabled = isUserLocked || isReadOnlyAdmin;
         if (isMultiJudge && !isMaster) {
@@ -5579,7 +5635,7 @@ function checkIsCriteriaConfirmed(code) {
         }
     }
 
-    // If locked or read-only, hide scoring inputs
+    // Hide input panels if overall item is locked or read-only
     if (isUserLocked || isOverallCompleted || isReadOnlyAdmin) {
         currentJudgeSession.criteriaConfirmed = true;
         if (criteriaSec) criteriaSec.style.display = 'none';
@@ -5589,26 +5645,28 @@ function checkIsCriteriaConfirmed(code) {
         return;
     }
 
-    // 5. MASTER JUDGE VS PANEL JUDGE DISPLAY LOGIC
+    // MASTER JUDGE VS PANEL JUDGE DISPLAY LOGIC
     if (isMaster) {
         // --- MASTER JUDGE WORKFLOW ---
         if (waitingBanner) waitingBanner.style.display = 'none';
         if (criteriaSec) criteriaSec.style.display = 'block';
 
         if (currentJudgeSession.criteriaConfirmed) {
-            // CONFIRMED & LOCKED: Permanent Read-Only, No Add/Edit buttons
+            // CONFIRMED STATE: Show read-only chips, hide confirm button, SHOW EDIT BUTTON
             renderCriteriaChips(true);
             if (addBtn) addBtn.style.display = 'none';
             if (confirmBtn) confirmBtn.style.display = 'none';
-            if (confirmedBadge) confirmedBadge.style.display = 'block';
+            if (confirmedBadge) confirmedBadge.style.display = 'flex';
+            if (editBtn) editBtn.style.display = 'inline-flex'; // ALLOWS MASTER JUDGE TO RE-EDIT
             if (singleLotSec) singleLotSec.style.display = 'block';
             updateLotDropdownAndProgress();
         } else {
-            // NOT CONFIRMED: Editable controls, marks entry locked
+            // EDITABLE STATE: Show Add button, Confirm button, edit/delete icons
             renderCriteriaChips(false);
             if (addBtn) addBtn.style.display = 'inline-flex';
             if (confirmBtn) confirmBtn.style.display = 'inline-flex';
             if (confirmedBadge) confirmedBadge.style.display = 'none';
+            if (editBtn) editBtn.style.display = 'none';
             if (singleLotSec) singleLotSec.style.display = 'none';
             if (finalizeSec) finalizeSec.style.display = 'none';
         }
@@ -5616,17 +5674,18 @@ function checkIsCriteriaConfirmed(code) {
         // --- PANEL JUDGE WORKFLOW ---
         if (addBtn) addBtn.style.display = 'none';
         if (confirmBtn) confirmBtn.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'none'; // NEVER show edit button to panel judges
 
         if (currentJudgeSession.criteriaConfirmed) {
             // UNLOCKED: Hide waiting banner, show read-only criteria, open marks entry
             if (waitingBanner) waitingBanner.style.display = 'none';
             if (criteriaSec) criteriaSec.style.display = 'block';
             renderCriteriaChips(true);
-            if (confirmedBadge) confirmedBadge.style.display = 'block';
+            if (confirmedBadge) confirmedBadge.style.display = 'flex';
             if (singleLotSec) singleLotSec.style.display = 'block';
             updateLotDropdownAndProgress();
         } else {
-            // LOCKED: Hide criteria section completely, show waiting banner
+            // LOCKED: Hide criteria section, show waiting notification
             if (criteriaSec) criteriaSec.style.display = 'none';
             if (singleLotSec) singleLotSec.style.display = 'none';
             if (finalizeSec) finalizeSec.style.display = 'none';
@@ -8304,6 +8363,60 @@ document.addEventListener('keydown', (e) => {
             }
         }
     }, err => console.error("Realtime judge scores sync error:", err));
+}
+
+
+      // MASTER JUDGE: UNLOCK CRITERIA FOR EDITING
+async function unlockJudgeCriteria() {
+    const code = currentJudgeSession.itemCode || document.getElementById('judgeActiveItemsSelect')?.value;
+    if (!code) return;
+
+    if (!isJudgeMasterForItem(currentUser, code)) {
+        return showCustomDialog("Restricted", "Only the designated Master Judge can modify criteria.", "warning");
+    }
+
+    // Check if any judge has already finalized/locked scores for this item
+    const hasFinalizedScores = dbJudgeScores.some(s => s.itemCode === code && s.locked === true);
+    if (hasFinalizedScores) {
+        return showCustomDialog("Action Locked", "Cannot edit criteria because scores have already been officially finalized.", "warning");
+    }
+
+    showLoader("Unlocking Criteria for Editing...");
+    try {
+        if (!dbSettings.ItemCriteriaConfirmed) dbSettings.ItemCriteriaConfirmed = {};
+        dbSettings.ItemCriteriaConfirmed[code] = false;
+
+        currentJudgeSession.criteriaConfirmed = false;
+
+        // Update Firestore so panel judges are placed back on waiting status
+        await db.collection("config").doc("settings").set({
+            ItemCriteriaConfirmed: {
+                [code]: false
+            }
+        }, { merge: true });
+
+        // Update UI for Master Judge
+        renderCriteriaChips(false); // Restore edit (fa-edit) & delete (fa-times) icons
+        
+        const addBtn = document.getElementById('btnAddCriterionBtn');
+        const confirmBtn = document.getElementById('btnConfirmCriteria');
+        const confirmedBadge = document.getElementById('criteriaConfirmedBadge');
+        const editBtn = document.getElementById('btnEditCriteria');
+        const singleLotSec = document.getElementById('singleLotSection');
+
+        if (addBtn) addBtn.style.display = 'inline-flex';
+        if (confirmBtn) confirmBtn.style.display = 'inline-flex';
+        if (confirmedBadge) confirmedBadge.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'none';
+        if (singleLotSec) singleLotSec.style.display = 'none'; // Lock marks entry until re-confirmed
+
+        hideLoader();
+        showCustomDialog("Criteria Unlocked", "You can now add, edit, or remove criteria. Click <b>Confirm Criteria</b> when finished.", "info");
+    } catch (e) {
+        hideLoader();
+        console.error("Unlock error:", e);
+        showCustomDialog("Error", "Could not unlock criteria.", "danger");
+    }
 }
 
 
