@@ -1555,6 +1555,103 @@
         border: 1px solid var(--border) !important;
         animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
     }
+
+    /* ==========================================================================
+       ADMIN JUDGEMENT STATUS DASHBOARD & LED INDICATORS
+       ========================================================================== */
+    .led-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+        flex-shrink: 0;
+    }
+    .led-orange {
+        background-color: #f59e0b;
+        box-shadow: 0 0 8px #f59e0b;
+    }
+    .led-green {
+        background-color: #10b981;
+        box-shadow: 0 0 8px #10b981;
+    }
+    .led-grey {
+        background-color: #94a3b8;
+        box-shadow: 0 0 4px #94a3b8;
+    }
+
+    .admin-judge-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+        gap: 14px;
+        margin-top: 12px;
+        width: 100%;
+    }
+
+    .admin-judge-card {
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        box-shadow: var(--shadow-subtle);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .admin-judge-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    .admin-judge-card.card-active { border-left: 4px solid #10b981; }
+    .admin-judge-card.card-completed { border-left: 4px solid #f59e0b; }
+    .admin-judge-card.card-inactive { border-left: 4px solid #94a3b8; }
+
+    .admin-judge-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+        gap: 8px;
+    }
+
+    .admin-judge-card-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text-main);
+        line-height: 1.25;
+    }
+
+    .admin-stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px 12px;
+        background: var(--surface-subtle);
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        margin: 10px 0;
+        font-size: 12px;
+    }
+
+    .admin-stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .admin-stat-label { color: var(--text-muted); font-weight: 600; }
+    .admin-stat-val { font-weight: 800; color: var(--text-main); }
+    .admin-stat-val.present { color: #059669; }
+    .admin-stat-val.absent { color: #dc2626; }
+
+    option[value="Fest"] {
+    display: none !important;}
+
+    option[value="Sports"] {
+    display: none !important;}
+
+    
+
 </style>  
 </head>
 <body>
@@ -2077,107 +2174,145 @@
 
         <!-- TAB 4: JUDGEMENT TAB -->
         <div id="JudgementTab" class="tabcontent">
-            <div id="judgeAdminNotice" style="display:none; background:#e0f2fe; padding:15px; border-radius:8px; border:1px solid #7dd3fc; margin-bottom:15px; color:#0369a1;">
-                <p style="margin:0; font-weight:bold;"><i class="fas fa-shield-halved"></i> Administrator View Mode: Evaluation criteria modifying and marks entry are disabled for admins. You can inspect scores entered by judges.</p>
-            </div>
-
-            <div id="judgementLockedBanner" style="display:none; background:#d4edda; color:#155724; padding:15px; border-radius:8px; border:1px solid #c3e6cb; margin-bottom:15px; font-weight:bold;">
-                <i class="fas fa-lock"></i> Judgement for this item has been Finalized & Locked. Marks entry is locked and non-editable.
-            </div>
-
-            <!-- SECTION 1: EVALUATION ITEM (KEPT SAME) -->
-            <div class="section">
-                <h4 class="section-title"><i class="fas fa-gavel"></i> Evaluation Item</h4>
-                <div class="row">
-                    <div class="form-group">
-    <label>Allotted Active Items to Judge</label>
-    <div class="custom-search-select-wrapper">
-        <input type="text" id="judgeActiveItemsSearchInput" placeholder="🔍 Type item name or code..." oninput="filterJudgeSearchItems(this.value)" onfocus="openJudgeSearchDropdown()" autocomplete="off">
-        <input type="hidden" id="judgeActiveItemsSelect">
-        <div id="judgeActiveItemsDropdownList" class="custom-search-dropdown-list"></div>
-    </div>
-</div>
-                    <div class="form-group">
-                        <label>Classification & Fest</label>
-                        <input type="text" id="judgeItemFestMeta" readonly style="background:#f9f9f9; font-weight:bold;">
-                    </div>
-                    <div class="form-group">
-                        <label>Item Code</label>
-                        <input type="text" id="judgeItemCodeMeta" readonly style="background:#f9f9f9; font-weight:bold;">
-                    </div>
-                </div>
-            </div>
-
-            <!-- SECTION 2: EVALUATION CRITERIA (WITH CONFIRMATION LOCK) -->
-            <div class="section" id="judgeCriteriaSection">
-                <h4 class="section-title">
-                    <span><i class="fas fa-list-ol"></i> Evaluation Criteria (10 Marks Each)</span>
-                    <button id="btnAddCriterionBtn" class="action-btn" style="padding:6px 12px; font-size:12px;" onclick="addCriterionPrompt()"><i class="fas fa-plus"></i> Add Criterion</button>
-                </h4>
-                <div id="criteriaList" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;"></div>
-                <p style="font-size:12px; color:var(--muted); margin-bottom:14px;">Grade thresholds: <b>&lt;30%: D</b> | <b>30%–59%: C</b> | <b>60%–79%: B</b> | <b>&ge;80%: A</b></p>
+            
+            <!-- 1. ADMIN OVERVIEW DASHBOARD (VISIBLE TO ADMINS ONLY) -->
+            <div id="adminJudgementOverview" style="display:none;">
                 
-                <!-- CONFIRM CRITERIA ACTION -->
-                <div id="criteriaConfirmArea" style="display:flex; justify-content:flex-end; align-items:center; gap:10px; border-top:1px solid #e2e8f0; padding-top:12px;">
-                    <button id="btnConfirmCriteria" class="action-btn success" style="padding:10px 22px; font-size:13.5px;" onclick="confirmJudgeCriteria()">
-                        <i class="fas fa-check-circle"></i> Confirm Criteria
-                    </button>
-                    <div id="criteriaConfirmedBadge" style="display:none; color:#059669; font-weight:700; font-size:13.5px;">
-                        <i class="fas fa-lock"></i> Criteria Confirmed & Locked
+                <!-- SECTION A: ACTIVE (Running Now) -->
+                <div class="section" style="margin-bottom:20px;">
+                    <h4 class="section-title">
+                        <span style="display:flex; align-items:center;">
+                            <span class="led-indicator led-green"></span>
+                            ACTIVE (Running Now)
+                        </span>
+                        <span id="badgeActiveCount" class="badge-place place-2" style="font-size:11px;">0 Items</span>
+                    </h4>
+                    <div id="adminActiveCards" class="admin-judge-grid">
+                        <p style="color:#94a3b8; font-size:13px; padding:10px;">No programmes currently active.</p>
+                    </div>
+                </div>
+
+                <!-- SECTION B: COMPLETED (Judgement Finished) -->
+                <div class="section" style="margin-bottom:20px;">
+                    <h4 class="section-title">
+                        <span style="display:flex; align-items:center;">
+                            <span class="led-indicator led-orange"></span>
+                            COMPLETED (Judgement Finished)
+                        </span>
+                        <span id="badgeCompletedCount" class="badge-place place-1" style="font-size:11px;">0 Items</span>
+                    </h4>
+                    <div id="adminCompletedCards" class="admin-judge-grid">
+                        <p style="color:#94a3b8; font-size:13px; padding:10px;">No completed items yet.</p>
+                    </div>
+                </div>
+
+                <!-- SECTION C: INACTIVE -->
+                <div class="section" style="margin-bottom:20px;">
+                    <h4 class="section-title">
+                        <span style="display:flex; align-items:center;">
+                            <span class="led-indicator led-grey"></span>
+                            INACTIVE
+                        </span>
+                        <span id="badgeInactiveCount" class="badge-place place-other" style="font-size:11px;">0 Items</span>
+                    </h4>
+                    <div id="adminInactiveCards" class="admin-judge-grid">
+                        <p style="color:#94a3b8; font-size:13px; padding:10px;">No inactive items.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- SECTION 3: SINGLE-LOT EVALUATION SECTION (SHOWS ONLY AFTER CONFIRMATION) -->
-            <div class="section" id="singleLotSection" style="display:none;">
-                <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span><i class="fas fa-calculator"></i> Marks Entry (Single Lot Evaluation)</span>
-                    <!-- PROGRESS INDICATOR TOP RIGHT -->
-                    <span id="lotProgressIndicator" class="lot-progress-pill">0/0</span>
+            <!-- 2. JUDGE MARKS EVALUATION WORKFLOW (VISIBLE TO JUDGES ONLY) -->
+            <div id="judgeEvaluationWorkflow">
+                <div id="judgementLockedBanner" style="display:none; background:#d4edda; color:#155724; padding:15px; border-radius:8px; border:1px solid #c3e6cb; margin-bottom:15px; font-weight:bold;">
+                    <i class="fas fa-lock"></i> Judgement for this item has been Finalized & Locked. Marks entry is locked.
                 </div>
 
-                <!-- LOT SELECTION & ATTENDANCE STATUS -->
-                <div class="row" style="margin-bottom:15px; align-items:flex-end;">
-                    <div class="form-group" style="margin:0;">
-                        <label>Select Lot Number</label>
-                        <select id="judgeCurrentLotSelect" onchange="renderCurrentLotCard()"></select>
-                    </div>
-                    <div class="form-group" style="margin:0;">
-                        <label>Attendance Status</label>
-                        <div class="tap-switch-group" style="width:100%;">
-                            <button type="button" id="attPresentBtn" class="tap-btn active success" style="flex:1;" onclick="setLotAttendance(true)">
-                                <i class="fas fa-user-check"></i> Present
-                            </button>
-                            <button type="button" id="attAbsentBtn" class="tap-btn" style="flex:1;" onclick="setLotAttendance(false)">
-                                <i class="fas fa-user-slash"></i> Absent
-                            </button>
+                <div class="section">
+                    <h4 class="section-title"><i class="fas fa-gavel"></i> Evaluation Item</h4>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Allotted Active Items to Judge</label>
+                            <div class="custom-search-select-wrapper">
+                                <input type="text" id="judgeActiveItemsSearchInput" placeholder="🔍 Type item name or code..." oninput="filterJudgeSearchItems(this.value)" onfocus="openJudgeSearchDropdown()" autocomplete="off">
+                                <input type="hidden" id="judgeActiveItemsSelect">
+                                <div id="judgeActiveItemsDropdownList" class="custom-search-dropdown-list"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Classification & Fest</label>
+                            <input type="text" id="judgeItemFestMeta" readonly style="background:#f9f9f9; font-weight:bold;">
+                        </div>
+                        <div class="form-group">
+                            <label>Item Code</label>
+                            <input type="text" id="judgeItemCodeMeta" readonly style="background:#f9f9f9; font-weight:bold;">
                         </div>
                     </div>
                 </div>
 
-                <!-- SINGLE LOT MARKS ENTRY CARD -->
-                <div id="singleLotCardContainer"></div>
-
-                <!-- SAVE BUTTON (HIDES CURRENT LOT AFTER SAVE) -->
-                <div style="margin-top:18px; display:flex; justify-content:flex-end;">
-                    <button id="btnSaveLotMarks" class="action-btn success" style="padding:12px 24px; font-size:14px;" onclick="saveCurrentLotMarks()">
-                        <i class="fas fa-save"></i> Save Marks for this Lot
-                    </button>
-                </div>
-            </div>
-
-            <!-- SECTION 4: FINALIZE & LOCK JUDGEMENT BUTTON (APPEARS WHEN ALL LOTS COMPLETED) -->
-            <div class="section" id="finalizeJudgementSection" style="display:none;">
-                <div style="padding:16px 20px; background:rgba(241, 245, 249, 0.85); border-radius:12px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:15px;">
-                    <div>
-                        <h4 style="margin:0; font-size:15px; color:#0f172a;"><i class="fas fa-file-signature"></i> Official Judgement Submission</h4>
-                        <p style="margin:3px 0 0 0; font-size:13px; color:#64748b;" id="judgeSigningStatus">All lots scored. Ready to lock.</p>
+                <div class="section" id="judgeCriteriaSection">
+                    <h4 class="section-title">
+                        <span><i class="fas fa-list-ol"></i> Evaluation Criteria (10 Marks Each)</span>
+                        <button id="btnAddCriterionBtn" class="action-btn" style="padding:6px 12px; font-size:12px;" onclick="addCriterionPrompt()"><i class="fas fa-plus"></i> Add Criterion</button>
+                    </h4>
+                    <div id="criteriaList" style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px;"></div>
+                    <p style="font-size:12px; color:var(--muted); margin-bottom:14px;">Grade thresholds: <b>&lt;30%: D</b> | <b>30%–59%: C</b> | <b>60%–79%: B</b> | <b>&ge;80%: A</b></p>
+                    
+                    <div id="criteriaConfirmArea" style="display:flex; justify-content:flex-end; align-items:center; gap:10px; border-top:1px solid #e2e8f0; padding-top:12px;">
+                        <button id="btnConfirmCriteria" class="action-btn success" style="padding:10px 22px; font-size:13.5px;" onclick="confirmJudgeCriteria()">
+                            <i class="fas fa-check-circle"></i> Confirm Criteria
+                        </button>
+                        <div id="criteriaConfirmedBadge" style="display:none; color:#059669; font-weight:700; font-size:13.5px;">
+                            <i class="fas fa-lock"></i> Criteria Confirmed & Locked
+                        </div>
                     </div>
-                    <button id="btnFinalizeJudgement" class="action-btn danger" style="padding:14px 24px; font-size:15px;" onclick="finalizeJudgement()">
-                        <i class="fas fa-lock"></i> Finalize & Lock Judgement
-                    </button>
+                </div>
+
+                <div class="section" id="singleLotSection" style="display:none;">
+                    <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span><i class="fas fa-calculator"></i> Marks Entry (Single Lot Evaluation)</span>
+                        <span id="lotProgressIndicator" class="lot-progress-pill">0/0</span>
+                    </div>
+
+                    <div class="row" style="margin-bottom:15px; align-items:flex-end;">
+                        <div class="form-group" style="margin:0;">
+                            <label>Select Lot Number</label>
+                            <select id="judgeCurrentLotSelect" onchange="renderCurrentLotCard()"></select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Attendance Status</label>
+                            <div class="tap-switch-group" style="width:100%;">
+                                <button type="button" id="attPresentBtn" class="tap-btn active success" style="flex:1;" onclick="setLotAttendance(true)">
+                                    <i class="fas fa-user-check"></i> Present
+                                </button>
+                                <button type="button" id="attAbsentBtn" class="tap-btn" style="flex:1;" onclick="setLotAttendance(false)">
+                                    <i class="fas fa-user-slash"></i> Absent
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="singleLotCardContainer"></div>
+
+                    <div style="margin-top:18px; display:flex; justify-content:flex-end;">
+                        <button id="btnSaveLotMarks" class="action-btn success" style="padding:12px 24px; font-size:14px;" onclick="saveCurrentLotMarks()">
+                            <i class="fas fa-save"></i> Save Marks for this Lot
+                        </button>
+                    </div>
+                </div>
+
+                <div class="section" id="finalizeJudgementSection" style="display:none;">
+                    <div style="padding:16px 20px; background:rgba(241, 245, 249, 0.85); border-radius:12px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:15px;">
+                        <div>
+                            <h4 style="margin:0; font-size:15px; color:#0f172a;"><i class="fas fa-file-signature"></i> Official Judgement Submission</h4>
+                            <p style="margin:3px 0 0 0; font-size:13px; color:#64748b;" id="judgeSigningStatus">All lots scored. Ready to lock.</p>
+                        </div>
+                        <button id="btnFinalizeJudgement" class="action-btn danger" style="padding:14px 24px; font-size:15px;" onclick="finalizeJudgement()">
+                            <i class="fas fa-lock"></i> Finalize & Lock Judgement
+                        </button>
+                    </div>
                 </div>
             </div>
+
         </div>
 
         <!-- TAB 5: TABULATION TAB -->
@@ -4660,41 +4795,180 @@ function autoGenerateContinuousLots(randomize = false) {
         }, true);
     }
 
-    // --- 12. JUDGEMENT TAB ---
-    let allJudgeSortedItems = [];
+    // --- 12. JUDGEMENT TAB CONTROLLER ---
+    function initJudgementTab() {
+        const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
 
-function initJudgementTab() {
-    const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
-    const isReadOnlyAdmin = isAdmin && (dbSettings.Admin_ReadOnly_Judgement !== "DISABLED");
-    
-    document.getElementById('judgeAdminNotice').style.display = isReadOnlyAdmin ? 'block' : 'none';
+        const adminOverview = document.getElementById('adminJudgementOverview');
+        const judgeWorkflow = document.getElementById('judgeEvaluationWorkflow');
 
-    let itemsToShow = [];
-    if (isAdmin) {
-        itemsToShow = dbFests.filter(f => 
-            (dbSettings.ActiveProgrammes || []).includes(f["Item Code"]) || 
-            (dbSettings.CompletedProgrammes || []).includes(f["Item Code"])
-        );
-    } else {
+        // ADMIN VIEW: RENDER 3-SECTION LIVE STATUS DASHBOARD
+        if (isAdmin) {
+            if (adminOverview) adminOverview.style.display = 'block';
+            if (judgeWorkflow) judgeWorkflow.style.display = 'none';
+            renderAdminJudgementDashboard();
+            return;
+        }
+
+        // JUDGE VIEW: RENDER INDIVIDUAL SCORING WORKFLOW
+        if (adminOverview) adminOverview.style.display = 'none';
+        if (judgeWorkflow) judgeWorkflow.style.display = 'block';
+
         const currentJudge = dbJudges.find(j => 
             (j.phone && currentUser.id && String(j.phone).trim() === String(currentUser.id).trim()) || 
             (j.name && currentUser.name && String(j.name).toLowerCase() === String(currentUser.name).toLowerCase())
         );
         const assigned = currentJudge ? (currentJudge.assignedItems || []) : [];
-        itemsToShow = dbFests.filter(f => 
+        const itemsToShow = dbFests.filter(f => 
             assigned.includes(f["Item Code"]) && 
             ((dbSettings.ActiveProgrammes || []).includes(f["Item Code"]) || (dbSettings.CompletedProgrammes || []).includes(f["Item Code"]))
         );
+
+        allJudgeSortedItems = itemsToShow.filter(f => isFestEnabled(f["Fest Name"])).sort((a, b) => 
+            String(a["Item"] || "").localeCompare(String(b["Item"] || ""))
+        );
+
+        renderJudgeDropdownList(allJudgeSortedItems);
+        renderCriteriaChips(false);
     }
 
-    // Filter only enabled fests and sort in ALPHABETICAL ORDER by Item Name
-    allJudgeSortedItems = itemsToShow.filter(f => isFestEnabled(f["Fest Name"])).sort((a, b) => 
-        String(a["Item"] || "").localeCompare(String(b["Item"] || ""))
-    );
+    // --- ADMIN DASHBOARD RENDERER FOR JUDGEMENT TAB ---
+    function renderAdminJudgementDashboard() {
+        const completedContainer = document.getElementById('adminCompletedCards');
+        const activeContainer = document.getElementById('adminActiveCards');
+        const inactiveContainer = document.getElementById('adminInactiveCards');
 
-    renderJudgeDropdownList(allJudgeSortedItems);
-    renderCriteriaChips(isReadOnlyAdmin);
-}
+        if (!completedContainer || !activeContainer || !inactiveContainer) return;
+
+        completedContainer.innerHTML = "";
+        activeContainer.innerHTML = "";
+        inactiveContainer.innerHTML = "";
+
+        const items = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
+        
+        const completedItems = [];
+        const activeItems = [];
+        const inactiveItems = [];
+
+        items.forEach(f => {
+            const status = getItemLiveStatus(f["Item Code"]);
+            if (status === "COMPLETED") completedItems.push(f);
+            else if (status === "ACTIVE") activeItems.push(f);
+            else inactiveItems.push(f);
+        });
+
+        // Update count badges
+        document.getElementById('badgeCompletedCount').innerText = `${completedItems.length} Items`;
+        document.getElementById('badgeActiveCount').innerText = `${activeItems.length} Items`;
+        document.getElementById('badgeInactiveCount').innerText = `${inactiveItems.length} Items`;
+
+        // Card Generator Function (Strictly zero student identities)
+        const createCardHTML = (f, statusClass) => {
+            const code = f["Item Code"];
+            const festName = f["Fest Name"];
+            const itemName = f["Item"];
+            const category = f["Category"] || "General";
+
+            // Registrations for this item
+            const regs = dbRegistrations.filter(r => r["Item Code"] === code || r["Item"] === itemName);
+            const totalParticipants = regs.length;
+
+            // Calculate competing units (individual = 1, group = 1 per team)
+            const unitMap = new Map();
+            regs.forEach(r => {
+                const isGroup = parseInt(r["No of Participants"] || 1) > 1;
+                const unitKey = isGroup ? (`${r["Item"]}_${r["Class"]}${r["Division"]}`) : (r["Admission Number"] || r.id);
+                if (!unitMap.has(unitKey)) {
+                    unitMap.set(unitKey, r["Lot Number"] || "");
+                }
+            });
+            const totalLots = Array.from(unitMap.values()).filter(l => l && String(l).trim() !== "").length;
+
+            // Attendance & Scores from judge evaluations
+            const scores = dbJudgeScores.filter(s => s.itemCode === code);
+            const evaluatedUnitMap = new Map();
+            scores.forEach(s => {
+                if (!evaluatedUnitMap.has(s.registrationId)) {
+                    evaluatedUnitMap.set(s.registrationId, (s.isAbsent === true || s.grade === "Absent"));
+                }
+            });
+
+            let presentCount = 0;
+            let absentCount = 0;
+            evaluatedUnitMap.forEach(isAbsent => {
+                if (isAbsent) absentCount++;
+                else presentCount++;
+            });
+
+            // Assigned Judges
+            const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(code)).map(j => j.name);
+            const judgeListText = assignedJudges.length > 0 ? assignedJudges.join(", ") : "No judge allotted";
+
+            return `
+                <div class="admin-judge-card ${statusClass}">
+                    <div>
+                        <div class="admin-judge-card-header">
+                            <span class="fest-badge">${festName}</span>
+                            <span style="font-size:11px; font-weight:700; color:var(--text-muted); font-family:monospace;">[${code}]</span>
+                        </div>
+                        <h4 class="admin-judge-card-title">${itemName}</h4>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Category: <b>${category}</b></div>
+                    </div>
+
+                    <!-- BLIND STATS GRID -->
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-item">
+                            <span class="admin-stat-label">Participants:</span>
+                            <span class="admin-stat-val">${totalParticipants}</span>
+                        </div>
+                        <div class="admin-stat-item">
+                            <span class="admin-stat-label">Allotted Lots:</span>
+                            <span class="admin-stat-val">${totalLots} / ${unitMap.size}</span>
+                        </div>
+                        <div class="admin-stat-item">
+                            <span class="admin-stat-label">Present:</span>
+                            <span class="admin-stat-val present">${evaluatedUnitMap.size > 0 ? presentCount : '-'}</span>
+                        </div>
+                        <div class="admin-stat-item">
+                            <span class="admin-stat-label">Absent:</span>
+                            <span class="admin-stat-val absent">${evaluatedUnitMap.size > 0 ? absentCount : '-'}</span>
+                        </div>
+                    </div>
+
+                    <div style="font-size:11px; color:var(--text-muted); border-top:1px solid var(--border-subtle); padding-top:6px;">
+                        <i class="fas fa-user-tie"></i> <b>Judges:</b> ${judgeListText}
+                    </div>
+                </div>
+            `;
+        };
+
+        // Render Active Cards
+        if (activeItems.length === 0) {
+            activeContainer.innerHTML = '<p style="color:#94a3b8; font-size:13px; padding:10px; width:100%;">No programmes currently active.</p>';
+        } else {
+            activeItems.forEach(item => {
+                activeContainer.innerHTML += createCardHTML(item, 'card-active');
+            });
+        }
+
+        // Render Completed Cards
+        if (completedItems.length === 0) {
+            completedContainer.innerHTML = '<p style="color:#94a3b8; font-size:13px; padding:10px; width:100%;">No completed items yet.</p>';
+        } else {
+            completedItems.forEach(item => {
+                completedContainer.innerHTML += createCardHTML(item, 'card-completed');
+            });
+        }
+
+        // Render Inactive Cards
+        if (inactiveItems.length === 0) {
+            inactiveContainer.innerHTML = '<p style="color:#94a3b8; font-size:13px; padding:10px; width:100%;">No inactive items.</p>';
+        } else {
+            inactiveItems.forEach(item => {
+                inactiveContainer.innerHTML += createCardHTML(item, 'card-inactive');
+            });
+        }
+    }
 
 function renderJudgeDropdownList(items) {
     const list = document.getElementById('judgeActiveItemsDropdownList');
