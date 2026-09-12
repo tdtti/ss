@@ -5583,8 +5583,8 @@ function renderResults() {
 
     container.innerHTML = "";
 
-    // 1. Filter results: only active enabled fests
-    let results = [...dbPublishedResults].filter(r => isFestEnabled(r.festName));
+    // 1. Show all published results even if fest is disabled
+    let results = [...dbPublishedResults];
 
     // 2. Filter by Category
     if (catFilter !== "ALL") {
@@ -5605,8 +5605,8 @@ function renderResults() {
 
     // 4. OVERALL CHAMPIONSHIP POINTS TABLE CALCULATION
     const classPoints = {};
-    dbPublishedResults.filter(r => isFestEnabled(r.festName)).forEach(r => {
-        const clsKey = `${r.studentClass} ${r.studentDivision || ''}`.trim() || "General";
+dbPublishedResults.forEach(r => {
+    const clsKey = `${r.studentClass} ${r.studentDivision || ''}`.trim() || "General";
         if (!classPoints[clsKey]) {
             classPoints[clsKey] = { points: 0, first: 0, second: 0, third: 0 };
         }
@@ -5849,7 +5849,10 @@ function renderResults() {
 
         container.innerHTML = "";
 
-        let results = [...dbPublishedResults].filter(r => isFestEnabled(r.festName));
+        // Shows entries not hidden, and keeps qualified candidates visible even if fest is disabled
+let results = [...dbPublishedResults].filter(r => 
+    !r.hideFromSubDistrict && (isFestEnabled(r.festName) || r.qualifiedSubDistrict === true)
+);
         if (catFilter !== "ALL") {
             results = results.filter(r => r.festCategory === catFilter);
         }
@@ -5985,35 +5988,49 @@ function renderResults() {
         }
     }
 
-    // DELETE SINGLE ENTRY FROM SUB-DISTRICT TAB
-    async function deleteSubDistrictEntry(resId) {
-        showCustomDialog(
-            "Delete Sub-District Entry?", 
-            "Are you sure you want to permanently delete this entry? It will be removed from both Sub-District and Results tabs.", 
-            "danger", 
-            async () => {
-                showLoader("Deleting Entry...");
-                try {
-                    await db.collection("published_results").doc(resId).delete();
-                    dbPublishedResults = dbPublishedResults.filter(r => r.id !== resId);
-                    hideLoader();
-                    renderSubDistrictTab();
-                    renderResults();
-                    showCustomDialog("Deleted", "Entry removed successfully.", "success");
-                } catch (e) {
-                    hideLoader();
-                    showCustomDialog("Error", "Could not delete entry.", "danger");
+    // --- REMOVE FROM SUB-DISTRICT ONLY (KEEPS RESULTS & CERTIFICATES SAFE) ---
+async function deleteSubDistrictEntry(resId) {
+    showCustomDialog(
+        "Remove from Sub-District?", 
+        "Are you sure you want to remove this entry from the Sub-District list?<br><br><small style='color:#059669;'><b>Note:</b> The candidate's score, rank, and certificate in the Results Tab will remain completely safe.</small>", 
+        "warning", 
+        async () => {
+            showLoader("Removing from Sub-District...");
+            try {
+                // Update Firestore to hide from Sub-District without deleting result document
+                await db.collection("published_results").doc(resId).update({
+                    hideFromSubDistrict: true,
+                    qualifiedSubDistrict: false
+                });
+
+                // Update local memory
+                const localItem = dbPublishedResults.find(r => r.id === resId);
+                if (localItem) {
+                    localItem.hideFromSubDistrict = true;
+                    localItem.qualifiedSubDistrict = false;
                 }
-            }, 
-            true
-        );
-    }
+
+                hideLoader();
+                renderSubDistrictTab(); // Re-render Sub-District tab only
+                showCustomDialog("Removed", "Candidate removed from Sub-District list. Their published result remains untouched.", "success");
+            } catch (e) {
+                hideLoader();
+                console.error("Sub-district removal error:", e);
+                showCustomDialog("Error", "Could not remove entry from Sub-District list.", "danger");
+            }
+        }, 
+        true
+    );
+}
 
     function openSubDistrictReport(autoPrint = false) {
         const tbody = document.getElementById('sdReportTableTbody');
         tbody.innerHTML = "";
 
-        const qualifiedList = dbPublishedResults.filter(r => r.qualifiedSubDistrict === true && isFestEnabled(r.festName));
+        // Includes all qualified candidates even if the festival is disabled
+const qualifiedList = dbPublishedResults.filter(r => 
+    r.qualifiedSubDistrict === true && !r.hideFromSubDistrict
+);
 
         document.getElementById('sdReportMetaInfo').innerText = `Total Qualified: ${qualifiedList.length} | Generated on: ${new Date().toLocaleString('en-IN')}`;
 
