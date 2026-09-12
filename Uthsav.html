@@ -1650,7 +1650,37 @@
     option[value="Sports"] {
     display: none !important;}
 
-    
+/* Pulsing Green LED for Active Judge Evaluation */
+    .led-green-pulse {
+        background-color: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: ledPulse 1.5s infinite !important;
+        margin: 0 !important;
+    }
+    @keyframes ledPulse {
+        0% {
+            transform: scale(0.92);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+        70% {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 7px rgba(16, 185, 129, 0);
+        }
+        100% {
+            transform: scale(0.92);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        }
+    }
+
+    .eval-active-pill {
+        display: inline-flex;
+        align-items: center;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        padding: 2px 7px;
+        border-radius: 12px;
+        gap: 5px;
+    }    
 
 </style>  
 </head>
@@ -4864,18 +4894,22 @@ function autoGenerateContinuousLots(randomize = false) {
         document.getElementById('badgeActiveCount').innerText = `${activeItems.length} Items`;
         document.getElementById('badgeInactiveCount').innerText = `${inactiveItems.length} Items`;
 
-        // Card Generator Function (Strictly zero student identities)
         const createCardHTML = (f, statusClass) => {
             const code = f["Item Code"];
             const festName = f["Fest Name"];
             const itemName = f["Item"];
             const category = f["Category"] || "General";
 
+            // CHECK IF ANY JUDGE CURRENTLY HAS THIS ITEM SELECTED
+            const livePresence = dbSettings.LiveJudgeActiveItems && dbSettings.LiveJudgeActiveItems[code];
+            const isBeingEvaluated = !!livePresence;
+            const activeJudgeName = livePresence ? (livePresence.judgeName || "Judge") : "";
+
             // Registrations for this item
             const regs = dbRegistrations.filter(r => r["Item Code"] === code || r["Item"] === itemName);
             const totalParticipants = regs.length;
 
-            // Calculate competing units (individual = 1, group = 1 per team)
+            // Competing units
             const unitMap = new Map();
             regs.forEach(r => {
                 const isGroup = parseInt(r["No of Participants"] || 1) > 1;
@@ -4911,7 +4945,17 @@ function autoGenerateContinuousLots(randomize = false) {
                     <div>
                         <div class="admin-judge-card-header">
                             <span class="fest-badge">${festName}</span>
-                            <span style="font-size:11px; font-weight:700; color:var(--text-muted); font-family:monospace;">[${code}]</span>
+                            
+                            <!-- GREEN LED NEAR THE ITEM NUMBER -->
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                ${isBeingEvaluated ? `
+                                    <span class="eval-active-pill" title="Judge ${activeJudgeName} is currently evaluating this item!">
+                                        <span class="led-indicator led-green-pulse"></span>
+                                        <span style="font-size:10px; font-weight:800; color:#059669;">EVALUATING</span>
+                                    </span>
+                                ` : ''}
+                                <span style="font-size:11px; font-weight:700; color:var(--text-muted); font-family:monospace;">[${code}]</span>
+                            </div>
                         </div>
                         <h4 class="admin-judge-card-title">${itemName}</h4>
                         <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Category: <b>${category}</b></div>
@@ -5004,11 +5048,51 @@ function filterJudgeSearchItems(query) {
 }
 
 function selectJudgeSearchItem(code, displayText) {
+    const prevCode = document.getElementById('judgeActiveItemsSelect')?.value;
     document.getElementById('judgeActiveItemsSelect').value = code;
     document.getElementById('judgeActiveItemsSearchInput').value = displayText;
     document.getElementById('judgeActiveItemsDropdownList').style.display = 'none';
+
+    // Broadcast active selection to Admin in real time
+    broadcastJudgeActiveSelection(code, prevCode);
+
     setupJudgeSheet();
 }
+
+// Broadcasts which active item this judge is currently viewing/scoring
+async function broadcastJudgeActiveSelection(newCode, prevCode) {
+    if (!currentUser || currentUser.role !== "Judge") return;
+    try {
+        const updates = {};
+        if (prevCode && prevCode !== newCode) {
+            updates[`LiveJudgeActiveItems.${prevCode}`] = firebase.firestore.FieldValue.delete();
+        }
+        if (newCode) {
+            updates[`LiveJudgeActiveItems.${newCode}`] = {
+                judgeName: currentUser.name,
+                judgePhone: currentUser.id,
+                selectedAt: Date.now()
+            };
+        }
+        await db.collection("config").doc("settings").update(updates);
+    } catch (e) {
+        // Fallback if settings document doesn't have the field initialized yet
+        try {
+            await db.collection("config").doc("settings").set({
+                LiveJudgeActiveItems: {
+                    [newCode]: {
+                        judgeName: currentUser.name,
+                        judgePhone: currentUser.id,
+                        selectedAt: Date.now()
+                    }
+                }
+            }, { merge: true });
+        } catch (err) {
+            console.error("Presence broadcast error:", err);
+        }
+    }
+}
+
 
 // Global click listener to automatically close dropdowns when clicking outside
 document.addEventListener('click', (e) => {
@@ -5381,127 +5465,139 @@ document.addEventListener('click', (e) => {
 
     
     // --- FINALIZE AND LOCK ALL SCORES AT ONCE ---
-async function finalizeJudgement() {
-    const rawCode = document.getElementById('judgeActiveItemsSelect')?.value;
-    if (!rawCode) {
-        return showCustomDialog("Item Missing", "No item selected for finalization.", "warning");
-    }
+    async function finalizeJudgement() {
+        const rawCode = document.getElementById('judgeActiveItemsSelect')?.value;
+        if (!rawCode) {
+            return showCustomDialog("Item Missing", "No item selected for finalization.", "warning");
+        }
 
-    const cleanCode = String(rawCode).trim();
-    const festObj = dbFests.find(f => String(f["Item Code"] || "").trim() === cleanCode);
-    const itemName = festObj ? festObj["Item"] : cleanCode;
-    const totalUnits = currentJudgeSession.units ? currentJudgeSession.units.length : 0;
+        const cleanCode = String(rawCode).trim();
+        const festObj = dbFests.find(f => String(f["Item Code"] || "").trim() === cleanCode);
+        const itemName = festObj ? festObj["Item"] : cleanCode;
+        const totalUnits = currentJudgeSession.units ? currentJudgeSession.units.length : 0;
 
-    // 1. Validation: Ensure all candidates/lots have been scored
-    if (currentJudgeSession.savedUnitIds.size < totalUnits) {
-        return showCustomDialog(
-            "Evaluation Incomplete",
-            `Please evaluate and save all lots before locking.<br><br>Scored: <b>${currentJudgeSession.savedUnitIds.size} of ${totalUnits} lots</b>.`,
-            "warning"
-        );
-    }
+        // 1. Validation: Ensure all lots/candidates have been evaluated and saved
+        if (currentJudgeSession.savedUnitIds.size < totalUnits) {
+            return showCustomDialog(
+                "Evaluation Incomplete",
+                `Please evaluate and save all lots before locking.<br><br>` +
+                `Scored: <b>${currentJudgeSession.savedUnitIds.size} of ${totalUnits} lots</b>.`,
+                "warning"
+            );
+        }
 
-    // 2. Confirmation prompt before locking
-    showCustomDialog(
-        "Lock Judgement Submission?",
-        `Finalize and permanently lock scores for <b>${itemName} [${cleanCode}]</b>?<br><br>` +
-        `All lot scores will be recorded and signed by <b>${currentUser.name} (${currentUser.id})</b>.<br><br>` +
-        `<i>Once locked, marks cannot be altered without administrator reset.</i>`,
-        "warning",
-        async () => {
-            showLoader("Submitting & Locking Judgement...");
-            try {
-                const batch = db.batch();
-                const timestamp = new Date().toLocaleString('en-IN');
+        // 2. Confirmation prompt before locking
+        showCustomDialog(
+            "Lock Judgement Submission?",
+            `Finalize and permanently lock scores for <b>${itemName} [${cleanCode}]</b>?<br><br>` +
+            `All lot scores will be recorded and officially signed by <b>${currentUser.name} (${currentUser.id})</b>.<br><br>` +
+            `<i>Once locked, marks cannot be altered without administrator reset.</i>`,
+            "warning",
+            async () => {
+                showLoader("Submitting & Locking Judgement...");
+                try {
+                    const batch = db.batch();
+                    const timestamp = new Date().toLocaleString('en-IN');
 
-                // 3. Batch commit all individual lot scores
-                currentJudgeSession.units.forEach(unit => {
-                    const scoreData = currentJudgeSession.unitScores[unit.id];
-                    if (!scoreData) return;
+                    // 3. Batch commit all individual lot scores
+                    currentJudgeSession.units.forEach(unit => {
+                        const scoreData = currentJudgeSession.unitScores[unit.id];
+                        if (!scoreData) return;
 
-                    const reg = dbRegistrations.find(r => r.id === unit.id);
+                        const reg = dbRegistrations.find(r => r.id === unit.id);
 
-                    const scoreDoc = {
-                        itemCode: cleanCode,
-                        itemName: itemName,
-                        festName: festObj ? festObj["Fest Name"] : "",
-                        festCategory: getFestivalCategory(festObj ? festObj["Fest Name"] : ""),
-                        registrationId: unit.id,
-                        admissionNumber: reg ? (reg["Admission Number"] || "") : "",
-                        candidateName: reg ? (reg["Name"] || "") : "",
-                        studentClass: reg ? (reg["Class"] || "") : "",
-                        studentDivision: reg ? (reg["Division"] || "") : "",
-                        lotNumber: scoreData.lotNumber || "N/A",
-                        criteriaScores: scoreData.critMap || {},
-                        totalScore: scoreData.score,
-                        maxMarks: scoreData.maxMarks,
-                        percentage: scoreData.percentage,
-                        grade: scoreData.grade,
-                        isAbsent: scoreData.isAbsent || false,
+                        const scoreDoc = {
+                            itemCode: cleanCode,
+                            itemName: itemName,
+                            festName: festObj ? festObj["Fest Name"] : "",
+                            festCategory: getFestivalCategory(festObj ? festObj["Fest Name"] : ""),
+                            registrationId: unit.id,
+                            admissionNumber: reg ? (reg["Admission Number"] || "") : "",
+                            candidateName: reg ? (reg["Name"] || "") : "",
+                            studentClass: reg ? (reg["Class"] || "") : "",
+                            studentDivision: reg ? (reg["Division"] || "") : "",
+                            lotNumber: scoreData.lotNumber || "N/A",
+                            criteriaScores: scoreData.critMap || {},
+                            totalScore: scoreData.score,
+                            maxMarks: scoreData.maxMarks,
+                            percentage: scoreData.percentage,
+                            grade: scoreData.grade,
+                            isAbsent: scoreData.isAbsent || false,
+                            judgeName: currentUser.name,
+                            judgePhone: currentUser.id,
+                            timestamp: timestamp,
+                            locked: true
+                        };
+
+                        const ref = db.collection("judge_scores").doc();
+                        batch.set(ref, scoreDoc);
+                        dbJudgeScores.push({ ...scoreDoc, id: ref.id });
+                    });
+
+                    // 4. Update System Settings (Move from Active to Completed)
+                    if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
+                    if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
+
+                    // Add to CompletedProgrammes list
+                    if (!dbSettings.CompletedProgrammes.some(c => String(c).trim().toLowerCase() === cleanCode.toLowerCase())) {
+                        dbSettings.CompletedProgrammes.push(cleanCode);
+                    }
+
+                    // Remove from ActiveProgrammes list
+                    dbSettings.ActiveProgrammes = dbSettings.ActiveProgrammes.filter(
+                        c => String(c).trim().toLowerCase() !== cleanCode.toLowerCase()
+                    );
+
+                    // Turn off the evaluating green LED in local memory
+                    if (dbSettings.LiveJudgeActiveItems && dbSettings.LiveJudgeActiveItems[cleanCode]) {
+                        delete dbSettings.LiveJudgeActiveItems[cleanCode];
+                    }
+
+                    // Update settings in Firestore & delete the active judge presence key
+                    const settingsDocRef = db.collection("config").doc("settings");
+                    batch.update(settingsDocRef, {
+                        CompletedProgrammes: dbSettings.CompletedProgrammes,
+                        ActiveProgrammes: dbSettings.ActiveProgrammes,
+                        [`LiveJudgeActiveItems.${cleanCode}`]: firebase.firestore.FieldValue.delete()
+                    });
+
+                    // 5. Audit Logging for Administrator visibility
+                    const logRef = db.collection("judge_logs").doc();
+                    batch.set(logRef, {
+                        timestamp: timestamp,
                         judgeName: currentUser.name,
                         judgePhone: currentUser.id,
-                        timestamp: timestamp,
-                        locked: true
-                    };
+                        itemCode: cleanCode,
+                        itemName: itemName,
+                        criteriaCount: currentJudgeCriteria.length,
+                        status: "Judgement Locked & Completed"
+                    });
 
-                    const ref = db.collection("judge_scores").doc();
-                    batch.set(ref, scoreDoc);
-                    dbJudgeScores.push({ ...scoreDoc, id: ref.id });
-                });
+                    // Execute batch commit
+                    await batch.commit();
 
-                // 4. Update System Settings (Move from Active to Completed)
-                if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
-                if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
+                    hideLoader();
+                    showCustomDialog(
+                        "Judgement Completed",
+                        `All scores for <b>${itemName}</b> have been locked and submitted successfully.`,
+                        "success"
+                    );
 
-                // Add to CompletedProgrammes if not present (case/trim safe)
-                if (!dbSettings.CompletedProgrammes.some(c => String(c).trim().toLowerCase() === cleanCode.toLowerCase())) {
-                    dbSettings.CompletedProgrammes.push(cleanCode);
+                    // 6. Refresh UI components
+                    setupJudgeSheet();
+                    initJudgementTab();
+                    if (typeof loadEventMgmtItemDetails === "function") {
+                        loadEventMgmtItemDetails();
+                    }
+                } catch (err) {
+                    hideLoader();
+                    console.error("Judgement locking error:", err);
+                    showCustomDialog("Submission Error", "Could not complete judgement locking. Please try again.", "danger");
                 }
-
-                // Remove from ActiveProgrammes
-                dbSettings.ActiveProgrammes = dbSettings.ActiveProgrammes.filter(
-                    c => String(c).trim().toLowerCase() !== cleanCode.toLowerCase()
-                );
-
-                batch.set(db.collection("config").doc("settings"), dbSettings, { merge: true });
-
-                // 5. Audit Logging for Administrator visibility
-                const logRef = db.collection("judge_logs").doc();
-                batch.set(logRef, {
-                    timestamp: timestamp,
-                    judgeName: currentUser.name,
-                    judgePhone: currentUser.id,
-                    itemCode: cleanCode,
-                    itemName: itemName,
-                    criteriaCount: currentJudgeCriteria.length,
-                    status: "Judgement Locked & Completed"
-                });
-
-                // Execute batch commit
-                await batch.commit();
-
-                hideLoader();
-                showCustomDialog(
-                    "Judgement Completed",
-                    `All scores for <b>${itemName}</b> have been locked and submitted successfully.`,
-                    "success"
-                );
-
-                // 6. Refresh UI components
-                setupJudgeSheet();
-                initJudgementTab();
-                if (typeof loadEventMgmtItemDetails === "function") {
-                    loadEventMgmtItemDetails();
-                }
-            } catch (err) {
-                hideLoader();
-                console.error("Judgement locking error:", err);
-                showCustomDialog("Submission Error", "Could not complete judgement locking. Please try again.", "danger");
-            }
-        },
-        true
-    );
-}
+            },
+            true
+        );
+    }
 
     function recalculateRowScore(unitId) {
         const inputs = document.querySelectorAll(`input.score-input[data-unitid="${unitId}"]`);
