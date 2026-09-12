@@ -3445,8 +3445,16 @@
         }, 1000);
     }
 
-    function logout() {
+    async function logout() {
         clearInterval(timerInterval);
+        clearInterval(judgeHeartbeatTimer);
+
+        // Instantly turn off green LED on Admin screen before logging out
+        if (currentUser && currentUser.role === "Judge") {
+            showLoader("Signing out...");
+            await clearJudgePresence();
+        }
+
         localStorage.removeItem("uthsavOfficial");
         window.location.reload();
     }
@@ -4905,7 +4913,13 @@ function autoGenerateContinuousLots(randomize = false) {
 
             // CHECK IF ANY JUDGE CURRENTLY HAS THIS ITEM SELECTED
             const livePresence = dbSettings.LiveJudgeActiveItems && dbSettings.LiveJudgeActiveItems[code];
-            const isBeingEvaluated = !!livePresence;
+            
+            // INACTIVITY CHECK: Ping must be fresher than 60 seconds
+            const now = Date.now();
+            const lastPing = livePresence ? (livePresence.lastPing || livePresence.selectedAt || 0) : 0;
+            const isFresh = livePresence && (now - lastPing < 60000); // 60s inactivity threshold
+            
+            const isBeingEvaluated = !!livePresence && isFresh;
             const activeJudgeName = livePresence ? (livePresence.judgeName || "Judge") : "";
 
             // Registrations for this item
@@ -5057,8 +5071,9 @@ function selectJudgeSearchItem(code, displayText) {
     document.getElementById('judgeActiveItemsSearchInput').value = displayText;
     document.getElementById('judgeActiveItemsDropdownList').style.display = 'none';
 
-    // Broadcast active selection to Admin in real time
+    // Broadcast active selection and start inactivity heartbeat
     broadcastJudgeActiveSelection(code, prevCode);
+    startJudgeHeartbeat(code); // <-- ADD THIS LINE
 
     setupJudgeSheet();
 }
@@ -5096,6 +5111,63 @@ async function broadcastJudgeActiveSelection(newCode, prevCode) {
         }
     }
 }
+
+// ==========================================================================
+    // JUDGE PRESENCE, HEARTBEAT & INACTIVITY HANDLERS
+    // ==========================================================================
+    let judgeHeartbeatTimer = null;
+
+    // Clears all active presence for this judge in Firestore
+    async function clearJudgePresence() {
+        if (!currentUser || currentUser.role !== "Judge") return;
+        clearInterval(judgeHeartbeatTimer);
+        try {
+            const updates = {};
+            const liveMap = dbSettings.LiveJudgeActiveItems || {};
+            
+            // Find all items attributed to this judge
+            Object.keys(liveMap).forEach(code => {
+                const item = liveMap[code];
+                if (item && (item.judgePhone === currentUser.id || item.judgeName === currentUser.name)) {
+                    updates[`LiveJudgeActiveItems.${code}`] = firebase.firestore.FieldValue.delete();
+                }
+            });
+
+            const currentSelectedCode = document.getElementById('judgeActiveItemsSelect')?.value;
+            if (currentSelectedCode && !updates[`LiveJudgeActiveItems.${currentSelectedCode}`]) {
+                updates[`LiveJudgeActiveItems.${currentSelectedCode}`] = firebase.firestore.FieldValue.delete();
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await db.collection("config").doc("settings").update(updates);
+            }
+        } catch (e) {
+            console.error("Error clearing judge presence:", e);
+        }
+    }
+
+    // Sends a heartbeat ping every 25s while the judge is actively on the page
+    function startJudgeHeartbeat(code) {
+        clearInterval(judgeHeartbeatTimer);
+        if (!code || !currentUser || currentUser.role !== "Judge") return;
+
+        judgeHeartbeatTimer = setInterval(async () => {
+            try {
+                await db.collection("config").doc("settings").update({
+                    [`LiveJudgeActiveItems.${code}.lastPing`]: Date.now()
+                });
+            } catch (e) {
+                clearInterval(judgeHeartbeatTimer);
+            }
+        }, 25000); // 25 seconds
+    }
+
+    // Clear presence immediately if judge closes the browser tab or window
+    window.addEventListener('beforeunload', () => {
+        if (currentUser && currentUser.role === "Judge") {
+            clearJudgePresence();
+        }
+    });
 
 
 // Global click listener to automatically close dropdowns when clicking outside
@@ -7804,6 +7876,17 @@ document.addEventListener('keydown', (e) => {
             }
         }, err => console.error("Realtime judge scores sync error:", err));
     }
+
+
+    // Auto-check for judge inactivity on Admin dashboard every 15s
+    setInterval(() => {
+        const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
+        const jTab = document.getElementById('JudgementTab');
+        if (isAdmin && jTab && jTab.style.display === 'block') {
+            renderAdminJudgementDashboard();
+        }
+    }, 15000);
+    
 
 </script>
 </body>
