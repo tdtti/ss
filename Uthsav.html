@@ -2289,7 +2289,7 @@
                 </div>
 
                 <!-- SECTION 2: EVALUATION CRITERIA (ONLY VISIBLE TO MASTER / SOLE JUDGE) -->
-                <div class="section" id="judgeCriteriaSection">
+                <div class="section" id="judgeCriteriaSection" style="display:none;">
                   <h4 class="section-title">
                         <span><i class="fas fa-list-ol"></i> Evaluation Criteria (10 Marks Each)</span>
                         <button id="btnAddCriterionBtn" class="action-btn" style="padding:6px 12px; font-size:12px;" onclick="addCriterionPrompt()"><i class="fas fa-plus"></i> Add Criterion</button>
@@ -4937,6 +4937,9 @@ function autoGenerateContinuousLots(randomize = false) {
 
         renderJudgeDropdownList(allJudgeSortedItems);
         renderCriteriaChips(false);
+        
+        // Ensure criteria and all scoring panels stay hidden until an item is selected
+        setupJudgeSheet();
     }
 
     // ==========================================================================
@@ -5527,7 +5530,7 @@ document.addEventListener('click', (e) => {
         }
     }
 
-    
+
     // CONFIRM CRITERIA HANDLER (MASTER JUDGE ONLY)
     async function confirmJudgeCriteria() {
         if (currentJudgeCriteria.length === 0) {
