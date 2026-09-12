@@ -4865,30 +4865,46 @@ function autoGenerateContinuousLots(randomize = false) {
         });
     }
 
-    // Helper: Checks if this judge is the Master Judge for a given item
-    function isJudgeMasterForItem(judgeUser, itemCode) {
-        if (!judgeUser) return false;
-        const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(itemCode));
-        
-        // Single judge is automatically the sole master
-        if (assignedJudges.length <= 1) return true;
+    // STRICT MASTER JUDGE VERIFICATION
+function isJudgeMasterForItem(judgeUser, rawItemCode) {
+    if (!judgeUser || !rawItemCode) return false;
+    const cleanCode = String(rawItemCode).trim().toLowerCase();
+    
+    const userPhone = String(judgeUser.id || "").trim();
+    const userName = String(judgeUser.name || "").trim().toLowerCase();
 
-        // Check if explicitly marked in masterItems array
-        const judgeDoc = dbJudges.find(j => 
-            (j.phone && String(j.phone).trim() === String(judgeUser.id).trim()) || 
-            (j.name && String(j.name).toLowerCase() === String(judgeUser.name).toLowerCase())
-        );
-        if (judgeDoc && (judgeDoc.masterItems || []).includes(itemCode)) {
-            return true;
-        }
+    // Find all judges assigned to this item
+    const assignedJudges = dbJudges.filter(j => 
+        (j.assignedItems || []).some(code => String(code).trim().toLowerCase() === cleanCode)
+    );
 
-        // Fallback: If not explicitly set, the 1st allotted judge is Master Judge
-        const firstAllotted = assignedJudges[0];
-        return firstAllotted && (
-            String(firstAllotted.phone).trim() === String(judgeUser.id).trim() ||
-            String(firstAllotted.name).toLowerCase() === String(judgeUser.name).toLowerCase()
-        );
-    }
+    // If item has no assigned judges in the directory, deny master access
+    if (assignedJudges.length === 0) return false;
+
+    // Check if this judge is assigned to this item
+    const thisJudgeDoc = assignedJudges.find(j => 
+        (j.phone && String(j.phone).trim() === userPhone) ||
+        (j.name && String(j.name).trim().toLowerCase() === userName)
+    );
+    if (!thisJudgeDoc) return false;
+
+    // 1. Check if designated with masterItems
+    const hasExplicitMaster = (thisJudgeDoc.masterItems || []).some(
+        code => String(code).trim().toLowerCase() === cleanCode
+    );
+    if (hasExplicitMaster) return true;
+
+    // 2. If another judge has explicit master status, this judge is a panel judge
+    const anotherIsMaster = assignedJudges.some(j => 
+        (j.masterItems || []).some(code => String(code).trim().toLowerCase() === cleanCode)
+    );
+    if (anotherIsMaster) return false;
+
+    // 3. Fallback: Only the very first judge allotted to this item acts as Master Judge
+    const firstJudge = assignedJudges[0];
+    return (firstJudge.phone && String(firstJudge.phone).trim() === userPhone) ||
+           (firstJudge.name && String(firstJudge.name).trim().toLowerCase() === userName);
+}
 
     async function deleteJudge(id) {
         showCustomDialog("Remove Judge?", "Are you sure you want to remove this judge assignment?", "warning", async () => {
@@ -4899,7 +4915,7 @@ function autoGenerateContinuousLots(randomize = false) {
         }, true);
     }
 
-    // --- 12. JUDGEMENT TAB CONTROLLER ---
+    // --- JUDGEMENT TAB CONTROLLER ---
     function initJudgementTab() {
         const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
 
@@ -4918,7 +4934,6 @@ function autoGenerateContinuousLots(randomize = false) {
         if (adminOverview) adminOverview.style.display = 'none';
         if (judgeWorkflow) judgeWorkflow.style.display = 'block';
 
-       // JUDGE VIEW: Show ONLY items that are ACTIVE and NOT yet COMPLETED
         const currentJudge = dbJudges.find(j => 
             (j.phone && currentUser.id && String(j.phone).trim() === String(currentUser.id).trim()) || 
             (j.name && currentUser.name && String(j.name).toLowerCase() === String(currentUser.name).toLowerCase())
@@ -4937,7 +4952,6 @@ function autoGenerateContinuousLots(randomize = false) {
         );
 
         renderJudgeDropdownList(allJudgeSortedItems);
-        renderCriteriaChips(false);
         
         // Ensure criteria and all scoring panels stay hidden until an item is selected
         setupJudgeSheet();
@@ -5299,59 +5313,110 @@ document.addEventListener('click', (e) => {
 });
 
     function renderCriteriaChips(isLocked = false) {
-        const cList = document.getElementById('criteriaList');
-        const addBtn = document.getElementById('btnAddCriterionBtn');
-        if (!cList) return;
-        cList.innerHTML = "";
+    const cList = document.getElementById('criteriaList');
+    const addBtn = document.getElementById('btnAddCriterionBtn');
+    if (!cList) return;
+    cList.innerHTML = "";
 
-        const code = currentJudgeSession.itemCode || document.getElementById('judgeActiveItemsSelect')?.value;
-        const isMaster = typeof isJudgeMasterForItem === "function" ? isJudgeMasterForItem(currentUser, code) : true;
+    const code = currentJudgeSession.itemCode || document.getElementById('judgeActiveItemsSelect')?.value;
+    const isMaster = isJudgeMasterForItem(currentUser, code);
 
-        // ONLY MASTER JUDGE CAN ADD CRITERIA
-        if (addBtn) {
-            addBtn.style.display = (isMaster && !isLocked) ? 'inline-flex' : 'none';
-            addBtn.disabled = isLocked;
-        }
-
-        currentJudgeCriteria.forEach((crit, i) => {
-            const actionsHTML = (isMaster && !isLocked) ? `
-                <i class="fas fa-edit" style="cursor:pointer; color:var(--primary); margin-left:6px;" onclick="editCriterion(${i})"></i>
-                <i class="fas fa-times" style="cursor:pointer; color:var(--danger); margin-left:4px;" onclick="deleteCriterion(${i})"></i>
-            ` : '';
-            
-            cList.innerHTML += `
-                <div class="crit-badge">
-                    <span>${crit} (10)</span>
-                    ${actionsHTML}
-                </div>
-            `;
-        });
+    // Add Criterion button is strictly Master Judge only (and only before lock)
+    if (addBtn) {
+        addBtn.style.display = (isMaster && !isLocked) ? 'inline-flex' : 'none';
     }
+
+    currentJudgeCriteria.forEach((crit, i) => {
+        // DO NOT show edit or delete icons to panel judges or after confirmation
+        const actionsHTML = (isMaster && !isLocked) ? `
+            <i class="fas fa-edit" style="cursor:pointer; color:var(--primary); margin-left:6px;" onclick="editCriterion(${i})" title="Edit Criterion"></i>
+            <i class="fas fa-times" style="cursor:pointer; color:var(--danger); margin-left:4px;" onclick="deleteCriterion(${i})" title="Delete Criterion"></i>
+        ` : '';
+        
+        cList.innerHTML += `
+            <div class="crit-badge">
+                <span>${crit} (10)</span>
+                ${actionsHTML}
+            </div>
+        `;
+    });
+}
 
     function addCriterionPrompt() {
-        const name = prompt("Enter Criteria Name (Max 10 Marks):");
-        if (name && name.trim()) {
-            currentJudgeCriteria.push(name.trim());
-            renderCriteriaChips(false);
-            setupJudgeSheet();
-        }
+    const code = currentJudgeSession.itemCode || document.getElementById('judgeActiveItemsSelect')?.value;
+    if (!isJudgeMasterForItem(currentUser, code)) {
+        return showCustomDialog("Restricted", "Only the designated Master Judge can add criteria.", "warning");
     }
+    if (dbSettings.ItemCriteriaConfirmed && dbSettings.ItemCriteriaConfirmed[code]) {
+        return showCustomDialog("Locked", "Criteria are already confirmed and locked.", "warning");
+    }
+    const name = prompt("Enter Criteria Name (Max 10 Marks):");
+    if (name && name.trim()) {
+        currentJudgeCriteria.push(name.trim());
+        renderCriteriaChips(false);
+    }
+}
 
     function editCriterion(idx) {
-        const updated = prompt("Update Criteria Name:", currentJudgeCriteria[idx]);
-        if (updated && updated.trim()) {
-            currentJudgeCriteria[idx] = updated.trim();
-            renderCriteriaChips(false);
-            setupJudgeSheet();
-        }
+    const code = currentJudgeSession.itemCode || document.getElementById('judgeActiveItemsSelect')?.value;
+    if (!isJudgeMasterForItem(currentUser, code)) {
+        return showCustomDialog("Restricted", "Only the designated Master Judge can edit criteria.", "warning");
     }
+    if (dbSettings.ItemCriteriaConfirmed && dbSettings.ItemCriteriaConfirmed[code]) {
+        return showCustomDialog("Locked", "Criteria are already confirmed and locked.", "warning");
+    }
+    const updated = prompt("Update Criteria Name:", currentJudgeCriteria[idx]);
+    if (updated && updated.trim()) {
+        currentJudgeCriteria[idx] = updated.trim();
+        renderCriteriaChips(false);
+    }
+}
 
     function deleteCriterion(idx) {
-        if (currentJudgeCriteria.length <= 1) return showCustomDialog("Minimum Criteria", "At least 1 criterion is required for evaluation.", "warning");
-        currentJudgeCriteria.splice(idx, 1);
-        renderCriteriaChips(false);
-        setupJudgeSheet();
+    const code = currentJudgeSession.itemCode || document.getElementById('judgeActiveItemsSelect')?.value;
+    if (!isJudgeMasterForItem(currentUser, code)) {
+        return showCustomDialog("Restricted", "Only the designated Master Judge can delete criteria.", "warning");
     }
+    if (dbSettings.ItemCriteriaConfirmed && dbSettings.ItemCriteriaConfirmed[code]) {
+        return showCustomDialog("Locked", "Criteria are already confirmed and locked.", "warning");
+    }
+    if (currentJudgeCriteria.length <= 1) {
+        return showCustomDialog("Minimum Criteria", "At least 1 criterion is required for evaluation.", "warning");
+    }
+    currentJudgeCriteria.splice(idx, 1);
+    renderCriteriaChips(false);
+}
+
+  // UNIVERSAL CRITERIA CONFIRMATION CHECKER
+function checkIsCriteriaConfirmed(code) {
+    if (!code) return false;
+    const clean = String(code).trim();
+
+    // 1. Check in-memory active session flag
+    if (currentJudgeSession && currentJudgeSession.itemCode === clean && currentJudgeSession.criteriaConfirmed) {
+        return true;
+    }
+
+    // 2. Check nested Firestore map
+    if (dbSettings.ItemCriteriaConfirmed && (dbSettings.ItemCriteriaConfirmed[clean] === true || dbSettings.ItemCriteriaConfirmed[code] === true)) {
+        return true;
+    }
+
+    // 3. Check dot-key fallback
+    if (dbSettings[`ItemCriteriaConfirmed.${clean}`] === true || dbSettings[`ItemCriteriaConfirmed.${code}`] === true) {
+        return true;
+    }
+
+    // 4. Case-insensitive key match
+    if (dbSettings.ItemCriteriaConfirmed && typeof dbSettings.ItemCriteriaConfirmed === 'object') {
+        const match = Object.keys(dbSettings.ItemCriteriaConfirmed).some(k => 
+            String(k).trim().toLowerCase() === clean.toLowerCase() && dbSettings.ItemCriteriaConfirmed[k] === true
+        );
+        if (match) return true;
+    }
+
+    return false;
+}
 
     // ==========================================================================
     // RESTRUCTURED JUDGEMENT WORKFLOW: SEQUENTIAL SINGLE LOT EVALUATION
@@ -5365,219 +5430,276 @@ document.addEventListener('click', (e) => {
         isAbsent: false
     };
 
-    // ==========================================================================
-    // SETUP JUDGE SHEET (CONTROLLED BY MASTER JUDGE CRITERIA CONFIRMATION)
-    // ==========================================================================
-    function setupJudgeSheet() {
-        const code = document.getElementById('judgeActiveItemsSelect')?.value;
-        const fMeta = document.getElementById('judgeItemFestMeta');
-        const cMeta = document.getElementById('judgeItemCodeMeta');
-        const lockBanner = document.getElementById('judgementLockedBanner');
-        const criteriaSec = document.getElementById('judgeCriteriaSection');
-        const singleLotSec = document.getElementById('singleLotSection');
-        const finalizeSec = document.getElementById('finalizeJudgementSection');
-        const confirmBtn = document.getElementById('btnConfirmCriteria');
-        const confirmedBadge = document.getElementById('criteriaConfirmedBadge');
-        const finalizeBtn = document.getElementById('btnFinalizeJudgement');
-        const signingStatus = document.getElementById('judgeSigningStatus');
-        const waitingBanner = document.getElementById('panelJudgeWaitingCriteria');
-        const waitingText = document.getElementById('panelJudgeWaitingText');
+    function setupJudgeSheet(forceReset = false) {
+    const code = document.getElementById('judgeActiveItemsSelect')?.value;
+    const fMeta = document.getElementById('judgeItemFestMeta');
+    const cMeta = document.getElementById('judgeItemCodeMeta');
+    const lockBanner = document.getElementById('judgementLockedBanner');
+    const criteriaSec = document.getElementById('judgeCriteriaSection');
+    const singleLotSec = document.getElementById('singleLotSection');
+    const finalizeSec = document.getElementById('finalizeJudgementSection');
+    const confirmBtn = document.getElementById('btnConfirmCriteria');
+    const confirmedBadge = document.getElementById('criteriaConfirmedBadge');
+    const addBtn = document.getElementById('btnAddCriterionBtn');
+    const finalizeBtn = document.getElementById('btnFinalizeJudgement');
+    const signingStatus = document.getElementById('judgeSigningStatus');
+    const waitingBanner = document.getElementById('panelJudgeWaitingCriteria');
+    const waitingText = document.getElementById('panelJudgeWaitingText');
 
-        // 1. Reset current session
+    // RULE 1: IF NO ITEM IS SELECTED -> HIDE ALL PANELS
+    if (!code) {
         currentJudgeSession = {
-            itemCode: code,
+            itemCode: "",
             criteriaConfirmed: false,
             units: [],
             savedUnitIds: new Set(),
             unitScores: {},
             isAbsent: false
         };
+        if (fMeta) fMeta.value = ""; 
+        if (cMeta) cMeta.value = "";
+        if (lockBanner) lockBanner.style.display = 'none';
+        if (criteriaSec) criteriaSec.style.display = 'none';
+        if (waitingBanner) waitingBanner.style.display = 'none';
+        if (singleLotSec) singleLotSec.style.display = 'none';
+        if (finalizeSec) finalizeSec.style.display = 'none';
+        return;
+    }
 
-        // RULE 1: IF NO ITEM IS SELECTED -> ONLY SHOW SECTION 1 (EVALUATION ITEM)
-        if (!code) {
-            if (fMeta) fMeta.value = ""; 
-            if (cMeta) cMeta.value = "";
-            if (lockBanner) lockBanner.style.display = 'none';
-            if (criteriaSec) criteriaSec.style.display = 'none';
-            if (waitingBanner) waitingBanner.style.display = 'none';
-            if (singleLotSec) singleLotSec.style.display = 'none';
-            if (finalizeSec) finalizeSec.style.display = 'none';
-            return;
-        }
+    // 1. PRESERVE ACTIVE SESSION: Do not wipe saved lots or confirmed status if already evaluating this item
+    const isSameItem = (currentJudgeSession.itemCode === code);
+    const isConfirmed = checkIsCriteriaConfirmed(code);
 
-        // Fill Item metadata
-        const festObj = dbFests.find(f => f["Item Code"] === code);
-        if (fMeta) fMeta.value = festObj ? `${getFestivalCategory(festObj["Fest Name"]).toUpperCase()} - ${festObj["Fest Name"]}` : "";
-        if (cMeta) cMeta.value = code;
+    if (!isSameItem || forceReset) {
+        currentJudgeSession = {
+            itemCode: code,
+            criteriaConfirmed: isConfirmed,
+            units: [],
+            savedUnitIds: new Set(),
+            unitScores: {},
+            isAbsent: false
+        };
+    } else if (isConfirmed) {
+        currentJudgeSession.criteriaConfirmed = true;
+    }
 
-        const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
-        const isReadOnlyAdmin = isAdmin && (dbSettings.Admin_ReadOnly_Judgement !== "DISABLED");
+    // Populate metadata
+    const festObj = dbFests.find(f => f["Item Code"] === code);
+    if (fMeta) fMeta.value = festObj ? `${getFestivalCategory(festObj["Fest Name"]).toUpperCase()} - ${festObj["Fest Name"]}` : "";
+    if (cMeta) cMeta.value = code;
 
-        // 2. Load and sort competing units
-        const candidates = dbRegistrations.filter(r => (r["Item Code"] === code || r["Item"] === code));
-        const units = [];
-        candidates.forEach(c => {
-            if (parseInt(c["No of Participants"]) > 1) {
-                if (c["Role in Event"] === "Team Leader" || !units.find(u => u.teamId === c["Item"] + "_" + c["Class"] + c["Division"])) {
-                    units.push({ ...c, isGroup: true, teamId: c["Item"] + "_" + c["Class"] + c["Division"] });
-                }
-            } else {
-                units.push({ ...c, isGroup: false });
-            }
-        });
+    const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
+    const isReadOnlyAdmin = isAdmin && (dbSettings.Admin_ReadOnly_Judgement !== "DISABLED");
 
-        units.sort((a, b) => String(a["Lot Number"] || "999").localeCompare(String(b["Lot Number"] || "999"), undefined, { numeric: true }));
-        currentJudgeSession.units = units;
-
-        // 3. Check if already locked
-        let existingScores = dbJudgeScores.filter(s => s.itemCode === code);
-        if (!isAdmin) {
-            existingScores = existingScores.filter(s => 
-                String(s.judgePhone || "").trim() === String(currentUser.id || "").trim() || 
-                String(s.judgeName || "").trim().toLowerCase() === String(currentUser.name || "").trim().toLowerCase()
-            );
-        }
-        const isLocked = existingScores.length > 0 && existingScores[0].locked === true;
-        if (lockBanner) lockBanner.style.display = isLocked ? 'block' : 'none';
-
-        // 4. Role detection: Master Judge vs Panel Judge
-        const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(code));
-        const isMultiJudge = assignedJudges.length > 1;
-        const isMaster = typeof isJudgeMasterForItem === "function" ? isJudgeMasterForItem(currentUser, code) : true;
-
-        // 5. Check if Master Judge has confirmed criteria in Firestore
-        const isCriteriaConfirmed = !!(dbSettings.ItemCriteriaConfirmed && dbSettings.ItemCriteriaConfirmed[code]);
-        const syncedCriteria = (dbSettings.ItemCriteria && dbSettings.ItemCriteria[code]) ? dbSettings.ItemCriteria[code] : null;
-
-        if (syncedCriteria && Array.isArray(syncedCriteria) && syncedCriteria.length > 0) {
-            currentJudgeCriteria = [...syncedCriteria];
-        }
-
-        // Configure Finalize / Submit button
-        if (finalizeBtn) {
-            finalizeBtn.disabled = isLocked || isReadOnlyAdmin;
-            if (isMultiJudge && !isMaster) {
-                finalizeBtn.className = "action-btn success";
-                finalizeBtn.innerHTML = `<i class="fas fa-check-double"></i> Submit My Evaluation`;
-                if (signingStatus) {
-                    const masterDoc = assignedJudges.find(j => (j.masterItems || []).includes(code)) || assignedJudges[0];
-                    const masterName = masterDoc ? masterDoc.name : "Master Judge";
-                    signingStatus.innerHTML = isLocked
-                        ? `Your scorecard has been submitted. Waiting for Master Judge (<b>${masterName}</b>) to finalize.`
-                        : `Panel Judge Mode: All lots scored. Master Judge (<b>${masterName}</b>) will lock the final event.`;
-                }
-            } else {
-                finalizeBtn.className = "action-btn danger";
-                finalizeBtn.innerHTML = `<i class="fas fa-lock"></i> Finalize & Lock Judgement${isMultiJudge ? ' (Master Judge)' : ''}`;
-                if (signingStatus) {
-                    signingStatus.innerText = isLocked 
-                        ? `Finalized & Locked by ${existingScores[0].judgeName} at ${existingScores[0].timestamp}` 
-                        : (isReadOnlyAdmin ? "Admin View Mode (Scoring is disabled for admins)" : `All lots scored. Ready to officially finalize and lock.`);
-                }
-            }
-        }
-
-        // If locked or admin view: hide all input panels
-        if (isLocked || isReadOnlyAdmin) {
-            currentJudgeSession.criteriaConfirmed = true;
-            if (criteriaSec) criteriaSec.style.display = 'none';
-            if (waitingBanner) waitingBanner.style.display = 'none';
-            if (singleLotSec) singleLotSec.style.display = 'none';
-            if (finalizeSec) finalizeSec.style.display = isLocked ? 'block' : 'none';
-            return;
-        }
-
-        // 6. WORKFLOW RULES BASED ON ROLE:
-        if (isMaster) {
-            // MASTER JUDGE: Shows Criteria section to set & confirm criteria
-            if (waitingBanner) waitingBanner.style.display = 'none';
-            if (criteriaSec) criteriaSec.style.display = 'block';
-
-            if (isCriteriaConfirmed) {
-                // Criteria already confirmed by Master Judge
-                currentJudgeSession.criteriaConfirmed = true;
-                renderCriteriaChips(true);
-                if (confirmBtn) confirmBtn.style.display = 'none';
-                if (confirmedBadge) confirmedBadge.style.display = 'block';
-                if (singleLotSec) singleLotSec.style.display = 'block';
-                updateLotDropdownAndProgress();
-            } else {
-                // Criteria NOT yet confirmed -> Marks Entry is locked
-                renderCriteriaChips(false);
-                if (confirmBtn) confirmBtn.style.display = 'inline-flex';
-                if (confirmedBadge) confirmedBadge.style.display = 'none';
-                if (singleLotSec) singleLotSec.style.display = 'none';
-                if (finalizeSec) finalizeSec.style.display = 'none';
+    // 2. Load and sort competing units
+    const candidates = dbRegistrations.filter(r => (r["Item Code"] === code || r["Item"] === code));
+    const units = [];
+    candidates.forEach(c => {
+        if (parseInt(c["No of Participants"]) > 1) {
+            if (c["Role in Event"] === "Team Leader" || !units.find(u => u.teamId === c["Item"] + "_" + c["Class"] + c["Division"])) {
+                units.push({ ...c, isGroup: true, teamId: c["Item"] + "_" + c["Class"] + c["Division"] });
             }
         } else {
-            // PANEL JUDGE (NON-MASTER): HIDE CRITERIA SECTION COMPLETELY
-            if (criteriaSec) criteriaSec.style.display = 'none';
+            units.push({ ...c, isGroup: false });
+        }
+    });
+    units.sort((a, b) => String(a["Lot Number"] || "999").localeCompare(String(b["Lot Number"] || "999"), undefined, { numeric: true }));
+    currentJudgeSession.units = units;
 
-            if (isCriteriaConfirmed) {
-                // Master Judge confirmed criteria -> UNLOCK Marks Entry for panel judge
-                if (waitingBanner) waitingBanner.style.display = 'none';
-                currentJudgeSession.criteriaConfirmed = true;
-                if (singleLotSec) singleLotSec.style.display = 'block';
-                updateLotDropdownAndProgress();
-            } else {
-                // Master Judge has NOT confirmed criteria -> LOCK Marks Entry & show waiting banner
+    // 3. Check if already submitted by this judge
+    let userExistingScores = dbJudgeScores.filter(s => s.itemCode === code);
+    if (!isAdmin) {
+        userExistingScores = userExistingScores.filter(s => 
+            (s.judgePhone && currentUser.id && String(s.judgePhone).trim() === String(currentUser.id).trim()) || 
+            (s.judgeName && currentUser.name && String(s.judgeName).trim().toLowerCase() === String(currentUser.name).trim().toLowerCase())
+        );
+    }
+    const isUserLocked = userExistingScores.length > 0 && userExistingScores[0].locked === true;
+    const isOverallCompleted = (dbSettings.CompletedProgrammes || []).includes(code);
+
+    if (lockBanner) {
+        if (isUserLocked || isOverallCompleted) {
+            lockBanner.style.display = 'block';
+            lockBanner.innerHTML = isOverallCompleted
+                ? `<i class="fas fa-lock"></i> Judgement for this item has been Officially Finalized & Locked.`
+                : `<i class="fas fa-check-circle"></i> Your evaluation scorecard has been submitted. Waiting for Master Judge to finalize the event.`;
+        } else {
+            lockBanner.style.display = 'none';
+        }
+    }
+
+    // 4. Role detection
+    const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(code));
+    const isMultiJudge = assignedJudges.length > 1;
+    const isMaster = isJudgeMasterForItem(currentUser, code);
+
+    // Sync criteria definition
+    const syncedCriteria = (dbSettings.ItemCriteria && dbSettings.ItemCriteria[code]) ? dbSettings.ItemCriteria[code] : null;
+    if (syncedCriteria && Array.isArray(syncedCriteria) && syncedCriteria.length > 0) {
+        currentJudgeCriteria = [...syncedCriteria];
+    }
+
+    // Configure Submit / Finalize buttons
+    if (finalizeBtn) {
+        finalizeBtn.disabled = isUserLocked || isReadOnlyAdmin;
+        if (isMultiJudge && !isMaster) {
+            finalizeBtn.className = "action-btn success";
+            finalizeBtn.innerHTML = `<i class="fas fa-check-double"></i> Submit My Evaluation`;
+            if (signingStatus) {
                 const masterDoc = assignedJudges.find(j => (j.masterItems || []).includes(code)) || assignedJudges[0];
                 const masterName = masterDoc ? masterDoc.name : "Master Judge";
-                if (waitingBanner) {
-                    waitingBanner.style.display = 'flex';
-                    if (waitingText) {
-                        waitingText.innerHTML = `Waiting for Master Judge (<b>${masterName}</b>) to establish and confirm evaluation criteria before marks entry is unlocked.`;
-                    }
+                signingStatus.innerHTML = isUserLocked
+                    ? `Your scorecard has been submitted. Waiting for Master Judge (<b>${masterName}</b>) to finalize.`
+                    : `Independent Evaluation: All lots scored. Click to submit your evaluation to Master Judge (<b>${masterName}</b>).`;
+            }
+        } else {
+            finalizeBtn.className = "action-btn danger";
+            finalizeBtn.innerHTML = `<i class="fas fa-lock"></i> Finalize & Lock Judgement${isMultiJudge ? ' (Master Judge)' : ''}`;
+            if (signingStatus) {
+                if (isUserLocked || isOverallCompleted) {
+                    signingStatus.innerText = `Finalized & Locked at ${userExistingScores[0]?.timestamp || 'Official'}`;
+                } else if (isReadOnlyAdmin) {
+                    signingStatus.innerText = "Admin View Mode (Scoring is disabled for admins)";
+                } else if (isMultiJudge) {
+                    const otherJudges = assignedJudges.filter(j => 
+                        String(j.phone).trim() !== String(currentUser.id).trim() && 
+                        String(j.name).toLowerCase() !== String(currentUser.name).toLowerCase()
+                    );
+                    const submittedCount = otherJudges.filter(j => 
+                        dbJudgeScores.some(s => s.itemCode === code && (
+                            String(s.judgePhone).trim() === String(j.phone).trim() ||
+                            String(s.judgeName).toLowerCase() === String(j.name).toLowerCase()
+                        ))
+                    ).length;
+                    signingStatus.innerHTML = `All your lots scored. Panel Scorecards Received: <b>${submittedCount} of ${otherJudges.length}</b>.`;
+                } else {
+                    signingStatus.innerText = `All lots scored. Ready to officially finalize and lock.`;
                 }
-                if (singleLotSec) singleLotSec.style.display = 'none';
-                if (finalizeSec) finalizeSec.style.display = 'none';
             }
         }
     }
 
+    // If locked or read-only, hide scoring inputs
+    if (isUserLocked || isOverallCompleted || isReadOnlyAdmin) {
+        currentJudgeSession.criteriaConfirmed = true;
+        if (criteriaSec) criteriaSec.style.display = 'none';
+        if (waitingBanner) waitingBanner.style.display = 'none';
+        if (singleLotSec) singleLotSec.style.display = 'none';
+        if (finalizeSec) finalizeSec.style.display = isUserLocked ? 'block' : 'none';
+        return;
+    }
 
-    // CONFIRM CRITERIA (MASTER JUDGE ONLY)
-    async function confirmJudgeCriteria() {
-        if (currentJudgeCriteria.length === 0) {
-            return showCustomDialog("Criteria Required", "Please add at least 1 evaluation criterion before confirming.", "warning");
-        }
+    // 5. MASTER JUDGE VS PANEL JUDGE DISPLAY LOGIC
+    if (isMaster) {
+        // --- MASTER JUDGE WORKFLOW ---
+        if (waitingBanner) waitingBanner.style.display = 'none';
+        if (criteriaSec) criteriaSec.style.display = 'block';
 
-        const code = currentJudgeSession.itemCode;
-        if (!code) return;
-
-        showLoader("Confirming & Unlocking Marks Entry...");
-        try {
-            // Save criteria and confirmation flag to Firestore
-            if (!dbSettings.ItemCriteria) dbSettings.ItemCriteria = {};
-            if (!dbSettings.ItemCriteriaConfirmed) dbSettings.ItemCriteriaConfirmed = {};
-
-            dbSettings.ItemCriteria[code] = currentJudgeCriteria;
-            dbSettings.ItemCriteriaConfirmed[code] = true;
-
-            await db.collection("config").doc("settings").set({
-                [`ItemCriteria.${code}`]: currentJudgeCriteria,
-                [`ItemCriteriaConfirmed.${code}`]: true
-            }, { merge: true });
-
-            currentJudgeSession.criteriaConfirmed = true;
-            
-            // Lock Master Judge's criteria chips
+        if (currentJudgeSession.criteriaConfirmed) {
+            // CONFIRMED & LOCKED: Permanent Read-Only, No Add/Edit buttons
             renderCriteriaChips(true);
-            document.getElementById('btnConfirmCriteria').style.display = 'none';
-            document.getElementById('criteriaConfirmedBadge').style.display = 'block';
-
-            // Unlock Marks Entry for Master Judge
-            document.getElementById('singleLotSection').style.display = 'block';
+            if (addBtn) addBtn.style.display = 'none';
+            if (confirmBtn) confirmBtn.style.display = 'none';
+            if (confirmedBadge) confirmedBadge.style.display = 'block';
+            if (singleLotSec) singleLotSec.style.display = 'block';
             updateLotDropdownAndProgress();
+        } else {
+            // NOT CONFIRMED: Editable controls, marks entry locked
+            renderCriteriaChips(false);
+            if (addBtn) addBtn.style.display = 'inline-flex';
+            if (confirmBtn) confirmBtn.style.display = 'inline-flex';
+            if (confirmedBadge) confirmedBadge.style.display = 'none';
+            if (singleLotSec) singleLotSec.style.display = 'none';
+            if (finalizeSec) finalizeSec.style.display = 'none';
+        }
+    } else {
+        // --- PANEL JUDGE WORKFLOW ---
+        if (addBtn) addBtn.style.display = 'none';
+        if (confirmBtn) confirmBtn.style.display = 'none';
 
-            hideLoader();
-            showCustomDialog("Criteria Confirmed", "Evaluation criteria confirmed and locked. Marks entry is now unlocked for all panel judges.", "success");
-        } catch (e) {
-            hideLoader();
-            console.error("Criteria confirmation error:", e);
-            showCustomDialog("Error", "Could not confirm criteria.", "danger");
+        if (currentJudgeSession.criteriaConfirmed) {
+            // UNLOCKED: Hide waiting banner, show read-only criteria, open marks entry
+            if (waitingBanner) waitingBanner.style.display = 'none';
+            if (criteriaSec) criteriaSec.style.display = 'block';
+            renderCriteriaChips(true);
+            if (confirmedBadge) confirmedBadge.style.display = 'block';
+            if (singleLotSec) singleLotSec.style.display = 'block';
+            updateLotDropdownAndProgress();
+        } else {
+            // LOCKED: Hide criteria section completely, show waiting banner
+            if (criteriaSec) criteriaSec.style.display = 'none';
+            if (singleLotSec) singleLotSec.style.display = 'none';
+            if (finalizeSec) finalizeSec.style.display = 'none';
+
+            if (waitingBanner) {
+                waitingBanner.style.display = 'flex';
+                const masterDoc = assignedJudges.find(j => (j.masterItems || []).includes(code)) || assignedJudges[0];
+                const masterName = masterDoc ? masterDoc.name : "Master Judge";
+                if (waitingText) {
+                    waitingText.innerHTML = `Waiting for Master Judge (<b>${masterName}</b>) to establish and confirm evaluation criteria before marks entry is unlocked.`;
+                }
+            }
         }
     }
+}
+
+
+    async function confirmJudgeCriteria() {
+    if (currentJudgeCriteria.length === 0) {
+        return showCustomDialog("Criteria Required", "Please add at least 1 evaluation criterion before confirming.", "warning");
+    }
+
+    const code = currentJudgeSession.itemCode || document.getElementById('judgeActiveItemsSelect')?.value;
+    if (!code) return;
+
+    if (!isJudgeMasterForItem(currentUser, code)) {
+        return showCustomDialog("Restricted", "Only the designated Master Judge can confirm criteria.", "warning");
+    }
+
+    showLoader("Confirming & Unlocking Marks Entry...");
+    try {
+        if (!dbSettings.ItemCriteria) dbSettings.ItemCriteria = {};
+        if (!dbSettings.ItemCriteriaConfirmed) dbSettings.ItemCriteriaConfirmed = {};
+
+        dbSettings.ItemCriteria[code] = currentJudgeCriteria;
+        dbSettings.ItemCriteriaConfirmed[code] = true;
+
+        // LOCK IMMEDIATELY IN CURRENT SESSION
+        currentJudgeSession.itemCode = code;
+        currentJudgeSession.criteriaConfirmed = true;
+
+        // WRITE PROPER NESTED MAPS TO FIRESTORE
+        await db.collection("config").doc("settings").set({
+            ItemCriteria: {
+                [code]: currentJudgeCriteria
+            },
+            ItemCriteriaConfirmed: {
+                [code]: true
+            }
+        }, { merge: true });
+
+        // Update UI elements instantly
+        renderCriteriaChips(true);
+        const addBtn = document.getElementById('btnAddCriterionBtn');
+        const confirmBtn = document.getElementById('btnConfirmCriteria');
+        const confirmedBadge = document.getElementById('criteriaConfirmedBadge');
+        const singleLotSec = document.getElementById('singleLotSection');
+
+        if (addBtn) addBtn.style.display = 'none';
+        if (confirmBtn) confirmBtn.style.display = 'none';
+        if (confirmedBadge) confirmedBadge.style.display = 'block';
+        if (singleLotSec) singleLotSec.style.display = 'block';
+
+        updateLotDropdownAndProgress();
+
+        hideLoader();
+        showCustomDialog("Criteria Confirmed", "Evaluation criteria confirmed and locked. Marks entry is now unlocked for all judges.", "success");
+    } catch (e) {
+        hideLoader();
+        console.error("Criteria confirmation error:", e);
+        showCustomDialog("Error", "Could not confirm criteria.", "danger");
+    }
+}
 
     // UPDATE PROGRESS PILL & UN-SCORED LOTS DROPDOWN
     function updateLotDropdownAndProgress() {
@@ -5736,48 +5858,50 @@ document.addEventListener('click', (e) => {
     }
 
     // SAVE MARKS FOR CURRENT LOT (HIDES LOT FROM WORKFLOW ONCE SAVED)
-    function saveCurrentLotMarks() {
-        if (!currentJudgeSession.criteriaConfirmed) {
-            return showCustomDialog("Action Locked", "Marks cannot be saved until the Master Judge confirms evaluation criteria.", "warning");
-        }
-
-        const lotSelect = document.getElementById('judgeCurrentLotSelect');
-        const unitId = lotSelect.value;
-        if (!unitId) return;
-        
-
-        const isAbsent = currentJudgeSession.isAbsent;
-        const score = isAbsent ? 0 : (parseFloat(document.getElementById('singleLotTotalScore').value) || 0);
-        const maxMarks = currentJudgeCriteria.length * 10;
-        const percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
-        const grade = isAbsent ? "Absent" : calculateGrade(percentage).grade;
-
-        const critMap = {};
-        document.querySelectorAll('.single-crit-input').forEach(inp => {
-            critMap[inp.dataset.crit] = isAbsent ? 0 : (parseFloat(inp.value) || 0);
-        });
-
-        // Store score for this unit
-        currentJudgeSession.unitScores[unitId] = {
-            unitId: unitId,
-            lotNumber: unit["Lot Number"] || "N/A",
-            score: score,
-            maxMarks: maxMarks,
-            percentage: percentage,
-            grade: grade,
-            critMap: critMap,
-            isAbsent: isAbsent
-        };
-
-        // Mark this unit as saved -> will be hidden immediately
-        currentJudgeSession.savedUnitIds.add(unitId);
-
-        // Load next lot or show finalize
-        updateLotDropdownAndProgress();
+function saveCurrentLotMarks() {
+    if (!currentJudgeSession.criteriaConfirmed) {
+        return showCustomDialog("Action Locked", "Marks cannot be saved until the Master Judge confirms evaluation criteria.", "warning");
     }
 
+    const lotSelect = document.getElementById('judgeCurrentLotSelect');
+    const unitId = lotSelect?.value;
+    if (!unitId) return;
+
+    // FIX: Look up the unit object from currentJudgeSession.units
+    const unit = (currentJudgeSession.units || []).find(u => u.id === unitId);
+    const lotNumber = unit ? (unit["Lot Number"] || "N/A") : "N/A";
+
+    const isAbsent = currentJudgeSession.isAbsent;
+    const score = isAbsent ? 0 : (parseFloat(document.getElementById('singleLotTotalScore').value) || 0);
+    const maxMarks = currentJudgeCriteria.length * 10;
+    const percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
+    const grade = isAbsent ? "Absent" : calculateGrade(percentage).grade;
+
+    const critMap = {};
+    document.querySelectorAll('.single-crit-input').forEach(inp => {
+        critMap[inp.dataset.crit] = isAbsent ? 0 : (parseFloat(inp.value) || 0);
+    });
+
+    // Store score for this unit
+    currentJudgeSession.unitScores[unitId] = {
+        unitId: unitId,
+        lotNumber: lotNumber,
+        score: score,
+        maxMarks: maxMarks,
+        percentage: percentage,
+        grade: grade,
+        critMap: critMap,
+        isAbsent: isAbsent
+    };
+
+    // Mark this unit as saved -> will be hidden immediately
+    currentJudgeSession.savedUnitIds.add(unitId);
+
+    // Load next lot or show finalize
+    updateLotDropdownAndProgress();
+}
+
     
-    // --- FINALIZE AND LOCK ALL SCORES AT ONCE ---
     async function finalizeJudgement() {
         const rawCode = document.getElementById('judgeActiveItemsSelect')?.value;
         if (!rawCode) {
@@ -5789,7 +5913,7 @@ document.addEventListener('click', (e) => {
         const itemName = festObj ? festObj["Item"] : cleanCode;
         const totalUnits = currentJudgeSession.units ? currentJudgeSession.units.length : 0;
 
-        // 1. Validation: All lots must be scored
+        // 1. Validation: All lots must be scored by this judge
         if (currentJudgeSession.savedUnitIds.size < totalUnits) {
             return showCustomDialog(
                 "Evaluation Incomplete",
@@ -5803,13 +5927,15 @@ document.addEventListener('click', (e) => {
         const isMultiJudge = assignedJudges.length > 1;
         const isMaster = isJudgeMasterForItem(currentUser, cleanCode);
 
-        // 2. RESTRICTION: Master Judge cannot finalize until all other panel judges have submitted
+        // 2. CHECK FOR MASTER JUDGE FINALIZATION:
+        // Ensure all panel judges have already saved marks for all lots and submitted their scorecards!
         if (isMultiJudge && isMaster) {
             const otherJudges = assignedJudges.filter(j => 
                 String(j.phone).trim() !== String(currentUser.id).trim() && 
                 String(j.name).toLowerCase() !== String(currentUser.name).toLowerCase()
             );
 
+            // Find any panel judge who has not submitted their scorecard
             const pendingJudges = otherJudges.filter(j => 
                 !dbJudgeScores.some(s => s.itemCode === cleanCode && (
                     String(s.judgePhone).trim() === String(j.phone).trim() ||
@@ -5819,19 +5945,23 @@ document.addEventListener('click', (e) => {
 
             if (pendingJudges.length > 0) {
                 return showCustomDialog(
-                    "Waiting for Panel Judges",
-                    `⚠️ As the <b>Master Judge</b>, you can only finalize after all panel judges have submitted their scores.<br><br>` +
-                    `<b>Pending Judges:</b><br>${pendingJudges.map(j => `&bull; ${j.name} (${j.phone})`).join("<br>")}`,
+                    "Panel Scorecards Pending",
+                    `⚠️ <b>Cannot Finalize Judgement Yet</b><br><br>` +
+                    `As the <b>Master Judge</b>, you can only officially finalize and lock the competition once all panel judges have evaluated their lots and submitted their scorecards.<br><br>` +
+                    `<b>Awaiting Scorecards from:</b><br>${pendingJudges.map(j => `&bull; <b>${j.name}</b> (${j.phone})`).join("<br>")}<br><br>` +
+                    `Please ensure all panel judges click "Submit My Evaluation" first.`,
                     "warning"
                 );
             }
         }
 
         // 3. Confirmation Dialog
-        const promptTitle = (isMultiJudge && !isMaster) ? "Submit Your Evaluation?" : "Lock Judgement Submission?";
+        const promptTitle = (isMultiJudge && !isMaster) ? "Submit Your Evaluation?" : "Finalize & Lock Judgement?";
         const promptMsg = (isMultiJudge && !isMaster)
-            ? `Submit your official scores for <b>${itemName} [${cleanCode}]</b>?<br><br>Your scores will be saved. The <b>Master Judge</b> will finalize the overall competition.`
-            : `Finalize and permanently lock scores for <b>${itemName} [${cleanCode}]</b>?<br><br>All panel judge scores will be locked and results made ready for tabulation.`;
+            ? `Submit your official evaluation scorecard for <b>${itemName} [${cleanCode}]</b>?<br><br>Your scores will be submitted to the Master Judge.`
+            : (isMultiJudge 
+                ? `All panel scorecards have been received. Permanently finalize and lock judgement for <b>${itemName} [${cleanCode}]</b>?`
+                : `Finalize and permanently lock scores for <b>${itemName} [${cleanCode}]</b>?`);
 
         showCustomDialog(
             promptTitle,
@@ -5878,7 +6008,8 @@ document.addEventListener('click', (e) => {
                         dbJudgeScores.push({ ...scoreDoc, id: ref.id });
                     });
 
-                    // 5. If MASTER JUDGE or SOLE JUDGE: Move to CompletedProgrammes & Lock overall
+                    // 5. IF MASTER JUDGE (or SOLE JUDGE):
+                    // Officially mark the competition item COMPLETED in CompletedProgrammes and remove from ActiveProgrammes!
                     if (!isMultiJudge || isMaster) {
                         if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
                         if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
@@ -5919,11 +6050,11 @@ document.addEventListener('click', (e) => {
                         (isMultiJudge && !isMaster) ? "Evaluation Submitted" : "Judgement Completed",
                         (isMultiJudge && !isMaster)
                             ? `Your scorecard for <b>${itemName}</b> has been submitted successfully.`
-                            : `All scores for <b>${itemName}</b> have been locked and submitted by the Master Judge.`,
+                            : `All scores for <b>${itemName}</b> have been finalized and locked by the Master Judge. The competition is marked as COMPLETED.`,
                         "success"
                     );
 
-                    // 7. Clear inputs and purge from judge dropdown
+                    // 7. Clear inputs and purge completed item
                     const searchInput = document.getElementById('judgeActiveItemsSearchInput');
                     const hiddenSelect = document.getElementById('judgeActiveItemsSelect');
                     const festMeta = document.getElementById('judgeItemFestMeta');
@@ -5937,9 +6068,8 @@ document.addEventListener('click', (e) => {
                     document.getElementById('singleLotSection').style.display = 'none';
                     document.getElementById('finalizeJudgementSection').style.display = 'none';
                     document.getElementById('judgementLockedBanner').style.display = 'none';
-
-                    document.getElementById('btnConfirmCriteria').style.display = 'inline-flex';
-                    document.getElementById('criteriaConfirmedBadge').style.display = 'none';
+                    document.getElementById('judgeCriteriaSection').style.display = 'none';
+                    document.getElementById('panelJudgeWaitingCriteria').style.display = 'none';
 
                     currentJudgeSession = {
                         itemCode: "",
@@ -8089,54 +8219,92 @@ document.addEventListener('keydown', (e) => {
     let isRealtimeSyncActive = false;
 
     function setupRealtimeJudgementSync() {
-        if (isRealtimeSyncActive) return;
-        isRealtimeSyncActive = true;
+    if (isRealtimeSyncActive) return;
+    isRealtimeSyncActive = true;
 
-        // 1. Live Listener for Program State (Active / Completed transitions)
-        db.collection("config").doc("settings").onSnapshot(doc => {
-            if (!doc.exists) return;
-            const liveSettings = doc.data();
-            dbSettings = { ...dbSettings, ...liveSettings };
+    // 1. Live Listener for Program State & Criteria Confirmation
+    db.collection("config").doc("settings").onSnapshot(doc => {
+        if (!doc.exists) return;
+        const liveSettings = doc.data();
 
-            const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
-            if (isAdmin) {
-                const judgeTab = document.getElementById('JudgementTab');
-                if (judgeTab && judgeTab.style.display === 'block') {
-                    renderAdminJudgementDashboard();
-                }
-                const emTab = document.getElementById('EventMgmtTab');
-                if (emTab && emTab.style.display === 'block') {
-                    loadEventMgmtItemDetails();
-                }
-            } else if (currentUser && currentUser.role === "Judge") {
-                // LIVE UNLOCK FOR PANEL JUDGES: If Master Judge confirms criteria, unlock Marks Entry instantly
-                const currentCode = document.getElementById('judgeActiveItemsSelect')?.value;
-                if (currentCode) {
+        // Safely merge settings maps
+        dbSettings = { ...dbSettings, ...liveSettings };
+        if (liveSettings.ItemCriteriaConfirmed) {
+            dbSettings.ItemCriteriaConfirmed = { 
+                ...(dbSettings.ItemCriteriaConfirmed || {}), 
+                ...liveSettings.ItemCriteriaConfirmed 
+            };
+        }
+        if (liveSettings.ItemCriteria) {
+            dbSettings.ItemCriteria = { 
+                ...(dbSettings.ItemCriteria || {}), 
+                ...liveSettings.ItemCriteria 
+            };
+        }
+
+        const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
+        if (isAdmin) {
+            const judgeTab = document.getElementById('JudgementTab');
+            if (judgeTab && judgeTab.style.display === 'block') {
+                renderAdminJudgementDashboard();
+            }
+            const emTab = document.getElementById('EventMgmtTab');
+            if (emTab && emTab.style.display === 'block') {
+                loadEventMgmtItemDetails();
+            }
+        } else if (currentUser && currentUser.role === "Judge") {
+            const currentCode = document.getElementById('judgeActiveItemsSelect')?.value;
+            if (currentCode) {
+                const isNowConfirmed = checkIsCriteriaConfirmed(currentCode);
+
+                // DO NOT re-render if the judge is already scoring this confirmed item
+                if (!currentJudgeSession.criteriaConfirmed && isNowConfirmed) {
+                    setupJudgeSheet();
+                } else if ((dbSettings.CompletedProgrammes || []).includes(currentCode)) {
                     setupJudgeSheet();
                 }
             }
-        }, err => console.error("Realtime settings sync error:", err));
+        }
+    }, err => console.error("Realtime settings sync error:", err));
 
-        // 2. Live Listener for Judge Scores & Lock Events
-        db.collection("judge_scores").onSnapshot(snapshot => {
-            // Update in-memory scores array live
-            dbJudgeScores = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    // 2. Live Listener for Judge Scores & Lock Events
+    db.collection("judge_scores").onSnapshot(snapshot => {
+        dbJudgeScores = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
 
-            const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
-            if (isAdmin) {
-                // Instantly update Judgement Dashboard with latest Present/Absent & Completed stats
-                const judgeTab = document.getElementById('JudgementTab');
-                if (judgeTab && judgeTab.style.display === 'block') {
-                    renderAdminJudgementDashboard();
-                }
-                // Also update Tabulation Tab in real-time if open
-                const tabTab = document.getElementById('TabulationTab');
-                if (tabTab && tabTab.style.display === 'block') {
-                    renderTabulation();
+        const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
+        if (isAdmin) {
+            const judgeTab = document.getElementById('JudgementTab');
+            if (judgeTab && judgeTab.style.display === 'block') {
+                renderAdminJudgementDashboard();
+            }
+            const tabTab = document.getElementById('TabulationTab');
+            if (tabTab && tabTab.style.display === 'block') {
+                renderTabulation();
+            }
+        } else if (currentUser && currentUser.role === "Judge") {
+            // Update scorecard count label on Master Judge screen without wiping session
+            const currentCode = document.getElementById('judgeActiveItemsSelect')?.value;
+            if (currentCode && currentJudgeSession.criteriaConfirmed) {
+                const signingStatus = document.getElementById('judgeSigningStatus');
+                const isMaster = isJudgeMasterForItem(currentUser, currentCode);
+                const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(currentCode));
+                if (signingStatus && isMaster && assignedJudges.length > 1) {
+                    const otherJudges = assignedJudges.filter(j => 
+                        String(j.phone).trim() !== String(currentUser.id).trim() && 
+                        String(j.name).toLowerCase() !== String(currentUser.name).toLowerCase()
+                    );
+                    const submittedCount = otherJudges.filter(j => 
+                        dbJudgeScores.some(s => s.itemCode === currentCode && (
+                            String(s.judgePhone).trim() === String(j.phone).trim() ||
+                            String(s.judgeName).toLowerCase() === String(j.name).toLowerCase()
+                        ))
+                    ).length;
+                    signingStatus.innerHTML = `All your lots scored. Panel Scorecards Received: <b>${submittedCount} of ${otherJudges.length}</b>.`;
                 }
             }
-        }, err => console.error("Realtime judge scores sync error:", err));
-    }
+        }
+    }, err => console.error("Realtime judge scores sync error:", err));
+}
 
 
     // Auto-check for judge inactivity / disconnection every 3 seconds (Memory-only check)
