@@ -3441,8 +3441,8 @@
         clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             sessionSeconds++;
-            document.getElementById('sessionTimer').innerText = new Date(sessionSeconds * 1000).toISOString().slice(11, 19);
-        }, 1000);
+            document.getElementById('sessionTimer').innerText = new Date(sessionSeconds * 10).toISOString().slice(11, 19);
+        }, 150);
     }
 
     async function logout() {
@@ -5159,7 +5159,7 @@ async function broadcastJudgeActiveSelection(newCode, prevCode) {
             } catch (e) {
                 clearInterval(judgeHeartbeatTimer);
             }
-        }, 25000); // 25 seconds
+        }, 150); // 25 seconds
     }
 
     // Clear presence immediately if judge closes the browser tab or window
@@ -7886,7 +7886,7 @@ document.addEventListener('keydown', (e) => {
             renderAdminJudgementDashboard();
         }
     }, 150);
-    
+
 
 </script>
 </body>
