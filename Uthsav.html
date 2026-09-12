@@ -3604,11 +3604,11 @@ function populateItems() {
 
         } else if (festCategory === "Fest") {
             const fRegs = studentRegs.filter(r => (r["Festival Classification"] === "Fest" || getFestivalCategory(r["Name of Fest"]) === "Fest"));
-            const fIndCount = fRegs.filter(r => parseInt(r["No of Participants"] || 1) === 1).length;
+            const fIndCount = fRegs.filter(r => parseInt(r["No of Participants"] || 2) === 2).length;
             const fGrpCount = fRegs.filter(r => parseInt(r["No of Participants"] || 1) > 1).length;
             const fTotal = fIndCount + fGrpCount;
 
-            if (!isGroup && fIndCount >= 1) {
+            if (!isGroup && fIndCount >= 2) {
                 return showCustomDialog(
                     "Fest Event Limit Exceeded",
                     `❌ <b>Individual Fest Item Limit Reached!</b><br><br>` +
@@ -3632,7 +3632,7 @@ function populateItems() {
                 );
             }
 
-            if (fTotal >= 2) {
+            if (fTotal >= 3) {
                 return showCustomDialog(
                     "Fest Total Limit Reached",
                     `❌ <b>Overall Fest Limit Reached!</b><br><br>` +
