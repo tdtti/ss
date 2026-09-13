@@ -2489,34 +2489,37 @@
 
         <!-- TAB 8: SUB-DISTRICT QUALIFICATION TAB -->
         <div id="SubDistrictTab" class="tabcontent">
-            <div class="filters">
+            <div class="filters" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px;">
+                <!-- CLASSIFICATION FILTER -->
                 <select id="sdFilterCategory" onchange="renderSubDistrictTab()">
                     <option value="ALL">All Classifications</option>
                     <option value="Kalothswom">Kalothswom</option>
                     <option value="Fest">Fest</option>
                     <option value="Sports">Sports</option>
                 </select>
-                <select id="sdFilterStatus" onchange="renderSubDistrictTab()">
-                    <option value="ALL">Show: All Participants</option>
-                    <option value="QUALIFIED">Show: Qualified Only</option>
+
+                <!-- FESTIVAL SELECTOR (FOR FILTER & FESTIVAL PRINT) -->
+                <select id="sdFilterFest" onchange="renderSubDistrictTab()" style="min-width:200px; font-weight:600;">
+                    <option value="ALL">-- All Festivals --</option>
                 </select>
-                <input type="text" id="sdSearch" placeholder="Search student, item, class..." oninput="renderSubDistrictTab()" style="flex:2;">
-                <button class="action-btn" style="padding:7px 14px;" onclick="openSubDistrictReport(false)" title="View Qualified Directory">
-                    <i class="fas fa-eye"></i> <span>View Qualified</span>
+
+                <!-- SEARCH -->
+                <input type="text" id="sdSearch" placeholder="🔍 Search student, item, class, admn no..." oninput="renderSubDistrictTab()" style="flex:2; min-width:200px;">
+                
+                <!-- PRINT 1: WHOLE DIRECTORY -->
+                <button type="button" class="action-btn gold" style="padding:7px 14px;" onclick="openSubDistrictReport('ALL', true)" title="Print Whole Qualified Directory">
+                    <i class="fas fa-print"></i> <span>Print Whole</span>
                 </button>
-                <button class="action-btn gold" style="padding:7px 14px;" onclick="openSubDistrictReport(true)" title="Print Sub-District List">
-                    <i class="fas fa-print"></i> <span>Print Qualified</span>
+                
+                <!-- PRINT 2: FESTIVAL-BASED DIRECTORY -->
+                <button type="button" class="action-btn" style="padding:7px 14px; background:var(--corner-accent); color:#ffffff;" onclick="openSelectedFestSubDistrictReport(true)" title="Print Selected Festival List">
+                    <i class="fas fa-file-pdf"></i> <span>Print Festival</span>
                 </button>
             </div>
 
+            <!-- SUB-DISTRICT QUALIFIED TREE (FESTIVAL ORDER -> A-Z COLLAPSIBLE ITEMS) -->
             <div id="subDistrictContainer">
                 <p style="text-align:center; color:#999; padding:40px;">Loading Sub-District entries...</p>
-            </div>
-
-            <div style="margin-top:20px; text-align:right;">
-                <button class="action-btn success" style="padding:12px 24px; font-size:15px;" onclick="saveAllSubDistrictSelections()">
-                    <i class="fas fa-save"></i> Save All Sub-District Selections
-                </button>
             </div>
         </div>
 
@@ -6913,105 +6916,195 @@ function autoFormatDateInput(input) {
         );
     }
 
-    // --- 15. TAB 8: SUB-DISTRICT LEVEL QUALIFICATION TAB ---
-    function renderSubDistrictTab() {
-        const container = document.getElementById('subDistrictContainer');
-        const catFilter = document.getElementById('sdFilterCategory').value;
-        const statusFilter = document.getElementById('sdFilterStatus').value;
-        const q = String(document.getElementById('sdSearch')?.value || "").toLowerCase().trim();
+    // ==========================================================================
+// SUB-DISTRICT CONTROLLER: QUALIFIED + A GRADE ONLY + A-Z COLLAPSIBLE
+// ==========================================================================
 
-        container.innerHTML = "";
+function toggleSubDistrictCollapse(headerEl) {
+    const targetBody = headerEl.nextElementSibling;
+    if (!targetBody) return;
+    const chevron = headerEl.querySelector('.collapse-chevron');
+    const isClosed = targetBody.style.display === 'none';
+    targetBody.style.display = isClosed ? 'block' : 'none';
+    if (chevron) {
+        if (isClosed) chevron.classList.remove('collapsed');
+        else chevron.classList.add('collapsed');
+    }
+}
 
-        // Shows entries not hidden, and keeps qualified candidates visible even if fest is disabled
-let results = [...dbPublishedResults].filter(r => 
-    !r.hideFromSubDistrict && (isFestEnabled(r.festName) || r.qualifiedSubDistrict === true)
-);
-        if (catFilter !== "ALL") {
-            results = results.filter(r => r.festCategory === catFilter);
-        }
+function renderSubDistrictTab() {
+    const container = document.getElementById('subDistrictContainer');
+    if (!container) return;
 
-        if (statusFilter === "QUALIFIED") {
-            results = results.filter(r => r.qualifiedSubDistrict === true);
-        }
+    const catFilter = document.getElementById('sdFilterCategory')?.value || "ALL";
+    const festFilter = document.getElementById('sdFilterFest')?.value || "ALL";
+    const q = String(document.getElementById('sdSearch')?.value || "").toLowerCase().trim();
 
-        if (q) {
-            results = results.filter(r => 
-                String(r.candidateName || "").toLowerCase().includes(q) ||
-                String(r.itemName || "").toLowerCase().includes(q) ||
-                String(r.studentClass || "").toLowerCase().includes(q) ||
-                String(r.admissionNumber || "").toLowerCase().includes(q)
-            );
-        }
+    container.innerHTML = "";
 
-        if (results.length === 0) {
-            container.innerHTML = `<p style="text-align:center; color:#999; padding:40px;">No Sub-District entries matching selection.</p>`;
-            return;
-        }
+    // 1. STRICT FILTER: QUALIFIED ONLY AND A GRADE ONLY (EXCLUDE HIDDEN/DELETED)
+    let qualifiedList = dbPublishedResults.filter(r => 
+        !r.hideFromSubDistrict && 
+        (r.qualifiedSubDistrict === true || String(r.qualifiedSubDistrict) === "true") &&
+        String(r.grade || "").trim().toUpperCase() === "A"
+    );
 
-        const hierarchy = {};
-        results.forEach(r => {
-            const cat = r.festCategory || getFestivalCategory(r.festName);
-            if (!hierarchy[cat]) hierarchy[cat] = {};
-            const itemKey = `${r.itemName} [${r.itemCode}] (${r.festName})`;
-            if (!hierarchy[cat][itemKey]) hierarchy[cat][itemKey] = [];
-            hierarchy[cat][itemKey].push(r);
+    // Populate Festival filter dropdown with fests that have qualified A-grade candidates
+    const festDropdown = document.getElementById('sdFilterFest');
+    if (festDropdown) {
+        const currentSelectedFest = festDropdown.value;
+        const distinctFests = [...new Set(qualifiedList.map(r => r.festName).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        
+        let festOptions = '<option value="ALL">-- All Festivals --</option>';
+        distinctFests.forEach(f => {
+            festOptions += `<option value="${f}" ${f === currentSelectedFest ? 'selected' : ''}>${f}</option>`;
         });
+        festDropdown.innerHTML = festOptions;
+    }
 
-        const mainCategories = ["Kalothswom", "Fest", "Sports"];
-        const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
+    // 2. APPLY USER FILTERS (CATEGORY, FESTIVAL & SEARCH)
+    if (catFilter !== "ALL") {
+        qualifiedList = qualifiedList.filter(r => (r.festCategory || getFestivalCategory(r.festName)) === catFilter);
+    }
 
-        mainCategories.forEach(cat => {
-            if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
+    if (festFilter !== "ALL") {
+        qualifiedList = qualifiedList.filter(r => r.festName === festFilter);
+    }
 
-            // Sort Sub-District items alphabetically A-Z
-            Object.keys(hierarchy[cat]).sort().forEach(itemKey => {
-                const rows = hierarchy[cat][itemKey];
-            let catHTML = `<div class="category-main-head"><i class="fas fa-medal"></i> ${cat.toUpperCase()} - SUB DISTRICT ENTRIES</div>`;
+    if (q) {
+        qualifiedList = qualifiedList.filter(r => 
+            String(r.candidateName || "").toLowerCase().includes(q) ||
+            String(r.itemName || "").toLowerCase().includes(q) ||
+            String(r.studentClass || "").toLowerCase().includes(q) ||
+            String(r.admissionNumber || "").toLowerCase().includes(q) ||
+            String(r.lotNumber || "").toLowerCase().includes(q) ||
+            String(r.festName || "").toLowerCase().includes(q)
+        );
+    }
 
-            Object.keys(hierarchy[cat]).forEach(itemKey => {
-                const rows = hierarchy[cat][itemKey];
-                rows.sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
+    if (qualifiedList.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:50px 20px; background:#ffffff; border:1px solid var(--border); border-radius:var(--radius-md);">
+                <i class="fas fa-medal" style="font-size:36px; color:#cbd5e1; margin-bottom:10px;"></i>
+                <p style="color:#64748b; font-size:14px; font-weight:600; margin:0;">No Qualified Candidates with "A" Grade found.</p>
+                <small style="color:#94a3b8;">Only candidates marked as Qualified with an A Grade appear here.</small>
+            </div>
+        `;
+        return;
+    }
+
+    // 3. GROUP HIERARCHY: Classification -> Festival (Order) -> Items (A-Z)
+    const hierarchy = {};
+    const seenCandidateMap = new Set(); // Prevent duplicates
+
+    qualifiedList.forEach(r => {
+        // Unique candidate key per item to prevent any repeated rows
+        const uniqueKey = `${r.itemCode || r.itemName}__${r.admissionNumber}`;
+        if (seenCandidateMap.has(uniqueKey)) return;
+        seenCandidateMap.add(uniqueKey);
+
+        const cat = r.festCategory || getFestivalCategory(r.festName);
+        const fName = r.festName || "General Fest";
+        const itemKey = `${r.itemName} [${r.itemCode || 'N/A'}]`;
+
+        if (!hierarchy[cat]) hierarchy[cat] = {};
+        if (!hierarchy[cat][fName]) hierarchy[cat][fName] = {};
+        if (!hierarchy[cat][fName][itemKey]) hierarchy[cat][fName][itemKey] = [];
+
+        hierarchy[cat][fName][itemKey].push(r);
+    });
+
+    const classificationOrder = ["Kalothswom", "Fest", "Sports"];
+
+    // 4. RENDER CLASSIFICATION -> FESTIVALS -> COLLAPSIBLE ITEMS (A-Z)
+    classificationOrder.forEach(cat => {
+        if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
+
+        let catHTML = `
+            <div style="margin-bottom:24px;">
+                <div class="category-main-head" style="border-radius:var(--radius-sm); margin-bottom:12px;">
+                    <span><i class="fas fa-medal"></i> ${cat.toUpperCase()} - SUB-DISTRICT QUALIFIED DIRECTORY</span>
+                </div>
+        `;
+
+        // Festivals in Alphabetical Order
+        const sortedFests = Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b));
+
+        sortedFests.forEach(festName => {
+            const festItemsObj = hierarchy[cat][festName];
+            const sortedItems = Object.keys(festItemsObj).sort((a, b) => a.localeCompare(b));
+
+            // Count total unique candidates in this fest
+            let festTotalCount = 0;
+            sortedItems.forEach(k => festTotalCount += festItemsObj[k].length);
+
+            catHTML += `
+                <div style="background:#ffffff; border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-bottom:16px; box-shadow:var(--shadow-subtle);">
+                    <!-- FESTIVAL HEADER & DIRECT FESTIVAL PRINT BUTTON -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1.5px solid var(--border); padding-bottom:10px; margin-bottom:12px;">
+                        <div>
+                            <h4 style="margin:0; font-size:16px; color:var(--text-main); font-weight:800; display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-trophy" style="color:var(--gold);"></i> ${festName}
+                            </h4>
+                            <span style="font-size:11.5px; font-weight:700; color:#64748b;">${festTotalCount} Qualified Candidate(s) (A Grade Only)</span>
+                        </div>
+                        <button type="button" class="action-btn gold" style="padding:5px 12px; font-size:12px;" onclick="openSubDistrictReport('${festName}', true)" title="Print only ${festName}">
+                            <i class="fas fa-print"></i> Print ${festName}
+                        </button>
+                    </div>
+            `;
+
+            // Items in A-Z Alphabetical Order (Each Collapsible)
+            sortedItems.forEach(itemKey => {
+                const candidates = festItemsObj[itemKey];
+                candidates.sort((a, b) => parseFloat(b.score || 0) - parseFloat(a.score || 0));
 
                 catHTML += `
-                    <div class="item-sub-head">
-                        <span><i class="fas fa-bookmark" style="color:var(--gold); margin-right:8px;"></i> ${itemKey}</span>
-                        <span style="font-size:12px; color:#555;">${rows.length} Candidate(s)</span>
-                    </div>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Lot No</th>
-                                    <th>Admn No</th>
-                                    <th>Candidate Name</th>
-                                    <th>Class & Div</th>
-                                    <th>Score & Grade</th>
-                                    <th style="width:160px; text-align:center;">Sub-District Status</th>
-                                    <th style="width:70px; text-align:center;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <div style="margin-bottom:10px; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;">
+                        <!-- COLLAPSIBLE ITEM HEADER -->
+                        <div class="item-sub-head collapsible-header" onclick="toggleSubDistrictCollapse(this)" style="margin:0; padding:10px 14px; cursor:pointer; background:#f8fafc; display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <i class="fas fa-chevron-down collapse-chevron"></i>
+                                <span style="font-weight:800; font-size:14px; color:var(--text-main);">${itemKey}</span>
+                            </div>
+                            <span class="badge-place place-1" style="font-size:11px; padding:3px 8px;">
+                                ${candidates.length} Qualified (A Grade)
+                            </span>
+                        </div>
+
+                        <!-- COLLAPSIBLE ITEM CANDIDATES TABLE -->
+                        <div class="table-responsive" style="margin:0; border:none; display:block;">
+                            <table>
+                                <thead>
+                                    <tr style="background:#ffffff;">
+                                        <th style="width:40px; text-align:center;">#</th>
+                                        <th style="width:75px; text-align:center;">Lot No</th>
+                                        <th style="width:90px;">Admn No</th>
+                                        <th>Candidate Name</th>
+                                        <th>Class & Div</th>
+                                        <th>Rank / Place</th>
+                                        <th style="width:90px; text-align:center;">Score</th>
+                                        <th style="width:70px; text-align:center;">Grade</th>
+                                        <th style="width:70px; text-align:center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                 `;
 
-                rows.forEach((r, idx) => {
-                    const isChecked = r.qualifiedSubDistrict ? 'checked' : '';
+                candidates.forEach((cand, idx) => {
                     catHTML += `
                         <tr>
-                            <td><b>${idx + 1}</b> (${r.place})</td>
-                            <td>${r.lotNumber}</td>
-                            <td><b>${r.admissionNumber}</b></td>
-                            <td><b>${r.candidateName}</b></td>
-                            <td>${r.studentClass} ${r.studentDivision || ''}</td>
-                            <td>${r.score} (<b>${r.grade}</b>)</td>
+                            <td style="text-align:center; font-weight:600; color:#64748b;">${idx + 1}</td>
+                            <td style="text-align:center; font-weight:800; color:var(--primary);">${cand.lotNumber || 'N/A'}</td>
+                            <td><b>${cand.admissionNumber}</b></td>
+                            <td><b style="color:#0f172a;">${cand.candidateName}</b></td>
+                            <td><span style="font-weight:700; color:var(--accent);">${cand.studentClass} ${cand.studentDivision || ''}</span></td>
+                            <td><span class="badge-place place-1">${cand.place}</span></td>
+                            <td style="text-align:center; font-weight:800;">${cand.score}</td>
+                            <td style="text-align:center;"><span style="font-weight:900; color:#059669; background:#d1fae5; padding:2px 8px; border-radius:4px;">${cand.grade}</span></td>
                             <td style="text-align:center;">
-                                <label style="cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-weight:600; color:${r.qualifiedSubDistrict ? 'var(--success)' : '#777'};">
-                                    <input type="checkbox" class="sd-qual-chk" data-resultid="${r.id}" ${isChecked} ${isAdmin ? '' : 'disabled'} onchange="toggleLocalSubDistrict('${r.id}', this.checked)">
-                                    <span>${r.qualifiedSubDistrict ? 'Qualified' : 'Not Qualified'}</span>
-                                </label>
-                            </td>
-                            <td style="text-align:center;">
-                                <button class="action-btn danger" style="padding:4px 8px; font-size:12px;" onclick="deleteSubDistrictEntry('${r.id}')" title="Delete Entry">
+                                <!-- DELETE ICON: Safely removes from Sub-District while keeping result/certificate intact -->
+                                <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:12px;" onclick="deleteSubDistrictEntry('${cand.id}')" title="Remove from Sub-District">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </td>
@@ -7019,13 +7112,16 @@ let results = [...dbPublishedResults].filter(r =>
                     `;
                 });
 
-                catHTML += `</tbody></table></div>`;
+                catHTML += `</tbody></table></div></div>`;
             });
 
-            container.innerHTML += catHTML;
+            catHTML += `</div>`; // Close festival card
         });
-        });
-    }
+
+        catHTML += `</div>`; // Close category block
+        container.innerHTML += catHTML;
+    });
+}
 
     function toggleLocalSubDistrict(resId, isChecked) {
         const item = dbPublishedResults.find(r => r.id === resId);
@@ -7061,22 +7157,20 @@ let results = [...dbPublishedResults].filter(r =>
         }
     }
 
-    // --- REMOVE FROM SUB-DISTRICT ONLY (KEEPS RESULTS & CERTIFICATES SAFE) ---
+    // 6. DELETE ICON HANDLER (SAFELY REMOVES FROM SUB-DISTRICT ONLY)
 async function deleteSubDistrictEntry(resId) {
     showCustomDialog(
         "Remove from Sub-District?", 
-        "Are you sure you want to remove this entry from the Sub-District list?<br><br><small style='color:#059669;'><b>Note:</b> The candidate's score, rank, and certificate in the Results Tab will remain completely safe.</small>", 
+        "Are you sure you want to remove this candidate from the Sub-District list?<br><br><small style='color:#059669;'><b>Note:</b> The candidate's score, rank, and certificate in the Results tab will remain completely safe.</small>", 
         "warning", 
         async () => {
-            showLoader("Removing from Sub-District...");
+            showLoader("Removing candidate from Sub-District...");
             try {
-                // Update Firestore to hide from Sub-District without deleting result document
                 await db.collection("published_results").doc(resId).update({
                     hideFromSubDistrict: true,
                     qualifiedSubDistrict: false
                 });
 
-                // Update local memory
                 const localItem = dbPublishedResults.find(r => r.id === resId);
                 if (localItem) {
                     localItem.hideFromSubDistrict = true;
@@ -7084,60 +7178,110 @@ async function deleteSubDistrictEntry(resId) {
                 }
 
                 hideLoader();
-                renderSubDistrictTab(); // Re-render Sub-District tab only
-                showCustomDialog("Removed", "Candidate removed from Sub-District list. Their published result remains untouched.", "success");
+                renderSubDistrictTab();
+                showCustomDialog("Removed", "Candidate removed from Sub-District directory.", "success");
             } catch (e) {
                 hideLoader();
                 console.error("Sub-district removal error:", e);
-                showCustomDialog("Error", "Could not remove entry from Sub-District list.", "danger");
+                showCustomDialog("Error", "Could not remove candidate.", "danger");
             }
         }, 
         true
     );
 }
 
-    function openSubDistrictReport(autoPrint = false) {
-        const tbody = document.getElementById('sdReportTableTbody');
-        tbody.innerHTML = "";
 
-        // Includes all qualified candidates even if the festival is disabled
-const qualifiedList = dbPublishedResults.filter(r => 
-    r.qualifiedSubDistrict === true && !r.hideFromSubDistrict
-);
+    // 5. PRINT REPORT GENERATOR: WHOLE & FESTIVAL BASED WITHOUT REPEATS
+function openSelectedFestSubDistrictReport(autoPrint = true) {
+    const selectedFest = document.getElementById('sdFilterFest')?.value || "ALL";
+    openSubDistrictReport(selectedFest, autoPrint);
+}
 
-        document.getElementById('sdReportMetaInfo').innerText = `Total Qualified: ${qualifiedList.length} | Generated on: ${new Date().toLocaleString('en-IN')}`;
+function openSubDistrictReport(targetFest = 'ALL', autoPrint = false) {
+    const tbody = document.getElementById('sdReportTableTbody');
+    if (!tbody) return;
+    tbody.innerHTML = "";
 
-        if (qualifiedList.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#999; padding:30px;">No students are currently selected as Qualified for Sub-District Level.</td></tr>`;
-        } else {
-            qualifiedList.forEach((r, idx) => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${idx + 1}</td>
-                        <td><b>${r.admissionNumber}</b></td>
-                        <td><b>${r.candidateName}</b></td>
-                        <td>${r.studentClass} ${r.studentDivision || ''}</td>
-                        <td>${r.festCategory} - ${r.festName}</td>
-                        <td>${r.itemName} (${r.itemCode})</td>
-                        <td><b>${r.place}</b></td>
-                        <td>${r.score} (<b>${r.grade}</b>)</td>
-                    </tr>
-                `;
-            });
-        }
+    // STRICT: ONLY QUALIFIED AND A GRADE ONLY (DEDUPLICATED WITHOUT REPEAT)
+    let qualifiedList = dbPublishedResults.filter(r => 
+        !r.hideFromSubDistrict && 
+        (r.qualifiedSubDistrict === true || String(r.qualifiedSubDistrict) === "true") &&
+        String(r.grade || "").trim().toUpperCase() === "A"
+    );
 
-        document.getElementById('subDistrictModal').style.display = 'flex';
-
-        if (autoPrint) {
-            setTimeout(() => {
-                printModalDocument('subDistrictModal');
-            }, 300);
-        }
+    if (targetFest !== "ALL") {
+        qualifiedList = qualifiedList.filter(r => r.festName === targetFest);
     }
+
+    // Deduplicate candidates so nobody is repeated
+    const distinctList = [];
+    const seen = new Set();
+    qualifiedList.forEach(r => {
+        const key = `${r.itemCode || r.itemName}__${r.admissionNumber}`;
+        if (!seen.has(key)) {
+            seen.add(key);
+            distinctList.push(r);
+        }
+    });
+
+    // Sort: Fest Name -> Item Name (A-Z) -> Score Descending
+    distinctList.sort((a, b) => {
+        if (a.festName !== b.festName) return String(a.festName || "").localeCompare(String(b.festName || ""));
+        if (a.itemName !== b.itemName) return String(a.itemName || "").localeCompare(String(b.itemName || ""));
+        return parseFloat(b.score || 0) - parseFloat(a.score || 0);
+    });
+
+    // Report Header & Meta Info
+    const titleEl = document.querySelector('#printableSubDistrictArea h4') || document.getElementById('sdReportMetaInfo');
+    const headerTitle = targetFest === "ALL" 
+        ? "OFFICIAL SUB-DISTRICT LEVEL QUALIFIED CANDIDATES (OVERALL DIRECTORY)"
+        : `OFFICIAL SUB-DISTRICT LEVEL QUALIFIED CANDIDATES - ${targetFest.toUpperCase()}`;
+
+    const reportTitleDiv = document.querySelector('#printableSubDistrictArea div[style*="font-size:17px"]');
+    if (reportTitleDiv) reportTitleDiv.innerText = headerTitle;
+
+    document.getElementById('sdReportMetaInfo').innerText = `Total Qualified: ${distinctList.length} (A Grade Only) | Generated on: ${new Date().toLocaleString('en-IN')}`;
+
+    if (distinctList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#999; padding:30px;">No qualified candidates with A Grade found for this selection.</td></tr>`;
+    } else {
+        distinctList.forEach((r, idx) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td style="text-align:center; font-weight:600;">${idx + 1}</td>
+                    <td style="font-weight:700;">${r.admissionNumber}</td>
+                    <td><b>${r.candidateName}</b></td>
+                    <td>${r.studentClass} ${r.studentDivision || ''}</td>
+                    <td>${r.festName}</td>
+                    <td>${r.itemName} (${r.itemCode || 'N/A'})</td>
+                    <td><b>${r.place}</b></td>
+                    <td style="text-align:center;">${r.score} (<b>${r.grade}</b>)</td>
+                </tr>
+            `;
+        });
+    }
+
+    // Dynamic Convenor Name in Report Footer
+    const convenorLabel = document.querySelector('#printableSubDistrictArea div[style*="justify-content:space-between"] b');
+    if (convenorLabel) {
+        const convName = (targetFest !== "ALL" && dbSettings.FestConvenors && dbSettings.FestConvenors[targetFest]) 
+            ? dbSettings.FestConvenors[targetFest] 
+            : "THEJAS R";
+        convenorLabel.innerHTML = `${convName}<br><span style="font-size:11px; font-weight:normal;">Convenor (${targetFest === "ALL" ? "General Kalothswom / Sports" : targetFest})</span>`;
+    }
+
+    document.getElementById('subDistrictModal').style.display = 'flex';
+
+    if (autoPrint) {
+        setTimeout(() => {
+            printModalDocument('subDistrictModal');
+        }, 300);
+    }
+}
 
     function closeSubDistrictReport() {
-        document.getElementById('subDistrictModal').style.display = 'none';
-    }
+    document.getElementById('subDistrictModal').style.display = 'none';
+}
 
     // --- 16. ADMIN DASHBOARD: TAP BUTTONS, TAB PERMISSIONS & CONVENORS ---
     function setTapSetting(key, val) {
