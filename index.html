@@ -923,6 +923,7 @@
                             </div>
                         </div>
 
+                        <!-- Normal Post Fields -->
                         <div id="normalFields">
                             <div class="form-group" id="fg-title"><label>Title</label><input type="text" id="postTitle" class="form-control" oninput="updateLivePreview()"></div>
                             <div class="form-group" id="fg-author">
@@ -945,24 +946,23 @@
                             </div>
                             <div class="form-group" id="fg-content"><label>Content</label><textarea id="postContent" class="form-control" rows="3" oninput="updateLivePreview()"></textarea></div>
                             
-                            <!-- Media Links -->
+                            <!-- Media Links Section -->
                             <div class="form-group" id="fg-media">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <label style="margin-bottom: 0;">Media Link (YouTube / Facebook / Direct URL)</label>
-        <button type="button" class="btn-media-add" onclick="addMediaLinkSlot()" title="Add another link">
-            <i class="fa-solid fa-plus"></i> Add More Link
-        </button>
-    </div>
-    <div id="mediaLinksContainer" style="display: flex; flex-direction: column; gap: 8px;">
-        <div class="media-link-row" id="media-link-row-0" style="display: flex; gap: 6px; align-items: center;">
-            <input type="text" class="form-control media-link-input" placeholder="Paste YouTube, Facebook video link, or Direct URL" oninput="updateLivePreview()">
-        </div>
-    </div>
-</div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <label style="margin-bottom: 0;">Media Link (YouTube / Facebook / Direct URL)</label>
+                                    <button type="button" class="btn-media-add" onclick="addMediaLinkSlot()" title="Add another link">
+                                        <i class="fa-solid fa-plus"></i> Add More Link
+                                    </button>
+                                </div>
+                                <div id="mediaLinksContainer" style="display: flex; flex-direction: column; gap: 8px;">
+                                    <div class="media-link-row" id="media-link-row-0" style="display: flex; gap: 6px; align-items: center;">
+                                        <input type="text" class="form-control media-link-input" placeholder="Paste YouTube, Facebook video link, or Direct URL" oninput="updateLivePreview()">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Image Upload Group -->
+                        <!-- Upload Image or Take Photo (Positioned directly under Media Link) -->
                         <div class="form-group" id="imageUploadGroup" style="background: #eef2ff; padding: 12px; border-radius: 8px; border: 1px dashed var(--accent-blue);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                 <label style="color: var(--accent-blue); font-weight: 800; margin-bottom: 0;">Upload Image or Take Photo</label>
@@ -991,6 +991,7 @@
                             </div>
                         </div>
 
+                        <!-- Form Buttons -->
                         <button type="button" class="btn-submit" id="submitBtn" onclick="submitData('create')">Publish Now</button>
                         <button type="button" class="btn-submit" id="resetProfileBtn" style="display:none; background:#6b7280; margin-top:5px;" onclick="resetProfileToAuto()">Revert Profile to Auto Random</button>
                         <button type="button" class="btn-submit" id="updateBtn" style="display:none; background:#10b981;" onclick="submitData('update')">Update Post</button>
@@ -2554,16 +2555,13 @@
                 🎁 <span>${wishes}</span>
             </button>
         </div>
+        <button class="social-btn" onclick="sharePost(this, '${student.id}', 'birthdays')" title="Share Image">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            <span>${shares}</span>
+        </button>
     </div>
-    
-                        <button class="social-btn" onclick="sharePost(this, '${student.id}', 'birthdays')" title="Share Image">
-                            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                            <span>${shares}</span>
-                        </button>
-                    </div>
-                </div>
 
-                <div class="comments-section">
+    <div class="comments-section">
                     <div class="comment-list">
                         ${comments.map(c => `
                             <div class="comment-item" id="comment-${postIdStr}-${c.id}">
@@ -2685,25 +2683,28 @@
     }
 
     function finishLoginAuth() {
-        finishYtLoader();
-        closeModals();
-        populateStudentSearch();
+    finishYtLoader();
+    closeModals();
+    populateStudentSearch();
 
-        recordAdminActivity(currentAdminName, "Logged in to Dashboard");
+    recordAdminActivity(currentAdminName, "Logged in to Dashboard");
 
-        const isSuper = (currentAdminRole === 'superadmin');
-        document.getElementById('superAdminBadge').style.display = isSuper ? 'flex' : 'none';
-        document.querySelectorAll('.super-only-app').forEach(el => {
-            el.style.display = isSuper ? 'flex' : 'none';
-        });
-        document.getElementById('dashboardModalTitle').innerText = isSuper ? "👑 Super Admin Dashboard" : "⚙️ Admin Dashboard";
-        document.getElementById('activeAdminTag').innerText = currentAdminName;
+    const isSuper = (currentAdminRole === 'superadmin');
+    document.getElementById('superAdminBadge').style.display = isSuper ? 'flex' : 'none';
+    document.querySelectorAll('.super-only-app').forEach(el => {
+        el.style.display = isSuper ? 'flex' : 'none';
+    });
+    document.getElementById('dashboardModalTitle').innerText = isSuper ? "👑 Super Admin Dashboard" : "⚙️ Admin Dashboard";
+    document.getElementById('activeAdminTag').innerText = currentAdminName;
 
-        document.getElementById('uploadModal').classList.add('active');
-        openAdminSection('create'); 
-        updateImageGuide();
-        updateLivePreview();
-    }
+    document.getElementById('uploadModal').classList.add('active');
+    
+    // LAND ON APPS PAGE FIRST:
+    closeAdminSection(); 
+    
+    updateImageGuide();
+    updateLivePreview();
+}
 
     function recordAdminActivity(adminName, actionDetail) {
         db.collection('admin_activity').add({
