@@ -1675,6 +1675,98 @@
         gap: 5px;
     }    
 
+    /* ==========================================================================
+   BUILT-IN FLOATING CALENDAR POPUP (100% IFRAME & CROSS-ORIGIN SAFE)
+   ========================================================================== */
+#miniCalendarPopup {
+    position: absolute;
+    display: none;
+    width: 260px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    z-index: 9999999;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+.mcal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.mcal-header button {
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-main);
+    font-size: 11px;
+}
+.mcal-header button:hover { background: #e2e8f0; }
+.mcal-title-selects {
+    display: flex;
+    gap: 4px;
+}
+.mcal-title-selects select {
+    padding: 3px 6px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: #ffffff;
+}
+.mcal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+.mcal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+}
+.mcal-day-btn {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11.5px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-main);
+    padding: 0;
+}
+.mcal-day-btn:hover {
+    background: #eff6ff;
+    color: var(--accent);
+    border-color: #bfdbfe;
+}
+.mcal-day-btn.active-day {
+    background: var(--accent);
+    color: #ffffff;
+    font-weight: 800;
+}
+.mcal-day-btn.empty-cell {
+    pointer-events: none;
+    background: transparent;
+}
+
     option[value="Fest"] {
     display: none !important;}
 
@@ -2795,10 +2887,10 @@
 
                         <!-- TITLE AREA -->
                         <!-- In #certModal HTML: -->
-<div class="cert-title-area">
-    <div class="cert-main-title">Certificate of Merit</div>
-    <div class="cert-congrats-animated">Congratulation</div>
-</div>
+                        <div class="cert-title-area">
+                        <div class="cert-main-title">Certificate of Merit</div>
+                        <div class="cert-congrats-animated">Congratulation</div>
+                        </div>
 
                         <!-- BODY STATEMENT -->
                         <div class="cert-body-area">
@@ -2811,24 +2903,50 @@
                             </div>
                         </div>
 
-                        <!-- SIGNATURES & GOLD SEAL FOOTER -->
-                        <div class="cert-footer-row">
-                            <div class="cert-sig-block" style="text-align:left;">
-                                <div style="font-size:12px; font-weight:600; color:#334155;" id="certIssueDate">Date: 20.02.2026</div>
-                                <div style="font-size:12px; font-weight:600; color:#334155;">Place: Thuravoor</div>
-                                <b id="certConvenorName">THEJAS R</b>
-                                <span>( General Convenor )</span>
+                        <!-- 3. SIGNATURES & GOLD SEAL FOOTER WITH DATE & PLACE AFTER SIGNING AREA -->
+                        <div class="cert-footer-row" style="display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 2; padding: 6px 16px 2px; border-top: 1.5px solid rgba(212, 175, 55, 0.4);">
+                            
+                            <!-- CONVENOR SIGNING BLOCK -->
+                            <div class="cert-sig-block" style="text-align: center; min-width: 220px;">
+                                <!-- 54px Clear Vertical Signing Area for Pen Signature / Seal -->
+                                <div class="cert-signature-space" style="height: 54px; width: 100%;"></div>
+                                
+                                <b id="certConvenorName" style="display: block; font-size: 13px; color: var(--text-main); border-top: 1.5px solid #334155; padding-top: 4px; margin: 0;">
+                                    THEJAS R
+                                </b>
+                                <span style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
+                                    ( General Convenor )
+                                </span>
+
+                                <!-- PLACED AFTER SIGNING AREA -->
+                                <div style="display: flex; justify-content: center; gap: 14px; font-size: 11px; font-weight: 600; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 3px;">
+                                    <span id="certIssueDate">Date: 13/9/2026</span>
+                                    <span>Place: Thuravoor</span>
+                                </div>
                             </div>
 
-                            <div class="cert-gold-seal">
+                            <!-- OFFICIAL GOLD SEAL IN CENTER -->
+                            <div class="cert-gold-seal" style="margin-bottom: 14px;">
                                 <i class="fas fa-certificate"></i>
                                 <span>Official Seal</span>
                             </div>
 
-                            <div class="cert-sig-block" style="text-align:right;">
-                                <b style="margin-top:42px;">ASHA V</b>
-                                <span>( Principal )</span>
+                            <!-- PRINCIPAL SIGNING BLOCK -->
+                            <div class="cert-sig-block" style="text-align: center; min-width: 220px;">
+                                <!-- 54px Clear Vertical Signing Area for Principal -->
+                                <div class="cert-signature-space" style="height: 54px; width: 100%;"></div>
+                                
+                                <b style="display: block; font-size: 13px; color: var(--text-main); border-top: 1.5px solid #334155; padding-top: 4px; margin: 0;">
+                                    ASHA V
+                                </b>
+                                <span style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
+                                    ( Principal )
+                                </span>
+
+                                <!-- Symmetrical bottom clearance -->
+                                <div style="height: 18px;"></div>
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -6682,34 +6800,79 @@ dbPublishedResults.forEach(r => {
     });
 }
 
+    // ==========================================================================
+// CERTIFICATE FESTIVAL DATES FORMATTERS
+// ==========================================================================
+function formatFestDatesForCert(festName) {
+    const rawDates = (dbSettings.FestDates && dbSettings.FestDates[festName]) || [];
+    const validDates = (Array.isArray(rawDates) ? rawDates : [rawDates])
+        .map(d => String(d || "").trim().replace(/\./g, ':'))
+        .filter(d => d.length > 0);
+
+    if (validDates.length === 0) return null;
+    if (validDates.length === 1) return validDates[0];
+    if (validDates.length === 2) return `${validDates[0]} & ${validDates[1]}`;
+    return `${validDates.slice(0, -1).join(', ')} & ${validDates[validDates.length - 1]}`;
+}
+
+function getCertIssueDate(festName, fallbackDate) {
+    const rawDates = (dbSettings.FestDates && dbSettings.FestDates[festName]) || [];
+    const validDates = (Array.isArray(rawDates) ? rawDates : [rawDates])
+        .map(d => String(d || "").trim().replace(/\./g, ':'))
+        .filter(d => d.length > 0);
+
+    if (validDates.length > 0) {
+        return validDates[validDates.length - 1]; // Resolves to the final day of the event
+    }
+    return fallbackDate ? String(fallbackDate).replace(/\./g, ':') : "20:02:2026";
+}
+
+function autoFormatDateInput(input) {
+    let v = input.value.replace(/[^0-9]/g, '');
+    if (v.length > 2 && v.length <= 4) {
+        input.value = v.slice(0, 2) + ':' + v.slice(2);
+    } else if (v.length > 4) {
+        input.value = v.slice(0, 2) + ':' + v.slice(2, 4) + ':' + v.slice(4, 8);
+    }
+}
+
     function openCertificateModal(resId, autoPrint = false) {
         const r = dbPublishedResults.find(x => x.id === resId);
         if (!r) return;
 
-        const dateStr = (r.publishedAt || "20.02.2026").split(',')[0];
+        const festName = r.festName || "UTHSAV";
+        const fallbackPublished = (r.publishedAt || "13/9/2026").split(',')[0];
         
+        // Resolve date strings formatted with slashes (e.g. 13/9/2026)
+        let festDateCitation = formatFestDatesForCert(festName) || fallbackPublished;
+        festDateCitation = festDateCitation.replace(/[:.-]/g, '/');
+
+        let rawIssueDate = getCertIssueDate(festName, fallbackPublished);
+        const issueDate = String(rawIssueDate).replace(/[:.-]/g, '/');
+
         // Lookup student in master directory or registration data
         const st = dbStudents.find(s => String(s["Admission Number"]).trim() === String(r.admissionNumber).trim());
         const reg = dbRegistrations.find(reg => String(reg["Admission Number"]).trim() === String(r.admissionNumber).trim());
         
-        // Checks 'F', 'FEMALE', 'GIRL' vs 'M', 'MALE', 'BOY'
         const gRaw = String(st?.Gender || st?.["Gender"] || reg?.Gender || reg?.["Gender"] || r?.Gender || "").trim().toUpperCase();
         const isGirl = gRaw === 'F' || gRaw.startsWith('FEM') || gRaw === 'GIRL';
         const salutation = isGirl ? 'Kumari.' : 'Master.';
 
-        // Strip any existing prefix to prevent "Master. Master. Name"
         let cleanName = String(r.candidateName || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
 
         document.getElementById('certStudentName').innerText = `${salutation} ${cleanName}`;
         document.getElementById('certStudentClass').innerText = `Standard: ${r.studentClass} ${r.studentDivision || ''}`;
-        document.getElementById('certIssueDate').innerText = `Date: ${dateStr}`;
-        document.getElementById('certFestBadge').innerText = (r.festName || "UTHSAV").toUpperCase();
+        
+        // PLACED AFTER SIGNING AREA
+        document.getElementById('certIssueDate').innerText = `Date: ${issueDate}`;
+        document.getElementById('certFestBadge').innerText = festName.toUpperCase();
 
-        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[r.festName]) ? dbSettings.FestConvenors[r.festName] : "THEJAS R";
+        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) ? dbSettings.FestConvenors[festName] : "THEJAS R";
         document.getElementById('certConvenorName').innerText = convenorName;
 
+        // CERTIFICATE CITATION
         document.getElementById('certStatement').innerHTML = `
-            has distinguished themselves by winning the <span class="cert-highlight-badge">${r.place}</span> with <span class="cert-highlight-badge">${r.grade} Grade</span> in the <b>${r.itemName}</b> competition held as part of <b>${(r.festName || 'ANNUAL FEST').toUpperCase()}</b> on <b>${dateStr}</b>.
+            has distinguished themselves by winning the <span class="cert-highlight-badge">${r.place}</span> with <span class="cert-highlight-badge">${r.grade} Grade</span> <br>in the <b>${r.itemName}</b> competition <br>held as part of <b>${festName.toUpperCase()}</b> on <b>${festDateCitation}</b>.
         `;
 
         document.getElementById('certModal').style.display = 'flex';
@@ -7178,16 +7341,85 @@ const qualifiedList = dbPublishedResults.filter(r =>
         document.getElementById('adminGlobalMsg').value = dbSettings.Global_Message || "";
         updateTapButtonUI();
 
+        // RESTRUCTURED ENABLED FESTS WITH DATES
         const festGrid = document.getElementById('adminFestList');
+        festGrid.style.display = "grid";
+        festGrid.style.gridTemplateColumns = "repeat(auto-fill, minmax(330px, 1fr))";
+        festGrid.style.gap = "14px";
         festGrid.innerHTML = "";
-        // Only show fests with items in Enabled Fests toggles
+
+        const savedDates = dbSettings.FestDates || {};
+
         allFestNames.filter(festHasItems).forEach(f => {
             const isChecked = dbSettings["Fest_" + f] !== "DISABLED" ? "checked" : "";
+            const cat = getFestivalCategory(f);
+            const safeName = f.replace(/[^a-zA-Z0-9]/g, '_');
+            const festDateArr = savedDates[f] || [];
+
+            let badgeColor = "#2563eb";
+            let badgeBg = "#eff6ff";
+            let badgeText = "FEST";
+            if (cat === "Kalothswom") {
+                badgeColor = "#7c3aed";
+                badgeBg = "#f5f3ff";
+                badgeText = "KALOTHSWOM (3 DAYS)";
+            } else if (cat === "Sports") {
+                badgeColor = "#059669";
+                badgeBg = "#ecfdf5";
+                badgeText = "SPORTS (1 DAY)";
+            }
+
+            // DATE INPUT ROWS
+            const dateCount = (cat === "Kalothswom") ? 3 : 1;
+            let dateInputsHTML = "";
+
+            for (let i = 0; i < dateCount; i++) {
+                const currentVal = festDateArr[i] || "";
+                const labelText = (cat === "Kalothswom") ? `Day ${i + 1} Date:` : `Event Date:`;
+
+                dateInputsHTML += `
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px;">
+                        <span style="font-size:11.5px; font-weight:700; color:#475569; min-width:80px;">${labelText}</span>
+                        <div style="position:relative; display:flex; align-items:center; flex:1;">
+                            <input type="text" id="festDate_${safeName}_${i}" value="${currentVal}" 
+                                   placeholder="DD:MM:YYYY" maxlength="10"
+                                   oninput="autoFormatDateInput(this)"
+                                   style="width:100%; padding:6px 34px 6px 8px; font-size:12px; font-family:monospace; font-weight:700; border:1px solid #cbd5e1; border-radius:4px; color:#0f172a; background:#ffffff;">
+                            
+                            <!-- RELIABLE IN-APP CALENDAR BUTTON (100% IFRAME COMPLIANT) -->
+                            <button type="button" class="mcal-trigger-btn" 
+                                    onclick="openMiniCalendar('festDate_${safeName}_${i}', this)"
+                                    style="position:absolute; right:3px; width:26px; height:24px; background:#eff6ff; border:1px solid #dbeafe; border-radius:4px; color:#2563eb; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;" 
+                                    title="Select from calendar">
+                                <i class="far fa-calendar-alt" style="font-size:13px; pointer-events:none;"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
             festGrid.innerHTML += `
-                <div class="fest-toggle">
-                    <input type="checkbox" id="chk_${f.replace(/\s/g,'')}" ${isChecked}> 
-                    <label for="chk_${f.replace(/\s/g,'')}">${f}</label>
-                </div>`;
+                <div style="background:#ffffff; border:1px solid var(--border); border-radius:8px; padding:12px 14px; box-shadow:var(--shadow-subtle);">
+                    <!-- FESTIVAL HEADER & STATUS TOGGLE -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:8px; margin-bottom:8px;">
+                        <label style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:13.5px; color:var(--text-main); cursor:pointer; margin:0;">
+                            <input type="checkbox" id="chk_${safeName}" ${isChecked} style="width:16px; height:16px; cursor:pointer;">
+                            <span>${f}</span>
+                        </label>
+                        <span style="font-size:10px; font-weight:800; color:${badgeColor}; background:${badgeBg}; padding:2px 7px; border-radius:12px; border:1px solid ${badgeColor}33;">
+                            ${badgeText}
+                        </span>
+                    </div>
+
+                    <!-- DATE INPUTS -->
+                    <div style="background:#f8fafc; padding:8px 10px; border-radius:6px; border:1px solid #e2e8f0;">
+                        <div style="font-size:10.5px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">
+                            <i class="fas fa-calendar-check" style="color:var(--accent);"></i> Certificate Date(s) [DD:MM:YYYY]
+                        </div>
+                        ${dateInputsHTML}
+                    </div>
+                </div>
+            `;
         });
 
         const cSel = document.getElementById('convenorFestSelect');
@@ -7576,18 +7808,44 @@ const qualifiedList = dbPublishedResults.filter(r =>
         }
     }
 
-    async function saveAdminSettings() {
+   async function saveAdminSettings() {
         dbSettings.Global_Message = document.getElementById('adminGlobalMsg').value;
+        if (!dbSettings.FestDates) dbSettings.FestDates = {};
+
         allFestNames.forEach(f => {
-            const chk = document.getElementById("chk_" + f.replace(/\s/g,''));
+            const safeName = f.replace(/[^a-zA-Z0-9]/g, '_');
+            const chk = document.getElementById("chk_" + safeName) || document.getElementById("chk_" + f.replace(/\s/g,''));
             dbSettings["Fest_" + f] = chk && chk.checked ? "ENABLED" : "DISABLED";
+
+            const cat = getFestivalCategory(f);
+            const dateCount = (cat === "Kalothswom") ? 3 : 1;
+            const dates = [];
+            for (let i = 0; i < dateCount; i++) {
+                const inp = document.getElementById(`festDate_${safeName}_${i}`);
+                if (inp) {
+                    const val = inp.value.trim();
+                    if (val) dates.push(val);
+                }
+            }
+            dbSettings.FestDates[f] = dates;
         });
 
         showLoader("Updating System Settings...");
-        await db.collection("config").doc("settings").set(dbSettings);
-        applySettingsToUI();
-        hideLoader();
-        showCustomDialog("Settings Saved", "System control settings updated successfully.", "success");
+        try {
+            await db.collection("config").doc("settings").set({
+                Global_Message: dbSettings.Global_Message,
+                FestDates: dbSettings.FestDates,
+                ...dbSettings
+            }, { merge: true });
+
+            applySettingsToUI();
+            hideLoader();
+            showCustomDialog("Settings Saved", "Festival activation settings and certificate dates updated successfully.", "success");
+        } catch (e) {
+            hideLoader();
+            console.error("Save settings error:", e);
+            showCustomDialog("Error", "Could not save system settings.", "danger");
+        }
     }
 
     async function bulkUploadItems() {
@@ -8419,6 +8677,158 @@ async function unlockJudgeCriteria() {
     }
 }
 
+
+    // ==========================================================================
+// BUILT-IN FLOATING CALENDAR ENGINE (DD:MM:YYYY)
+// ==========================================================================
+let miniCalState = {
+    targetInputId: null,
+    currentYear: new Date().getFullYear(),
+    currentMonth: new Date().getMonth(), // 0 - 11
+    selectedDay: null
+};
+
+// Create and inject popup container once into document body
+function ensureMiniCalendarExists() {
+    let popup = document.getElementById('miniCalendarPopup');
+    if (!popup) {
+        popup = document.createElement('div');
+        popup.id = 'miniCalendarPopup';
+        document.body.appendChild(popup);
+
+        // Close on clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#miniCalendarPopup') && !e.target.closest('.mcal-trigger-btn')) {
+                closeMiniCalendar();
+            }
+        });
+    }
+    return popup;
+}
+
+function openMiniCalendar(targetInputId, triggerBtn) {
+    ensureMiniCalendarExists();
+    miniCalState.targetInputId = targetInputId;
+
+    const targetInput = document.getElementById(targetInputId);
+    let initYear = new Date().getFullYear();
+    let initMonth = new Date().getMonth();
+    let initDay = null;
+
+    // Parse existing DD:MM:YYYY value if present
+    if (targetInput && targetInput.value) {
+        const parts = targetInput.value.replace(/\./g, ':').split(':');
+        if (parts.length === 3) {
+            const d = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10) - 1;
+            const y = parseInt(parts[2], 10);
+            if (!isNaN(d) && !isNaN(m) && !isNaN(y)) {
+                initDay = d;
+                initMonth = m;
+                initYear = y;
+            }
+        }
+    }
+
+    miniCalState.currentYear = initYear;
+    miniCalState.currentMonth = initMonth;
+    miniCalState.selectedDay = initDay;
+
+    renderMiniCalendar();
+
+    const popup = document.getElementById('miniCalendarPopup');
+    const rect = triggerBtn.getBoundingClientRect();
+    popup.style.display = 'block';
+
+    // Position directly under button
+    const popupLeft = Math.min(rect.left + window.scrollX, window.innerWidth - 275);
+    popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
+    popup.style.left = `${Math.max(10, popupLeft)}px`;
+}
+
+function closeMiniCalendar() {
+    const popup = document.getElementById('miniCalendarPopup');
+    if (popup) popup.style.display = 'none';
+}
+
+function changeMiniCalMonth(offset) {
+    miniCalState.currentMonth += offset;
+    if (miniCalState.currentMonth > 11) {
+        miniCalState.currentMonth = 0;
+        miniCalState.currentYear++;
+    } else if (miniCalState.currentMonth < 0) {
+        miniCalState.currentMonth = 11;
+        miniCalState.currentYear--;
+    }
+    renderMiniCalendar();
+}
+
+function selectMiniCalDay(day) {
+    if (!miniCalState.targetInputId) return;
+
+    const dd = String(day).padStart(2, '0');
+    const mm = String(miniCalState.currentMonth + 1).padStart(2, '0');
+    const yyyy = String(miniCalState.currentYear);
+
+    const formatted = `${dd}:${mm}:${yyyy}`;
+    const targetInput = document.getElementById(miniCalState.targetInputId);
+    if (targetInput) {
+        targetInput.value = formatted;
+        targetInput.focus();
+    }
+    closeMiniCalendar();
+}
+
+function renderMiniCalendar() {
+    const popup = document.getElementById('miniCalendarPopup');
+    if (!popup) return;
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const y = miniCalState.currentYear;
+    const m = miniCalState.currentMonth;
+
+    // Month & Year selects
+    let monthOptions = monthNames.map((name, idx) => `<option value="${idx}" ${idx === m ? 'selected' : ''}>${name.substring(0, 3)}</option>`).join('');
+    let yearOptions = '';
+    for (let yr = y - 3; yr <= y + 4; yr++) {
+        yearOptions += `<option value="${yr}" ${yr === y ? 'selected' : ''}>${yr}</option>`;
+    }
+
+    const firstDayIndex = new Date(y, m, 1).getDay(); // 0 (Sun) - 6 (Sat)
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+    let daysHTML = '';
+    // Empty leading cells
+    for (let i = 0; i < firstDayIndex; i++) {
+        daysHTML += `<div class="mcal-day-btn empty-cell"></div>`;
+    }
+    // Numbered day cells
+    for (let day = 1; day <= daysInMonth; day++) {
+        const isSelected = (day === miniCalState.selectedDay);
+        daysHTML += `
+            <button type="button" class="mcal-day-btn ${isSelected ? 'active-day' : ''}" onclick="selectMiniCalDay(${day})">
+                ${day}
+            </button>
+        `;
+    }
+
+    popup.innerHTML = `
+        <div class="mcal-header">
+            <button type="button" onclick="changeMiniCalMonth(-1)" title="Previous month"><i class="fas fa-chevron-left"></i></button>
+            <div class="mcal-title-selects">
+                <select onchange="miniCalState.currentMonth = parseInt(this.value, 10); renderMiniCalendar();">${monthOptions}</select>
+                <select onchange="miniCalState.currentYear = parseInt(this.value, 10); renderMiniCalendar();">${yearOptions}</select>
+            </div>
+            <button type="button" onclick="changeMiniCalMonth(1)" title="Next month"><i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="mcal-weekdays">
+            <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+        </div>
+        <div class="mcal-days">
+            ${daysHTML}
+        </div>
+    `;
+}
 
     // Auto-check for judge inactivity / disconnection every 3 seconds (Memory-only check)
     setInterval(() => {
