@@ -953,7 +953,81 @@
     }
     .cert-gold-seal i { font-size: 18px; }
     .cert-gold-seal span { font-size: 7.5px; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
+    /* Group Member Selector Bar inside Certificate Modal */
+    .cert-group-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        background: #f1f5f9;
+        padding: 8px 16px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        margin: 10px 0;
+    }
+    .cert-group-bar select {
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: 700;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: #ffffff;
+    }
 
+    /* Batch Print Styles (Prints each participant's certificate on its own A4 sheet) */
+    @media print {
+        body.printing-batch-cert {
+            width: 297mm !important;
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body.printing-batch-cert #appScreen,
+        body.printing-batch-cert #loginScreen,
+        body.printing-batch-cert #customDialogOverlay,
+        body.printing-batch-cert #loadingOverlay,
+        body.printing-batch-cert #reportModal,
+        body.printing-batch-cert #subDistrictModal,
+        body.printing-batch-cert #llPrintModal {
+            display: none !important;
+        }
+        body.printing-batch-cert #certModal.active-print,
+        body.printing-batch-cert #certModal.active-print * {
+            visibility: visible !important;
+        }
+        body.printing-batch-cert #certModal.active-print {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 297mm !important;
+            display: block !important;
+            background: #fff !important;
+        }
+        body.printing-batch-cert #certModal.active-print .cert-scroll-wrapper {
+            overflow: visible !important;
+            background: none !important;
+            padding: 0 !important;
+            display: block !important;
+        }
+        body.printing-batch-cert #certModal.active-print .cert-container {
+            width: 297mm !important;
+            height: 208mm !important;
+            max-height: 208mm !important;
+            padding: 6mm 8mm !important;
+            margin: 0 auto 0 auto !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        body.printing-batch-cert #certModal.active-print .cert-container:last-child {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }
+    }
     /* ==========================================================================
        8. STRICT PRINT RULES (CERTIFICATE: LANDSCAPE, REPORTS: A4 PORTRAIT)
        ========================================================================== */
@@ -2976,6 +3050,18 @@
             <i class="fas fa-arrows-up-down-left-right"></i> Scroll sideways / vertically to view entire certificate on smaller screens
         </div>
 
+        <!-- PARTICIPANT SWITCHER FOR GROUP ITEMS (ONLY SHOWN FOR GROUP EVENTS) -->
+        <div id="certGroupMemberBar" class="cert-group-bar no-print" style="display:none;">
+            <label style="font-size:12.5px; font-weight:700; color:var(--text-main);">
+                <i class="fas fa-users" style="color:var(--accent);"></i> Group Participant:
+            </label>
+            <select id="certMemberSelect" onchange="switchCertMember(this.value)"></select>
+            <button type="button" class="action-btn gold" onclick="printAllGroupCertificates()">
+                <i class="fas fa-print"></i> Print All Individual Certificates (<span id="certGroupCount">0</span>)
+            </button>
+        </div>
+
+        
         <!-- DUAL-AXIS (VERTICAL & HORIZONTAL) SCROLL CONTAINER -->
         <div class="cert-scroll-wrapper">
             <div id="printableCertificate" class="cert-container">
@@ -6484,6 +6570,29 @@
 
                     unitList.forEach((u, idx) => {
                         const place = idx === 0 ? "FIRST Place" : (idx === 1 ? "SECOND Place" : (idx === 2 ? "THIRD Place" : "Grade Participant"));
+                        
+                        // Check if group item and collect all registered members for this specific team
+                        const reg = dbRegistrations.find(r => r.id === u.regId);
+                        const isGroup = reg && parseInt(reg["No of Participants"] || 1) > 1;
+                        let teamMembers = [];
+
+                        if (isGroup) {
+                            teamMembers = dbRegistrations.filter(r => 
+                                (r["Item Code"] === code || r["Item"] === reg["Item"]) &&
+                                r["Class"] === reg["Class"] &&
+                                r["Division"] === reg["Division"] &&
+                                r["Name of Fest"] === reg["Name of Fest"]
+                            ).map(m => ({
+                                id: m.id,
+                                admissionNumber: m["Admission Number"],
+                                name: m["Name"],
+                                class: m["Class"],
+                                division: m["Division"],
+                                gender: m["Gender"] || "",
+                                role: m["Role in Event"] || "Participant"
+                            }));
+                        }
+
                         const pubDoc = {
                             itemCode: code,
                             itemName: festObj ? festObj["Item"] : code,
@@ -6498,6 +6607,8 @@
                             score: u.finalScore.toFixed(2),
                             grade: u.grade,
                             place: place,
+                            isGroup: isGroup,
+                            teamMembers: teamMembers,
                             qualifiedSubDistrict: (idx === 0),
                             publishedAt: timestamp
                         };
@@ -6706,7 +6817,23 @@
                         <tr>
                             <td style="text-align:center; font-weight:600;">${sIdx + 1}</td>
                             <td style="text-align:center; font-weight:700; color:#0c2340;">${row.lotNumber || 'N/A'}</td>
-                            <td><b>${row.candidateName}</b></td>
+                            <td>
+    ${(() => {
+        const members = getTeamMembersForResult(row);
+        if (members && members.length > 1) {
+            const memberNames = members.map(m => m.name === row.candidateName ? `<b>${m.name}</b> (Leader)` : m.name).join(", ");
+            return `
+                <div>
+                    <b>${row.candidateName}</b> <span style="color:#d97706; font-size:10.5px; font-weight:700;">(Team Leader)</span>
+                    <div style="font-size:11px; color:#64748b; margin-top:3px; line-height:1.3;">
+                        <i class="fas fa-users" style="color:var(--accent);"></i> <b>Group (${members.length}):</b> ${memberNames}
+                    </div>
+                </div>
+            `;
+        }
+        return `<b>${row.candidateName}</b>`;
+    })()}
+</td>
                             <td>${row.studentClass} ${row.studentDivision || ''}</td>
                             <td style="text-align:center;"><b>${row.score}</b></td>
                             <td style="text-align:center;"><span style="font-weight:bold; color:var(--primary);">${row.grade}</span></td>
@@ -8955,7 +9082,215 @@
         }
     }, 3000);
 
+
+// Helper: Finds all team members for a result document (with fallback to dbRegistrations)
+    function getTeamMembersForResult(resultDoc) {
+        if (!resultDoc) return null;
+        if (resultDoc.teamMembers && Array.isArray(resultDoc.teamMembers) && resultDoc.teamMembers.length > 1) {
+            return resultDoc.teamMembers;
+        }
+        // Fallback for results published earlier
+        const reg = dbRegistrations.find(r => r.id === resultDoc.registrationId || (r["Admission Number"] === resultDoc.admissionNumber && r["Item Code"] === resultDoc.itemCode));
+        if (!reg || parseInt(reg["No of Participants"] || 1) <= 1) {
+            return null;
+        }
+        return dbRegistrations.filter(r => 
+            (r["Item Code"] === resultDoc.itemCode || r["Item"] === resultDoc.itemName) &&
+            r["Class"] === reg["Class"] &&
+            r["Division"] === reg["Division"] &&
+            r["Name of Fest"] === reg["Name of Fest"]
+        ).map(m => ({
+            id: m.id,
+            admissionNumber: m["Admission Number"],
+            name: m["Name"],
+            class: m["Class"],
+            division: m["Division"],
+            gender: m["Gender"] || "",
+            role: m["Role in Event"] || "Participant"
+        }));
+    }
+
+    let currentActiveCertResult = null;
+    let currentCertMembers = null;
+
+    // Open Certificate Modal (Handles both Individual and Group items)
+    function openCertificateModal(resId, autoPrint = false) {
+        const r = dbPublishedResults.find(x => x.id === resId);
+        if (!r) return;
+
+        currentActiveCertResult = r;
+        currentCertMembers = getTeamMembersForResult(r);
+
+        const groupBar = document.getElementById('certGroupMemberBar');
+        const memberSelect = document.getElementById('certMemberSelect');
+        const countSpan = document.getElementById('certGroupCount');
+
+        if (currentCertMembers && currentCertMembers.length > 1) {
+            // Group Item: Show selector bar and populate dropdown
+            if (groupBar) groupBar.style.display = 'flex';
+            if (countSpan) countSpan.innerText = currentCertMembers.length;
+            if (memberSelect) {
+                memberSelect.innerHTML = "";
+                currentCertMembers.forEach((m, idx) => {
+                    memberSelect.innerHTML += `<option value="${idx}">${idx + 1}. ${m.name} (${m.role || 'Participant'}) - Standard: ${m.class}${m.division || ''}</option>`;
+                });
+            }
+            renderSingleStudentCertificate(currentCertMembers[0], r);
+        } else {
+            // Individual Item: Hide selector bar
+            if (groupBar) groupBar.style.display = 'none';
+            renderSingleStudentCertificate({
+                name: r.candidateName,
+                class: r.studentClass,
+                division: r.studentDivision,
+                admissionNumber: r.admissionNumber
+            }, r);
+        }
+
+        document.getElementById('certModal').style.display = 'flex';
+        logStudentAction(`Viewed Certificate for ${r.itemName} (${r.place})`);
+
+        if (autoPrint) {
+            setTimeout(() => {
+                printModalDocument('certModal');
+            }, 350);
+        }
+    }
+
+    // Switch active student certificate from the dropdown
+    function switchCertMember(index) {
+        if (!currentCertMembers || !currentActiveCertResult) return;
+        const member = currentCertMembers[parseInt(index, 10)];
+        if (member) {
+            renderSingleStudentCertificate(member, currentActiveCertResult);
+        }
+    }
+
+    // Fills the certificate template with a specific student's details
+    function renderSingleStudentCertificate(student, resultData) {
+        const dateStr = (resultData.publishedAt || "20.02.2026").split(',')[0];
+        
+        // Gender detection for proper salutation
+        const st = dbStudents.find(s => String(s["Admission Number"]).trim() === String(student.admissionNumber).trim());
+        const gRaw = String(student.gender || st?.Gender || st?.["Gender"] || "").trim().toUpperCase();
+        const isGirl = gRaw === 'F' || gRaw.startsWith('FEM') || gRaw === 'GIRL';
+        const salutation = isGirl ? 'Kumari.' : 'Master.';
+
+        let cleanName = String(student.name || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
+
+        document.getElementById('certStudentName').innerText = `${salutation} ${cleanName}`;
+        document.getElementById('certStudentClass').innerText = `Standard: ${student.class} ${student.division || ''}`;
+        document.getElementById('certIssueDate').innerText = `Date: ${dateStr}`;
+        document.getElementById('certFestBadge').innerText = (resultData.festName || "UTHSAV").toUpperCase();
+
+        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[resultData.festName]) ? dbSettings.FestConvenors[resultData.festName] : "THEJAS R";
+        document.getElementById('certConvenorName').innerText = convenorName;
+
+        const isGroupText = (currentCertMembers && currentCertMembers.length > 1) ? ' (Group)' : '';
+        document.getElementById('certStatement').innerHTML = `
+            has distinguished themselves by winning the <span class="cert-highlight-badge">${resultData.place}</span> with <span class="cert-highlight-badge">${resultData.grade} Grade</span> in the <b>${resultData.itemName}${isGroupText}</b> competition held as part of <b>${(resultData.festName || 'ANNUAL FEST').toUpperCase()}</b> on <b>${dateStr}</b>.
+        `;
+    }
+
+    // BATCH PRINT: Generates and prints an individual certificate for EVERY student in the group
+    function printAllGroupCertificates() {
+        if (!currentCertMembers || !currentActiveCertResult) return;
+
+        const wrapper = document.querySelector('.cert-scroll-wrapper');
+        const originalContent = wrapper.innerHTML;
+
+        showLoader("Preparing All Group Certificates for Print...");
+        
+        // Generate a certificate container for each group member
+        let batchHTML = "";
+        currentCertMembers.forEach((member, idx) => {
+            const dateStr = (currentActiveCertResult.publishedAt || "20.02.2026").split(',')[0];
+            const st = dbStudents.find(s => String(s["Admission Number"]).trim() === String(member.admissionNumber).trim());
+            const gRaw = String(member.gender || st?.Gender || st?.["Gender"] || "").trim().toUpperCase();
+            const isGirl = gRaw === 'F' || gRaw.startsWith('FEM') || gRaw === 'GIRL';
+            const salutation = isGirl ? 'Kumari.' : 'Master.';
+            const cleanName = String(member.name || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
+            const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[currentActiveCertResult.festName]) ? dbSettings.FestConvenors[currentActiveCertResult.festName] : "THEJAS R";
+
+            batchHTML += `
+                <div class="cert-container" style="margin-bottom:20px;">
+                    <div class="cert-outer-frame">
+                        <div class="cert-inner-frame">
+                            <div class="cert-corner corner-tl"></div>
+                            <div class="cert-corner corner-tr"></div>
+                            <div class="cert-corner corner-bl"></div>
+                            <div class="cert-corner corner-br"></div>
+                            <div class="cert-watermark"></div>
+
+                            <div class="cert-header-row">
+                                <div class="cert-logo-box">
+                                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="Logo">
+                                </div>
+                                <div class="cert-inst-details">
+                                    <h1>Thirumala Devaswom</h1>
+                                    <h3>Teacher Training Institute</h3>
+                                    <p>THURAVOOR, ALAPPUZHA, KERALA &bull; PH: 0478-256 4479</p>
+                                </div>
+                                <div class="cert-badge-right">
+                                    <i class="fas fa-trophy"></i>
+                                    <div class="cert-badge-tag">${(currentActiveCertResult.festName || "UTHSAV").toUpperCase()}</div>
+                                </div>
+                            </div>
+
+                            <div class="cert-title-area">
+                                <div class="cert-main-title">Certificate of Merit</div>
+                                <div class="cert-congrats-animated">Congratulation</div>
+                            </div>
+
+                            <div class="cert-body-area">
+                                <div class="cert-awarded-intro">This is to proudly certify that</div>
+                                <div class="cert-candidate-name">${salutation} ${cleanName}</div>
+                                <div class="cert-candidate-class">Standard: ${member.class} ${member.division || ''}</div>
+                                <div class="cert-citation-p">
+                                    has distinguished themselves by winning the <span class="cert-highlight-badge">${currentActiveCertResult.place}</span> with <span class="cert-highlight-badge">${currentActiveCertResult.grade} Grade</span> in the <b>${currentActiveCertResult.itemName} (Group)</b> competition held as part of <b>${(currentActiveCertResult.festName || 'ANNUAL FEST').toUpperCase()}</b> on <b>${dateStr}</b>.
+                                </div>
+                            </div>
+
+                            <div class="cert-footer-row">
+                                <div class="cert-sig-block" style="text-align:left;">
+                                    <div>Date: ${dateStr}</div>
+                                    <div>Place: Thuravoor</div>
+                                    <b>${convenorName}</b>
+                                    <span>( General Convenor )</span>
+                                </div>
+                                <div class="cert-gold-seal">
+                                    <i class="fas fa-certificate"></i>
+                                    <span>Official Seal</span>
+                                </div>
+                                <div class="cert-sig-block" style="text-align:right;">
+                                    <b style="margin-top:42px;">ASHA V</b>
+                                    <span>( Principal )</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        wrapper.innerHTML = batchHTML;
+        hideLoader();
+
+        const modal = document.getElementById('certModal');
+        document.body.classList.add('printing-batch-cert');
+        modal.classList.add('active-print');
+
+        window.print();
+
+        modal.classList.remove('active-print');
+        document.body.classList.remove('printing-batch-cert');
+        wrapper.innerHTML = originalContent;
+        
+        // Restore currently selected student
+        const select = document.getElementById('certMemberSelect');
+        if (select) switchCertMember(select.value);
+    }
+
 </script>
 </body>
 </html>
-
