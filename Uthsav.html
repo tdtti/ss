@@ -809,150 +809,147 @@
     .modal-scroll-body::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
     /* ==========================================================================
-       CERTIFICATE CONTAINER & FRAME
+       RESTRUCTURED CERTIFICATE OF MERIT (PURE GOLD BORDER, NON-BLACK CORNERS)
        ========================================================================== */
-    .cert-modal-content {
-        background: #ffffff; 
-        border-radius: var(--radius-lg); 
-        width: 100%; 
-        max-width: 1140px;
-        max-height: 96vh;
-        display: flex;
-        flex-direction: column;
-        padding: 16px 20px 20px; 
-        text-align: center; 
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow-lg);
-        box-sizing: border-box;
-    }
-
-    .cert-scroll-wrapper {
-        width: 100%; 
-        flex: 1;
-        overflow-x: auto !important; 
-        overflow-y: auto !important; 
-        padding: 16px 10px;
-        -webkit-overflow-scrolling: touch; 
-        display: flex; 
-        justify-content: center;
-        align-items: flex-start;
-        border-radius: var(--radius-sm); 
-        background: #f1f5f9; 
-        margin-top: 8px;
-        box-sizing: border-box;
-    }
-
-    .cert-mobile-hint {
-        display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600;
-        color: var(--text-muted); background: #ffffff; padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); margin-top: 6px;
-    }
-
     .cert-container {
         width: 1020px;
         min-width: 1020px;
         height: 720px;
         background: #ffffff;
-        box-shadow: var(--shadow-md);
         margin: 0 auto;
         position: relative;
         box-sizing: border-box;
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
     }
 
-    /* PURE GOLD THICK BORDER (8PX SOLID GOLD) */
+    /* PURE GOLD THICK MULTI-LINE FRAME */
     .cert-outer-frame {
-        border: 8px solid var(--gold-pure) !important;
+        border: 9px solid var(--gold-pure) !important; /* Thick pure gold */
         height: 100%; 
         width: 100%; 
-        padding: 6px;
+        padding: 5px;
         box-sizing: border-box; 
         position: relative; 
         background: #ffffff;
     }
 
     .cert-inner-frame {
-        border: 2px solid var(--gold-pure) !important; 
-        outline: 1px dashed rgba(212, 175, 55, 0.65) !important; 
-        outline-offset: -6px;
+        border: 2.5px solid var(--gold-pure) !important;
+        outline: 1.5px dashed rgba(212, 175, 55, 0.7) !important;
+        outline-offset: -7px;
         height: 100%; 
         width: 100%; 
-        padding: 22px 30px 18px; 
+        padding: 20px 32px 16px; 
         box-sizing: border-box;
         position: relative; 
         display: flex; 
         flex-direction: column; 
         justify-content: space-between;
-        background: radial-gradient(circle at center, #ffffff 68%, #fffdfa 100%);
+        background: radial-gradient(ellipse at center, #ffffff 50%, #fffdfa 85%, #fdf9ee 100%);
     }
 
-    /* CORNERS: DEEP ROYAL NAVY (#1E3A8A) */
+    /* CORNER ORNAMENTS: DEEP ROYAL NAVY (#1E3A8A) WITH GOLD ACCENTS - STRICTLY NOT BLACK */
     .cert-corner { 
         position: absolute; 
-        width: 26px; 
-        height: 26px; 
-        border-color: var(--corner-accent) !important;
+        width: 32px; 
+        height: 32px; 
+        border-color: var(--corner-accent) !important; /* Deep Royal Navy */
         border-style: solid; 
+        z-index: 5;
     }
-    .corner-tl { top: -2px; left: -2px; border-width: 4px 0 0 4px; }
-    .corner-tr { top: -2px; right: -2px; border-width: 4px 4px 0 0; }
-    .corner-bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; }
-    .corner-br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; }
+    .cert-corner::after {
+        content: '';
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: var(--gold-pure);
+    }
+    .corner-tl { top: -2px; left: -2px; border-width: 5px 0 0 5px; }
+    .corner-tl::after { top: 3px; left: 3px; }
 
+    .corner-tr { top: -2px; right: -2px; border-width: 5px 5px 0 0; }
+    .corner-tr::after { top: 3px; right: 3px; }
+
+    .corner-bl { bottom: -2px; left: -2px; border-width: 0 0 5px 5px; }
+    .corner-bl::after { bottom: 3px; left: 3px; }
+
+    .corner-br { bottom: -2px; right: -2px; border-width: 0 5px 5px 0; }
+    .corner-br::after { bottom: 3px; right: 3px; }
+
+    /* WATERMARK */
     .cert-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        width: 290px; height: 290px; opacity: 0.04; pointer-events: none; z-index: 1;
+        width: 320px; height: 320px; opacity: 0.055; pointer-events: none; z-index: 1;
         background: url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png') no-repeat center;
         background-size: contain;
     }
+
+    /* HEADER: UPSCALED LOGO & TIGHT SCHOOL TITLE */
     .cert-header-row {
         display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;
-        border-bottom: 1.5px solid rgba(212, 175, 55, 0.4); padding-bottom: 10px;
+        border-bottom: 2px solid var(--gold-pure); padding-bottom: 10px;
     }
-    .cert-logo-box img { width: 70px; height: 70px; object-fit: contain; }
+    .cert-logo-box img { width: 84px; height: 84px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+    .cert-inst-details { text-align: center; flex: 1; padding: 0 15px; }
     .cert-inst-details h1 {
-        margin: 0; font-family: 'Cinzel', serif; font-size: 24px; letter-spacing: 2px; color: var(--text-main); font-weight: 900;
+        margin: 0; font-family: 'Cinzel', serif; font-size: 26px; letter-spacing: 2px; color: var(--text-main); font-weight: 900; line-height: 1.15;
     }
     .cert-inst-details h3 {
-        margin: 2px 0 1px; font-family: 'Montserrat', sans-serif; font-size: 13px; color: var(--corner-accent); font-weight: 700; letter-spacing: 1px;
+        margin: 3px 0 2px; font-family: 'Montserrat', sans-serif; font-size: 14.5px; color: var(--corner-accent); font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase;
     }
-    .cert-inst-details p { margin: 0; font-size: 11px; color: var(--text-muted); font-weight: 500; }
-    .cert-badge-right { width: 75px; text-align: center; }
-    .cert-badge-right i { font-size: 32px; color: var(--gold-dark); }
+    .cert-inst-details p { 
+        margin: 0; font-size: 11px; color: #475569; font-weight: 600; letter-spacing: 0.5px;
+    }
+    .cert-badge-right { width: 84px; text-align: center; }
+    .cert-badge-right i { font-size: 34px; color: var(--gold-dark); }
     .cert-badge-tag {
-        font-size: 9.5px; font-weight: 700; background: var(--corner-accent); color: #fff; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-top: 3px;
+        font-size: 10px; font-weight: 800; background: var(--corner-accent); color: #ffffff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 4px; letter-spacing: 0.5px;
     }
-    .cert-title-area { margin: 6px 0 2px; position: relative; z-index: 2; }
+
+    /* TITLE & SCRIPT */
+    .cert-title-area { margin: 6px 0 2px; position: relative; z-index: 2; text-align: center; }
     .cert-main-title {
-        font-family: 'Cinzel', serif; font-size: 21px; font-weight: 900; color: #854d0e; letter-spacing: 4px;
-        display: inline-flex; align-items: center; gap: 12px;
+        font-family: 'Cinzel', serif; font-size: 23px; font-weight: 900; color: #854d0e; letter-spacing: 5px;
+        display: inline-flex; align-items: center; gap: 14px; text-transform: uppercase;
     }
-    .cert-main-title::before, .cert-main-title::after { content: ''; display: inline-block; width: 40px; height: 1.5px; background: var(--gold-pure); }
+    .cert-main-title::before, .cert-main-title::after { content: ''; display: inline-block; width: 48px; height: 2px; background: var(--gold-pure); }
     .cert-congrats-animated {
-        font-family: 'Great Vibes', cursive; font-size: 38px; color: #be185d; margin: -2px 0 2px;
+        font-family: 'Great Vibes', cursive; font-size: 42px; color: #be185d; margin: -4px 0 2px; line-height: 1.1;
     }
-    .cert-body-area { position: relative; z-index: 2; padding: 0 10px; }
-    .cert-awarded-intro { font-family: 'Playfair Display', serif; font-size: 14px; font-style: italic; color: var(--text-muted); margin-bottom: 2px; }
+
+    /* BODY CITATION */
+    .cert-body-area { position: relative; z-index: 2; padding: 2px 14px; text-align: center; }
+    .cert-awarded-intro { font-family: 'Playfair Display', serif; font-size: 14px; font-style: italic; color: #64748b; margin-bottom: 3px; }
     .cert-candidate-name {
-        font-family: 'Cinzel', serif; font-size: 25px; font-weight: 900; color: var(--text-main); letter-spacing: 1px;
-        display: inline-block; border-bottom: 2px solid var(--gold-pure); padding: 0 24px 2px; margin-bottom: 2px;
+        font-family: 'Cinzel', serif; font-size: 26px; font-weight: 900; color: var(--text-main); letter-spacing: 1.5px;
+        display: inline-block; border-bottom: 2px solid var(--gold-pure); padding: 0 28px 3px; margin-bottom: 3px; text-transform: uppercase;
     }
-    .cert-candidate-class { font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 10px; }
-    .cert-citation-p { font-family: 'Playfair Display', serif; font-size: 15.5px; line-height: 1.6; color: #1e293b; max-width: 820px; margin: 0 auto; }
+    .cert-candidate-class { font-size: 13.5px; font-weight: 700; color: var(--corner-accent); margin-bottom: 8px; }
+    .cert-citation-p { font-family: 'Playfair Display', serif; font-size: 16px; line-height: 1.65; color: #1e293b; max-width: 860px; margin: 0 auto; }
     .cert-highlight-badge {
-        background: var(--gold-light); color: #854d0e; padding: 2px 8px; border-radius: 3px; font-family: 'Montserrat', sans-serif; font-size: 13.5px; font-weight: 700; border: 1px solid rgba(212, 175, 55, 0.3);
+        background: #fef3c7; color: #854d0e; padding: 2px 10px; border-radius: 4px; font-family: 'Montserrat', sans-serif; font-size: 13.5px; font-weight: 800; border: 1px solid rgba(212, 175, 55, 0.4);
     }
+
+    /* SIGNATURES & OFFICIAL SEAL */
     .cert-footer-row {
         display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 2;
-        padding: 8px 20px 0; border-top: 1.5px solid rgba(212, 175, 55, 0.4);
+        padding: 8px 24px 4px; border-top: 2px solid var(--gold-pure);
     }
-    .cert-sig-block { text-align: center; min-width: 160px; font-size: 12px; }
-    .cert-sig-block b { display: block; font-size: 13px; color: var(--text-main); border-top: 1px solid #475569; padding-top: 3px; margin-top: 24px; }
-    .cert-sig-block span { font-size: 11px; color: var(--text-muted); }
+    .cert-sig-block { text-align: center; min-width: 220px; }
+    .cert-signature-space { height: 46px; width: 100%; }
+    .cert-sig-block b { 
+        display: block; font-size: 13.5px; color: var(--text-main); border-top: 1.5px solid #334155; padding-top: 4px; margin: 0; font-weight: 800;
+    }
+    .cert-sig-block span { display: block; font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; }
+    
     .cert-gold-seal {
-        width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--gold-pure); outline: 1px dashed var(--gold-pure); outline-offset: 2px;
-        display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto; color: var(--gold-dark); background: #ffffff;
+        width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid var(--gold-pure); outline: 1.5px dashed var(--gold-pure); outline-offset: 3px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 8px; color: var(--gold-dark); background: #ffffff;
+        box-shadow: 0 4px 10px rgba(212, 175, 55, 0.25);
     }
-    .cert-gold-seal i { font-size: 18px; }
-    .cert-gold-seal span { font-size: 7.5px; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
+    .cert-gold-seal i { font-size: 22px; }
+    .cert-gold-seal span { font-size: 8px; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
+    
     /* Group Member Selector Bar inside Certificate Modal */
     .cert-group-bar {
         display: flex;
@@ -1984,6 +1981,17 @@
         background: transparent;
     }
 
+    /* EDIT REGISTRATION MODAL */
+    #editRegModalOverlay {
+        position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
+        background: rgba(15, 23, 42, 0.5) !important; z-index: 99999 !important; display: none;
+        justify-content: center; align-items: center; padding: 16px; box-sizing: border-box;
+    }
+    #editRegFormBox {
+        background: #ffffff; border-radius: var(--radius-lg); width: 100%; max-width: 540px; padding: 22px 24px;
+        box-shadow: var(--shadow-lg); border: 1px solid var(--border); animation: popIn 0.18s ease-out forwards;
+    }
+
     option[value="Fest"] { display: none !important; }
     option[value="Sports"] { display: none !important; }
       
@@ -2159,11 +2167,14 @@
                                 <option value="">-- Select Fest --</option>
                             </select>
                         </div>
+                        <!-- INSTANT SEARCHABLE ITEM INPUT FOR REGISTRATION -->
                         <div class="form-group">
                             <label>Item</label>
-                            <select id="itemSelect" onchange="updateItemDetails()" required>
-                                <option value="">-- Select Item --</option>
-                            </select>
+                            <div class="custom-search-select-wrapper">
+                                <input type="text" id="regItemSearchInput" placeholder="🔍 Type item name or code..." oninput="filterRegSearchItems(this.value)" onfocus="openRegSearchDropdown()" autocomplete="off" required>
+                                <input type="hidden" id="itemSelect" required>
+                                <div id="regItemDropdownList" class="custom-search-dropdown-list"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2253,20 +2264,44 @@
 
         <!-- TAB 2: VIEW RECORDS -->
         <div id="RecTab" class="tabcontent">
-            <div id="adminReportControls" class="section" style="display:none; background:#f8fafc; border:1px solid #cbd5e1; padding:14px 18px; margin-bottom:18px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                    <span style="font-weight:bold; color:var(--text-main);"><i class="fas fa-file-invoice"></i> Fest Participants Report:</span>
-                    <select id="reportFestSelect" style="min-width:220px; font-weight:bold;">
-                        <option value="ALL">-- All Fests --</option>
-                    </select>
+            <!-- FEST & ITEM-WISE PARTICIPANTS REPORT CONTROLS -->
+            <div id="adminReportControls" class="section" style="display:none; background:#ffffff; border:1px solid var(--border); padding:14px 18px; margin-bottom:18px; border-radius:var(--radius-md); box-shadow:var(--shadow-subtle);">
+                <!-- ROW 1: FEST-WISE REPORT -->
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--border-subtle); padding-bottom:12px; margin-bottom:12px;">
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <span style="font-weight:800; font-size:13.5px; color:var(--primary);"><i class="fas fa-file-invoice"></i> Fest Report:</span>
+                        <select id="reportFestSelect" style="min-width:220px; font-weight:700;" onchange="syncReportItemOptions()">
+                            <option value="ALL">-- All Fests --</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="action-btn" style="padding:6px 12px;" onclick="openParticipantsReport(false)" title="View Fest Report">
+                            <i class="fas fa-eye"></i> <span>View Fest</span>
+                        </button>
+                        <button type="button" class="action-btn gold" style="padding:6px 12px;" onclick="openParticipantsReport(true)" title="Print Fest Report">
+                            <i class="fas fa-print"></i> <span>Print Fest</span>
+                        </button>
+                    </div>
                 </div>
-                <div style="display:flex; gap:8px;">
-                    <button class="action-btn" style="padding:7px 13px;" onclick="openParticipantsReport(false)" title="View Fest Participants Report">
-                        <i class="fas fa-eye"></i> <span>View</span>
-                    </button>
-                    <button class="action-btn gold" style="padding:7px 13px;" onclick="openParticipantsReport(true)" title="Print Fest Participants Report">
-                        <i class="fas fa-print"></i> <span>Print</span>
-                    </button>
+
+                <!-- ROW 2: ITEM-WISE REPORT (INSTANT TYPE & SEARCH) -->
+                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:280px;">
+                        <span style="font-weight:800; font-size:13.5px; color:var(--accent);"><i class="fas fa-trophy"></i> Item Report:</span>
+                        <div class="custom-search-select-wrapper" style="flex:1;">
+                            <input type="text" id="reportItemSearchInput" placeholder="🔍 Type item name or code to print item-wise..." oninput="filterReportSearchItems(this.value)" onfocus="openReportSearchDropdown()" autocomplete="off">
+                            <input type="hidden" id="reportItemSelect">
+                            <div id="reportItemDropdownList" class="custom-search-dropdown-list"></div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="action-btn" style="padding:6px 12px;" onclick="openItemParticipantsReport(false)" title="View Item-Wise Report">
+                            <i class="fas fa-eye"></i> <span>View Item</span>
+                        </button>
+                        <button type="button" class="action-btn gold" style="padding:6px 12px;" onclick="openItemParticipantsReport(true)" title="Print Item-Wise Report">
+                            <i class="fas fa-print"></i> <span>Print Item</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -2372,6 +2407,46 @@
                 </div>
             </div>
         </div>
+
+        <!-- MODAL: EDIT REGISTRATION (INDIVIDUAL & GROUP) -->
+        <div id="editRegModalOverlay" onclick="if(event.target === this) closeEditRegistrationModal()">
+            <div id="editRegFormBox">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border-subtle); padding-bottom:8px;">
+                    <h4 style="margin:0; font-size:16px; color:var(--text-main);"><i class="fas fa-user-edit" style="color:var(--accent);"></i> Modify Candidate Registration</h4>
+                    <button type="button" onclick="closeEditRegistrationModal()" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;"><i class="fas fa-times"></i></button>
+                </div>
+                <input type="hidden" id="editRegDocId">
+                <div class="row" style="grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div class="form-group" style="margin:0;"><label>Item & Fest</label><input type="text" id="editRegItemFest" readonly style="background:#f1f5f9; font-weight:700;"></div>
+                    <div class="form-group" style="margin:0;"><label>Lot Number</label><input type="text" id="editRegLotNo" placeholder="e.g. 1"></div>
+                    <div class="form-group" style="margin:0;"><label>Candidate Name</label><input type="text" id="editRegName" required></div>
+                    <div class="form-group" style="margin:0;"><label>Admission No</label><input type="text" id="editRegAdmnNo" required></div>
+                    <div class="form-group" style="margin:0;"><label>Class</label><input type="text" id="editRegClass" required></div>
+                    <div class="form-group" style="margin:0;"><label>Division</label><input type="text" id="editRegDiv" required></div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Role in Event</label>
+                        <select id="editRegRole">
+                            <option value="Participant">Participant</option>
+                            <option value="Team Leader">Team Leader</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Category</label>
+                        <select id="editRegCat">
+                            <option value="General">General</option>
+                            <option value="M">M</option>
+                            <option value="F">F</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+                    <button type="button" class="action-btn secondary" onclick="closeEditRegistrationModal()">Cancel</button>
+                    <button type="button" class="action-btn success" onclick="saveEditedRegistration()"><i class="fas fa-save"></i> Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+
 
         <!-- TAB 3: EVENT MANAGEMENT TAB -->
         <div id="EventMgmtTab" class="tabcontent">
@@ -3843,19 +3918,79 @@
         });
     }
 
+    // --- TAB 1: REGISTRATION INSTANT ITEM SEARCH ---
+    let allRegSortedItems = [];
+
     function populateItems() {
         const fest = document.getElementById('festName').value;
-        const sel = document.getElementById('itemSelect');
-        sel.innerHTML = '<option value="">-- Select Item --</option>';
-        if (!fest) return;
+        const searchInput = document.getElementById('regItemSearchInput');
+        const hiddenSelect = document.getElementById('itemSelect');
+        if (searchInput) searchInput.value = "";
+        if (hiddenSelect) hiddenSelect.value = "";
+        
+        // Reset details
+        document.getElementById('itemCode').value = "";
+        document.getElementById('category').value = "";
+        document.getElementById('participants').value = "";
+        document.getElementById('duration').value = "";
+        document.getElementById('studentsContainer').innerHTML = "<p style='color:#888; font-style:italic;'>Please select an Item to continue.</p>";
 
-        const festItems = dbFests
+        if (!fest) {
+            allRegSortedItems = [];
+            return;
+        }
+
+        allRegSortedItems = dbFests
             .filter(f => f["Fest Name"] === fest)
             .sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
 
-        festItems.forEach(i => {
-            sel.innerHTML += `<option value="${i["Item"]}">${i["Item"]} (${i["Category"]})</option>`;
+        renderRegDropdownList(allRegSortedItems);
+    }
+
+    function renderRegDropdownList(items) {
+        const list = document.getElementById('regItemDropdownList');
+        if (!list) return;
+        list.innerHTML = '';
+        if (items.length === 0) {
+            list.innerHTML = '<div style="padding:10px; color:#94a3b8; font-size:12px; text-align:center;">No items found for this Fest</div>';
+            return;
+        }
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'custom-search-dropdown-item';
+            div.innerHTML = `<b>${item["Item"]}</b> <span style="color:#64748b; font-size:11px;">[${item["Item Code"] || 'N/A'}] (${item["Category"] || 'General'})</span>`;
+            div.onclick = () => selectRegSearchItem(item["Item"], `${item["Item"]} [${item["Item Code"]}]`);
+            list.appendChild(div);
         });
+    }
+
+    function openRegSearchDropdown() {
+        if (!document.getElementById('festName').value) {
+            showCustomDialog("Selection Needed", "Please select a Festival Classification and Fest Name first.", "warning");
+            return;
+        }
+        renderRegDropdownList(allRegSortedItems);
+        const list = document.getElementById('regItemDropdownList');
+        if (list) list.style.display = 'block';
+    }
+
+    function filterRegSearchItems(query) {
+        const q = String(query || "").toLowerCase().trim();
+        const filtered = allRegSortedItems.filter(f => 
+            String(f["Item"] || "").toLowerCase().includes(q) ||
+            String(f["Item Code"] || "").toLowerCase().includes(q)
+        );
+        renderRegDropdownList(filtered);
+        const list = document.getElementById('regItemDropdownList');
+        if (list) list.style.display = 'block';
+    }
+
+    function selectRegSearchItem(itemName, displayText) {
+        document.getElementById('itemSelect').value = itemName;
+        document.getElementById('regItemSearchInput').value = displayText;
+        const list = document.getElementById('regItemDropdownList');
+        if (list) list.style.display = 'none';
+        updateItemDetails();
     }
 
     function updateItemDetails() {
@@ -9289,6 +9424,117 @@
         // Restore currently selected student
         const select = document.getElementById('certMemberSelect');
         if (select) switchCertMember(select.value);
+    }
+
+    // --- TAB 2: ITEM-WISE REPORT FILTER & PRINT ---
+    let allReportItemsList = [];
+
+    function syncReportItemOptions() {
+        const fest = document.getElementById('reportFestSelect')?.value || "ALL";
+        document.getElementById('reportItemSearchInput').value = "";
+        document.getElementById('reportItemSelect').value = "";
+
+        let items = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
+        if (fest !== "ALL") {
+            items = items.filter(f => f["Fest Name"] === fest);
+        }
+
+        allReportItemsList = items.sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
+        renderReportItemDropdownList(allReportItemsList);
+    }
+
+    function renderReportItemDropdownList(items) {
+        const list = document.getElementById('reportItemDropdownList');
+        if (!list) return;
+        list.innerHTML = '';
+        if (items.length === 0) {
+            list.innerHTML = '<div style="padding:10px; color:#94a3b8; font-size:12px; text-align:center;">No items found</div>';
+            return;
+        }
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'custom-search-dropdown-item';
+            div.innerHTML = `<b>${item["Item"]}</b> <span style="color:#64748b; font-size:11px;">[${item["Item Code"] || 'N/A'}] (${item["Fest Name"]})</span>`;
+            div.onclick = () => selectReportSearchItem(item["Item Code"], `${item["Item"]} [${item["Item Code"]}]`);
+            list.appendChild(div);
+        });
+    }
+
+    function openReportSearchDropdown() {
+        syncReportItemOptions();
+        const list = document.getElementById('reportItemDropdownList');
+        if (list) list.style.display = 'block';
+    }
+
+    function filterReportSearchItems(query) {
+        const q = String(query || "").toLowerCase().trim();
+        const filtered = allReportItemsList.filter(f => 
+            String(f["Item"] || "").toLowerCase().includes(q) ||
+            String(f["Item Code"] || "").toLowerCase().includes(q)
+        );
+        renderReportItemDropdownList(filtered);
+        const list = document.getElementById('reportItemDropdownList');
+        if (list) list.style.display = 'block';
+    }
+
+    function selectReportSearchItem(code, displayText) {
+        document.getElementById('reportItemSelect').value = code;
+        document.getElementById('reportItemSearchInput').value = displayText;
+        const list = document.getElementById('reportItemDropdownList');
+        if (list) list.style.display = 'none';
+    }
+
+    function openItemParticipantsReport(autoPrint = false) {
+        const itemCode = document.getElementById('reportItemSelect')?.value;
+        if (!itemCode) {
+            return showCustomDialog("Item Required", "Please search and select an Item to generate the item-wise report.", "warning");
+        }
+
+        const festObj = dbFests.find(f => f["Item Code"] === itemCode);
+        const itemName = festObj ? festObj["Item"] : itemCode;
+        const festName = festObj ? festObj["Fest Name"] : "";
+
+        const tbody = document.getElementById('reportTableTbody');
+        tbody.innerHTML = "";
+
+        const list = dbRegistrations.filter(r => 
+            (r["Item Code"] === itemCode || r["Item"] === itemName) && isFestEnabled(r["Name of Fest"])
+        );
+
+        list.sort((a, b) => {
+            const lotA = parseInt(a["Lot Number"] || "999", 10);
+            const lotB = parseInt(b["Lot Number"] || "999", 10);
+            if (lotA !== lotB) return lotA - lotB;
+            return String(a["Name"] || "").localeCompare(String(b["Name"] || ""));
+        });
+
+        document.getElementById('reportFestHeaderTitle').innerText = `ITEM PARTICIPANTS REPORT: ${itemName.toUpperCase()} [${itemCode}]`;
+        document.getElementById('reportMetaInfo').innerText = `Festival: ${festName} | Total Participants: ${list.length} | Generated: ${new Date().toLocaleString('en-IN')}`;
+
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#64748b; padding:30px;">No registered participants found for this item.</td></tr>`;
+        } else {
+            list.forEach((r, idx) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="text-align:center; font-weight:600;">${idx + 1}</td>
+                        <td><b>${r["Admission Number"]}</b></td>
+                        <td><b>${r["Name"]}</b></td>
+                        <td>${r["Class"]} ${r["Division"]}</td>
+                        <td>${r["Name of Fest"]}</td>
+                        <td>${r["Item"]} <small style="color:#64748b;">(${r["Item Code"] || '-'})</small></td>
+                        <td>${r["Category"]}</td>
+                        <td>${r["Role in Event"]}</td>
+                        <td style="text-align:center; font-weight:700; color:#0c2340;">${r["Lot Number"] || 'Unassigned'}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        document.getElementById('reportModal').style.display = 'flex';
+        if (autoPrint) {
+            setTimeout(() => { printModalDocument('reportModal', 'portrait'); }, 300);
+        }
     }
 
 </script>
