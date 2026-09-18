@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Great+Vibes&display=swap" rel="stylesheet">
 
-  <style>
+<style>
     /* ==========================================================================
        MINIMALIST DESIGN SYSTEM (CLEAN, FUNCTIONAL & LIGHTWEIGHT)
        ========================================================================== */
@@ -808,37 +808,51 @@
     .modal-scroll-body::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
     /* ==========================================================================
-       8. RESTRUCTURED ROYAL GOLD CERTIFICATE (WYSIWYG SCREEN & PRINT)
+       8. AUTO-FIT CERTIFICATE PREVIEW (100% VIEWABLE HEIGHT & WIDTH)
        ========================================================================== */
     .cert-modal-content {
-        background: #ffffff; 
+        /* Fine subtle mesh pattern */
+        background-color: #ffffff;
+        background-image: radial-gradient(#e5e7eb 0.75px, transparent 0.75px);
+        background-size: 12px 12px;
         border-radius: var(--radius-lg); 
-        width: 100%; 
-        max-width: auto;
-        max-height: auto;
+        width: 96vw !important; 
+        max-width: 1250px !important;
+        height: 94vh !important;
+        max-height: 94vh !important;
         display: flex;
         flex-direction: column;
-        padding: 16px 20px 20px; 
+        padding: 14px 18px; 
         text-align: center; 
         border: 1px solid var(--border);
         box-shadow: var(--shadow-lg);
         box-sizing: border-box;
+        overflow: hidden;
     }
 
+    /* Auto-Fit Dual-Axis Wrapper (No Negative Scroll Cutoff) */
     .cert-scroll-wrapper {
         width: 100%; 
         flex: 1;
-        overflow-x: auto !important; 
-        overflow-y: auto !important; 
-        padding: 16px 0;
+        overflow: auto !important; 
         -webkit-overflow-scrolling: touch; 
         display: flex; 
         justify-content: center;
-        align-items: center;
-        background: #e2e8f0; 
+        align-items: center; /* Centers the scaled stage cleanly */
+        background: #f1f5f9; 
         border-radius: var(--radius-sm); 
-        margin-top: 8px;
+        margin-top: 6px;
+        padding: 10px;
         box-sizing: border-box;
+    }
+
+    /* Dynamic Stage that holds the scaled certificate */
+    .cert-scale-stage {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: transform 0.15s ease;
+        margin: auto;
     }
 
     .cert-mobile-hint {
@@ -848,26 +862,29 @@
 
     /* Fixed Aspect Ratio Container: 1040px x 735px (A4 Landscape 1.414:1) */
     .cert-container {
-        width: auto;
-        min-width: auto;
-        max-width: auto;
-        height: auto;
-        min-height: auto;
-        max-height: auto;
-        background: #ffffff;
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);
-        margin: 0 auto;
+        width: 1040px;
+        min-width: 1040px;
+        max-width: 1040px;
+        height: 735px;
+        min-height: 735px;
+        max-height: 735px;
+        /* Fine subtle mesh pattern */
+        background-color: #ffffff;
+        background-image: radial-gradient(#e5e7eb 0.75px, transparent 0.75px);
+        background-size: 12px 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
         position: relative;
         box-sizing: border-box;
         padding: 12px;
+        flex-shrink: 0;
     }
 
     /* Outer Heavy Pure Gold Border */
     .cert-outer-frame {
-        border: 22px solid #d4af37 !important;
+        border: 25px solid #d4af37 !important;
         height: 100%;
         width: 100%;
-        padding: 6px;
+        padding: 8px;
         box-sizing: border-box;
         position: relative;
         background: #ffffff;
@@ -875,12 +892,13 @@
 
     /* Inner Gold Fillet with Rich Ivory Radiant Background */
     .cert-inner-frame {
-        border: 5px solid #b89727 !important;
-        outline: 3px dashed rgba(212, 175, 55, 0.75) !important;
-        outline-offset: -7px;
+        border: 8px solid #b89727 !important;
+        outline: 6px dashed rgba(212, 175, 55, 0.75) !important;
+        outline-offset: -16px;
+        padding: 40px;
         height: 100%;
         width: 100%;
-        padding: 18px 28px 14px;
+        padding: 24px 34px 20px;
         box-sizing: border-box;
         position: relative;
         display: flex;
@@ -892,16 +910,16 @@
     /* Regal Non-Black Corners (Deep Royal Navy #1e3a8a) */
     .cert-corner {
         position: absolute;
-        width: 32px;
-        height: 32px;
-        border-color: #1e3a8a !important;
+        width: 36px;
+        height: 36px;
+        border-color: #EF4904;
         border-style: solid;
         z-index: 5;
     }
-    .corner-tl { top: -2px; left: -2px; border-width: 4.5px 0 0 4.5px; }
-    .corner-tr { top: -2px; right: -2px; border-width: 4.5px 4.5px 0 0; }
-    .corner-bl { bottom: -2px; left: -2px; border-width: 0 0 4.5px 4.5px; }
-    .corner-br { bottom: -2px; right: -2px; border-width: 0 4.5px 4.5px 0; }
+    .corner-tl { top: 14px; left: 14px; border-width: 5px 0 0 5px; }
+    .corner-tr { top: 14px; right: 14px; border-width: 7px 7px 0 0; }
+    .corner-bl { bottom: 14px; left: 14px; border-width: 0 0 7px 7px; }
+    .corner-br { bottom: 14px; right: 14px; border-width: 0 7px 7px 0; }
 
     /* Watermark */
     .cert-watermark {
@@ -909,8 +927,8 @@
         top: 52%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 480px;
-        height: 480px;
+        width: 520px;
+        height: 5200px;
         opacity: 0.045;
         pointer-events: none;
         z-index: 1;
@@ -1007,12 +1025,12 @@
         content: '';
         display: inline-block;
         width: 48px;
-        height: 2px;
+        height: 8px;
         background: #d4af37;
     }
     .cert-congrats-animated {
         font-family: 'Great Vibes', cursive;
-        font-size: 48px;
+        font-size: 60px;
         color: #be185d;
         margin: -4px 0 0 0;
         line-height: 1.1;
@@ -1034,7 +1052,7 @@
     }
     .cert-candidate-name {
         font-family: 'Cinzel', serif;
-        font-size: 30px;
+        font-size: 32px;
         font-weight: 900;
         color: #0f172a;
         letter-spacing: 1.5px;
@@ -1044,7 +1062,7 @@
         margin-bottom: 4px;
     }
     .cert-candidate-meta {
-        font-size: 13px;
+        font-size: 16px;
         font-weight: 700;
         color: #334155;
         margin-bottom: 10px;
@@ -1105,8 +1123,8 @@
         display: flex;
         justify-content: center;
         gap: 14px;
-        font-size: 11px;
-        font-weight: 700;
+        font-size: 14px;
+        font-weight: 800;
         color: #475569;
         border-top: 1px dashed #cbd5e1;
         padding-top: 3px;
@@ -1259,12 +1277,22 @@
             align-items: center !important;
         }
 
-        /* 100% PROPORTIONAL MATCH WITH VIEW MODE */
+        /* RESET SCREEN SCALE TO 1:1 UNTOUCHED VECTOR CANVAS FOR PRINT */
+        body.printing-cert #certModal.active-print .cert-scale-stage {
+            width: 100% !important;
+            height: 100% !important;
+            display: block !important;
+            transform: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
         body.printing-cert #certModal.active-print .cert-container {
             width: 290mm !important;
             max-width: 290mm !important;
             height: 204mm !important;
             max-height: 204mm !important;
+            transform: none !important;
             padding: 0 !important;
             margin: auto !important;
             box-shadow: none !important;
@@ -1303,7 +1331,7 @@
             top: 0 !important;
             width: 297mm !important;
             display: block !important;
-            background: #ffffff !important;
+            background: #fff !important;
         }
         body.printing-batch-cert #certModal.active-print .cert-scroll-wrapper {
             overflow: visible !important;
@@ -1710,6 +1738,8 @@
     .ll-lot-label {
         width: 100% !important;
         height: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
         box-sizing: border-box !important;
         border: 1.5px dashed #334155 !important;
         padding: 6px 10px !important;
@@ -2168,7 +2198,9 @@
     option[value="Fest"] { display: none !important; }
     option[value="Sports"] { display: none !important; }
 
+    
 </style>
+
 </head>
 <body>
 
@@ -3276,23 +3308,26 @@
      ========================================================================== -->
 <div id="certModal">
     <div class="cert-modal-content">
-        <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <button class="action-btn secondary" onclick="closeCertModal()" title="Back to Results">
-                <i class="fas fa-arrow-left"></i> <span>Back</span>
-            </button>
-            <h3 style="margin:0; font-family:'Cinzel', serif; color:var(--text-main); font-size:18px;">
+        <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" class="action-btn secondary" onclick="closeCertModal()" title="Back to Results">
+                    <i class="fas fa-arrow-left"></i> <span>Back</span>
+                </button>
+                <!-- 100% VIEWABLE FIT TOGGLE BUTTON -->
+                <button type="button" class="action-btn secondary" id="btnCertFitToggle" onclick="toggleCertZoom()" title="Toggle Fit to Screen">
+                    <i class="fas fa-search-plus"></i> <span id="certFitBtnText">Actual Size</span>
+                </button>
+            </div>
+            
+            <h3 style="margin:0; font-family:'Cinzel', serif; color:var(--text-main); font-size:17px;">
                 <i class="fas fa-award"></i> Certificate of Merit Preview
             </h3>
-            <button class="action-btn gold" onclick="printModalDocument('certModal', 'landscape')" title="Print Certificate">
+
+            <button type="button" class="action-btn gold" onclick="printModalDocument('certModal', 'landscape')" title="Print Certificate">
                 <i class="fas fa-print"></i> <span>Print Certificate (A4)</span>
             </button>
         </div>
 
-        <div class="cert-mobile-hint no-print">
-            <i class="fas fa-arrows-up-down-left-right"></i> Scroll sideways / vertically to view entire certificate on smaller screens
-        </div>
-
-        <!-- PARTICIPANT SWITCHER FOR GROUP ITEMS (ONLY SHOWN FOR GROUP EVENTS) -->
         <div id="certGroupMemberBar" class="cert-group-bar no-print" style="display:none;">
             <label style="font-size:12.5px; font-weight:700; color:var(--text-main);">
                 <i class="fas fa-users" style="color:var(--accent);"></i> Group Participant:
@@ -3303,17 +3338,18 @@
             </button>
         </div>
 
-        
-        <!-- DUAL-AXIS (VERTICAL & HORIZONTAL) SCROLL CONTAINER -->
+        <!-- DUAL-AXIS SCROLLER -->
         <div class="cert-scroll-wrapper">
-            <div id="printableCertificate" class="cert-container">
-                <div class="cert-outer-frame">
-                    <div class="cert-inner-frame">
-                        <!-- ROYAL NAVY CORNER FLOURISHES (NON-BLACK) -->
-                        <div class="cert-corner corner-tl"></div>
-                        <div class="cert-corner corner-tr"></div>
-                        <div class="cert-corner corner-bl"></div>
-                        <div class="cert-corner corner-br"></div>
+            <!-- DYNAMIC AUTO-FIT STAGE (SCALES 100% TO VIEWPORT) -->
+            <div class="cert-scale-stage" id="certScaleStage">
+                <div id="printableCertificate" class="cert-container">
+                    <!-- Certificate Frames and Contents Stay Here -->
+                    <div class="cert-outer-frame">
+                        <div class="cert-inner-frame">
+                            <div class="cert-corner corner-tl"></div>
+                            <div class="cert-corner corner-tr"></div>
+                            <div class="cert-corner corner-bl"></div>
+                            <div class="cert-corner corner-br"></div>
 
                         <!-- WATERMARK -->
                         <div class="cert-watermark"></div>
@@ -3371,8 +3407,9 @@
                                 <div class="cert-seal-ribbon ribbon-left"></div>
                                 <div class="cert-seal-ribbon ribbon-right"></div>
                                 <div class="cert-gold-seal">
+                                    <span>TDTTI</span>
                                     <i class="fas fa-award"></i>
-                                    <span>OFFICIAL SEAL</span>
+                                    <span>Congrats</span>
                                 </div>
                             </div>
 
@@ -3390,8 +3427,8 @@
             </div>
         </div>
     </div>
+  </div>
 </div>
-
 <!-- 4. PARTICIPANTS DIRECTORY REPORT MODAL (DUAL SCROLL & COMPLETE PRINT) -->
 <div id="reportModal">
     <div class="report-modal-content">
@@ -9530,12 +9567,89 @@
         document.getElementById('certModal').style.display = 'flex';
         logStudentAction(`Viewed Certificate for ${r.itemName} (${r.place})`);
 
+        // Reset to 100% Viewable Fit mode and calculate scale
+        isCertActualSize = false;
+        const btnText = document.getElementById('certFitBtnText');
+        const btnIcon = document.querySelector('#btnCertFitToggle i');
+        if (btnText) btnText.innerText = "Actual Size";
+        if (btnIcon) btnIcon.className = "fas fa-search-plus";
+
+        // Give DOM 50ms to paint modal dimensions, then auto-fit
+        setTimeout(() => {
+            autoFitCertificate();
+        }, 50);
+
         if (autoPrint) {
             setTimeout(() => {
                 printModalDocument('certModal', 'landscape');
             }, 350);
         }
     }
+
+    // ==========================================================================
+    // AUTO-FIT CERTIFICATE SCALER (100% HEIGHT & WIDTH VIEWABLE)
+    // ==========================================================================
+    let isCertActualSize = false;
+
+    function autoFitCertificate() {
+        const modal = document.getElementById('certModal');
+        const wrapper = document.querySelector('.cert-scroll-wrapper');
+        const stage = document.getElementById('certScaleStage');
+        const cert = document.getElementById('printableCertificate');
+        
+        if (!modal || modal.style.display !== 'flex' || !wrapper || !stage || !cert) return;
+
+        const baseW = 1040;
+        const baseH = 735;
+
+        // If user explicitly asked for 100% Actual Size
+        if (isCertActualSize) {
+            cert.style.transform = 'none';
+            stage.style.width = `${baseW}px`;
+            stage.style.height = `${baseH}px`;
+            return;
+        }
+
+        // Available area inside the scroll wrapper
+        const availW = wrapper.clientWidth - 20;
+        const availH = wrapper.clientHeight - 20;
+
+        if (availW <= 0 || availH <= 0) return;
+
+        // Compute proportional scale factor to fit 100% width and 100% height
+        const scale = Math.min(availW / baseW, availH / baseH, 1);
+
+        cert.style.transform = `scale(${scale})`;
+        cert.style.transformOrigin = 'center center';
+
+        // Constrain stage so scrolling/centering is calculated correctly
+        stage.style.width = `${baseW * scale}px`;
+        stage.style.height = `${baseH * scale}px`;
+    }
+
+    // Toggle between "Fit to Screen" (100% visible) and "Actual Size" (1:1 zoom)
+    function toggleCertZoom() {
+        isCertActualSize = !isCertActualSize;
+        const btnText = document.getElementById('certFitBtnText');
+        const btnIcon = document.querySelector('#btnCertFitToggle i');
+
+        if (isCertActualSize) {
+            if (btnText) btnText.innerText = "Fit to Screen";
+            if (btnIcon) btnIcon.className = "fas fa-compress";
+        } else {
+            if (btnText) btnText.innerText = "Actual Size";
+            if (btnIcon) btnIcon.className = "fas fa-search-plus";
+        }
+        autoFitCertificate();
+    }
+
+    // Recalculate scale automatically on window resize
+    window.addEventListener('resize', () => {
+        const modal = document.getElementById('certModal');
+        if (modal && modal.style.display === 'flex') {
+            autoFitCertificate();
+        }
+    });
 
     function switchCertMember(index) {
         if (!currentCertMembers || !currentActiveCertResult) return;
@@ -9663,7 +9777,7 @@
 
                                 <div class="cert-gold-seal" style="margin-bottom: 14px;">
                                     <i class="fas fa-certificate"></i>
-                                    <span>Official Seal</span>
+                                    <span>Congrats</span>
                                 </div>
 
                                 <div class="cert-sig-block" style="text-align: center; min-width: 220px;">
