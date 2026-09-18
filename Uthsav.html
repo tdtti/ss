@@ -50,7 +50,7 @@
         --gold-pure: #d4af37;
         --gold-dark: #b89727;
         --gold-light: #fef9e7;
-        --corner-accent: #1e3a8a; /* Deep Royal Navy */
+        --corner-accent: #1e3a8a; /* Deep Royal Navy (NOT black) */
 
         --radius-sm: 6px;
         --radius-md: 10px;
@@ -809,8 +809,45 @@
     .modal-scroll-body::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
     /* ==========================================================================
-       RESTRUCTURED CERTIFICATE OF MERIT (PURE GOLD BORDER, NON-BLACK CORNERS)
+       CERTIFICATE CONTAINER, ORNATE GOLD BORDERS & ROYAL NAVY CORNERS
        ========================================================================== */
+    .cert-modal-content {
+        background: #ffffff; 
+        border-radius: var(--radius-lg); 
+        width: 100%; 
+        max-width: 1140px;
+        max-height: 96vh;
+        display: flex;
+        flex-direction: column;
+        padding: 16px 20px 20px; 
+        text-align: center; 
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-lg);
+        box-sizing: border-box;
+    }
+
+    .cert-scroll-wrapper {
+        width: 100%; 
+        flex: 1;
+        overflow-x: auto !important; 
+        overflow-y: auto !important; 
+        padding: 14px 10px;
+        -webkit-overflow-scrolling: touch; 
+        display: flex; 
+        justify-content: center;
+        align-items: flex-start;
+        border-radius: var(--radius-sm); 
+        background: #f1f5f9; 
+        margin-top: 8px;
+        box-sizing: border-box;
+    }
+
+    .cert-mobile-hint {
+        display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600;
+        color: var(--text-muted); background: #ffffff; padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); margin-top: 6px;
+    }
+
+    /* A4 Landscape Canvas Dimensions (1020px x 720px) */
     .cert-container {
         width: 1020px;
         min-width: 1020px;
@@ -819,12 +856,12 @@
         margin: 0 auto;
         position: relative;
         box-sizing: border-box;
-        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.14);
     }
 
-    /* PURE GOLD THICK MULTI-LINE FRAME */
+    /* PURE GOLD THICK MULTI-LAYERED BORDER (9px SOLID GOLD) */
     .cert-outer-frame {
-        border: 9px solid var(--gold-pure) !important; /* Thick pure gold */
+        border: 9px solid var(--gold-pure) !important;
         height: 100%; 
         width: 100%; 
         padding: 5px;
@@ -839,21 +876,21 @@
         outline-offset: -7px;
         height: 100%; 
         width: 100%; 
-        padding: 20px 32px 16px; 
+        padding: 22px 34px 18px; 
         box-sizing: border-box;
         position: relative; 
         display: flex; 
         flex-direction: column; 
         justify-content: space-between;
-        background: radial-gradient(ellipse at center, #ffffff 50%, #fffdfa 85%, #fdf9ee 100%);
+        background: radial-gradient(ellipse at center, #ffffff 45%, #fffef9 80%, #fcf8eb 100%);
     }
 
-    /* CORNER ORNAMENTS: DEEP ROYAL NAVY (#1E3A8A) WITH GOLD ACCENTS - STRICTLY NOT BLACK */
+    /* CORNER BRACKETS: DEEP ROYAL NAVY (#1E3A8A) WITH GOLD RIVETS - STRICTLY NOT BLACK */
     .cert-corner { 
         position: absolute; 
-        width: 32px; 
-        height: 32px; 
-        border-color: var(--corner-accent) !important; /* Deep Royal Navy */
+        width: 34px; 
+        height: 34px; 
+        border-color: var(--corner-accent) !important;
         border-style: solid; 
         z-index: 5;
     }
@@ -878,78 +915,195 @@
 
     /* WATERMARK */
     .cert-watermark {
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%);
         width: 320px; height: 320px; opacity: 0.055; pointer-events: none; z-index: 1;
         background: url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png') no-repeat center;
         background-size: contain;
     }
 
-    /* HEADER: UPSCALED LOGO & TIGHT SCHOOL TITLE */
+    /* HEADER: UPSCALED 88px LOGO & TIGHT PROMINENT SCHOOL TITLE */
     .cert-header-row {
-        display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;
-        border-bottom: 2px solid var(--gold-pure); padding-bottom: 10px;
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between; 
+        position: relative; 
+        z-index: 2;
+        border-bottom: 2px solid var(--gold-pure); 
+        padding-bottom: 12px;
     }
-    .cert-logo-box img { width: 84px; height: 84px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
-    .cert-inst-details { text-align: center; flex: 1; padding: 0 15px; }
+    .cert-logo-box { width: 92px; text-align: left; }
+    .cert-logo-box img { 
+        width: 88px; 
+        height: 88px; 
+        object-fit: contain; 
+        filter: drop-shadow(0 2px 5px rgba(0,0,0,0.12)); 
+    }
+    
+    .cert-inst-details { text-align: center; flex: 1; padding: 0 16px; }
     .cert-inst-details h1 {
-        margin: 0; font-family: 'Cinzel', serif; font-size: 26px; letter-spacing: 2px; color: var(--text-main); font-weight: 900; line-height: 1.15;
+        margin: 0; 
+        font-family: 'Cinzel', serif; 
+        font-size: 27px; 
+        letter-spacing: 2.2px; 
+        color: #0f172a; 
+        font-weight: 900; 
+        line-height: 1.15;
     }
     .cert-inst-details h3 {
-        margin: 3px 0 2px; font-family: 'Montserrat', sans-serif; font-size: 14.5px; color: var(--corner-accent); font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase;
+        margin: 3px 0 3px; 
+        font-family: 'Montserrat', sans-serif; 
+        font-size: 14.5px; 
+        color: var(--corner-accent); 
+        font-weight: 800; 
+        letter-spacing: 2px; 
+        text-transform: uppercase;
     }
-    .cert-inst-details p { 
-        margin: 0; font-size: 11px; color: #475569; font-weight: 600; letter-spacing: 0.5px;
-    }
-    .cert-badge-right { width: 84px; text-align: center; }
-    .cert-badge-right i { font-size: 34px; color: var(--gold-dark); }
-    .cert-badge-tag {
-        font-size: 10px; font-weight: 800; background: var(--corner-accent); color: #ffffff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 4px; letter-spacing: 0.5px;
+    .cert-address-bar {
+        display: inline-block;
+        font-size: 11px;
+        color: #475569;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        border-top: 1px solid rgba(212, 175, 55, 0.4);
+        padding-top: 2px;
+        margin-top: 2px;
     }
 
-    /* TITLE & SCRIPT */
-    .cert-title-area { margin: 6px 0 2px; position: relative; z-index: 2; text-align: center; }
-    .cert-main-title {
-        font-family: 'Cinzel', serif; font-size: 23px; font-weight: 900; color: #854d0e; letter-spacing: 5px;
-        display: inline-flex; align-items: center; gap: 14px; text-transform: uppercase;
+    .cert-badge-right { 
+        width: 92px; 
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
-    .cert-main-title::before, .cert-main-title::after { content: ''; display: inline-block; width: 48px; height: 2px; background: var(--gold-pure); }
+    .cert-badge-right i { font-size: 36px; color: var(--gold-dark); }
+    .cert-badge-tag {
+        font-size: 9.5px; font-weight: 800; background: var(--corner-accent); color: #ffffff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 4px; letter-spacing: 0.6px;
+    }
+
+    /* TITLE & CALLIGRAPHIC CONGRATULATIONS */
+    .cert-title-area { margin: 8px 0 4px; position: relative; z-index: 2; text-align: center; }
+    .cert-main-title {
+        font-family: 'Cinzel', serif; 
+        font-size: 23px; 
+        font-weight: 900; 
+        color: #854d0e; 
+        letter-spacing: 5px;
+        display: inline-flex; 
+        align-items: center; 
+        gap: 16px; 
+        text-transform: uppercase;
+    }
+    .cert-main-title::before, .cert-main-title::after { 
+        content: ''; display: inline-block; width: 50px; height: 2px; background: var(--gold-pure); 
+    }
     .cert-congrats-animated {
         font-family: 'Great Vibes', cursive; font-size: 42px; color: #be185d; margin: -4px 0 2px; line-height: 1.1;
     }
 
-    /* BODY CITATION */
-    .cert-body-area { position: relative; z-index: 2; padding: 2px 14px; text-align: center; }
-    .cert-awarded-intro { font-family: 'Playfair Display', serif; font-size: 14px; font-style: italic; color: #64748b; margin-bottom: 3px; }
+    /* BODY CITATION & CANDIDATE MATTER */
+    .cert-body-area { position: relative; z-index: 2; padding: 2px 20px; text-align: center; }
+    .cert-awarded-intro { font-family: 'Playfair Display', serif; font-size: 14.5px; font-style: italic; color: #64748b; margin-bottom: 4px; }
+    
     .cert-candidate-name {
-        font-family: 'Cinzel', serif; font-size: 26px; font-weight: 900; color: var(--text-main); letter-spacing: 1.5px;
-        display: inline-block; border-bottom: 2px solid var(--gold-pure); padding: 0 28px 3px; margin-bottom: 3px; text-transform: uppercase;
+        font-family: 'Cinzel', serif; 
+        font-size: 26px; 
+        font-weight: 900; 
+        color: #0f172a; 
+        letter-spacing: 1.5px;
+        display: inline-block; 
+        border-bottom: 2.5px solid var(--gold-pure); 
+        padding: 0 32px 3px; 
+        margin-bottom: 4px; 
+        text-transform: uppercase;
     }
-    .cert-candidate-class { font-size: 13.5px; font-weight: 700; color: var(--corner-accent); margin-bottom: 8px; }
-    .cert-citation-p { font-family: 'Playfair Display', serif; font-size: 16px; line-height: 1.65; color: #1e293b; max-width: 860px; margin: 0 auto; }
+    .cert-candidate-class { 
+        font-size: 13.5px; 
+        font-weight: 800; 
+        color: var(--corner-accent); 
+        margin-bottom: 10px; 
+        letter-spacing: 0.5px;
+    }
+    .cert-citation-p { 
+        font-family: 'Playfair Display', serif; 
+        font-size: 16px; 
+        line-height: 1.7; 
+        color: #1e293b; 
+        max-width: 860px; 
+        margin: 0 auto; 
+    }
     .cert-highlight-badge {
-        background: #fef3c7; color: #854d0e; padding: 2px 10px; border-radius: 4px; font-family: 'Montserrat', sans-serif; font-size: 13.5px; font-weight: 800; border: 1px solid rgba(212, 175, 55, 0.4);
+        background: #fef3c7; 
+        color: #854d0e; 
+        padding: 2px 10px; 
+        border-radius: 4px; 
+        font-family: 'Montserrat', sans-serif; 
+        font-size: 13.5px; 
+        font-weight: 800; 
+        border: 1px solid rgba(212, 175, 55, 0.45);
+        display: inline-block;
     }
 
-    /* SIGNATURES & OFFICIAL SEAL */
+    /* FOOTER SIGNATORIES & PURE GOLD EMBOSSED SEAL */
     .cert-footer-row {
-        display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 2;
-        padding: 8px 24px 4px; border-top: 2px solid var(--gold-pure);
+        display: flex; 
+        justify-content: space-between; 
+        align-items: flex-end; 
+        position: relative; 
+        z-index: 2;
+        padding: 10px 24px 2px; 
+        border-top: 2px solid var(--gold-pure);
     }
-    .cert-sig-block { text-align: center; min-width: 220px; }
-    .cert-signature-space { height: 46px; width: 100%; }
+    .cert-sig-block { text-align: center; min-width: 230px; }
+    .cert-signature-space { height: 48px; width: 100%; }
     .cert-sig-block b { 
-        display: block; font-size: 13.5px; color: var(--text-main); border-top: 1.5px solid #334155; padding-top: 4px; margin: 0; font-weight: 800;
+        display: block; 
+        font-size: 13.5px; 
+        color: #0f172a; 
+        border-top: 1.5px solid #334155; 
+        padding-top: 4px; 
+        margin: 0; 
+        font-weight: 800;
+        letter-spacing: 0.5px;
     }
-    .cert-sig-block span { display: block; font-size: 11.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 3px; }
-    
+    .cert-sig-block span { 
+        display: block; 
+        font-size: 11.5px; 
+        color: #64748b; 
+        font-weight: 600; 
+        margin-bottom: 4px; 
+    }
+    .cert-date-place-box {
+        display: flex; 
+        justify-content: center; 
+        gap: 14px; 
+        font-size: 11px; 
+        font-weight: 700; 
+        color: #475569; 
+        border-top: 1px dashed #cbd5e1; 
+        padding-top: 3px;
+    }
+
     .cert-gold-seal {
-        width: 72px; height: 72px; border-radius: 50%; border: 2.5px solid var(--gold-pure); outline: 1.5px dashed var(--gold-pure); outline-offset: 3px;
-        display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 8px; color: var(--gold-dark); background: #ffffff;
-        box-shadow: 0 4px 10px rgba(212, 175, 55, 0.25);
+        width: 74px; 
+        height: 74px; 
+        border-radius: 50%; 
+        border: 2.5px solid var(--gold-pure); 
+        outline: 1.5px dashed var(--gold-pure); 
+        outline-offset: 3px;
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center; 
+        margin: 0 auto 6px; 
+        color: var(--gold-dark); 
+        background: #ffffff;
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
     }
-    .cert-gold-seal i { font-size: 22px; }
-    .cert-gold-seal span { font-size: 8px; font-weight: 800; text-transform: uppercase; margin-top: 2px; }
-    
+    .cert-gold-seal i { font-size: 24px; }
+    .cert-gold-seal span { font-size: 8px; font-weight: 800; text-transform: uppercase; margin-top: 2px; letter-spacing: 0.5px; }
+
     /* Group Member Selector Bar inside Certificate Modal */
     .cert-group-bar {
         display: flex;
@@ -972,59 +1126,6 @@
         background: #ffffff;
     }
 
-    /* Batch Print Styles (Prints each participant's certificate on its own A4 sheet) */
-    @media print {
-        body.printing-batch-cert {
-            width: 297mm !important;
-            background: #ffffff !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-        body.printing-batch-cert #appScreen,
-        body.printing-batch-cert #loginScreen,
-        body.printing-batch-cert #customDialogOverlay,
-        body.printing-batch-cert #loadingOverlay,
-        body.printing-batch-cert #reportModal,
-        body.printing-batch-cert #subDistrictModal,
-        body.printing-batch-cert #llPrintModal {
-            display: none !important;
-        }
-        body.printing-batch-cert #certModal.active-print,
-        body.printing-batch-cert #certModal.active-print * {
-            visibility: visible !important;
-        }
-        body.printing-batch-cert #certModal.active-print {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 297mm !important;
-            display: block !important;
-            background: #fff !important;
-        }
-        body.printing-batch-cert #certModal.active-print .cert-scroll-wrapper {
-            overflow: visible !important;
-            background: none !important;
-            padding: 0 !important;
-            display: block !important;
-        }
-        body.printing-batch-cert #certModal.active-print .cert-container {
-            width: 297mm !important;
-            height: 208mm !important;
-            max-height: 208mm !important;
-            padding: 6mm 8mm !important;
-            margin: 0 auto 0 auto !important;
-            page-break-after: always !important;
-            break-after: page !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-        body.printing-batch-cert #certModal.active-print .cert-container:last-child {
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-        }
-    }
     /* ==========================================================================
        8. STRICT PRINT RULES (CERTIFICATE: LANDSCAPE, REPORTS: A4 PORTRAIT)
        ========================================================================== */
@@ -1035,7 +1136,7 @@
     @media print {
         body * { visibility: hidden !important; }
         
-        /* 1. CERTIFICATE PRINTING (A4 LANDSCAPE) */
+        /* 1. SINGLE CERTIFICATE PRINTING (A4 LANDSCAPE - EXACT 1 PAGE) */
         html, body.printing-cert {
             width: 297mm !important;
             height: 210mm !important;
@@ -1069,7 +1170,7 @@
             left: 0 !important;
             top: 0 !important;
             width: 297mm !important;
-            height: 208mm !important;
+            height: 208mm !important; /* 2mm safety cushion strictly prevents second blank page */
             max-height: 208mm !important;
             margin: 0 !important;
             padding: 0 !important;
@@ -1137,7 +1238,60 @@
             animation: none !important; 
         }
 
-        /* 2. UNIVERSAL A4 PORTRAIT MULTI-PAGE REPORTS (VIEW RECORDS, RESULTS, SUBDISTRICT) */
+        /* 2. GROUP CERTIFICATE BATCH PRINTING */
+        body.printing-batch-cert {
+            width: 297mm !important;
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body.printing-batch-cert #appScreen,
+        body.printing-batch-cert #loginScreen,
+        body.printing-batch-cert #customDialogOverlay,
+        body.printing-batch-cert #loadingOverlay,
+        body.printing-batch-cert #reportModal,
+        body.printing-batch-cert #subDistrictModal,
+        body.printing-batch-cert #resultReportModal,
+        body.printing-batch-cert #llPrintModal {
+            display: none !important;
+        }
+        body.printing-batch-cert #certModal.active-print,
+        body.printing-batch-cert #certModal.active-print * {
+            visibility: visible !important;
+        }
+        body.printing-batch-cert #certModal.active-print {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 297mm !important;
+            display: block !important;
+            background: #fff !important;
+        }
+        body.printing-batch-cert #certModal.active-print .cert-scroll-wrapper {
+            overflow: visible !important;
+            background: none !important;
+            padding: 0 !important;
+            display: block !important;
+        }
+        body.printing-batch-cert #certModal.active-print .cert-container {
+            width: 297mm !important;
+            height: 208mm !important;
+            max-height: 208mm !important;
+            padding: 6mm 8mm !important;
+            margin: 0 auto 0 auto !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        body.printing-batch-cert #certModal.active-print .cert-container:last-child {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }
+
+        /* 3. UNIVERSAL A4 PORTRAIT MULTI-PAGE REPORTS */
         body.printing-report-portrait {
             background: #ffffff !important;
             width: 210mm !important;
@@ -1217,16 +1371,6 @@
         }
         
         .no-print, .cert-mobile-hint { display: none !important; }
-    }
-
-    @media (max-width: 768px) {
-        #appScreen { padding: 10px; }
-        .app-header { flex-direction: column; text-align: center; }
-        .header-right { text-align: center; }
-        .tab button span.tab-text { display: none; }
-        .tab button { padding: 9px 12px; position: relative; }
-        .tab-badge-notification { top: -2px; right: -2px; font-size: 8px; padding: 1px 4px; }
-        .section { padding: 16px; border-radius: var(--radius-md); }
     }
 
     /* ==========================================================================
@@ -1403,7 +1547,6 @@
         margin-bottom: 12px !important;
     }
 
-    /* Screen Preview: Responsive Dual-Axis Scroll */
     .ll-scroll-wrapper {
         width: 100% !important;
         max-height: 72vh !important;
@@ -1432,7 +1575,6 @@
         padding: 0 !important;
     }
 
-    /* A4 Portrait Sheet Representation: 170mm x 257mm (210x297 minus 20mm all sides) */
     .ll-page {
         width: 170mm !important;
         min-width: 170mm !important;
@@ -1450,7 +1592,6 @@
         flex-shrink: 0 !important;
     }
 
-    /* SECTION 1 GRID: 1 Column x 4 Rows (Exactly 25% height each) */
     .ll-items-grid {
         display: grid !important;
         grid-template-columns: 100% !important;
@@ -1506,7 +1647,6 @@
         line-height: 1.2 !important;
     }
 
-    /* SECTION 2 GRID: 2 Columns x 4 Rows (8 Lots per Page) */
     .ll-lots-grid {
         display: grid !important;
         grid-template-columns: 50% 50% !important;
@@ -1580,7 +1720,6 @@
         pointer-events: none !important;
     }
 
-    /* Modal Styling */
     #llViewModal {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(15, 23, 42, 0.6); 
@@ -1589,7 +1728,6 @@
         box-sizing: border-box;
     }
 
-    /* STRICT A4 PORTRAIT PRINT WITH EXACT 02.00CM (20MM) MARGINS */
     @page llPortraitPage {
         size: 210mm 297mm portrait;
         margin: 20mm !important; /* EXACT 02.00 CM MARGIN */
@@ -1622,7 +1760,6 @@
             visibility: visible !important;
         }
 
-        /* Flow container directly into the page (NO absolute/fixed positioning to preserve page-breaks) */
         body.printing-ll-portrait #llViewModal.active-print {
             position: static !important;
             display: block !important;
@@ -1661,11 +1798,10 @@
             padding: 0 !important;
         }
 
-        /* 100% Height & Width of printable area inside 20mm margin */
         body.printing-ll-portrait #llViewModal.active-print .ll-page {
             width: 100% !important;
             max-width: 100% !important;
-            height: 256.5mm !important; /* 297mm - 40mm margins - 0.5mm buffer to prevent blank trailing page */
+            height: 256.5mm !important;
             max-height: 256.5mm !important;
             box-sizing: border-box !important;
             margin: 0 !important;
@@ -1770,6 +1906,32 @@
         box-shadow: var(--shadow-lg) !important;
         border: 1px solid var(--border) !important;
         animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+    }
+
+    /* EDIT REGISTRATION MODAL */
+    #editRegModalOverlay {
+        position: fixed !important; 
+        top: 0 !important; 
+        left: 0 !important; 
+        width: 100% !important; 
+        height: 100% !important;
+        background: rgba(15, 23, 42, 0.5) !important; 
+        z-index: 99999 !important; 
+        display: none;
+        justify-content: center; 
+        align-items: center; 
+        padding: 16px; 
+        box-sizing: border-box;
+    }
+    #editRegFormBox {
+        background: #ffffff; 
+        border-radius: var(--radius-lg); 
+        width: 100%; 
+        max-width: 540px; 
+        padding: 22px 24px;
+        box-shadow: var(--shadow-lg); 
+        border: 1px solid var(--border); 
+        animation: popIn 0.18s ease-out forwards;
     }
 
     /* ==========================================================================
@@ -1981,22 +2143,9 @@
         background: transparent;
     }
 
-    /* EDIT REGISTRATION MODAL */
-    #editRegModalOverlay {
-        position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important;
-        background: rgba(15, 23, 42, 0.5) !important; z-index: 99999 !important; display: none;
-        justify-content: center; align-items: center; padding: 16px; box-sizing: border-box;
-    }
-    #editRegFormBox {
-        background: #ffffff; border-radius: var(--radius-lg); width: 100%; max-width: 540px; padding: 22px 24px;
-        box-shadow: var(--shadow-lg); border: 1px solid var(--border); animation: popIn 0.18s ease-out forwards;
-    }
-
     option[value="Fest"] { display: none !important; }
     option[value="Sports"] { display: none !important; }
-      
-
-  </style>  
+</style>
 </head>
 <body>
 
@@ -3139,16 +3288,20 @@
         
         <!-- DUAL-AXIS (VERTICAL & HORIZONTAL) SCROLL CONTAINER -->
         <div class="cert-scroll-wrapper">
+            <!-- RESTRUCTURED ORNATE CERTIFICATE -->
             <div id="printableCertificate" class="cert-container">
                 <div class="cert-outer-frame">
                     <div class="cert-inner-frame">
+                        <!-- ROYAL NAVY CORNER ORNAMENTS (NOT BLACK) -->
                         <div class="cert-corner corner-tl"></div>
                         <div class="cert-corner corner-tr"></div>
                         <div class="cert-corner corner-bl"></div>
                         <div class="cert-corner corner-br"></div>
 
+                        <!-- SUBTLE INSTITUTIONAL WATERMARK -->
                         <div class="cert-watermark"></div>
 
+                        <!-- HEADER SECTION: UPSCALED 88px LOGO & TIGHT TITLES -->
                         <div class="cert-header-row">
                             <div class="cert-logo-box">
                                 <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="TDTTI Thuravoor Logo">
@@ -3157,60 +3310,61 @@
                             <div class="cert-inst-details">
                                 <h1>Thirumala Devaswom</h1>
                                 <h3>Teacher Training Institute</h3>
-                                <p>THURAVOOR, ALAPPUZHA, KERALA &bull; PH: 0478-256 4479</p>
+                                <div class="cert-address-bar">
+                                    THURAVOOR, ALAPPUZHA, KERALA — 688532 &bull; PH: 0478-256 4479
+                                </div>
                             </div>
 
                             <div class="cert-badge-right">
-                                <i class="fas fa-trophy"></i>
+                                <i class="fas fa-award"></i>
                                 <div class="cert-badge-tag" id="certFestBadge">UTHSAV</div>
                             </div>
                         </div>
 
+                        <!-- TITLE AREA -->
                         <div class="cert-title-area">
                             <div class="cert-main-title">Certificate of Merit</div>
                             <div class="cert-congrats-animated">Congratulation</div>
                         </div>
 
+                        <!-- BODY STATEMENT & CANDIDATE AREA -->
                         <div class="cert-body-area">
                             <div class="cert-awarded-intro">This is to proudly certify that</div>
                             <div id="certStudentName" class="cert-candidate-name">KUMARI. / MASTER. AJITH V</div>
                             <div id="certStudentClass" class="cert-candidate-class">Standard: 5A</div>
 
                             <div class="cert-citation-p" id="certStatement">
-                                has distinguished themselves by winning the <span class="cert-highlight-badge">FIRST Place</span> with <span class="cert-highlight-badge">A Grade</span> in the <b>100M RUN (BOYS)</b> competition held as part of <b>SCHOOL ATHLETIC MEET</b> on <b>20.02.2026</b>.
+                                has distinguished themselves by winning the <span class="cert-highlight-badge">FIRST Place</span> with <span class="cert-highlight-badge">A Grade</span> <br>in the <b>100M RUN (BOYS)</b> competition <br>held as part of <b>SCHOOL ATHLETIC MEET</b> on <b>20/02/2026</b>.
                             </div>
                         </div>
 
-                        <div class="cert-footer-row" style="display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 2; padding: 6px 16px 2px; border-top: 1.5px solid rgba(212, 175, 55, 0.4);">
-                            <div class="cert-sig-block" style="text-align: center; min-width: 220px;">
-                                <div class="cert-signature-space" style="height: 54px; width: 100%;"></div>
-                                <b id="certConvenorName" style="display: block; font-size: 13px; color: var(--text-main); border-top: 1.5px solid #334155; padding-top: 4px; margin: 0;">
-                                    THEJAS R
-                                </b>
-                                <span style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
-                                    ( General Convenor )
-                                </span>
-
-                                <div style="display: flex; justify-content: center; gap: 14px; font-size: 11px; font-weight: 600; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 3px;">
-                                    <span id="certIssueDate">Date: 13/9/2026</span>
+                        <!-- SIGNATURES & PURE GOLD EMBOSSED SEAL -->
+                        <div class="cert-footer-row">
+                            <!-- Left: General Convenor -->
+                            <div class="cert-sig-block">
+                                <div class="cert-signature-space"></div>
+                                <b id="certConvenorName">THEJAS R</b>
+                                <span>( General Convenor )</span>
+                                <div class="cert-date-place-box">
+                                    <span id="certIssueDate">Date: 13/09/2026</span>
                                     <span>Place: Thuravoor</span>
                                 </div>
                             </div>
 
-                            <div class="cert-gold-seal" style="margin-bottom: 14px;">
-                                <i class="fas fa-certificate"></i>
+                            <!-- Center: Official Pure Gold Seal -->
+                            <div class="cert-gold-seal">
+                                <i class="fas fa-stamp"></i>
                                 <span>Official Seal</span>
                             </div>
 
-                            <div class="cert-sig-block" style="text-align: center; min-width: 220px;">
-                                <div class="cert-signature-space" style="height: 54px; width: 100%;"></div>
-                                <b style="display: block; font-size: 13px; color: var(--text-main); border-top: 1.5px solid #334155; padding-top: 4px; margin: 0;">
-                                    ASHA V
-                                </b>
-                                <span style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
-                                    ( Principal )
-                                </span>
-                                <div style="height: 18px;"></div>
+                            <!-- Right: Principal -->
+                            <div class="cert-sig-block">
+                                <div class="cert-signature-space"></div>
+                                <b>ASHA V</b>
+                                <span>( Principal )</span>
+                                <div class="cert-date-place-box" style="visibility:hidden;">
+                                    <span>Verified</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -4075,7 +4229,7 @@
             const kGrpCount = kRegs.filter(r => parseInt(r["No of Participants"] || 1) > 1).length;
             const kTotal = kIndCount + kGrpCount;
 
-            if (!isGroup && kIndCount >= 3) {
+            if (!isGroup && kIndCount >= 9) {
                 return showCustomDialog(
                     "Kalothswom Limit Exceeded",
                     `❌ <b>Individual Item Limit Reached!</b><br><br>` +
@@ -4474,11 +4628,14 @@
         }
     }
 
+    // ==========================================================================
+    // TAB 2: VIEW RECORDS (WITH CARD ACTIONS: EDIT & DELETE)
+    // ==========================================================================
     function renderTables() {
-        const clsFilt = document.getElementById('filterClass').value;
-        const divFilt = document.getElementById('filterDivision').value;
+        const clsFilt = document.getElementById('filterClass')?.value || "ALL";
+        const divFilt = document.getElementById('filterDivision')?.value || "ALL";
         const txtFilt = String(document.getElementById('filterSearch')?.value || "").toLowerCase().trim();
-        const globalSortBy = document.getElementById('sortRecordsBy').value;
+        const globalSortBy = document.getElementById('sortRecordsBy')?.value || "time_desc";
 
         const containerInd = document.getElementById('cardsInd');
         const containerGrp = document.getElementById('cardsGrp');
@@ -4487,13 +4644,16 @@
         containerInd.innerHTML = "";
         containerGrp.innerHTML = "";
 
+        // Filter only enabled festival registrations
         let data = [...dbRegistrations].filter(r => isFestEnabled(r["Name of Fest"]));
         const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
 
+        // If logged in as student, only show their own registrations
         if (currentUser && currentUser.role === "Student") {
             data = data.filter(r => String(r["Admission Number"]) === String(currentUser.id));
         }
 
+        // Apply class, division, and instant search text filters
         data = data.filter(r => {
             const mCls = clsFilt === "ALL" || String(r["Class"]) === clsFilt;
             const mDiv = divFilt === "ALL" || String(r["Division"]) === divFilt;
@@ -4508,6 +4668,7 @@
             return;
         }
 
+        // Group by Festival Classification -> Name of Fest
         const hierarchy = {};
         data.forEach(r => {
             const cat = r["Festival Classification"] || getFestivalCategory(r["Name of Fest"]);
@@ -4528,6 +4689,7 @@
             Object.keys(hierarchy[cat]).sort().forEach(festName => {
                 let records = hierarchy[cat][festName];
 
+                // Apply fest-specific sort or global sort
                 const sortBy = (isAdmin && adminFestSorts[festName]) ? adminFestSorts[festName] : globalSortBy;
                 records.sort((a, b) => {
                     if (sortBy === 'name_asc') return String(a.Name || "").localeCompare(String(b.Name || ""));
@@ -4541,23 +4703,25 @@
                 const indRecords = records.filter(r => parseInt(r["No of Participants"] || 1) === 1);
                 const grpRecords = records.filter(r => parseInt(r["No of Participants"] || 1) > 1);
 
+                // Admin Controls on Fest Header (Sort & Fest Print)
                 let adminFestControls = "";
                 if (isAdmin) {
                     adminFestControls = `
                         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <select onchange="setAdminFestSort('${festName}', this.value)" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1;">
+                            <select onchange="setAdminFestSort('${festName}', this.value)" style="padding:5px 9px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1;">
                                 <option value="time_desc" ${sortBy === 'time_desc' ? 'selected' : ''}>Sort: Newest</option>
                                 <option value="name_asc" ${sortBy === 'name_asc' ? 'selected' : ''}>Sort: Name (A-Z)</option>
                                 <option value="name_desc" ${sortBy === 'name_desc' ? 'selected' : ''}>Sort: Name (Z-A)</option>
                                 <option value="admn_asc" ${sortBy === 'admn_asc' ? 'selected' : ''}>Sort: Admn No</option>
                             </select>
-                            <button class="action-btn gold" style="padding:6px 12px; font-size:12px;" onclick="printFestSection('${festName}')" title="Print ${festName} Report">
+                            <button type="button" class="action-btn gold" style="padding:5px 11px; font-size:12px;" onclick="printFestSection('${festName}')" title="Print ${festName} Report">
                                 <i class="fas fa-print"></i> Print Fest
                             </button>
                         </div>
                     `;
                 }
 
+                // 1. INDIVIDUAL ITEMS RENDERING
                 if (indRecords.length > 0) {
                     indFestsHTML += `
                         <div style="width:100%; margin-bottom:15px;">
@@ -4566,7 +4730,7 @@
                                     <i class="fas fa-chevron-down collapse-chevron"></i>
                                     <div>
                                         <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}</h5>
-                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${indRecords.length} Individual</span>
+                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${indRecords.length} Individual Item(s)</span>
                                     </div>
                                 </div>
                                 ${adminFestControls}
@@ -4575,22 +4739,29 @@
                     `;
 
                     indRecords.forEach(r => {
-                        const deleteBtn = isAdmin ? `
-                            <button class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
-                                <i class="fas fa-trash-alt"></i> Delete
-                            </button>
+                        // ACTION BUTTONS: EDIT & DELETE
+                        const cardActions = isAdmin ? `
+                            <div style="display:inline-flex; gap:6px; align-items:center;">
+                                <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11.5px;" onclick="openEditRegistrationModal('${r.id}')" title="Modify Candidate Details">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11.5px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </div>
                         ` : '';
+
                         indFestsHTML += `
                             <div class="record-card">
                                 <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
-                                <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
-                                <p><span class="label">Admn No</span> <span>${r["Admission Number"]}</span></p>
-                                <p><span class="label">Class & Div</span> <span>${r["Class"]} ${r["Division"]}</span></p>
-                                <p><span class="label">Lot Number</span> <span style="font-weight:bold; color:var(--text-main);">${r["Lot Number"] || 'Not Allotted'}</span></p>
-                                <p><span class="label">Category</span> <span style="color:var(--primary); font-weight:bold;">${r["Category"]}</span></p>
+                                <p><span class="label">Candidate:</span> <b>${r["Name"]}</b></p>
+                                <p><span class="label">Admn No:</span> <span>${r["Admission Number"]}</span></p>
+                                <p><span class="label">Class & Div:</span> <span>${r["Class"]} ${r["Division"]}</span></p>
+                                <p><span class="label">Lot Number:</span> <span style="font-weight:800; color:var(--primary);">${r["Lot Number"] || 'Not Allotted'}</span></p>
+                                <p><span class="label">Category:</span> <span style="color:var(--accent); font-weight:700;">${r["Category"] || 'General'}</span></p>
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:6px;">
-                                    <span class="timestamp">${r["Timestamp"]}</span>
-                                    ${deleteBtn}
+                                    <span class="timestamp">${r["Timestamp"] || ''}</span>
+                                    ${cardActions}
                                 </div>
                             </div>
                         `;
@@ -4599,6 +4770,7 @@
                     indFestsHTML += `</div></div>`;
                 }
 
+                // 2. GROUP ITEMS RENDERING
                 if (grpRecords.length > 0) {
                     grpFestsHTML += `
                         <div style="width:100%; margin-bottom:15px;">
@@ -4607,7 +4779,7 @@
                                     <i class="fas fa-chevron-down collapse-chevron"></i>
                                     <div>
                                         <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}</h5>
-                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${grpRecords.length} Group</span>
+                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${grpRecords.length} Group Participant(s)</span>
                                     </div>
                                 </div>
                                 ${adminFestControls}
@@ -4616,22 +4788,32 @@
                     `;
 
                     grpRecords.forEach(r => {
-                        const deleteBtn = isAdmin ? `
-                            <button class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
-                                <i class="fas fa-trash-alt"></i> Delete
-                            </button>
+                        // ACTION BUTTONS: EDIT & DELETE
+                        const cardActions = isAdmin ? `
+                            <div style="display:inline-flex; gap:6px; align-items:center;">
+                                <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11.5px;" onclick="openEditRegistrationModal('${r.id}')" title="Modify Registration Details">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11.5px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </div>
                         ` : '';
+
+                        const isLeader = r["Role in Event"] === "Team Leader";
+                        const roleColor = isLeader ? "var(--warning)" : "var(--accent)";
+
                         grpFestsHTML += `
                             <div class="record-card group-card">
                                 <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
-                                <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
-                                <p><span class="label">Admn No</span> <span>${r["Admission Number"]}</span></p>
-                                <p><span class="label">Class & Div</span> <span>${r["Class"]} ${r["Division"]}</span></p>
-                                <p><span class="label">Lot Number</span> <span style="font-weight:bold; color:var(--text-main);">${r["Lot Number"] || 'Not Allotted'}</span></p>
-                                <p><span class="label">Role in Team</span> <span style="color:var(--warning); font-weight:bold;">${r["Role in Event"]}</span></p>
+                                <p><span class="label">Candidate:</span> <b>${r["Name"]}</b></p>
+                                <p><span class="label">Admn No:</span> <span>${r["Admission Number"]}</span></p>
+                                <p><span class="label">Class & Div:</span> <span>${r["Class"]} ${r["Division"]}</span></p>
+                                <p><span class="label">Lot Number:</span> <span style="font-weight:800; color:var(--primary);">${r["Lot Number"] || 'Not Allotted'}</span></p>
+                                <p><span class="label">Role in Team:</span> <span style="color:${roleColor}; font-weight:800;">${r["Role in Event"] || 'Participant'}</span></p>
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:6px;">
-                                    <span class="timestamp">${r["Timestamp"]}</span>
-                                    ${deleteBtn}
+                                    <span class="timestamp">${r["Timestamp"] || ''}</span>
+                                    ${cardActions}
                                 </div>
                             </div>
                         `;
@@ -4641,6 +4823,7 @@
                 }
             });
 
+            // 3. COLLAPSIBLE CLASSIFICATION BANNER FOR INDIVIDUAL ITEMS
             if (indFestsHTML) {
                 containerInd.innerHTML += `
                     <div style="width:100%; margin-bottom:15px;">
@@ -4655,6 +4838,7 @@
                 `;
             }
 
+            // 4. COLLAPSIBLE CLASSIFICATION BANNER FOR GROUP ITEMS
             if (grpFestsHTML) {
                 containerGrp.innerHTML += `
                     <div style="width:100%; margin-bottom:15px;">
@@ -5003,17 +5187,17 @@
 
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.custom-search-select-wrapper')) {
-            const emList = document.getElementById('emItemDropdownList');
-            const judgeList = document.getElementById('judgeActiveItemsDropdownList');
-            const d3 = document.getElementById('existingJudgeDropdownList');
-            const d4 = document.getElementById('allotItemDropdownList');
-
-            [emList, judgeList, d3, d4].forEach(d => {
-                if (d) {
-                    d.style.display = 'none';
-                    const s = d.closest('.section');
-                    if (s) s.style.zIndex = '';
-                }
+            const dropdowns = [
+                'emItemDropdownList', 
+                'judgeActiveItemsDropdownList', 
+                'existingJudgeDropdownList', 
+                'allotItemDropdownList',
+                'regItemDropdownList',
+                'reportItemDropdownList'
+            ];
+            dropdowns.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
             });
         }
     });
@@ -9327,7 +9511,7 @@
         `;
     }
 
-    // BATCH PRINT: Generates and prints an individual certificate for EVERY student in the group
+    // BATCH PRINT: Generates and prints each group member on their own ornate certificate
     function printAllGroupCertificates() {
         if (!currentCertMembers || !currentActiveCertResult) return;
 
@@ -9335,17 +9519,24 @@
         const originalContent = wrapper.innerHTML;
 
         showLoader("Preparing All Group Certificates for Print...");
+
+        const festName = currentActiveCertResult.festName || "UTHSAV";
+        const fallbackPublished = (currentActiveCertResult.publishedAt || "13/09/2026").split(',')[0];
         
-        // Generate a certificate container for each group member
+        let festDateCitation = formatFestDatesForCert(festName) || fallbackPublished;
+        festDateCitation = String(festDateCitation).replace(/[:.-]/g, '/');
+
+        let rawIssueDate = getCertIssueDate(festName, fallbackPublished);
+        const issueDate = String(rawIssueDate).replace(/[:.-]/g, '/');
+        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) ? dbSettings.FestConvenors[festName] : "THEJAS R";
+
         let batchHTML = "";
-        currentCertMembers.forEach((member, idx) => {
-            const dateStr = (currentActiveCertResult.publishedAt || "20.02.2026").split(',')[0];
+        currentCertMembers.forEach((member) => {
             const st = dbStudents.find(s => String(s["Admission Number"]).trim() === String(member.admissionNumber).trim());
             const gRaw = String(member.gender || st?.Gender || st?.["Gender"] || "").trim().toUpperCase();
             const isGirl = gRaw === 'F' || gRaw.startsWith('FEM') || gRaw === 'GIRL';
             const salutation = isGirl ? 'Kumari.' : 'Master.';
             const cleanName = String(member.name || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
-            const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[currentActiveCertResult.festName]) ? dbSettings.FestConvenors[currentActiveCertResult.festName] : "THEJAS R";
 
             batchHTML += `
                 <div class="cert-container" style="margin-bottom:20px;">
@@ -9359,16 +9550,18 @@
 
                             <div class="cert-header-row">
                                 <div class="cert-logo-box">
-                                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="Logo">
+                                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="TDTTI Thuravoor Logo">
                                 </div>
                                 <div class="cert-inst-details">
                                     <h1>Thirumala Devaswom</h1>
                                     <h3>Teacher Training Institute</h3>
-                                    <p>THURAVOOR, ALAPPUZHA, KERALA &bull; PH: 0478-256 4479</p>
+                                    <div class="cert-address-bar">
+                                        THURAVOOR, ALAPPUZHA, KERALA — 688532 &bull; PH: 0478-256 4479
+                                    </div>
                                 </div>
                                 <div class="cert-badge-right">
-                                    <i class="fas fa-trophy"></i>
-                                    <div class="cert-badge-tag">${(currentActiveCertResult.festName || "UTHSAV").toUpperCase()}</div>
+                                    <i class="fas fa-award"></i>
+                                    <div class="cert-badge-tag">${festName.toUpperCase()}</div>
                                 </div>
                             </div>
 
@@ -9382,24 +9575,31 @@
                                 <div class="cert-candidate-name">${salutation} ${cleanName}</div>
                                 <div class="cert-candidate-class">Standard: ${member.class} ${member.division || ''}</div>
                                 <div class="cert-citation-p">
-                                    has distinguished themselves by winning the <span class="cert-highlight-badge">${currentActiveCertResult.place}</span> with <span class="cert-highlight-badge">${currentActiveCertResult.grade} Grade</span> in the <b>${currentActiveCertResult.itemName} (Group)</b> competition held as part of <b>${(currentActiveCertResult.festName || 'ANNUAL FEST').toUpperCase()}</b> on <b>${dateStr}</b>.
+                                    has distinguished themselves by winning the <span class="cert-highlight-badge">${currentActiveCertResult.place}</span> with <span class="cert-highlight-badge">${currentActiveCertResult.grade} Grade</span> <br>in the <b>${currentActiveCertResult.itemName} (Group)</b> competition <br>held as part of <b>${festName.toUpperCase()}</b> on <b>${festDateCitation}</b>.
                                 </div>
                             </div>
 
                             <div class="cert-footer-row">
-                                <div class="cert-sig-block" style="text-align:left;">
-                                    <div>Date: ${dateStr}</div>
-                                    <div>Place: Thuravoor</div>
+                                <div class="cert-sig-block">
+                                    <div class="cert-signature-space"></div>
                                     <b>${convenorName}</b>
                                     <span>( General Convenor )</span>
+                                    <div class="cert-date-place-box">
+                                        <span>Date: ${issueDate}</span>
+                                        <span>Place: Thuravoor</span>
+                                    </div>
                                 </div>
                                 <div class="cert-gold-seal">
-                                    <i class="fas fa-certificate"></i>
+                                    <i class="fas fa-stamp"></i>
                                     <span>Official Seal</span>
                                 </div>
-                                <div class="cert-sig-block" style="text-align:right;">
-                                    <b style="margin-top:42px;">ASHA V</b>
+                                <div class="cert-sig-block">
+                                    <div class="cert-signature-space"></div>
+                                    <b>ASHA V</b>
                                     <span>( Principal )</span>
+                                    <div class="cert-date-place-box" style="visibility:hidden;">
+                                        <span>Verified</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -9420,8 +9620,7 @@
         modal.classList.remove('active-print');
         document.body.classList.remove('printing-batch-cert');
         wrapper.innerHTML = originalContent;
-        
-        // Restore currently selected student
+
         const select = document.getElementById('certMemberSelect');
         if (select) switchCertMember(select.value);
     }
@@ -9534,6 +9733,71 @@
         document.getElementById('reportModal').style.display = 'flex';
         if (autoPrint) {
             setTimeout(() => { printModalDocument('reportModal', 'portrait'); }, 300);
+        }
+    }
+
+
+    // --- EDIT REGISTRATION MODAL HANDLERS ---
+    function openEditRegistrationModal(regId) {
+        const r = dbRegistrations.find(x => x.id === regId);
+        if (!r) return;
+
+        document.getElementById('editRegDocId').value = r.id;
+        document.getElementById('editRegItemFest').value = `${r["Item"]} (${r["Name of Fest"]})`;
+        document.getElementById('editRegLotNo').value = r["Lot Number"] || "";
+        document.getElementById('editRegName').value = r["Name"] || "";
+        document.getElementById('editRegAdmnNo').value = r["Admission Number"] || "";
+        document.getElementById('editRegClass').value = r["Class"] || "";
+        document.getElementById('editRegDiv').value = r["Division"] || "";
+        document.getElementById('editRegRole').value = r["Role in Event"] || "Participant";
+        document.getElementById('editRegCat').value = r["Category"] || "General";
+
+        document.getElementById('editRegModalOverlay').style.display = 'flex';
+    }
+
+    function closeEditRegistrationModal() {
+        document.getElementById('editRegModalOverlay').style.display = 'none';
+    }
+
+    async function saveEditedRegistration() {
+        const regId = document.getElementById('editRegDocId').value;
+        const name = document.getElementById('editRegName').value.trim();
+        const admn = document.getElementById('editRegAdmnNo').value.trim();
+        const cls = document.getElementById('editRegClass').value.trim();
+        const div = document.getElementById('editRegDiv').value.trim();
+        const lot = document.getElementById('editRegLotNo').value.trim();
+        const role = document.getElementById('editRegRole').value;
+        const cat = document.getElementById('editRegCat').value;
+
+        if (!name || !admn || !cls || !div) {
+            return showCustomDialog("Required Fields", "Name, Admission Number, Class, and Division are required.", "warning");
+        }
+
+        showLoader("Updating Registration...");
+        try {
+            const updates = {
+                "Name": name,
+                "Admission Number": admn,
+                "Class": cls,
+                "Division": div,
+                "Lot Number": lot,
+                "Role in Event": role,
+                "Category": cat
+            };
+
+            await db.collection("registrations").doc(regId).update(updates);
+
+            const r = dbRegistrations.find(x => x.id === regId);
+            if (r) Object.assign(r, updates);
+
+            hideLoader();
+            closeEditRegistrationModal();
+            renderTables();
+            showCustomDialog("Updated", `Registration details for <b>${name}</b> updated successfully.`, "success");
+        } catch (e) {
+            hideLoader();
+            console.error(e);
+            showCustomDialog("Error", "Could not update registration.", "danger");
         }
     }
 
