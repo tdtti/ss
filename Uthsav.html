@@ -50,7 +50,7 @@
         --gold-pure: #d4af37;
         --gold-dark: #b89727;
         --gold-light: #fef9e7;
-        --corner-accent: #1e3a8a; /* Deep Royal Navy (NOT black) */
+        --corner-accent: #1e3a8a; /* Deep Royal Navy (Matching Regal Color - NOT Black) */
 
         --radius-sm: 6px;
         --radius-md: 10px;
@@ -791,7 +791,6 @@
         gap: 10px;
     }
 
-    /* Universal Dual-Axis (Vertical + Horizontal) Scroll Body */
     .modal-scroll-body {
         flex: 1;
         overflow-x: auto !important;
@@ -809,14 +808,14 @@
     .modal-scroll-body::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
     /* ==========================================================================
-       CERTIFICATE CONTAINER, ORNATE GOLD BORDERS & ROYAL NAVY CORNERS
+       8. RESTRUCTURED ROYAL GOLD CERTIFICATE (WYSIWYG SCREEN & PRINT)
        ========================================================================== */
     .cert-modal-content {
         background: #ffffff; 
         border-radius: var(--radius-lg); 
         width: 100%; 
-        max-width: 1140px;
-        max-height: 96vh;
+        max-width: auto;
+        max-height: auto;
         display: flex;
         flex-direction: column;
         padding: 16px 20px 20px; 
@@ -831,13 +830,13 @@
         flex: 1;
         overflow-x: auto !important; 
         overflow-y: auto !important; 
-        padding: 14px 10px;
+        padding: 16px 0;
         -webkit-overflow-scrolling: touch; 
         display: flex; 
         justify-content: center;
-        align-items: flex-start;
+        align-items: center;
+        background: #e2e8f0; 
         border-radius: var(--radius-sm); 
-        background: #f1f5f9; 
         margin-top: 8px;
         box-sizing: border-box;
     }
@@ -847,262 +846,313 @@
         color: var(--text-muted); background: #ffffff; padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); margin-top: 6px;
     }
 
-    /* A4 Landscape Canvas Dimensions (1020px x 720px) */
+    /* Fixed Aspect Ratio Container: 1040px x 735px (A4 Landscape 1.414:1) */
     .cert-container {
-        width: 1020px;
-        min-width: 1020px;
-        height: 720px;
+        width: auto;
+        min-width: auto;
+        max-width: auto;
+        height: auto;
+        min-height: auto;
+        max-height: auto;
         background: #ffffff;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);
         margin: 0 auto;
         position: relative;
         box-sizing: border-box;
-        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.14);
+        padding: 12px;
     }
 
-    /* PURE GOLD THICK MULTI-LAYERED BORDER (9px SOLID GOLD) */
+    /* Outer Heavy Pure Gold Border */
     .cert-outer-frame {
-        border: 9px solid var(--gold-pure) !important;
-        height: 100%; 
-        width: 100%; 
-        padding: 5px;
-        box-sizing: border-box; 
-        position: relative; 
+        border: 22px solid #d4af37 !important;
+        height: 100%;
+        width: 100%;
+        padding: 6px;
+        box-sizing: border-box;
+        position: relative;
         background: #ffffff;
     }
 
+    /* Inner Gold Fillet with Rich Ivory Radiant Background */
     .cert-inner-frame {
-        border: 2.5px solid var(--gold-pure) !important;
-        outline: 1.5px dashed rgba(212, 175, 55, 0.7) !important;
+        border: 5px solid #b89727 !important;
+        outline: 3px dashed rgba(212, 175, 55, 0.75) !important;
         outline-offset: -7px;
-        height: 100%; 
-        width: 100%; 
-        padding: 22px 34px 18px; 
+        height: 100%;
+        width: 100%;
+        padding: 18px 28px 14px;
         box-sizing: border-box;
-        position: relative; 
-        display: flex; 
-        flex-direction: column; 
+        position: relative;
+        display: flex;
+        flex-direction: column;
         justify-content: space-between;
-        background: radial-gradient(ellipse at center, #ffffff 45%, #fffef9 80%, #fcf8eb 100%);
+        background: radial-gradient(circle at center, #ffffff 60%, #fffdfa 90%, #fefbee 100%);
     }
 
-    /* CORNER BRACKETS: DEEP ROYAL NAVY (#1E3A8A) WITH GOLD RIVETS - STRICTLY NOT BLACK */
-    .cert-corner { 
-        position: absolute; 
-        width: 34px; 
-        height: 34px; 
-        border-color: var(--corner-accent) !important;
-        border-style: solid; 
+    /* Regal Non-Black Corners (Deep Royal Navy #1e3a8a) */
+    .cert-corner {
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        border-color: #1e3a8a !important;
+        border-style: solid;
         z-index: 5;
     }
-    .cert-corner::after {
-        content: '';
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        background: var(--gold-pure);
-    }
-    .corner-tl { top: -2px; left: -2px; border-width: 5px 0 0 5px; }
-    .corner-tl::after { top: 3px; left: 3px; }
+    .corner-tl { top: -2px; left: -2px; border-width: 4.5px 0 0 4.5px; }
+    .corner-tr { top: -2px; right: -2px; border-width: 4.5px 4.5px 0 0; }
+    .corner-bl { bottom: -2px; left: -2px; border-width: 0 0 4.5px 4.5px; }
+    .corner-br { bottom: -2px; right: -2px; border-width: 0 4.5px 4.5px 0; }
 
-    .corner-tr { top: -2px; right: -2px; border-width: 5px 5px 0 0; }
-    .corner-tr::after { top: 3px; right: 3px; }
-
-    .corner-bl { bottom: -2px; left: -2px; border-width: 0 0 5px 5px; }
-    .corner-bl::after { bottom: 3px; left: 3px; }
-
-    .corner-br { bottom: -2px; right: -2px; border-width: 0 5px 5px 0; }
-    .corner-br::after { bottom: 3px; right: 3px; }
-
-    /* WATERMARK */
+    /* Watermark */
     .cert-watermark {
-        position: absolute; top: 52%; left: 50%; transform: translate(-50%, -50%);
-        width: 320px; height: 320px; opacity: 0.055; pointer-events: none; z-index: 1;
+        position: absolute;
+        top: 52%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 480px;
+        height: 480px;
+        opacity: 0.045;
+        pointer-events: none;
+        z-index: 1;
         background: url('https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png') no-repeat center;
         background-size: contain;
     }
 
-    /* HEADER: UPSCALED 88px LOGO & TIGHT PROMINENT SCHOOL TITLE */
+    /* HEADER: Upscaled Logo & Tight Typography */
     .cert-header-row {
-        display: flex; 
-        align-items: center; 
-        justify-content: space-between; 
-        position: relative; 
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
         z-index: 2;
-        border-bottom: 2px solid var(--gold-pure); 
-        padding-bottom: 12px;
+        border-bottom: 2px solid rgba(212, 175, 55, 0.5);
+        padding-bottom: 10px;
     }
-    .cert-logo-box { width: 92px; text-align: left; }
-    .cert-logo-box img { 
-        width: 88px; 
-        height: 88px; 
-        object-fit: contain; 
-        filter: drop-shadow(0 2px 5px rgba(0,0,0,0.12)); 
+    .cert-logo-box img {
+        width: 84px;
+        height: 84px;
+        object-fit: contain;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
     }
-    
-    .cert-inst-details { text-align: center; flex: 1; padding: 0 16px; }
+    .cert-inst-details {
+        text-align: center;
+        flex: 1;
+        padding: 0 14px;
+    }
     .cert-inst-details h1 {
-        margin: 0; 
-        font-family: 'Cinzel', serif; 
-        font-size: 27px; 
-        letter-spacing: 2.2px; 
-        color: #0f172a; 
-        font-weight: 900; 
+        margin: 0;
+        font-family: 'Cinzel', serif;
+        font-size: 25px;
+        letter-spacing: 2px;
+        color: #0f172a;
+        font-weight: 900;
         line-height: 1.15;
     }
     .cert-inst-details h3 {
-        margin: 3px 0 3px; 
-        font-family: 'Montserrat', sans-serif; 
-        font-size: 14.5px; 
-        color: var(--corner-accent); 
-        font-weight: 800; 
-        letter-spacing: 2px; 
+        margin: 3px 0 2px;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 13.5px;
+        color: #1e3a8a;
+        font-weight: 800;
+        letter-spacing: 2.5px;
         text-transform: uppercase;
     }
-    .cert-address-bar {
-        display: inline-block;
+    .cert-inst-details p {
+        margin: 0;
         font-size: 11px;
         color: #475569;
         font-weight: 600;
-        letter-spacing: 0.6px;
-        border-top: 1px solid rgba(212, 175, 55, 0.4);
-        padding-top: 2px;
+        letter-spacing: 0.4px;
+    }
+    .cert-badge-right {
+        width: 85px;
+        text-align: center;
+    }
+    .cert-badge-right i {
+        font-size: 34px;
+        color: #d4af37;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+    }
+    .cert-badge-tag {
+        font-size: 9.5px;
+        font-weight: 800;
+        background: #0f172a;
+        color: #ffffff;
+        padding: 2px 7px;
+        border-radius: 3px;
+        display: inline-block;
+        margin-top: 4px;
+        letter-spacing: 0.5px;
+    }
+
+    /* TITLE & SCRIPT */
+    .cert-title-area {
+        margin: 6px 0 2px;
+        text-align: center;
+        position: relative;
+        z-index: 2;
+    }
+    .cert-main-title {
+        font-family: 'Cinzel', serif;
+        font-size: 22px;
+        font-weight: 900;
+        color: #854d0e;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .cert-main-title::before, .cert-main-title::after {
+        content: '';
+        display: inline-block;
+        width: 48px;
+        height: 2px;
+        background: #d4af37;
+    }
+    .cert-congrats-animated {
+        font-family: 'Great Vibes', cursive;
+        font-size: 48px;
+        color: #be185d;
+        margin: -4px 0 0 0;
+        line-height: 1.1;
+    }
+
+    /* MATTER & ADDRESSING AREA */
+    .cert-body-area {
+        position: relative;
+        z-index: 2;
+        padding: 0 16px;
+        text-align: center;
+    }
+    .cert-awarded-intro {
+        font-family: 'Playfair Display', serif;
+        font-size: 16px;
+        font-style: italic;
+        color: #475569;
+        margin-bottom: 3px;
+    }
+    .cert-candidate-name {
+        font-family: 'Cinzel', serif;
+        font-size: 30px;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: 1.5px;
+        display: inline-block;
+        border-bottom: 2.5px solid #d4af37;
+        padding: 0 30px 2px;
+        margin-bottom: 4px;
+    }
+    .cert-candidate-meta {
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 10px;
+    }
+    .cert-citation-p {
+        font-family: 'Playfair Display', serif;
+        font-size: 18px;
+        line-height: 1.65;
+        color: #1e293b;
+        max-width: 860px;
+        margin: 0 auto;
+    }
+    .cert-highlight-badge {
+        background: #fef3c7;
+        color: #854d0e;
+        padding: 2px 10px;
+        border-radius: 4px;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 14px;
+        font-weight: 800;
+        border: 1px solid rgba(212, 175, 55, 0.4);
+    }
+
+    /* SIGNATORY & 3D EMBOSSED GOLD SEAL SECTION */
+    .cert-footer-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        position: relative;
+        z-index: 2;
+        padding: 6px 20px 2px;
+        border-top: 1.5px solid rgba(212, 175, 55, 0.45);
+    }
+    .cert-sig-block {
+        text-align: center;
+        min-width: 210px;
+    }
+    .cert-signature-space {
+        height: 48px;
+        width: 100%;
+    }
+    .cert-sig-block b {
+        display: block;
+        font-size: 13.5px;
+        color: #0f172a;
+        padding-top: 4px;
+        margin: 0;
+        font-weight: 800;
+    }
+    .cert-sig-block span {
+        display: block;
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 3px;
+    }
+    .cert-date-place {
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #475569;
+        border-top: 1px dashed #cbd5e1;
+        padding-top: 3px;
         margin-top: 2px;
     }
 
-    .cert-badge-right { 
-        width: 92px; 
-        text-align: center;
+    /* 3D Embossed Gold Seal with Ribbon Tails */
+    .cert-gold-seal-wrapper {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+    .cert-gold-seal {
+        width: 68px;
+        height: 68px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #fef08a 0%, #d4af37 60%, #a16207 100%);
+        box-shadow: 0 4px 10px rgba(180, 83, 9, 0.35), inset 0 0 0 2px #ffffff;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-    }
-    .cert-badge-right i { font-size: 36px; color: var(--gold-dark); }
-    .cert-badge-tag {
-        font-size: 9.5px; font-weight: 800; background: var(--corner-accent); color: #ffffff; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 4px; letter-spacing: 0.6px;
-    }
-
-    /* TITLE & CALLIGRAPHIC CONGRATULATIONS */
-    .cert-title-area { margin: 8px 0 4px; position: relative; z-index: 2; text-align: center; }
-    .cert-main-title {
-        font-family: 'Cinzel', serif; 
-        font-size: 23px; 
-        font-weight: 900; 
-        color: #854d0e; 
-        letter-spacing: 5px;
-        display: inline-flex; 
-        align-items: center; 
-        gap: 16px; 
-        text-transform: uppercase;
-    }
-    .cert-main-title::before, .cert-main-title::after { 
-        content: ''; display: inline-block; width: 50px; height: 2px; background: var(--gold-pure); 
-    }
-    .cert-congrats-animated {
-        font-family: 'Great Vibes', cursive; font-size: 42px; color: #be185d; margin: -4px 0 2px; line-height: 1.1;
-    }
-
-    /* BODY CITATION & CANDIDATE MATTER */
-    .cert-body-area { position: relative; z-index: 2; padding: 2px 20px; text-align: center; }
-    .cert-awarded-intro { font-family: 'Playfair Display', serif; font-size: 14.5px; font-style: italic; color: #64748b; margin-bottom: 4px; }
-    
-    .cert-candidate-name {
-        font-family: 'Cinzel', serif; 
-        font-size: 26px; 
-        font-weight: 900; 
-        color: #0f172a; 
-        letter-spacing: 1.5px;
-        display: inline-block; 
-        border-bottom: 2.5px solid var(--gold-pure); 
-        padding: 0 32px 3px; 
-        margin-bottom: 4px; 
-        text-transform: uppercase;
-    }
-    .cert-candidate-class { 
-        font-size: 13.5px; 
-        font-weight: 800; 
-        color: var(--corner-accent); 
-        margin-bottom: 10px; 
-        letter-spacing: 0.5px;
-    }
-    .cert-citation-p { 
-        font-family: 'Playfair Display', serif; 
-        font-size: 16px; 
-        line-height: 1.7; 
-        color: #1e293b; 
-        max-width: 860px; 
-        margin: 0 auto; 
-    }
-    .cert-highlight-badge {
-        background: #fef3c7; 
-        color: #854d0e; 
-        padding: 2px 10px; 
-        border-radius: 4px; 
-        font-family: 'Montserrat', sans-serif; 
-        font-size: 13.5px; 
-        font-weight: 800; 
-        border: 1px solid rgba(212, 175, 55, 0.45);
-        display: inline-block;
-    }
-
-    /* FOOTER SIGNATORIES & PURE GOLD EMBOSSED SEAL */
-    .cert-footer-row {
-        display: flex; 
-        justify-content: space-between; 
-        align-items: flex-end; 
-        position: relative; 
+        color: #78350f;
+        position: relative;
         z-index: 2;
-        padding: 10px 24px 2px; 
-        border-top: 2px solid var(--gold-pure);
     }
-    .cert-sig-block { text-align: center; min-width: 230px; }
-    .cert-signature-space { height: 48px; width: 100%; }
-    .cert-sig-block b { 
-        display: block; 
-        font-size: 13.5px; 
-        color: #0f172a; 
-        border-top: 1.5px solid #334155; 
-        padding-top: 4px; 
-        margin: 0; 
-        font-weight: 800;
+    .cert-gold-seal i { font-size: 20px; }
+    .cert-gold-seal span {
+        font-size: 7.5px;
+        font-weight: 900;
+        text-transform: uppercase;
         letter-spacing: 0.5px;
+        margin-top: 2px;
     }
-    .cert-sig-block span { 
-        display: block; 
-        font-size: 11.5px; 
-        color: #64748b; 
-        font-weight: 600; 
-        margin-bottom: 4px; 
+    .cert-seal-ribbon {
+        width: 14px;
+        height: 22px;
+        background: #1e3a8a;
+        position: absolute;
+        bottom: -10px;
+        z-index: 1;
     }
-    .cert-date-place-box {
-        display: flex; 
-        justify-content: center; 
-        gap: 14px; 
-        font-size: 11px; 
-        font-weight: 700; 
-        color: #475569; 
-        border-top: 1px dashed #cbd5e1; 
-        padding-top: 3px;
-    }
-
-    .cert-gold-seal {
-        width: 74px; 
-        height: 74px; 
-        border-radius: 50%; 
-        border: 2.5px solid var(--gold-pure); 
-        outline: 1.5px dashed var(--gold-pure); 
-        outline-offset: 3px;
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-        justify-content: center; 
-        margin: 0 auto 6px; 
-        color: var(--gold-dark); 
-        background: #ffffff;
-        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-    }
-    .cert-gold-seal i { font-size: 24px; }
-    .cert-gold-seal span { font-size: 8px; font-weight: 800; text-transform: uppercase; margin-top: 2px; letter-spacing: 0.5px; }
+    .ribbon-left { left: 24px; transform: rotate(20deg); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%); }
+    .ribbon-right { right: 24px; transform: rotate(-20deg); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%); }
 
     /* Group Member Selector Bar inside Certificate Modal */
     .cert-group-bar {
@@ -1127,7 +1177,7 @@
     }
 
     /* ==========================================================================
-       8. STRICT PRINT RULES (CERTIFICATE: LANDSCAPE, REPORTS: A4 PORTRAIT)
+       9. STRICT PRINT RULES (WYSIWYG 1:1 REPRODUCTION ON A4)
        ========================================================================== */
     @page { 
         margin: 0 !important; 
@@ -1136,7 +1186,7 @@
     @media print {
         body * { visibility: hidden !important; }
         
-        /* 1. SINGLE CERTIFICATE PRINTING (A4 LANDSCAPE - EXACT 1 PAGE) */
+        /* 1. SINGLE-PAGE CERTIFICATE PRINTING (A4 LANDSCAPE) */
         html, body.printing-cert {
             width: 297mm !important;
             height: 210mm !important;
@@ -1156,7 +1206,8 @@
         body.printing-cert #reportModal,
         body.printing-cert #subDistrictModal,
         body.printing-cert #resultReportModal,
-        body.printing-cert #llPrintModal {
+        body.printing-cert #llPrintModal,
+        body.printing-cert #llViewModal {
             display: none !important;
         }
 
@@ -1170,13 +1221,14 @@
             left: 0 !important;
             top: 0 !important;
             width: 297mm !important;
-            height: 208mm !important; /* 2mm safety cushion strictly prevents second blank page */
-            max-height: 208mm !important;
+            height: 210mm !important;
+            max-height: 210mm !important;
             margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
-            display: block !important;
-            box-shadow: none !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
             overflow: hidden !important;
             page-break-after: avoid !important;
             break-after: avoid !important;
@@ -1187,58 +1239,42 @@
             box-shadow: none !important;
             padding: 0 !important;
             width: 297mm !important;
-            height: 208mm !important;
-            max-height: 208mm !important;
+            height: 210mm !important;
+            max-height: 210mm !important;
             background: #ffffff !important;
-            overflow: hidden !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
         }
 
         body.printing-cert #certModal.active-print .cert-scroll-wrapper { 
-            overflow: visible !important; 
             background: none !important; 
             padding: 0 !important; 
+            margin: 0 !important;
+            overflow: visible !important; 
+            width: 297mm !important;
+            height: 210mm !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
         }
 
+        /* 100% PROPORTIONAL MATCH WITH VIEW MODE */
         body.printing-cert #certModal.active-print .cert-container {
-            width: 297mm !important;
-            height: 208mm !important;
-            max-height: 208mm !important;
-            padding: 6mm 8mm !important;
-            margin: 0 !important;
+            width: 290mm !important;
+            max-width: 290mm !important;
+            height: 204mm !important;
+            max-height: 204mm !important;
+            padding: 0 !important;
+            margin: auto !important;
             box-shadow: none !important;
-            overflow: hidden !important;
             page-break-after: avoid !important;
             break-after: avoid !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
         }
 
-        body.printing-cert #certModal.active-print .cert-outer-frame {
-            border: 8px solid var(--gold-pure) !important;
-            height: 100% !important;
-            max-height: 100% !important;
-            overflow: hidden !important;
-        }
-
-        body.printing-cert #certModal.active-print .cert-inner-frame {
-            border: 2px solid var(--gold-pure) !important;
-            outline: 1px dashed rgba(212, 175, 55, 0.65) !important;
-            height: 100% !important;
-            max-height: 100% !important;
-            padding: 16px 26px 14px !important;
-            overflow: hidden !important;
-        }
-
-        body.printing-cert #certModal.active-print .cert-corner {
-            border-color: var(--corner-accent) !important;
-        }
-
-        .cert-congrats-animated { 
-            -webkit-text-fill-color: #be185d !important; 
-            animation: none !important; 
-        }
-
-        /* 2. GROUP CERTIFICATE BATCH PRINTING */
+        /* 2. BATCH PRINTING (INDIVIDUAL CERTIFICATES FOR EACH GROUP MEMBER) */
         body.printing-batch-cert {
             width: 297mm !important;
             background: #ffffff !important;
@@ -1253,8 +1289,8 @@
         body.printing-batch-cert #loadingOverlay,
         body.printing-batch-cert #reportModal,
         body.printing-batch-cert #subDistrictModal,
-        body.printing-batch-cert #resultReportModal,
-        body.printing-batch-cert #llPrintModal {
+        body.printing-batch-cert #llPrintModal,
+        body.printing-batch-cert #llViewModal {
             display: none !important;
         }
         body.printing-batch-cert #certModal.active-print,
@@ -1267,7 +1303,7 @@
             top: 0 !important;
             width: 297mm !important;
             display: block !important;
-            background: #fff !important;
+            background: #ffffff !important;
         }
         body.printing-batch-cert #certModal.active-print .cert-scroll-wrapper {
             overflow: visible !important;
@@ -1276,10 +1312,10 @@
             display: block !important;
         }
         body.printing-batch-cert #certModal.active-print .cert-container {
-            width: 297mm !important;
-            height: 208mm !important;
-            max-height: 208mm !important;
-            padding: 6mm 8mm !important;
+            width: 290mm !important;
+            height: 204mm !important;
+            max-height: 204mm !important;
+            padding: 0 !important;
             margin: 0 auto 0 auto !important;
             page-break-after: always !important;
             break-after: page !important;
@@ -1373,8 +1409,18 @@
         .no-print, .cert-mobile-hint { display: none !important; }
     }
 
+    @media (max-width: 768px) {
+        #appScreen { padding: 10px; }
+        .app-header { flex-direction: column; text-align: center; }
+        .header-right { text-align: center; }
+        .tab button span.tab-text { display: none; }
+        .tab button { padding: 9px 12px; position: relative; }
+        .tab-badge-notification { top: -2px; right: -2px; font-size: 8px; padding: 1px 4px; }
+        .section { padding: 16px; border-radius: var(--radius-md); }
+    }
+
     /* ==========================================================================
-       9. SCORING, LOT ALLOTMENT & ATTENDANCE
+       10. SCORING, LOT ALLOTMENT & ATTENDANCE
        ========================================================================== */
     .scoring-cards-grid {
         display: grid;
@@ -1504,7 +1550,7 @@
     }
 
     /* ==========================================================================
-       10. L&L (LABELS & LOTS) A4 PORTRAIT 100% CANVAS & 02.00CM MARGIN
+       11. L&L (LABELS & LOTS) A4 PORTRAIT CANVAS & 20MM MARGINS
        ========================================================================== */
     #LLTab {
         width: 100% !important;
@@ -1592,6 +1638,7 @@
         flex-shrink: 0 !important;
     }
 
+    /* SECTION 1: 1 Column x 4 Rows (100% Width x 25% Height each) */
     .ll-items-grid {
         display: grid !important;
         grid-template-columns: 100% !important;
@@ -1647,6 +1694,7 @@
         line-height: 1.2 !important;
     }
 
+    /* SECTION 2: 2 Columns x 4 Rows (8 Lots per Page) */
     .ll-lots-grid {
         display: grid !important;
         grid-template-columns: 50% 50% !important;
@@ -1730,7 +1778,7 @@
 
     @page llPortraitPage {
         size: 210mm 297mm portrait;
-        margin: 20mm !important; /* EXACT 02.00 CM MARGIN */
+        margin: 20mm !important;
     }
 
     @media print {
@@ -1821,7 +1869,7 @@
     }
 
     /* ==========================================================================
-       11. COLLAPSIBLE HEADERS, DROPDOWNS & MODAL ANIMATIONS
+       12. COLLAPSIBLE HEADERS, DROPDOWNS & MODAL ANIMATIONS
        ========================================================================== */
     .category-main-head.collapsible-header,
     .item-sub-head.collapsible-header,
@@ -1908,34 +1956,8 @@
         animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
     }
 
-    /* EDIT REGISTRATION MODAL */
-    #editRegModalOverlay {
-        position: fixed !important; 
-        top: 0 !important; 
-        left: 0 !important; 
-        width: 100% !important; 
-        height: 100% !important;
-        background: rgba(15, 23, 42, 0.5) !important; 
-        z-index: 99999 !important; 
-        display: none;
-        justify-content: center; 
-        align-items: center; 
-        padding: 16px; 
-        box-sizing: border-box;
-    }
-    #editRegFormBox {
-        background: #ffffff; 
-        border-radius: var(--radius-lg); 
-        width: 100%; 
-        max-width: 540px; 
-        padding: 22px 24px;
-        box-shadow: var(--shadow-lg); 
-        border: 1px solid var(--border); 
-        animation: popIn 0.18s ease-out forwards;
-    }
-
     /* ==========================================================================
-       ADMIN JUDGEMENT STATUS DASHBOARD & LED INDICATORS
+       13. ADMIN JUDGEMENT STATUS DASHBOARD & LED INDICATORS
        ========================================================================== */
     .led-indicator {
         width: 10px;
@@ -2052,7 +2074,7 @@
     }    
 
     /* ==========================================================================
-       BUILT-IN FLOATING CALENDAR POPUP
+       14. BUILT-IN FLOATING CALENDAR POPUP
        ========================================================================== */
     #miniCalendarPopup {
         position: absolute;
@@ -2145,6 +2167,7 @@
 
     option[value="Fest"] { display: none !important; }
     option[value="Sports"] { display: none !important; }
+
 </style>
 </head>
 <body>
@@ -2316,15 +2339,14 @@
                                 <option value="">-- Select Fest --</option>
                             </select>
                         </div>
-                        <!-- INSTANT SEARCHABLE ITEM INPUT FOR REGISTRATION -->
                         <div class="form-group">
-                            <label>Item</label>
-                            <div class="custom-search-select-wrapper">
-                                <input type="text" id="regItemSearchInput" placeholder="🔍 Type item name or code..." oninput="filterRegSearchItems(this.value)" onfocus="openRegSearchDropdown()" autocomplete="off" required>
-                                <input type="hidden" id="itemSelect" required>
-                                <div id="regItemDropdownList" class="custom-search-dropdown-list"></div>
-                            </div>
-                        </div>
+    <label>Item</label>
+    <div class="custom-search-select-wrapper">
+        <input type="text" id="regItemSearchInput" placeholder="🔍 Type item name or code..." oninput="filterRegSearchItems(this.value)" onfocus="openRegSearchDropdown()" autocomplete="off" required>
+        <input type="hidden" id="itemSelect" required>
+        <div id="regItemDropdownList" class="custom-search-dropdown-list"></div>
+    </div>
+</div>
                     </div>
                 </div>
 
@@ -2413,44 +2435,32 @@
 
         <!-- TAB 2: VIEW RECORDS -->
         <div id="RecTab" class="tabcontent">
-            <!-- FEST & ITEM-WISE PARTICIPANTS REPORT CONTROLS -->
-            <div id="adminReportControls" class="section" style="display:none; background:#ffffff; border:1px solid var(--border); padding:14px 18px; margin-bottom:18px; border-radius:var(--radius-md); box-shadow:var(--shadow-subtle);">
-                <!-- ROW 1: FEST-WISE REPORT -->
-                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--border-subtle); padding-bottom:12px; margin-bottom:12px;">
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                        <span style="font-weight:800; font-size:13.5px; color:var(--primary);"><i class="fas fa-file-invoice"></i> Fest Report:</span>
-                        <select id="reportFestSelect" style="min-width:220px; font-weight:700;" onchange="syncReportItemOptions()">
-                            <option value="ALL">-- All Fests --</option>
-                        </select>
-                    </div>
-                    <div style="display:flex; gap:6px;">
-                        <button type="button" class="action-btn" style="padding:6px 12px;" onclick="openParticipantsReport(false)" title="View Fest Report">
-                            <i class="fas fa-eye"></i> <span>View Fest</span>
-                        </button>
-                        <button type="button" class="action-btn gold" style="padding:6px 12px;" onclick="openParticipantsReport(true)" title="Print Fest Report">
-                            <i class="fas fa-print"></i> <span>Print Fest</span>
-                        </button>
+            <div id="adminReportControls" class="section" style="display:none; background:#f8fafc; border:1px solid #cbd5e1; padding:14px 18px; margin-bottom:18px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:2;">
+                    <span style="font-weight:bold; color:var(--text-main); white-space:nowrap;">
+                        <i class="fas fa-file-invoice"></i> Fest Participants Report:
+                    </span>
+                    
+                    <!-- 1. Fest Selector -->
+                    <select id="reportFestSelect" onchange="onReportFestChange()" style="min-width:180px; font-weight:600;">
+                        <option value="ALL">-- All Fests --</option>
+                    </select>
+
+                    <!-- 2. Instant Searchable Item Selector -->
+                    <div class="custom-search-select-wrapper" style="min-width:220px; flex:1;">
+                        <input type="text" id="reportItemSearchInput" placeholder="🔍 All Items (or search item...)" oninput="filterReportSearchItems(this.value)" onfocus="openReportItemDropdown()" autocomplete="off">
+                        <input type="hidden" id="reportItemSelect" value="ALL">
+                        <div id="reportItemDropdownList" class="custom-search-dropdown-list"></div>
                     </div>
                 </div>
 
-                <!-- ROW 2: ITEM-WISE REPORT (INSTANT TYPE & SEARCH) -->
-                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-                    <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:280px;">
-                        <span style="font-weight:800; font-size:13.5px; color:var(--accent);"><i class="fas fa-trophy"></i> Item Report:</span>
-                        <div class="custom-search-select-wrapper" style="flex:1;">
-                            <input type="text" id="reportItemSearchInput" placeholder="🔍 Type item name or code to print item-wise..." oninput="filterReportSearchItems(this.value)" onfocus="openReportSearchDropdown()" autocomplete="off">
-                            <input type="hidden" id="reportItemSelect">
-                            <div id="reportItemDropdownList" class="custom-search-dropdown-list"></div>
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:6px;">
-                        <button type="button" class="action-btn" style="padding:6px 12px;" onclick="openItemParticipantsReport(false)" title="View Item-Wise Report">
-                            <i class="fas fa-eye"></i> <span>View Item</span>
-                        </button>
-                        <button type="button" class="action-btn gold" style="padding:6px 12px;" onclick="openItemParticipantsReport(true)" title="Print Item-Wise Report">
-                            <i class="fas fa-print"></i> <span>Print Item</span>
-                        </button>
-                    </div>
+                <div style="display:flex; gap:8px;">
+                    <button class="action-btn" style="padding:7px 13px;" onclick="openParticipantsReport(false)" title="View Fest Participants Report">
+                        <i class="fas fa-eye"></i> <span>View</span>
+                    </button>
+                    <button class="action-btn gold" style="padding:7px 13px;" onclick="openParticipantsReport(true)" title="Print Fest Participants Report">
+                        <i class="fas fa-print"></i> <span>Print</span>
+                    </button>
                 </div>
             </div>
 
@@ -2556,46 +2566,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- MODAL: EDIT REGISTRATION (INDIVIDUAL & GROUP) -->
-        <div id="editRegModalOverlay" onclick="if(event.target === this) closeEditRegistrationModal()">
-            <div id="editRegFormBox">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid var(--border-subtle); padding-bottom:8px;">
-                    <h4 style="margin:0; font-size:16px; color:var(--text-main);"><i class="fas fa-user-edit" style="color:var(--accent);"></i> Modify Candidate Registration</h4>
-                    <button type="button" onclick="closeEditRegistrationModal()" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;"><i class="fas fa-times"></i></button>
-                </div>
-                <input type="hidden" id="editRegDocId">
-                <div class="row" style="grid-template-columns: 1fr 1fr; gap:10px;">
-                    <div class="form-group" style="margin:0;"><label>Item & Fest</label><input type="text" id="editRegItemFest" readonly style="background:#f1f5f9; font-weight:700;"></div>
-                    <div class="form-group" style="margin:0;"><label>Lot Number</label><input type="text" id="editRegLotNo" placeholder="e.g. 1"></div>
-                    <div class="form-group" style="margin:0;"><label>Candidate Name</label><input type="text" id="editRegName" required></div>
-                    <div class="form-group" style="margin:0;"><label>Admission No</label><input type="text" id="editRegAdmnNo" required></div>
-                    <div class="form-group" style="margin:0;"><label>Class</label><input type="text" id="editRegClass" required></div>
-                    <div class="form-group" style="margin:0;"><label>Division</label><input type="text" id="editRegDiv" required></div>
-                    <div class="form-group" style="margin:0;">
-                        <label>Role in Event</label>
-                        <select id="editRegRole">
-                            <option value="Participant">Participant</option>
-                            <option value="Team Leader">Team Leader</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="margin:0;">
-                        <label>Category</label>
-                        <select id="editRegCat">
-                            <option value="General">General</option>
-                            <option value="M">M</option>
-                            <option value="F">F</option>
-                        </select>
-                    </div>
-                </div>
-                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
-                    <button type="button" class="action-btn secondary" onclick="closeEditRegistrationModal()">Cancel</button>
-                    <button type="button" class="action-btn success" onclick="saveEditedRegistration()"><i class="fas fa-save"></i> Save Changes</button>
-                </div>
-            </div>
-        </div>
-
-
 
         <!-- TAB 3: EVENT MANAGEMENT TAB -->
         <div id="EventMgmtTab" class="tabcontent">
@@ -3253,6 +3223,54 @@
     </div>
 </div>
 
+<!-- EDIT REGISTRATION MODAL -->
+<div id="regEditModalOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(4px); z-index:99999; display:none; justify-content:center; align-items:center; padding:16px;">
+    <div style="background:#ffffff; border-radius:14px; width:100%; max-width:540px; box-shadow:0 20px 40px rgba(0,0,0,0.25); padding:24px; border:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #edf2f7; padding-bottom:10px;">
+            <h4 style="margin:0; font-size:17px; color:var(--text-main);"><i class="fas fa-user-edit" style="color:var(--accent);"></i> Modify Candidate Registration</h4>
+            <button type="button" onclick="closeEditRegistrationModal()" style="background:none; border:none; font-size:18px; color:#94a3b8; cursor:pointer;"><i class="fas fa-times"></i></button>
+        </div>
+        
+        <input type="hidden" id="editRegId">
+        
+        <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            <div class="form-group">
+                <label>Candidate Name</label>
+                <input type="text" id="editRegName">
+            </div>
+            <div class="form-group">
+                <label>Admission No</label>
+                <input type="text" id="editRegAdmn">
+            </div>
+            <div class="form-group">
+                <label>Class</label>
+                <input type="text" id="editRegClass">
+            </div>
+            <div class="form-group">
+                <label>Division</label>
+                <input type="text" id="editRegDiv">
+            </div>
+            <div class="form-group">
+                <label>Lot Number</label>
+                <input type="text" id="editRegLot" placeholder="e.g. Lot 1">
+            </div>
+            <div class="form-group">
+                <label>Role in Event</label>
+                <select id="editRegRole">
+                    <option value="Participant">Participant</option>
+                    <option value="Team Leader">Team Leader</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
+            <button type="button" class="action-btn secondary" onclick="closeEditRegistrationModal()"><i class="fas fa-times"></i> Cancel</button>
+            <button type="button" class="action-btn success" onclick="saveEditedRegistration()"><i class="fas fa-save"></i> Save Changes</button>
+        </div>
+    </div>
+</div>
+
+
 <!-- ==========================================================================
      3. RESTRUCTURED MODERN A4 LANDSCAPE CERTIFICATE PREVIEW MODAL
      ========================================================================== -->
@@ -3288,35 +3306,33 @@
         
         <!-- DUAL-AXIS (VERTICAL & HORIZONTAL) SCROLL CONTAINER -->
         <div class="cert-scroll-wrapper">
-            <!-- RESTRUCTURED ORNATE CERTIFICATE -->
             <div id="printableCertificate" class="cert-container">
                 <div class="cert-outer-frame">
                     <div class="cert-inner-frame">
-                        <!-- ROYAL NAVY CORNER ORNAMENTS (NOT BLACK) -->
+                        <!-- ROYAL NAVY CORNER FLOURISHES (NON-BLACK) -->
                         <div class="cert-corner corner-tl"></div>
                         <div class="cert-corner corner-tr"></div>
                         <div class="cert-corner corner-bl"></div>
                         <div class="cert-corner corner-br"></div>
 
-                        <!-- SUBTLE INSTITUTIONAL WATERMARK -->
+                        <!-- WATERMARK -->
                         <div class="cert-watermark"></div>
 
-                        <!-- HEADER SECTION: UPSCALED 88px LOGO & TIGHT TITLES -->
+                        <!-- HEADER SECTION -->
                         <div class="cert-header-row">
                             <div class="cert-logo-box">
-                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="TDTTI Thuravoor Logo">
+                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="TDTTI Logo">
                             </div>
 
                             <div class="cert-inst-details">
-                                <h1>Thirumala Devaswom</h1>
-                                <h3>Teacher Training Institute</h3>
-                                <div class="cert-address-bar">
-                                    THURAVOOR, ALAPPUZHA, KERALA — 688532 &bull; PH: 0478-256 4479
-                                </div>
+                                <h1>THIRUMALA DEVASWOM</h1>
+                                <h3>TEACHER TRAINING INSTITUTE</h3>
+                                <p>THURAVOOR, CHERTHALA, ALAPPUZHA, KERALA &bull; PIN: 688532</p>
+                                <p style="font-size:10px; color:#64748b; margin-top:2px;">PH: 0478-2564479 &bull; EMAIL: tdttithuravoor@gmail.com</p>
                             </div>
 
                             <div class="cert-badge-right">
-                                <i class="fas fa-award"></i>
+                                <i class="fas fa-trophy"></i>
                                 <div class="cert-badge-tag" id="certFestBadge">UTHSAV</div>
                             </div>
                         </div>
@@ -3324,46 +3340,48 @@
                         <!-- TITLE AREA -->
                         <div class="cert-title-area">
                             <div class="cert-main-title">Certificate of Merit</div>
-                            <div class="cert-congrats-animated">Congratulation</div>
+                            <div class="cert-congrats-animated">Congratulations</div>
                         </div>
 
-                        <!-- BODY STATEMENT & CANDIDATE AREA -->
+                        <!-- BODY STATEMENT -->
                         <div class="cert-body-area">
                             <div class="cert-awarded-intro">This is to proudly certify that</div>
                             <div id="certStudentName" class="cert-candidate-name">KUMARI. / MASTER. AJITH V</div>
-                            <div id="certStudentClass" class="cert-candidate-class">Standard: 5A</div>
+                            <div id="certStudentClass" class="cert-candidate-meta">Standard: 5A &bull; Admission No: 1234</div>
 
                             <div class="cert-citation-p" id="certStatement">
-                                has distinguished themselves by winning the <span class="cert-highlight-badge">FIRST Place</span> with <span class="cert-highlight-badge">A Grade</span> <br>in the <b>100M RUN (BOYS)</b> competition <br>held as part of <b>SCHOOL ATHLETIC MEET</b> on <b>20/02/2026</b>.
+                                has distinguished themselves by winning the <span class="cert-highlight-badge">FIRST Place</span> with <span class="cert-highlight-badge">A Grade</span> <br> in the <b>100M RUN (BOYS)</b> competition <br> held as part of <b>SCHOOL ATHLETIC MEET</b> on <b>20/02/2026</b>.
                             </div>
                         </div>
 
-                        <!-- SIGNATURES & PURE GOLD EMBOSSED SEAL -->
+                        <!-- SIGNATURES & EMBOSSED GOLD SEAL FOOTER -->
                         <div class="cert-footer-row">
-                            <!-- Left: General Convenor -->
                             <div class="cert-sig-block">
                                 <div class="cert-signature-space"></div>
                                 <b id="certConvenorName">THEJAS R</b>
-                                <span>( General Convenor )</span>
-                                <div class="cert-date-place-box">
-                                    <span id="certIssueDate">Date: 13/09/2026</span>
+                                <span>General Convenor</span>
+                                <div class="cert-date-place">
+                                    <span id="certIssueDate">Date: 20/02/2026</span>
                                     <span>Place: Thuravoor</span>
                                 </div>
                             </div>
 
-                            <!-- Center: Official Pure Gold Seal -->
-                            <div class="cert-gold-seal">
-                                <i class="fas fa-stamp"></i>
-                                <span>Official Seal</span>
+                            <!-- 3D GOLD SEAL WITH ROYAL NAVY RIBBONS -->
+                            <div class="cert-gold-seal-wrapper">
+                                <div class="cert-seal-ribbon ribbon-left"></div>
+                                <div class="cert-seal-ribbon ribbon-right"></div>
+                                <div class="cert-gold-seal">
+                                    <i class="fas fa-award"></i>
+                                    <span>OFFICIAL SEAL</span>
+                                </div>
                             </div>
 
-                            <!-- Right: Principal -->
                             <div class="cert-sig-block">
                                 <div class="cert-signature-space"></div>
                                 <b>ASHA V</b>
-                                <span>( Principal )</span>
-                                <div class="cert-date-place-box" style="visibility:hidden;">
-                                    <span>Verified</span>
+                                <span>Principal</span>
+                                <div class="cert-date-place" style="visibility:hidden;">
+                                    <span>Place: Thuravoor</span>
                                 </div>
                             </div>
                         </div>
@@ -4072,33 +4090,28 @@
         });
     }
 
-    // --- TAB 1: REGISTRATION INSTANT ITEM SEARCH ---
-    let allRegSortedItems = [];
+    // --- TAB 1: INSTANT SEARCHABLE ITEM LOGIC ---
+    let currentRegFestItems = [];
 
     function populateItems() {
         const fest = document.getElementById('festName').value;
         const searchInput = document.getElementById('regItemSearchInput');
         const hiddenSelect = document.getElementById('itemSelect');
+
         if (searchInput) searchInput.value = "";
         if (hiddenSelect) hiddenSelect.value = "";
-        
-        // Reset details
-        document.getElementById('itemCode').value = "";
-        document.getElementById('category').value = "";
-        document.getElementById('participants').value = "";
-        document.getElementById('duration').value = "";
-        document.getElementById('studentsContainer').innerHTML = "<p style='color:#888; font-style:italic;'>Please select an Item to continue.</p>";
 
         if (!fest) {
-            allRegSortedItems = [];
+            currentRegFestItems = [];
+            renderRegDropdownList([]);
             return;
         }
 
-        allRegSortedItems = dbFests
+        currentRegFestItems = dbFests
             .filter(f => f["Fest Name"] === fest)
             .sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
 
-        renderRegDropdownList(allRegSortedItems);
+        renderRegDropdownList(currentRegFestItems);
     }
 
     function renderRegDropdownList(items) {
@@ -4106,44 +4119,43 @@
         if (!list) return;
         list.innerHTML = '';
         if (items.length === 0) {
-            list.innerHTML = '<div style="padding:10px; color:#94a3b8; font-size:12px; text-align:center;">No items found for this Fest</div>';
+            list.innerHTML = '<div style="padding:10px; color:#94a3b8; font-size:12px; text-align:center;">No items found for this fest</div>';
             return;
         }
         items.forEach(item => {
             const div = document.createElement('div');
             div.className = 'custom-search-dropdown-item';
-            div.innerHTML = `<b>${item["Item"]}</b> <span style="color:#64748b; font-size:11px;">[${item["Item Code"] || 'N/A'}] (${item["Category"] || 'General'})</span>`;
-            div.onclick = () => selectRegSearchItem(item["Item"], `${item["Item"]} [${item["Item Code"]}]`);
+            div.innerHTML = `<b>${item["Item"]}</b> <span style="color:#64748b; font-size:11px;">[${item["Item Code"]}] (${item["Category"]})</span>`;
+            div.onclick = () => selectRegSearchItem(item);
             list.appendChild(div);
         });
     }
 
     function openRegSearchDropdown() {
-        if (!document.getElementById('festName').value) {
-            showCustomDialog("Selection Needed", "Please select a Festival Classification and Fest Name first.", "warning");
-            return;
-        }
-        renderRegDropdownList(allRegSortedItems);
+        renderRegDropdownList(currentRegFestItems);
         const list = document.getElementById('regItemDropdownList');
-        if (list) list.style.display = 'block';
+        if (list) {
+            list.style.display = 'block';
+            const s = list.closest('.section');
+            if (s) s.style.zIndex = '100';
+        }
     }
 
     function filterRegSearchItems(query) {
         const q = String(query || "").toLowerCase().trim();
-        const filtered = allRegSortedItems.filter(f => 
+        const filtered = currentRegFestItems.filter(f => 
             String(f["Item"] || "").toLowerCase().includes(q) ||
-            String(f["Item Code"] || "").toLowerCase().includes(q)
+            String(f["Item Code"] || "").toLowerCase().includes(q) ||
+            String(f["Category"] || "").toLowerCase().includes(q)
         );
         renderRegDropdownList(filtered);
-        const list = document.getElementById('regItemDropdownList');
-        if (list) list.style.display = 'block';
+        document.getElementById('regItemDropdownList').style.display = 'block';
     }
 
-    function selectRegSearchItem(itemName, displayText) {
-        document.getElementById('itemSelect').value = itemName;
-        document.getElementById('regItemSearchInput').value = displayText;
-        const list = document.getElementById('regItemDropdownList');
-        if (list) list.style.display = 'none';
+    function selectRegSearchItem(item) {
+        document.getElementById('itemSelect').value = item["Item"];
+        document.getElementById('regItemSearchInput').value = `${item["Item"]} [${item["Item Code"]}] (${item["Category"]})`;
+        document.getElementById('regItemDropdownList').style.display = 'none';
         updateItemDetails();
     }
 
@@ -4629,7 +4641,7 @@
     }
 
     // ==========================================================================
-    // TAB 2: VIEW RECORDS (WITH CARD ACTIONS: EDIT & DELETE)
+    // TAB 2: VIEW RECORDS RENDERER (WITH EDIT & DELETE ACTIONS FOR ADMIN)
     // ==========================================================================
     function renderTables() {
         const clsFilt = document.getElementById('filterClass')?.value || "ALL";
@@ -4644,16 +4656,15 @@
         containerInd.innerHTML = "";
         containerGrp.innerHTML = "";
 
-        // Filter only enabled festival registrations
         let data = [...dbRegistrations].filter(r => isFestEnabled(r["Name of Fest"]));
         const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
 
-        // If logged in as student, only show their own registrations
+        // If student is logged in, only show their own records
         if (currentUser && currentUser.role === "Student") {
             data = data.filter(r => String(r["Admission Number"]) === String(currentUser.id));
         }
 
-        // Apply class, division, and instant search text filters
+        // Apply filters
         data = data.filter(r => {
             const mCls = clsFilt === "ALL" || String(r["Class"]) === clsFilt;
             const mDiv = divFilt === "ALL" || String(r["Division"]) === divFilt;
@@ -4689,7 +4700,7 @@
             Object.keys(hierarchy[cat]).sort().forEach(festName => {
                 let records = hierarchy[cat][festName];
 
-                // Apply fest-specific sort or global sort
+                // Fest-specific sort or fallback to global sort
                 const sortBy = (isAdmin && adminFestSorts[festName]) ? adminFestSorts[festName] : globalSortBy;
                 records.sort((a, b) => {
                     if (sortBy === 'name_asc') return String(a.Name || "").localeCompare(String(b.Name || ""));
@@ -4703,25 +4714,25 @@
                 const indRecords = records.filter(r => parseInt(r["No of Participants"] || 1) === 1);
                 const grpRecords = records.filter(r => parseInt(r["No of Participants"] || 1) > 1);
 
-                // Admin Controls on Fest Header (Sort & Fest Print)
+                // Admin Controls for each festival
                 let adminFestControls = "";
                 if (isAdmin) {
                     adminFestControls = `
                         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <select onchange="setAdminFestSort('${festName}', this.value)" style="padding:5px 9px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1;">
+                            <select onchange="setAdminFestSort('${festName}', this.value)" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1;">
                                 <option value="time_desc" ${sortBy === 'time_desc' ? 'selected' : ''}>Sort: Newest</option>
                                 <option value="name_asc" ${sortBy === 'name_asc' ? 'selected' : ''}>Sort: Name (A-Z)</option>
                                 <option value="name_desc" ${sortBy === 'name_desc' ? 'selected' : ''}>Sort: Name (Z-A)</option>
                                 <option value="admn_asc" ${sortBy === 'admn_asc' ? 'selected' : ''}>Sort: Admn No</option>
                             </select>
-                            <button type="button" class="action-btn gold" style="padding:5px 11px; font-size:12px;" onclick="printFestSection('${festName}')" title="Print ${festName} Report">
+                            <button type="button" class="action-btn gold" style="padding:6px 12px; font-size:12px;" onclick="printFestSection('${festName}')" title="Print ${festName} Report">
                                 <i class="fas fa-print"></i> Print Fest
                             </button>
                         </div>
                     `;
                 }
 
-                // 1. INDIVIDUAL ITEMS RENDERING
+                // 1. INDIVIDUAL ITEMS CARDS
                 if (indRecords.length > 0) {
                     indFestsHTML += `
                         <div style="width:100%; margin-bottom:15px;">
@@ -4730,7 +4741,7 @@
                                     <i class="fas fa-chevron-down collapse-chevron"></i>
                                     <div>
                                         <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}</h5>
-                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${indRecords.length} Individual Item(s)</span>
+                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${indRecords.length} Individual</span>
                                     </div>
                                 </div>
                                 ${adminFestControls}
@@ -4739,13 +4750,12 @@
                     `;
 
                     indRecords.forEach(r => {
-                        // ACTION BUTTONS: EDIT & DELETE
-                        const cardActions = isAdmin ? `
-                            <div style="display:inline-flex; gap:6px; align-items:center;">
-                                <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11.5px;" onclick="openEditRegistrationModal('${r.id}')" title="Modify Candidate Details">
+                        const actionButtons = isAdmin ? `
+                            <div style="display:inline-flex; gap:6px;">
+                                <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11px;" onclick="openEditRegistrationModal('${r.id}')" title="Modify Registration">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11.5px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
+                                <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
                                     <i class="fas fa-trash-alt"></i> Delete
                                 </button>
                             </div>
@@ -4754,14 +4764,14 @@
                         indFestsHTML += `
                             <div class="record-card">
                                 <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
-                                <p><span class="label">Candidate:</span> <b>${r["Name"]}</b></p>
-                                <p><span class="label">Admn No:</span> <span>${r["Admission Number"]}</span></p>
-                                <p><span class="label">Class & Div:</span> <span>${r["Class"]} ${r["Division"]}</span></p>
-                                <p><span class="label">Lot Number:</span> <span style="font-weight:800; color:var(--primary);">${r["Lot Number"] || 'Not Allotted'}</span></p>
-                                <p><span class="label">Category:</span> <span style="color:var(--accent); font-weight:700;">${r["Category"] || 'General'}</span></p>
+                                <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
+                                <p><span class="label">Admn No</span> <span>${r["Admission Number"]}</span></p>
+                                <p><span class="label">Class & Div</span> <span>${r["Class"]} ${r["Division"]}</span></p>
+                                <p><span class="label">Lot Number</span> <span style="font-weight:bold; color:var(--text-main);">${r["Lot Number"] || 'Not Allotted'}</span></p>
+                                <p><span class="label">Category</span> <span style="color:var(--primary); font-weight:bold;">${r["Category"]}</span></p>
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:6px;">
-                                    <span class="timestamp">${r["Timestamp"] || ''}</span>
-                                    ${cardActions}
+                                    <span class="timestamp">${r["Timestamp"]}</span>
+                                    ${actionButtons}
                                 </div>
                             </div>
                         `;
@@ -4770,7 +4780,7 @@
                     indFestsHTML += `</div></div>`;
                 }
 
-                // 2. GROUP ITEMS RENDERING
+                // 2. GROUP ITEMS CARDS
                 if (grpRecords.length > 0) {
                     grpFestsHTML += `
                         <div style="width:100%; margin-bottom:15px;">
@@ -4779,7 +4789,7 @@
                                     <i class="fas fa-chevron-down collapse-chevron"></i>
                                     <div>
                                         <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}</h5>
-                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${grpRecords.length} Group Participant(s)</span>
+                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${grpRecords.length} Group</span>
                                     </div>
                                 </div>
                                 ${adminFestControls}
@@ -4788,32 +4798,28 @@
                     `;
 
                     grpRecords.forEach(r => {
-                        // ACTION BUTTONS: EDIT & DELETE
-                        const cardActions = isAdmin ? `
-                            <div style="display:inline-flex; gap:6px; align-items:center;">
-                                <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11.5px;" onclick="openEditRegistrationModal('${r.id}')" title="Modify Registration Details">
+                        const actionButtons = isAdmin ? `
+                            <div style="display:inline-flex; gap:6px;">
+                                <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11px;" onclick="openEditRegistrationModal('${r.id}')" title="Modify Registration">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11.5px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
+                                <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
                                     <i class="fas fa-trash-alt"></i> Delete
                                 </button>
                             </div>
                         ` : '';
 
-                        const isLeader = r["Role in Event"] === "Team Leader";
-                        const roleColor = isLeader ? "var(--warning)" : "var(--accent)";
-
                         grpFestsHTML += `
                             <div class="record-card group-card">
                                 <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
-                                <p><span class="label">Candidate:</span> <b>${r["Name"]}</b></p>
-                                <p><span class="label">Admn No:</span> <span>${r["Admission Number"]}</span></p>
-                                <p><span class="label">Class & Div:</span> <span>${r["Class"]} ${r["Division"]}</span></p>
-                                <p><span class="label">Lot Number:</span> <span style="font-weight:800; color:var(--primary);">${r["Lot Number"] || 'Not Allotted'}</span></p>
-                                <p><span class="label">Role in Team:</span> <span style="color:${roleColor}; font-weight:800;">${r["Role in Event"] || 'Participant'}</span></p>
+                                <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
+                                <p><span class="label">Admn No</span> <span>${r["Admission Number"]}</span></p>
+                                <p><span class="label">Class & Div</span> <span>${r["Class"]} ${r["Division"]}</span></p>
+                                <p><span class="label">Lot Number</span> <span style="font-weight:bold; color:var(--text-main);">${r["Lot Number"] || 'Not Allotted'}</span></p>
+                                <p><span class="label">Role in Team</span> <span style="color:var(--warning); font-weight:bold;">${r["Role in Event"]}</span></p>
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:6px;">
-                                    <span class="timestamp">${r["Timestamp"] || ''}</span>
-                                    ${cardActions}
+                                    <span class="timestamp">${r["Timestamp"]}</span>
+                                    ${actionButtons}
                                 </div>
                             </div>
                         `;
@@ -4823,7 +4829,7 @@
                 }
             });
 
-            // 3. COLLAPSIBLE CLASSIFICATION BANNER FOR INDIVIDUAL ITEMS
+            // 3. COLLAPSIBLE MAIN CATEGORY HEADER FOR INDIVIDUAL ITEMS
             if (indFestsHTML) {
                 containerInd.innerHTML += `
                     <div style="width:100%; margin-bottom:15px;">
@@ -4838,7 +4844,7 @@
                 `;
             }
 
-            // 4. COLLAPSIBLE CLASSIFICATION BANNER FOR GROUP ITEMS
+            // 4. COLLAPSIBLE MAIN CATEGORY HEADER FOR GROUP ITEMS
             if (grpFestsHTML) {
                 containerGrp.innerHTML += `
                     <div style="width:100%; margin-bottom:15px;">
@@ -4878,14 +4884,87 @@
     }
 
     // --- FEST PARTICIPANTS REPORT MODAL HANDLER ---
+    // --- TAB 2 REPORT SEARCHABLE ITEM & PRINT CONTROLLER ---
+    let currentReportItems = [];
+
+    function onReportFestChange() {
+        const fest = document.getElementById('reportFestSelect')?.value || "ALL";
+        document.getElementById('reportItemSelect').value = "ALL";
+        document.getElementById('reportItemSearchInput').value = "";
+
+        let items = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
+        if (fest !== "ALL") {
+            items = items.filter(f => f["Fest Name"] === fest);
+        }
+
+        currentReportItems = items.sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
+        renderReportItemDropdownList(currentReportItems);
+    }
+
+    function renderReportItemDropdownList(items) {
+        const list = document.getElementById('reportItemDropdownList');
+        if (!list) return;
+        list.innerHTML = '';
+
+        // Default "All Items" option
+        const allDiv = document.createElement('div');
+        allDiv.className = 'custom-search-dropdown-item';
+        allDiv.innerHTML = `<b>-- All Items in Report --</b>`;
+        allDiv.onclick = () => selectReportSearchItem("ALL", "-- All Items in Report --");
+        list.appendChild(allDiv);
+
+        items.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'custom-search-dropdown-item';
+            div.innerHTML = `<b>${item["Item"]}</b> <span style="color:#64748b; font-size:11px;">[${item["Item Code"]}] (${item["Fest Name"]})</span>`;
+            div.onclick = () => selectReportSearchItem(item["Item Code"], `${item["Item"]} [${item["Item Code"]}]`);
+            list.appendChild(div);
+        });
+    }
+
+    function openReportItemDropdown() {
+        if (currentReportItems.length === 0) onReportFestChange();
+        const list = document.getElementById('reportItemDropdownList');
+        if (list) {
+            list.style.display = 'block';
+            const s = list.closest('.section');
+            if (s) s.style.zIndex = '100';
+        }
+    }
+
+    function filterReportSearchItems(query) {
+        const q = String(query || "").toLowerCase().trim();
+        const filtered = currentReportItems.filter(f => 
+            String(f["Item"] || "").toLowerCase().includes(q) ||
+            String(f["Item Code"] || "").toLowerCase().includes(q) ||
+            String(f["Fest Name"] || "").toLowerCase().includes(q)
+        );
+        renderReportItemDropdownList(filtered);
+        document.getElementById('reportItemDropdownList').style.display = 'block';
+    }
+
+    function selectReportSearchItem(code, displayText) {
+        document.getElementById('reportItemSelect').value = code;
+        document.getElementById('reportItemSearchInput').value = code === "ALL" ? "" : displayText;
+        document.getElementById('reportItemDropdownList').style.display = 'none';
+    }
+
+    // UPDATED REPORT MODAL OPENER (SUPPORTS FEST & ITEM-WISE FILTERS)
     function openParticipantsReport(autoPrint = false) {
-        const fest = document.getElementById('reportFestSelect').value;
+        const fest = document.getElementById('reportFestSelect')?.value || "ALL";
+        const itemFilter = document.getElementById('reportItemSelect')?.value || "ALL";
         const tbody = document.getElementById('reportTableTbody');
+        if (!tbody) return;
         tbody.innerHTML = "";
 
         let list = [...dbRegistrations].filter(r => isFestEnabled(r["Name of Fest"]));
+
         if (fest !== "ALL") {
             list = list.filter(r => r["Name of Fest"] === fest);
+        }
+
+        if (itemFilter !== "ALL") {
+            list = list.filter(r => r["Item Code"] === itemFilter || r["Item"] === itemFilter);
         }
 
         list.sort((a, b) => {
@@ -4894,7 +4973,19 @@
             return String(a["Name"] || "").localeCompare(String(b["Name"] || ""));
         });
 
-        document.getElementById('reportFestHeaderTitle').innerText = fest === "ALL" ? "ALL FEST PARTICIPANTS DIRECTORY" : `${fest.toUpperCase()} - PARTICIPANTS DIRECTORY`;
+        // Dynamic Header Title
+        let title = "ALL FEST PARTICIPANTS DIRECTORY";
+        if (fest !== "ALL" && itemFilter !== "ALL") {
+            const festObj = dbFests.find(f => f["Item Code"] === itemFilter);
+            title = `${fest.toUpperCase()} - ${festObj ? festObj["Item"].toUpperCase() : itemFilter} PARTICIPANTS`;
+        } else if (fest !== "ALL") {
+            title = `${fest.toUpperCase()} - PARTICIPANTS DIRECTORY`;
+        } else if (itemFilter !== "ALL") {
+            const festObj = dbFests.find(f => f["Item Code"] === itemFilter);
+            title = `${festObj ? festObj["Item"].toUpperCase() : itemFilter} PARTICIPANTS DIRECTORY`;
+        }
+
+        document.getElementById('reportFestHeaderTitle').innerText = title;
         document.getElementById('reportMetaInfo').innerText = `Total Registered Candidates: ${list.length} | Generated: ${new Date().toLocaleString('en-IN')}`;
 
         if (list.length === 0) {
@@ -5187,17 +5278,19 @@
 
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.custom-search-select-wrapper')) {
-            const dropdowns = [
-                'emItemDropdownList', 
-                'judgeActiveItemsDropdownList', 
-                'existingJudgeDropdownList', 
-                'allotItemDropdownList',
-                'regItemDropdownList',
-                'reportItemDropdownList'
-            ];
-            dropdowns.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.display = 'none';
+            const d1 = document.getElementById('emItemDropdownList');
+            const d2 = document.getElementById('judgeActiveItemsDropdownList');
+            const d3 = document.getElementById('existingJudgeDropdownList');
+            const d4 = document.getElementById('allotItemDropdownList');
+            const d5 = document.getElementById('regItemDropdownList');       // <-- ADD THIS
+            const d6 = document.getElementById('reportItemDropdownList');    // <-- ADD THIS
+
+            [d1, d2, d3, d4, d5, d6].forEach(d => {
+                if (d) {
+                    d.style.display = 'none';
+                    const s = d.closest('.section');
+                    if (s) s.style.zIndex = '';
+                }
             });
         }
     });
@@ -6429,6 +6522,9 @@
         updateLotDropdownAndProgress();
     }
 
+    // ==========================================================================
+    // FINALIZE & LOCK JUDGEMENT (INDEPENDENT SUBMISSION - NO WAITING)
+    // ==========================================================================
     async function finalizeJudgement() {
         const rawCode = document.getElementById('judgeActiveItemsSelect')?.value;
         if (!rawCode) {
@@ -6440,6 +6536,7 @@
         const itemName = festObj ? festObj["Item"] : cleanCode;
         const totalUnits = currentJudgeSession.units ? currentJudgeSession.units.length : 0;
 
+        // 1. Validation: Current judge must have scored all lots
         if (currentJudgeSession.savedUnitIds.size < totalUnits) {
             return showCustomDialog(
                 "Evaluation Incomplete",
@@ -6453,37 +6550,11 @@
         const isMultiJudge = assignedJudges.length > 1;
         const isMaster = isJudgeMasterForItem(currentUser, cleanCode);
 
-        if (isMultiJudge && isMaster) {
-            const otherJudges = assignedJudges.filter(j => 
-                String(j.phone).trim() !== String(currentUser.id).trim() && 
-                String(j.name).toLowerCase() !== String(currentUser.name).toLowerCase()
-            );
-
-            const pendingJudges = otherJudges.filter(j => 
-                !dbJudgeScores.some(s => s.itemCode === cleanCode && (
-                    String(s.judgePhone).trim() === String(j.phone).trim() ||
-                    String(s.judgeName).toLowerCase() === String(j.name).toLowerCase()
-                ))
-            );
-
-            if (pendingJudges.length > 0) {
-                return showCustomDialog(
-                    "Panel Scorecards Pending",
-                    `⚠️ <b>Cannot Finalize Judgement Yet</b><br><br>` +
-                    `As the <b>Master Judge</b>, you can only officially finalize and lock the competition once all panel judges have evaluated their lots and submitted their scorecards.<br><br>` +
-                    `<b>Awaiting Scorecards from:</b><br>${pendingJudges.map(j => `&bull; <b>${j.name}</b> (${j.phone})`).join("<br>")}<br><br>` +
-                    `Please ensure all panel judges click "Submit My Evaluation" first.`,
-                    "warning"
-                );
-            }
-        }
-
+        // 2. Confirmation Prompt (Independent submission for each judge)
         const promptTitle = (isMultiJudge && !isMaster) ? "Submit Your Evaluation?" : "Finalize & Lock Judgement?";
         const promptMsg = (isMultiJudge && !isMaster)
-            ? `Submit your official evaluation scorecard for <b>${itemName} [${cleanCode}]</b>?<br><br>Your scores will be submitted to the Master Judge.`
-            : (isMultiJudge 
-                ? `All panel scorecards have been received. Permanently finalize and lock judgement for <b>${itemName} [${cleanCode}]</b>?`
-                : `Finalize and permanently lock scores for <b>${itemName} [${cleanCode}]</b>?`);
+            ? `Submit your official evaluation scorecard for <b>${itemName} [${cleanCode}]</b>?<br><br>Your scores will be recorded and locked.`
+            : `Officially lock your judgement for <b>${itemName} [${cleanCode}]</b>?<br><br>All your scores will be permanently submitted.`;
 
         showCustomDialog(
             promptTitle,
@@ -6495,6 +6566,7 @@
                     const batch = db.batch();
                     const timestamp = new Date().toLocaleString('en-IN');
 
+                    // 3. Batch commit current judge's individual scores
                     currentJudgeSession.units.forEach(unit => {
                         const scoreData = currentJudgeSession.unitScores[unit.id];
                         if (!scoreData) return;
@@ -6529,7 +6601,23 @@
                         dbJudgeScores.push({ ...scoreDoc, id: ref.id });
                     });
 
-                    if (!isMultiJudge || isMaster) {
+                    // 4. Check if ALL assigned judges have now submitted their scorecards
+                    const lockedJudgePhones = new Set(
+                        dbJudgeScores.filter(s => s.itemCode === cleanCode && s.locked)
+                                     .map(s => String(s.judgePhone || "").trim())
+                    );
+                    lockedJudgePhones.add(String(currentUser.id || "").trim()); // Include this submission
+
+                    const allJudgesFinished = assignedJudges.length > 0 && assignedJudges.every(j => 
+                        lockedJudgePhones.has(String(j.phone || "").trim())
+                    );
+
+                    // 5. Update settings document
+                    const settingsDocRef = db.collection("config").doc("settings");
+                    const settingsUpdates = {};
+
+                    // If all assigned judges are done (or if single judge event), mark as COMPLETED
+                    if (allJudgesFinished || !isMultiJudge) {
                         if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
                         if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
 
@@ -6541,14 +6629,19 @@
                             c => String(c).trim().toLowerCase() !== cleanCode.toLowerCase()
                         );
 
-                        const settingsDocRef = db.collection("config").doc("settings");
-                        batch.update(settingsDocRef, {
-                            CompletedProgrammes: dbSettings.CompletedProgrammes,
-                            ActiveProgrammes: dbSettings.ActiveProgrammes,
-                            [`LiveJudgeActiveItems.${cleanCode}`]: firebase.firestore.FieldValue.delete()
-                        });
+                        settingsUpdates.CompletedProgrammes = dbSettings.CompletedProgrammes;
+                        settingsUpdates.ActiveProgrammes = dbSettings.ActiveProgrammes;
                     }
 
+                    // Turn off this judge's live evaluating presence LED
+                    if (dbSettings.LiveJudgeActiveItems && dbSettings.LiveJudgeActiveItems[cleanCode]) {
+                        delete dbSettings.LiveJudgeActiveItems[cleanCode];
+                    }
+                    settingsUpdates[`LiveJudgeActiveItems.${cleanCode}`] = firebase.firestore.FieldValue.delete();
+
+                    batch.update(settingsDocRef, settingsUpdates);
+
+                    // 6. Audit Log
                     const logRef = db.collection("judge_logs").doc();
                     batch.set(logRef, {
                         timestamp: timestamp,
@@ -6557,20 +6650,23 @@
                         itemCode: cleanCode,
                         itemName: itemName,
                         criteriaCount: currentJudgeCriteria.length,
-                        status: (isMultiJudge && !isMaster) ? "Panel Scorecard Submitted" : "Judgement Finalized & Locked (Master Judge)"
+                        status: allJudgesFinished 
+                            ? "All Judges Submitted (Event Completed)" 
+                            : (isMaster ? "Master Judge Scorecard Submitted" : "Panel Scorecard Submitted")
                     });
 
                     await batch.commit();
 
                     hideLoader();
                     showCustomDialog(
-                        (isMultiJudge && !isMaster) ? "Evaluation Submitted" : "Judgement Completed",
-                        (isMultiJudge && !isMaster)
-                            ? `Your scorecard for <b>${itemName}</b> has been submitted successfully.`
-                            : `All scores for <b>${itemName}</b> have been finalized and locked by the Master Judge. The competition is marked as COMPLETED.`,
+                        allJudgesFinished ? "Event Completed" : "Scorecard Submitted",
+                        allJudgesFinished
+                            ? `All judges have completed evaluation for <b>${itemName}</b>. The event is now officially marked as <b>COMPLETED</b>.`
+                            : `Your scorecard for <b>${itemName}</b> has been locked and submitted successfully.`,
                         "success"
                     );
 
+                    // 7. Instantly clear selections & remove finalized item from judge's dropdown
                     const searchInput = document.getElementById('judgeActiveItemsSearchInput');
                     const hiddenSelect = document.getElementById('judgeActiveItemsSelect');
                     const festMeta = document.getElementById('judgeItemFestMeta');
@@ -6581,12 +6677,14 @@
                     if (festMeta) festMeta.value = "";
                     if (codeMeta) codeMeta.value = "";
 
+                    // Hide scoring panels and criteria sections
                     document.getElementById('singleLotSection').style.display = 'none';
                     document.getElementById('finalizeJudgementSection').style.display = 'none';
                     document.getElementById('judgementLockedBanner').style.display = 'none';
                     document.getElementById('judgeCriteriaSection').style.display = 'none';
                     document.getElementById('panelJudgeWaitingCriteria').style.display = 'none';
 
+                    // Reset in-memory session
                     currentJudgeSession = {
                         itemCode: "",
                         criteriaConfirmed: false,
@@ -6596,6 +6694,7 @@
                         isAbsent: false
                     };
 
+                    // Re-render dropdown so finalized item is purged immediately
                     initJudgementTab();
 
                     if (typeof loadEventMgmtItemDetails === "function") {
@@ -7346,11 +7445,17 @@
         if (modal) modal.style.display = 'none';
     }
 
-    // --- CERTIFICATE FESTIVAL DATES FORMATTERS ---
+    // ==========================================================================
+    // UNIFIED CERTIFICATE SYSTEM (GROUP ITEMS + CUSTOM FESTIVAL DATES)
+    // ==========================================================================
+    let currentActiveCertResult = null;
+    let currentCertMembers = null;
+
+    // Helper: Formats 1-day or multi-day festival dates for certificate citation
     function formatFestDatesForCert(festName) {
         const rawDates = (dbSettings.FestDates && dbSettings.FestDates[festName]) || [];
         const validDates = (Array.isArray(rawDates) ? rawDates : [rawDates])
-            .map(d => String(d || "").trim().replace(/\./g, ':'))
+            .map(d => String(d || "").trim().replace(/[:.-]/g, '/'))
             .filter(d => d.length > 0);
 
         if (validDates.length === 0) return null;
@@ -7362,13 +7467,13 @@
     function getCertIssueDate(festName, fallbackDate) {
         const rawDates = (dbSettings.FestDates && dbSettings.FestDates[festName]) || [];
         const validDates = (Array.isArray(rawDates) ? rawDates : [rawDates])
-            .map(d => String(d || "").trim().replace(/\./g, ':'))
+            .map(d => String(d || "").trim().replace(/[:.-]/g, '/'))
             .filter(d => d.length > 0);
 
         if (validDates.length > 0) {
             return validDates[validDates.length - 1];
         }
-        return fallbackDate ? String(fallbackDate).replace(/\./g, ':') : "20:02:2026";
+        return fallbackDate ? String(fallbackDate).replace(/[:.-]/g, '/') : "20/02/2026";
     }
 
     function autoFormatDateInput(input) {
@@ -7380,51 +7485,9 @@
         }
     }
 
-    function openCertificateModal(resId, autoPrint = false) {
-        const r = dbPublishedResults.find(x => x.id === resId);
-        if (!r) return;
 
-        const festName = r.festName || "UTHSAV";
-        const fallbackPublished = (r.publishedAt || "13/9/2026").split(',')[0];
-        
-        let festDateCitation = formatFestDatesForCert(festName) || fallbackPublished;
-        festDateCitation = festDateCitation.replace(/[:.-]/g, '/');
 
-        let rawIssueDate = getCertIssueDate(festName, fallbackPublished);
-        const issueDate = String(rawIssueDate).replace(/[:.-]/g, '/');
-
-        const st = dbStudents.find(s => String(s["Admission Number"]).trim() === String(r.admissionNumber).trim());
-        const reg = dbRegistrations.find(reg => String(reg["Admission Number"]).trim() === String(r.admissionNumber).trim());
-        
-        const gRaw = String(st?.Gender || st?.["Gender"] || reg?.Gender || reg?.["Gender"] || r?.Gender || "").trim().toUpperCase();
-        const isGirl = gRaw === 'F' || gRaw.startsWith('FEM') || gRaw === 'GIRL';
-        const salutation = isGirl ? 'Kumari.' : 'Master.';
-
-        let cleanName = String(r.candidateName || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
-
-        document.getElementById('certStudentName').innerText = `${salutation} ${cleanName}`;
-        document.getElementById('certStudentClass').innerText = `Standard: ${r.studentClass} ${r.studentDivision || ''}`;
-        
-        document.getElementById('certIssueDate').innerText = `Date: ${issueDate}`;
-        document.getElementById('certFestBadge').innerText = festName.toUpperCase();
-
-        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) ? dbSettings.FestConvenors[festName] : "THEJAS R";
-        document.getElementById('certConvenorName').innerText = convenorName;
-
-        document.getElementById('certStatement').innerHTML = `
-            has distinguished themselves by winning the <span class="cert-highlight-badge">${r.place}</span> with <span class="cert-highlight-badge">${r.grade} Grade</span> <br>in the <b>${r.itemName}</b> competition <br>held as part of <b>${festName.toUpperCase()}</b> on <b>${festDateCitation}</b>.
-        `;
-
-        document.getElementById('certModal').style.display = 'flex';
-        logStudentAction(`Viewed Certificate for ${r.itemName} (${r.place})`);
-
-        if (autoPrint) {
-            setTimeout(() => {
-                printModalDocument('certModal', 'landscape');
-            }, 350);
-        }
-    }
-
+    
     function closeCertModal() {
         document.getElementById('certModal').style.display = 'none';
     }
@@ -9429,10 +9492,8 @@
         }));
     }
 
-    let currentActiveCertResult = null;
-    let currentCertMembers = null;
-
-    // Open Certificate Modal (Handles both Individual and Group items)
+    
+    // Unified Certificate Modal Opener
     function openCertificateModal(resId, autoPrint = false) {
         const r = dbPublishedResults.find(x => x.id === resId);
         if (!r) return;
@@ -9445,18 +9506,18 @@
         const countSpan = document.getElementById('certGroupCount');
 
         if (currentCertMembers && currentCertMembers.length > 1) {
-            // Group Item: Show selector bar and populate dropdown
+            // Group Event: Display member switcher bar and populate dropdown
             if (groupBar) groupBar.style.display = 'flex';
             if (countSpan) countSpan.innerText = currentCertMembers.length;
             if (memberSelect) {
                 memberSelect.innerHTML = "";
                 currentCertMembers.forEach((m, idx) => {
-                    memberSelect.innerHTML += `<option value="${idx}">${idx + 1}. ${m.name} (${m.role || 'Participant'}) - Standard: ${m.class}${m.division || ''}</option>`;
+                    memberSelect.innerHTML += `<option value="${idx}">${idx + 1}. ${m.name} (${m.role || 'Participant'}) - Std: ${m.class}${m.division || ''}</option>`;
                 });
             }
             renderSingleStudentCertificate(currentCertMembers[0], r);
         } else {
-            // Individual Item: Hide selector bar
+            // Individual Event: Hide switcher bar
             if (groupBar) groupBar.style.display = 'none';
             renderSingleStudentCertificate({
                 name: r.candidateName,
@@ -9471,12 +9532,11 @@
 
         if (autoPrint) {
             setTimeout(() => {
-                printModalDocument('certModal');
+                printModalDocument('certModal', 'landscape');
             }, 350);
         }
     }
 
-    // Switch active student certificate from the dropdown
     function switchCertMember(index) {
         if (!currentCertMembers || !currentActiveCertResult) return;
         const member = currentCertMembers[parseInt(index, 10)];
@@ -9485,10 +9545,14 @@
         }
     }
 
-    // Fills the certificate template with a specific student's details
+    // Renders an individual student's certificate with custom festival dates & proper salutation
     function renderSingleStudentCertificate(student, resultData) {
-        const dateStr = (resultData.publishedAt || "20.02.2026").split(',')[0];
+        const festName = resultData.festName || "UTHSAV";
+        const fallbackPublished = (resultData.publishedAt || "20/02/2026").split(',')[0].replace(/[:.-]/g, '/');
         
+        let festDateCitation = formatFestDatesForCert(festName) || fallbackPublished;
+        let issueDate = getCertIssueDate(festName, fallbackPublished);
+
         // Gender detection for proper salutation
         const st = dbStudents.find(s => String(s["Admission Number"]).trim() === String(student.admissionNumber).trim());
         const gRaw = String(student.gender || st?.Gender || st?.["Gender"] || "").trim().toUpperCase();
@@ -9497,21 +9561,28 @@
 
         let cleanName = String(student.name || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
 
+        // 1. Candidate Name & Metadata
         document.getElementById('certStudentName').innerText = `${salutation} ${cleanName}`;
-        document.getElementById('certStudentClass').innerText = `Standard: ${student.class} ${student.division || ''}`;
-        document.getElementById('certIssueDate').innerText = `Date: ${dateStr}`;
-        document.getElementById('certFestBadge').innerText = (resultData.festName || "UTHSAV").toUpperCase();
+        document.getElementById('certStudentClass').innerHTML = `Standard: <b>${student.class} ${student.division || ''}</b> &bull; Admission No: <b>${student.admissionNumber || '-'}</b>`;
+        
+        // 2. Dates & Header Badges
+        document.getElementById('certIssueDate').innerText = `Date: ${issueDate}`;
+        document.getElementById('certFestBadge').innerText = festName.toUpperCase();
 
-        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[resultData.festName]) ? dbSettings.FestConvenors[resultData.festName] : "THEJAS R";
+        // 3. Convenor
+        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) 
+            ? dbSettings.FestConvenors[festName] 
+            : "THEJAS R";
         document.getElementById('certConvenorName').innerText = convenorName;
 
+        // 4. Citation Paragraph
         const isGroupText = (currentCertMembers && currentCertMembers.length > 1) ? ' (Group)' : '';
         document.getElementById('certStatement').innerHTML = `
-            has distinguished themselves by winning the <span class="cert-highlight-badge">${resultData.place}</span> with <span class="cert-highlight-badge">${resultData.grade} Grade</span> in the <b>${resultData.itemName}${isGroupText}</b> competition held as part of <b>${(resultData.festName || 'ANNUAL FEST').toUpperCase()}</b> on <b>${dateStr}</b>.
+            has distinguished themselves by winning the <span class="cert-highlight-badge">${resultData.place}</span> with <span class="cert-highlight-badge">${resultData.grade} Grade</span><br> in the <b>${resultData.itemName}${isGroupText}</b> competition <br>held as part of <b>${festName.toUpperCase()}</b> on <b>${festDateCitation}</b>.
         `;
     }
 
-    // BATCH PRINT: Generates and prints each group member on their own ornate certificate
+    // BATCH PRINT: Generates and prints each group member's certificate on its own A4 sheet
     function printAllGroupCertificates() {
         if (!currentCertMembers || !currentActiveCertResult) return;
 
@@ -9519,18 +9590,16 @@
         const originalContent = wrapper.innerHTML;
 
         showLoader("Preparing All Group Certificates for Print...");
-
-        const festName = currentActiveCertResult.festName || "UTHSAV";
-        const fallbackPublished = (currentActiveCertResult.publishedAt || "13/09/2026").split(',')[0];
         
-        let festDateCitation = formatFestDatesForCert(festName) || fallbackPublished;
-        festDateCitation = String(festDateCitation).replace(/[:.-]/g, '/');
-
-        let rawIssueDate = getCertIssueDate(festName, fallbackPublished);
-        const issueDate = String(rawIssueDate).replace(/[:.-]/g, '/');
-        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) ? dbSettings.FestConvenors[festName] : "THEJAS R";
-
         let batchHTML = "";
+        const festName = currentActiveCertResult.festName || "UTHSAV";
+        const fallbackPublished = (currentActiveCertResult.publishedAt || "20/02/2026").split(',')[0].replace(/[:.-]/g, '/');
+        const festDateCitation = formatFestDatesForCert(festName) || fallbackPublished;
+        const issueDate = getCertIssueDate(festName, fallbackPublished);
+        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) 
+            ? dbSettings.FestConvenors[festName] 
+            : "THEJAS R";
+
         currentCertMembers.forEach((member) => {
             const st = dbStudents.find(s => String(s["Admission Number"]).trim() === String(member.admissionNumber).trim());
             const gRaw = String(member.gender || st?.Gender || st?.["Gender"] || "").trim().toUpperCase();
@@ -9550,17 +9619,15 @@
 
                             <div class="cert-header-row">
                                 <div class="cert-logo-box">
-                                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="TDTTI Thuravoor Logo">
+                                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="Logo">
                                 </div>
                                 <div class="cert-inst-details">
                                     <h1>Thirumala Devaswom</h1>
                                     <h3>Teacher Training Institute</h3>
-                                    <div class="cert-address-bar">
-                                        THURAVOOR, ALAPPUZHA, KERALA — 688532 &bull; PH: 0478-256 4479
-                                    </div>
+                                    <p>THURAVOOR, ALAPPUZHA, KERALA &bull; PH: 0478-256 4479</p>
                                 </div>
                                 <div class="cert-badge-right">
-                                    <i class="fas fa-award"></i>
+                                    <i class="fas fa-trophy"></i>
                                     <div class="cert-badge-tag">${festName.toUpperCase()}</div>
                                 </div>
                             </div>
@@ -9579,27 +9646,35 @@
                                 </div>
                             </div>
 
-                            <div class="cert-footer-row">
-                                <div class="cert-sig-block">
-                                    <div class="cert-signature-space"></div>
-                                    <b>${convenorName}</b>
-                                    <span>( General Convenor )</span>
-                                    <div class="cert-date-place-box">
+                            <div class="cert-footer-row" style="display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 2; padding: 6px 16px 2px; border-top: 1.5px solid rgba(212, 175, 55, 0.4);">
+                                <div class="cert-sig-block" style="text-align: center; min-width: 220px;">
+                                    <div class="cert-signature-space" style="height: 54px; width: 100%;"></div>
+                                    <b style="display: block; font-size: 13px; color: var(--text-main); border-top: 1.5px solid #334155; padding-top: 4px; margin: 0;">
+                                        ${convenorName}
+                                    </b>
+                                    <span style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
+                                        ( General Convenor )
+                                    </span>
+                                    <div style="display: flex; justify-content: center; gap: 14px; font-size: 11px; font-weight: 600; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 3px;">
                                         <span>Date: ${issueDate}</span>
                                         <span>Place: Thuravoor</span>
                                     </div>
                                 </div>
-                                <div class="cert-gold-seal">
-                                    <i class="fas fa-stamp"></i>
+
+                                <div class="cert-gold-seal" style="margin-bottom: 14px;">
+                                    <i class="fas fa-certificate"></i>
                                     <span>Official Seal</span>
                                 </div>
-                                <div class="cert-sig-block">
-                                    <div class="cert-signature-space"></div>
-                                    <b>ASHA V</b>
-                                    <span>( Principal )</span>
-                                    <div class="cert-date-place-box" style="visibility:hidden;">
-                                        <span>Verified</span>
-                                    </div>
+
+                                <div class="cert-sig-block" style="text-align: center; min-width: 220px;">
+                                    <div class="cert-signature-space" style="height: 54px; width: 100%;"></div>
+                                    <b style="display: block; font-size: 13px; color: var(--text-main); border-top: 1.5px solid #334155; padding-top: 4px; margin: 0;">
+                                        ASHA V
+                                    </b>
+                                    <span style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
+                                        ( Principal )
+                                    </span>
+                                    <div style="height: 18px;"></div>
                                 </div>
                             </div>
                         </div>
@@ -9625,152 +9700,37 @@
         if (select) switchCertMember(select.value);
     }
 
-    // --- TAB 2: ITEM-WISE REPORT FILTER & PRINT ---
-    let allReportItemsList = [];
-
-    function syncReportItemOptions() {
-        const fest = document.getElementById('reportFestSelect')?.value || "ALL";
-        document.getElementById('reportItemSearchInput').value = "";
-        document.getElementById('reportItemSelect').value = "";
-
-        let items = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
-        if (fest !== "ALL") {
-            items = items.filter(f => f["Fest Name"] === fest);
-        }
-
-        allReportItemsList = items.sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
-        renderReportItemDropdownList(allReportItemsList);
-    }
-
-    function renderReportItemDropdownList(items) {
-        const list = document.getElementById('reportItemDropdownList');
-        if (!list) return;
-        list.innerHTML = '';
-        if (items.length === 0) {
-            list.innerHTML = '<div style="padding:10px; color:#94a3b8; font-size:12px; text-align:center;">No items found</div>';
-            return;
-        }
-        items.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'custom-search-dropdown-item';
-            div.innerHTML = `<b>${item["Item"]}</b> <span style="color:#64748b; font-size:11px;">[${item["Item Code"] || 'N/A'}] (${item["Fest Name"]})</span>`;
-            div.onclick = () => selectReportSearchItem(item["Item Code"], `${item["Item"]} [${item["Item Code"]}]`);
-            list.appendChild(div);
-        });
-    }
-
-    function openReportSearchDropdown() {
-        syncReportItemOptions();
-        const list = document.getElementById('reportItemDropdownList');
-        if (list) list.style.display = 'block';
-    }
-
-    function filterReportSearchItems(query) {
-        const q = String(query || "").toLowerCase().trim();
-        const filtered = allReportItemsList.filter(f => 
-            String(f["Item"] || "").toLowerCase().includes(q) ||
-            String(f["Item Code"] || "").toLowerCase().includes(q)
-        );
-        renderReportItemDropdownList(filtered);
-        const list = document.getElementById('reportItemDropdownList');
-        if (list) list.style.display = 'block';
-    }
-
-    function selectReportSearchItem(code, displayText) {
-        document.getElementById('reportItemSelect').value = code;
-        document.getElementById('reportItemSearchInput').value = displayText;
-        const list = document.getElementById('reportItemDropdownList');
-        if (list) list.style.display = 'none';
-    }
-
-    function openItemParticipantsReport(autoPrint = false) {
-        const itemCode = document.getElementById('reportItemSelect')?.value;
-        if (!itemCode) {
-            return showCustomDialog("Item Required", "Please search and select an Item to generate the item-wise report.", "warning");
-        }
-
-        const festObj = dbFests.find(f => f["Item Code"] === itemCode);
-        const itemName = festObj ? festObj["Item"] : itemCode;
-        const festName = festObj ? festObj["Fest Name"] : "";
-
-        const tbody = document.getElementById('reportTableTbody');
-        tbody.innerHTML = "";
-
-        const list = dbRegistrations.filter(r => 
-            (r["Item Code"] === itemCode || r["Item"] === itemName) && isFestEnabled(r["Name of Fest"])
-        );
-
-        list.sort((a, b) => {
-            const lotA = parseInt(a["Lot Number"] || "999", 10);
-            const lotB = parseInt(b["Lot Number"] || "999", 10);
-            if (lotA !== lotB) return lotA - lotB;
-            return String(a["Name"] || "").localeCompare(String(b["Name"] || ""));
-        });
-
-        document.getElementById('reportFestHeaderTitle').innerText = `ITEM PARTICIPANTS REPORT: ${itemName.toUpperCase()} [${itemCode}]`;
-        document.getElementById('reportMetaInfo').innerText = `Festival: ${festName} | Total Participants: ${list.length} | Generated: ${new Date().toLocaleString('en-IN')}`;
-
-        if (list.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#64748b; padding:30px;">No registered participants found for this item.</td></tr>`;
-        } else {
-            list.forEach((r, idx) => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="text-align:center; font-weight:600;">${idx + 1}</td>
-                        <td><b>${r["Admission Number"]}</b></td>
-                        <td><b>${r["Name"]}</b></td>
-                        <td>${r["Class"]} ${r["Division"]}</td>
-                        <td>${r["Name of Fest"]}</td>
-                        <td>${r["Item"]} <small style="color:#64748b;">(${r["Item Code"] || '-'})</small></td>
-                        <td>${r["Category"]}</td>
-                        <td>${r["Role in Event"]}</td>
-                        <td style="text-align:center; font-weight:700; color:#0c2340;">${r["Lot Number"] || 'Unassigned'}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        document.getElementById('reportModal').style.display = 'flex';
-        if (autoPrint) {
-            setTimeout(() => { printModalDocument('reportModal', 'portrait'); }, 300);
-        }
-    }
-
-
     // --- EDIT REGISTRATION MODAL HANDLERS ---
     function openEditRegistrationModal(regId) {
-        const r = dbRegistrations.find(x => x.id === regId);
-        if (!r) return;
+        const reg = dbRegistrations.find(r => r.id === regId);
+        if (!reg) return;
 
-        document.getElementById('editRegDocId').value = r.id;
-        document.getElementById('editRegItemFest').value = `${r["Item"]} (${r["Name of Fest"]})`;
-        document.getElementById('editRegLotNo').value = r["Lot Number"] || "";
-        document.getElementById('editRegName').value = r["Name"] || "";
-        document.getElementById('editRegAdmnNo').value = r["Admission Number"] || "";
-        document.getElementById('editRegClass').value = r["Class"] || "";
-        document.getElementById('editRegDiv').value = r["Division"] || "";
-        document.getElementById('editRegRole').value = r["Role in Event"] || "Participant";
-        document.getElementById('editRegCat').value = r["Category"] || "General";
+        document.getElementById('editRegId').value = regId;
+        document.getElementById('editRegName').value = reg["Name"] || "";
+        document.getElementById('editRegAdmn').value = reg["Admission Number"] || "";
+        document.getElementById('editRegClass').value = reg["Class"] || "";
+        document.getElementById('editRegDiv').value = reg["Division"] || "";
+        document.getElementById('editRegLot').value = reg["Lot Number"] || "";
+        document.getElementById('editRegRole').value = reg["Role in Event"] || "Participant";
 
-        document.getElementById('editRegModalOverlay').style.display = 'flex';
+        document.getElementById('regEditModalOverlay').style.display = 'flex';
     }
 
     function closeEditRegistrationModal() {
-        document.getElementById('editRegModalOverlay').style.display = 'none';
+        document.getElementById('regEditModalOverlay').style.display = 'none';
     }
 
     async function saveEditedRegistration() {
-        const regId = document.getElementById('editRegDocId').value;
+        const regId = document.getElementById('editRegId').value;
         const name = document.getElementById('editRegName').value.trim();
-        const admn = document.getElementById('editRegAdmnNo').value.trim();
+        const admn = document.getElementById('editRegAdmn').value.trim();
         const cls = document.getElementById('editRegClass').value.trim();
         const div = document.getElementById('editRegDiv').value.trim();
-        const lot = document.getElementById('editRegLotNo').value.trim();
+        const lot = document.getElementById('editRegLot').value.trim();
         const role = document.getElementById('editRegRole').value;
-        const cat = document.getElementById('editRegCat').value;
 
-        if (!name || !admn || !cls || !div) {
-            return showCustomDialog("Required Fields", "Name, Admission Number, Class, and Division are required.", "warning");
+        if (!name || !admn || !cls) {
+            return showCustomDialog("Incomplete Details", "Name, Admission Number, and Class are required.", "warning");
         }
 
         showLoader("Updating Registration...");
@@ -9781,25 +9741,29 @@
                 "Class": cls,
                 "Division": div,
                 "Lot Number": lot,
-                "Role in Event": role,
-                "Category": cat
+                "Role in Event": role
             };
 
             await db.collection("registrations").doc(regId).update(updates);
 
-            const r = dbRegistrations.find(x => x.id === regId);
-            if (r) Object.assign(r, updates);
+            // Update in-memory data
+            const local = dbRegistrations.find(r => r.id === regId);
+            if (local) {
+                Object.assign(local, updates);
+            }
 
             hideLoader();
             closeEditRegistrationModal();
             renderTables();
-            showCustomDialog("Updated", `Registration details for <b>${name}</b> updated successfully.`, "success");
+            showCustomDialog("Updated", "Registration details updated successfully.", "success");
         } catch (e) {
             hideLoader();
             console.error(e);
             showCustomDialog("Error", "Could not update registration.", "danger");
         }
     }
+
+
 
 </script>
 </body>
