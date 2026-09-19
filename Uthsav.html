@@ -2193,8 +2193,221 @@
         background: transparent;
     }
 
-    option[value="Fest"] { display: none !important; }
-    option[value="Sports"] { display: none !important; }
+    /* ==========================================================================
+       15. L&L COLLAPSIBLES & MANUAL SHEETS (JUDGEMENT & TABULATION)
+       ========================================================================== */
+    .ll-section-head {
+        cursor: pointer !important;
+        user-select: none;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 12px 16px !important;
+        background: #ffffff !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius-md) !important;
+        margin-bottom: 8px !important;
+        transition: background 0.15s ease;
+    }
+    .ll-section-head:hover { background: #f8fafc !important; }
+    .ll-section-body { transition: max-height 0.2s ease-out; }
+
+    /* Manual Sheet A4 Portrait Canvas */
+    .manual-sheet-page {
+        width: 190mm !important;
+        min-height: 270mm !important;
+        margin: 0 auto 30px auto !important;
+        background: #ffffff !important;
+        padding: 14mm 14mm 12mm 14mm !important;
+        border: 1.5px solid #1e293b !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        page-break-after: always !important;
+    }
+
+    .manual-sheet-header {
+        text-align: center;
+        border-bottom: 2px solid #0f172a;
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+        position: relative;
+    }
+    .manual-sheet-header-top {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-bottom: 4px;
+    }
+    .manual-sheet-logo {
+        width: 50px;
+        height: 50px;
+        object-fit: contain;
+    }
+    .manual-sheet-title h2 {
+        margin: 0;
+        font-family: 'Cinzel', serif;
+        font-size: 16px;
+        font-weight: 900;
+        color: #0f172a;
+        letter-spacing: 0.5px;
+    }
+    .manual-sheet-title h4 {
+        margin: 2px 0 0 0;
+        font-size: 11px;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+    }
+    .manual-sheet-badge {
+        display: inline-block;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-top: 6px;
+        padding: 3px 14px;
+        background: #0f172a;
+        color: #ffffff;
+        border-radius: 4px;
+    }
+    .manual-meta-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px 16px;
+        margin: 8px 0 10px 0;
+        font-size: 12px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-align: left;
+    }
+    .manual-meta-item b { color: #0f172a; }
+
+    .manual-sheet-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 6px !important;
+        font-size: 11px !important;
+    }
+    .manual-sheet-table th, .manual-sheet-table td {
+        border: 1px solid #334155 !important;
+        padding: 6px 6px !important;
+        text-align: center !important;
+    }
+    .manual-sheet-table th {
+        background: #f1f5f9 !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+        text-transform: uppercase !important;
+        font-size: 10.5px !important;
+    }
+    .manual-sheet-table td.cell-blank { height: 26px !important; }
+
+    .manual-sheet-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding-top: 18px;
+        margin-top: 14px;
+        border-top: 1px dashed #64748b;
+        font-size: 11.5px;
+    }
+    .manual-sig-line {
+        border-top: 1.5px solid #0f172a;
+        padding-top: 4px;
+        min-width: 130px;
+        text-align: center;
+        font-weight: 700;
+    }
+
+    @media print {
+        body.printing-manual-sheet {
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body.printing-manual-sheet #appScreen,
+        body.printing-manual-sheet #loginScreen,
+        body.printing-manual-sheet #customDialogOverlay,
+        body.printing-manual-sheet #loadingOverlay,
+        body.printing-manual-sheet .app-header,
+        body.printing-manual-sheet .tab,
+        body.printing-manual-sheet .no-print {
+            display: none !important;
+        }
+        body.printing-manual-sheet #llViewModal.active-print,
+        body.printing-manual-sheet #llViewModal.active-print * {
+            visibility: visible !important;
+        }
+        body.printing-manual-sheet #llViewModal.active-print {
+            position: static !important;
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+        }
+        body.printing-manual-sheet #llViewModal.active-print .manual-sheet-page {
+            box-shadow: none !important;
+            margin: 0 auto !important;
+            page-break-after: always !important;
+            break-after: page !important;
+        }
+    }
+
+    /* ==========================================================================
+       UNIVERSAL COLLAPSIBLE BEHAVIOR (EXPANDED BY DEFAULT)
+       ========================================================================== */
+    .collapsible-header,
+    .ll-section-head {
+        cursor: pointer !important;
+        user-select: none;
+        transition: background 0.15s ease;
+    }
+    .collapsible-header:hover,
+    .ll-section-head:hover { 
+        filter: brightness(0.97); 
+    }
+
+    /* Chevron points DOWN when open/expanded (default) */
+    .collapse-chevron {
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 12px;
+        margin-left: 8px;
+        display: inline-block;
+        transform: rotate(0deg); /* Points Down */
+    }
+
+    /* Chevron rotates to point RIGHT when clicked/collapsed */
+    .collapse-chevron.collapsed {
+        transform: rotate(-90deg) !important; /* Points Right */
+    }
+
+    /* Default state for all collapsible containers: OPEN */
+    .collapsible-content,
+    .rec-classification-body,
+    .records-grid,
+    .fest-collapsible-content,
+    .category-collapsible-content,
+    .ll-section-body {
+        display: block;
+        width: 100%;
+    }
+    .records-grid {
+        display: grid !important;
+    }
+
+    option[value=""] { display: none !important; }
+    option[value=""] { display: none !important; }
+
 
     
 </style>
@@ -2522,79 +2735,184 @@
         </div>
 
         <!-- TAB 9: L&L (LABELS & LOTS) TAB -->
+        <!-- TAB 9: L&L (LABELS & LOTS) TAB -->
         <div id="LLTab" class="tabcontent">
-            
-            <!-- SECTION 1: PARTICIPATING ITEMS LABELS -->
-            <div class="section" id="llItemsPrintSection">
-                <div class="ll-toolbar no-print">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        
-                        <h4 style="margin:0; font-size:15px; color:var(--primary);">
-                            <i class="fas fa-ticket-alt"></i> Section 1: Participating Item Labels (4 per A4 Page)
-                        </h4>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <select id="llItemFestFilter" onchange="renderLLItemLabels()" style="font-size:12px;">
-                            <option value="ALL">All Fests</option>
-                        </select>
-                        <!-- INDEPENDENT VIEW (WITH BACK) & PRINT -->
-                        <button type="button" class="action-btn" onclick="openLLViewModal('items', false)" title="View Section 1 Items Full Preview">
-                            <i class="fas fa-eye"></i> <span>View</span>
-                        </button>
-                        <button type="button" class="action-btn gold" onclick="openLLViewModal('items', true)" title="Print Section 1 Item Labels">
-                            <i class="fas fa-print"></i> <span>Print</span>
-                        </button>
-                    </div>
+
+            <!-- SECTION 1: PARTICIPATING ITEMS LABELS (COLLAPSIBLE) -->
+            <div class="section" style="padding:14px; margin-bottom:14px;">
+                <div class="ll-section-head" onclick="toggleLLSection('llItemsPrintSection', this)">
+                    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-ticket-alt"></i>
+                        <span>Section 1: Participating Item Labels (4 per A4 Page)</span>
+                    </h4>
+                    <i class="fas fa-chevron-down collapse-chevron"></i>
                 </div>
 
-                <div class="ll-mobile-hint no-print">
-                    <i class="fas fa-arrows-up-down-left-right"></i> Scroll sideways/vertically to preview A4 Sheet
-                </div>
+                <div class="ll-section-body" id="llItemsPrintSection" style="display: block;">
+                    <div class="ll-toolbar no-print">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:12.5px; font-weight:700; color:#334155;">Filter Fest:</span>
+                            <select id="llItemFestFilter" onchange="renderLLItemLabels()" style="font-size:12px;">
+                                <option value="ALL">All Fests</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button type="button" class="action-btn" onclick="openLLViewModal('items', false)" title="View Section 1 Items Full Preview">
+                                <i class="fas fa-eye"></i> <span>View</span>
+                            </button>
+                            <button type="button" class="action-btn gold" onclick="openLLViewModal('items', true)" title="Print Section 1 Item Labels">
+                                <i class="fas fa-print"></i> <span>Print</span>
+                            </button>
+                        </div>
+                    </div>
 
-                <!-- Dual-Axis Scroller (Vertical & Horizontal) -->
-                <div class="ll-scroll-wrapper">
-                    <div id="llItemsPrintContainer">
-                        <p style="text-align:center; color:#999; padding:20px;">Loading Item Labels...</p>
+                    <div class="ll-mobile-hint no-print">
+                        <i class="fas fa-arrows-up-down-left-right"></i> Scroll sideways/vertically to preview A4 Sheet
+                    </div>
+
+                    <div class="ll-scroll-wrapper">
+                        <div id="llItemsPrintContainer">
+                            <p style="text-align:center; color:#999; padding:20px;">Loading Item Labels...</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SECTION 2: PARTICIPANT LOT NUMBERS -->
-            <div class="section" id="llLotsPrintSection" style="margin-top:20px;">
-                <div class="ll-toolbar no-print">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <h4 style="margin:0; font-size:15px; color:var(--primary);">
-                            <i class="fas fa-dice"></i> Section 2: Lot Numbers (8 per A4 Page)
-                        </h4>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <select id="llLotFestFilter" onchange="populateLLLotItemFilter()" style="font-size:12px;">
-                            <option value="ALL">All Fests</option>
-                        </select>
-                        <select id="llLotItemFilter" onchange="renderLLLotLabels()" style="font-size:12px;">
-                            <option value="ALL">All Items</option>
-                        </select>
-                        <!-- INDEPENDENT VIEW (WITH BACK) & PRINT -->
-                        <button type="button" class="action-btn" onclick="openLLViewModal('lots', false)" title="View Section 2 Lots Full Preview">
-                            <i class="fas fa-eye"></i> <span>View</span>
-                        </button>
-                        <button type="button" class="action-btn gold" onclick="openLLViewModal('lots', true)" title="Print Section 2 Lot Numbers">
-                            <i class="fas fa-print"></i> <span>Print</span>
-                        </button>
-                    </div>
+            <!-- SECTION 2: PARTICIPANT LOT NUMBERS (COLLAPSIBLE) -->
+            <div class="section" style="padding:14px; margin-bottom:14px;">
+                <div class="ll-section-head" onclick="toggleLLSection('llLotsPrintSection', this)">
+                    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-dice"></i>
+                        <span>Section 2: Lot Numbers (8 per A4 Page)</span>
+                    </h4>
+                    <i class="fas fa-chevron-down collapse-chevron"></i>
                 </div>
 
-                <div class="ll-mobile-hint no-print">
-                    <i class="fas fa-arrows-up-down-left-right"></i> Scroll sideways/vertically to preview A4 Sheet
-                </div>
+                <div class="ll-section-body" id="llLotsPrintSection" style="display: block;">
+                    <div class="ll-toolbar no-print">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <span style="font-size:12.5px; font-weight:700; color:#334155;">Filters:</span>
+                            <select id="llLotFestFilter" onchange="populateLLLotItemFilter()" style="font-size:12px;">
+                                <option value="ALL">All Fests</option>
+                            </select>
+                            <select id="llLotItemFilter" onchange="renderLLLotLabels()" style="font-size:12px;">
+                                <option value="ALL">All Items</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button type="button" class="action-btn" onclick="openLLViewModal('lots', false)" title="View Section 2 Lots Full Preview">
+                                <i class="fas fa-eye"></i> <span>View</span>
+                            </button>
+                            <button type="button" class="action-btn gold" onclick="openLLViewModal('lots', true)" title="Print Section 2 Lot Numbers">
+                                <i class="fas fa-print"></i> <span>Print</span>
+                            </button>
+                        </div>
+                    </div>
 
-                <!-- Dual-Axis Scroller (Vertical & Horizontal) -->
-                <div class="ll-scroll-wrapper">
-                    <div id="llLotsPrintContainer">
-                        <p style="text-align:center; color:#999; padding:20px;">Loading Lot Numbers...</p>
+                    <div class="ll-mobile-hint no-print">
+                        <i class="fas fa-arrows-up-down-left-right"></i> Scroll sideways/vertically to preview A4 Sheet
+                    </div>
+
+                    <div class="ll-scroll-wrapper">
+                        <div id="llLotsPrintContainer">
+                            <p style="text-align:center; color:#999; padding:20px;">Loading Lot Numbers...</p>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- SECTION 3: MANUAL JUDGEMENT SHEET (NEW COLLAPSIBLE) -->
+            <div class="section" style="padding:14px; margin-bottom:14px;">
+                <div class="ll-section-head" onclick="toggleLLSection('llManualJudgeSection', this)">
+                    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-gavel"></i>
+                        <span>Section 3: Manual Judgement Sheet (All Items / Blank)</span>
+                    </h4>
+                    <i class="fas fa-chevron-down collapse-chevron"></i>
+                </div>
+
+                <div class="ll-section-body" id="llManualJudgeSection" style="display: block;">
+                    <div class="ll-toolbar no-print">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <select id="llJudgeFestFilter" onchange="populateLLJudgeItemFilter()" style="font-size:12px;">
+                                <option value="ALL">All Fests</option>
+                            </select>
+                            <select id="llJudgeItemFilter" onchange="renderManualJudgeSheetPreview()" style="font-size:12px;">
+                                <option value="ALL">All Items</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <!-- Filled View & Print -->
+                            <button type="button" class="action-btn" onclick="openManualSheetView('judge', false, false)" title="View with allotted lots">
+                                <i class="fas fa-eye"></i> <span>View Sheet</span>
+                            </button>
+                            <button type="button" class="action-btn gold" onclick="openManualSheetView('judge', false, true)" title="Print with allotted lots">
+                                <i class="fas fa-print"></i> <span>Print Sheet</span>
+                            </button>
+                            <!-- Blank Template Print -->
+                            <button type="button" class="action-btn purple" onclick="openManualSheetView('judge', true, false)" title="View Blank Template">
+                                <i class="fas fa-file-lines"></i> <span>View Blank (........)</span>
+                            </button>
+                            <button type="button" class="action-btn danger" onclick="openManualSheetView('judge', true, true)" title="Print Blank Unfilled Template">
+                                <i class="fas fa-print"></i> <span>Print Blank</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="ll-scroll-wrapper">
+                        <div id="llJudgeSheetPrintContainer">
+                            <p style="text-align:center; color:#999; padding:20px;">Select an item or Fest to preview Judgement Sheet...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: MANUAL TABULATION SHEET (NEW COLLAPSIBLE) -->
+            <div class="section" style="padding:14px; margin-bottom:14px;">
+                <div class="ll-section-head" onclick="toggleLLSection('llManualTabSection', this)">
+                    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-table-list"></i>
+                        <span>Section 4: Manual Tabulation Sheet (Judges 1 to 5 / Blank)</span>
+                    </h4>
+                    <i class="fas fa-chevron-down collapse-chevron"></i>
+                </div>
+
+                <div class="ll-section-body" id="llManualTabSection" style="display: block;">
+                    <div class="ll-toolbar no-print">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <select id="llTabFestFilter" onchange="populateLLTabItemFilter()" style="font-size:12px;">
+                                <option value="ALL">All Fests</option>
+                            </select>
+                            <select id="llTabItemFilter" onchange="renderManualTabSheetPreview()" style="font-size:12px;">
+                                <option value="ALL">All Items</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <!-- Filled View & Print -->
+                            <button type="button" class="action-btn" onclick="openManualSheetView('tabulation', false, false)" title="View Tabulation Sheet">
+                                <i class="fas fa-eye"></i> <span>View Sheet</span>
+                            </button>
+                            <button type="button" class="action-btn gold" onclick="openManualSheetView('tabulation', false, true)" title="Print Tabulation Sheet">
+                                <i class="fas fa-print"></i> <span>Print Sheet</span>
+                            </button>
+                            <!-- Blank Template Print -->
+                            <button type="button" class="action-btn purple" onclick="openManualSheetView('tabulation', true, false)" title="View Blank Template">
+                                <i class="fas fa-file-lines"></i> <span>View Blank (........)</span>
+                            </button>
+                            <button type="button" class="action-btn danger" onclick="openManualSheetView('tabulation', true, true)" title="Print Blank Unfilled Template">
+                                <i class="fas fa-print"></i> <span>Print Blank</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="ll-scroll-wrapper">
+                        <div id="llTabSheetPrintContainer">
+                            <p style="text-align:center; color:#999; padding:20px;">Select an item or Fest to preview Tabulation Sheet...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- TAB 3: EVENT MANAGEMENT TAB -->
@@ -3032,6 +3350,81 @@
                     </div>
                 </div>
                 <button class="action-btn" style="margin-top:10px;" onclick="saveTabPermissions()"><i class="fas fa-save"></i> Save Tab Visibility</button>
+            </div>
+
+            <!-- NEW SECTION: RESULTS SCRUTINY FOR ALL LOGINS -->
+            <div class="section" id="adminResultScrutinySection">
+                <h4 class="section-title">
+                    <span><i class="fas fa-microscope"></i> Results Scrutiny & Role Visibility Control</span>
+                    <button class="action-btn success" style="padding:6px 14px; font-size:12.5px;" onclick="saveResultScrutinyConfig()">
+                        <i class="fas fa-save"></i> Save Scrutiny Permissions
+                    </button>
+                </h4>
+                <p style="font-size:13px; color:#64748b; margin:-6px 0 14px 0;">
+                    Scrutinise item-level results. Filter by classification, festival, and item to check scores and toggle whether results are viewable by <b>Students</b>, <b>Judges</b>, or <b>All Logins</b>.
+                </p>
+
+                <!-- Filters Bar -->
+                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom:14px;">
+                    <div class="form-group" style="margin:0;">
+                        <label>Festival Classification</label>
+                        <select id="scrutinyCatFilter" onchange="onScrutinyCatChange()">
+                            <option value="ALL">All Classifications</option>
+                            <option value="Kalothswom">Kalothswom</option>
+                            <option value="Fest">Fest</option>
+                            <option value="Sports">Sports</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Name of Fest</label>
+                        <select id="scrutinyFestFilter" onchange="renderAdminResultScrutinyTable()">
+                            <option value="ALL">All Festivals</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Quick Search Item</label>
+                        <input type="text" id="scrutinySearch" placeholder="🔍 Search item name or code..." oninput="renderAdminResultScrutinyTable()">
+                    </div>
+                </div>
+
+                <!-- Bulk Toggles -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; background:#f8fafc; padding:8px 12px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+                    <span style="font-size:12px; font-weight:700; color:#334155;">Batch Actions:</span>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="action-btn" style="padding:4px 9px; font-size:11.5px;" onclick="toggleAllScrutinyRoles('student', true)">
+                            <i class="fas fa-check"></i> Allow All for Students
+                        </button>
+                        <button type="button" class="action-btn secondary" style="padding:4px 9px; font-size:11.5px;" onclick="toggleAllScrutinyRoles('student', false)">
+                            <i class="fas fa-eye-slash"></i> Hide All from Students
+                        </button>
+                        <button type="button" class="action-btn purple" style="padding:4px 9px; font-size:11.5px;" onclick="toggleAllScrutinyRoles('judge', true)">
+                            <i class="fas fa-check"></i> Allow All for Judges
+                        </button>
+                        <button type="button" class="action-btn secondary" style="padding:4px 9px; font-size:11.5px;" onclick="toggleAllScrutinyRoles('judge', false)">
+                            <i class="fas fa-eye-slash"></i> Hide All from Judges
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table for Scrutiny -->
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:40px; text-align:center;">#</th>
+                                <th>Item & Code</th>
+                                <th>Classification & Fest</th>
+                                <th style="text-align:center;">Tabulated Status</th>
+                                <th style="text-align:center; width:130px;">Student Login</th>
+                                <th style="text-align:center; width:130px;">Judge Login</th>
+                                <th style="text-align:center; width:120px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scrutinyTbody">
+                            <tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:20px;">Loading results for scrutiny...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="section">
@@ -3842,6 +4235,7 @@
             if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
             if (!dbSettings.Student_Allowed_Tabs) dbSettings.Student_Allowed_Tabs = ["RegTab", "RecTab", "ResultTab", "SubDistrictTab"];
             if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementTab"];
+            if (!dbSettings.ItemResultVisibility) dbSettings.ItemResultVisibility = {};
             if (!dbSettings.HiddenFests) dbSettings.HiddenFests = [];
 
             if (dbSettings.AllFestNames && Array.isArray(dbSettings.AllFestNames) && dbSettings.AllFestNames.length > 0) {
@@ -4657,21 +5051,19 @@
         openParticipantsReport(true);
     }
 
+    // 3. Toggle for View Records Tab (Category and Fest levels - Starts Open by default)
     function toggleRecSection(headerEl) {
         const targetBody = headerEl.nextElementSibling;
         if (!targetBody) return;
-
         const chevron = headerEl.querySelector('.collapse-chevron');
-        const isClosed = targetBody.style.display === 'none';
+        const isClosed = window.getComputedStyle(targetBody).display === 'none' || targetBody.style.display === 'none';
 
-        targetBody.style.display = isClosed ? '' : 'none';
-
-        if (chevron) {
-            if (isClosed) {
-                chevron.classList.remove('collapsed');
-            } else {
-                chevron.classList.add('collapsed');
-            }
+        if (isClosed) {
+            targetBody.style.display = '';
+            if (chevron) chevron.classList.remove('collapsed');
+        } else {
+            targetBody.style.display = 'none';
+            if (chevron) chevron.classList.add('collapsed');
         }
     }
 
@@ -4781,7 +5173,7 @@
                                 </div>
                                 ${adminFestControls}
                             </div>
-                            <div class="records-grid" style="margin-bottom:20px;">
+                            <div class="records-grid" style="margin-bottom:20px; display:grid;">
                     `;
 
                     indRecords.forEach(r => {
@@ -4872,7 +5264,7 @@
                             <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
                             <i class="fas fa-chevron-down collapse-chevron"></i>
                         </div>
-                        <div class="rec-classification-body" style="width:100%;">
+                        <div class="rec-classification-body" style="width:100%; display:block;">
                             ${indFestsHTML}
                         </div>
                     </div>
@@ -7095,21 +7487,19 @@
     }
 
     // --- TAB 6: RESULT TAB ---
+    // 2. Toggle for Results Tab (Category, Fest, and Item levels - Starts Open by default)
     function toggleResultSection(headerEl) {
         const targetBody = headerEl.nextElementSibling;
         if (!targetBody) return;
-
         const chevron = headerEl.querySelector('.collapse-chevron');
-        const isClosed = targetBody.style.display === 'none';
+        const isClosed = window.getComputedStyle(targetBody).display === 'none' || targetBody.style.display === 'none';
 
-        targetBody.style.display = isClosed ? 'block' : 'none';
-
-        if (chevron) {
-            if (isClosed) {
-                chevron.classList.remove('collapsed');
-            } else {
-                chevron.classList.add('collapsed');
-            }
+        if (isClosed) {
+            targetBody.style.display = 'block';
+            if (chevron) chevron.classList.remove('collapsed');
+        } else {
+            targetBody.style.display = 'none';
+            if (chevron) chevron.classList.add('collapsed');
         }
     }
 
@@ -7123,6 +7513,20 @@
         container.innerHTML = "";
 
         let results = [...dbPublishedResults];
+
+        // Filter based on Admin Scrutiny role permissions
+        const isStudent = currentUser && currentUser.role === "Student";
+        const isJudge = currentUser && currentUser.role === "Judge";
+        if (isStudent || isJudge) {
+            const visibilityMap = dbSettings.ItemResultVisibility || {};
+            results = results.filter(r => {
+                const cfg = visibilityMap[r.itemCode];
+                if (!cfg) return true;
+                if (isStudent && cfg.student === false) return false;
+                if (isJudge && cfg.judge === false) return false;
+                return true;
+            });
+        }
 
         if (catFilter !== "ALL") {
             results = results.filter(r => (r.festCategory || getFestivalCategory(r.festName)) === catFilter);
@@ -7139,23 +7543,16 @@
             );
         }
 
+        // Championship Points Table (Top Standings)
         const classPoints = {};
         dbPublishedResults.forEach(r => {
             const clsKey = `${r.studentClass} ${r.studentDivision || ''}`.trim() || "General";
             if (!classPoints[clsKey]) {
                 classPoints[clsKey] = { points: 0, first: 0, second: 0, third: 0 };
             }
-            
-            if (r.place === "FIRST Place") { 
-                classPoints[clsKey].points += 5; 
-                classPoints[clsKey].first += 1; 
-            } else if (r.place === "SECOND Place") { 
-                classPoints[clsKey].points += 3; 
-                classPoints[clsKey].second += 1; 
-            } else if (r.place === "THIRD Place") { 
-                classPoints[clsKey].points += 1; 
-                classPoints[clsKey].third += 1; 
-            }
+            if (r.place === "FIRST Place") { classPoints[clsKey].points += 5; classPoints[clsKey].first += 1; }
+            else if (r.place === "SECOND Place") { classPoints[clsKey].points += 3; classPoints[clsKey].second += 1; }
+            else if (r.place === "THIRD Place") { classPoints[clsKey].points += 1; classPoints[clsKey].third += 1; }
         });
 
         const sortedStandings = Object.keys(classPoints).map(k => ({
@@ -7206,112 +7603,149 @@
             return;
         }
 
+        // =========================================================================
+        // 3-TIER HIERARCHY: Classification (A-Z) -> Fest Name (A-Z) -> Item (A-Z)
+        // =========================================================================
         const hierarchy = {};
         results.forEach(r => {
-            const cat = r.festCategory || getFestivalCategory(r.festName);
+            const cat = r.festCategory || getFestivalCategory(r.festName) || "Other";
+            const fName = r.festName || "General Fest";
+            const itemKey = `${r.itemName} [${r.itemCode || 'N/A'}]`;
+
             if (!hierarchy[cat]) hierarchy[cat] = {};
-            const itemKey = `${r.itemName} (${r.itemCode})`;
-            if (!hierarchy[cat][itemKey]) hierarchy[cat][itemKey] = [];
-            hierarchy[cat][itemKey].push(r);
+            if (!hierarchy[cat][fName]) hierarchy[cat][fName] = {};
+            if (!hierarchy[cat][fName][itemKey]) hierarchy[cat][fName][itemKey] = [];
+
+            hierarchy[cat][fName][itemKey].push(r);
         });
 
+        // 1. Sort Categories Alphabetically (A-Z)
         const sortedCategories = Object.keys(hierarchy).sort((a, b) => a.localeCompare(b));
 
         sortedCategories.forEach(cat => {
-            if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
-
             let catHTML = `
-                <div class="category-main-head collapsible-header" onclick="toggleResultSection(this)">
-                    <span><i class="fas fa-award"></i> ${cat.toUpperCase()} RESULTS</span>
-                    <i class="fas fa-chevron-down collapse-chevron"></i>
-                </div>
-                <div class="category-collapsible-content" style="display: block; width: 100%;">
+                <div style="width:100%; margin-bottom:20px;">
+                    <div class="category-main-head collapsible-header" onclick="toggleResultSection(this)">
+                        <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()} RESULTS</span>
+                        <i class="fas fa-chevron-down collapse-chevron"></i>
+                    </div>
+                    <div class="category-collapsible-content" style="display: block; width: 100%;">
             `;
 
-            Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b)).forEach(itemKey => {
-                const rows = hierarchy[cat][itemKey];
-                rows.sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
+            // 2. Sort Festivals Alphabetically (A-Z)
+            const sortedFests = Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b));
+
+            sortedFests.forEach(festName => {
+                const festItemsObj = hierarchy[cat][festName];
+
+                // 3. Sort Items Alphabetically (A-Z)
+                const sortedItems = Object.keys(festItemsObj).sort((a, b) => a.localeCompare(b));
 
                 catHTML += `
-                    <div class="item-sub-head collapsible-header" onclick="toggleResultSection(this)">
-                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <i class="fas fa-chevron-down collapse-chevron"></i>
-                            <span><i class="fas fa-star" style="color:var(--warning);"></i> ${itemKey}</span>
-                            <span class="result-badge-new"><i class="fas fa-bolt"></i> NEW</span>
+                    <div style="width:100%; margin-bottom:14px;">
+                        <div class="rec-fest-head collapsible-header" onclick="toggleResultSection(this)" style="margin: 10px 0 8px 0;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="fas fa-chevron-down collapse-chevron"></i>
+                                <h5 style="margin:0; font-size:14.5px; color:var(--text-main); font-weight:800;">
+                                    <i class="fas fa-trophy" style="color:var(--warning);"></i> ${festName}
+                                </h5>
+                            </div>
+                            <span style="font-size:11.5px; font-weight:700; color:#64748b;">
+                                ${sortedItems.length} Item(s)
+                            </span>
                         </div>
-                        <span style="font-size:12px; font-weight:normal; color:#555;">
-                            <i class="far fa-clock"></i> Published: ${rows[0].publishedAt || 'Official'}
-                        </span>
-                    </div>
-                    <div class="table-responsive" style="display: block;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width:50px; text-align:center;">Sl No</th>
-                                    <th style="width:80px; text-align:center;">Lot No</th>
-                                    <th>Candidate Name</th>
-                                    <th>Class & Div</th>
-                                    <th style="width:90px; text-align:center;">Score</th>
-                                    <th style="width:70px; text-align:center;">Grade</th>
-                                    <th style="width:130px; text-align:center;">Place</th>
-                                    <th style="width:130px; text-align:center;">Certificate & Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <div class="fest-collapsible-content" style="display: block; width: 100%; margin-bottom: 12px;">
                 `;
 
-                rows.forEach((row, sIdx) => {
-                    let placeBadge = 'place-other';
-                    if (row.place === "FIRST Place") placeBadge = 'place-1';
-                    else if (row.place === "SECOND Place") placeBadge = 'place-2';
-                    else if (row.place === "THIRD Place") placeBadge = 'place-3';
+                sortedItems.forEach(itemKey => {
+                    const rows = festItemsObj[itemKey];
+                    // Sort candidate rows by score descending
+                    rows.sort((a, b) => parseFloat(b.score || 0) - parseFloat(a.score || 0));
 
                     catHTML += `
-                        <tr>
-                            <td style="text-align:center; font-weight:600;">${sIdx + 1}</td>
-                            <td style="text-align:center; font-weight:700; color:#0c2340;">${row.lotNumber || 'N/A'}</td>
-                            <td>
-    ${(() => {
-        const members = getTeamMembersForResult(row);
-        if (members && members.length > 1) {
-            const memberNames = members.map(m => m.name === row.candidateName ? `<b>${m.name}</b> (Leader)` : m.name).join(", ");
-            return `
-                <div>
-                    <b>${row.candidateName}</b> <span style="color:#d97706; font-size:10.5px; font-weight:700;">(Team Leader)</span>
-                    <div style="font-size:11px; color:#64748b; margin-top:3px; line-height:1.3;">
-                        <i class="fas fa-users" style="color:var(--accent);"></i> <b>Group (${members.length}):</b> ${memberNames}
-                    </div>
-                </div>
-            `;
-        }
-        return `<b>${row.candidateName}</b>`;
-    })()}
-</td>
-                            <td>${row.studentClass} ${row.studentDivision || ''}</td>
-                            <td style="text-align:center;"><b>${row.score}</b></td>
-                            <td style="text-align:center;"><span style="font-weight:bold; color:var(--primary);">${row.grade}</span></td>
-                            <td style="text-align:center;"><span class="badge-place ${placeBadge}">${row.place}</span></td>
-                            <td style="text-align:center;">
-                                <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
-                                    <button class="action-btn" style="padding:5px 8px; font-size:12px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="action-btn gold" style="padding:5px 8px; font-size:12px;" title="Print Certificate" onclick="openCertificateModal('${row.id}', true)">
-                                        <i class="fas fa-print"></i>
-                                    </button>
-                                    <button class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                        <div style="margin-bottom:12px; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;">
+                            <div class="item-sub-head collapsible-header" onclick="toggleResultSection(this)" style="margin:0; padding:10px 14px; background:#f8fafc;">
+                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                    <i class="fas fa-chevron-down collapse-chevron"></i>
+                                    <span><i class="fas fa-star" style="color:var(--warning);"></i> ${itemKey}</span>
+                                    <span class="result-badge-new"><i class="fas fa-bolt"></i> NEW</span>
                                 </div>
-                            </td>
-                        </tr>
+                                <span style="font-size:12px; font-weight:normal; color:#555;">
+                                    <i class="far fa-clock"></i> Published: ${rows[0].publishedAt || 'Official'}
+                                </span>
+                            </div>
+                            <div class="table-responsive" style="margin:0; border:none; display: block;">
+                                <table>
+                                    <thead>
+                                        <tr style="background:#ffffff;">
+                                            <th style="width:50px; text-align:center;">Sl No</th>
+                                            <th style="width:80px; text-align:center;">Lot No</th>
+                                            <th>Candidate Name</th>
+                                            <th>Class & Div</th>
+                                            <th style="width:90px; text-align:center;">Score</th>
+                                            <th style="width:70px; text-align:center;">Grade</th>
+                                            <th style="width:130px; text-align:center;">Place</th>
+                                            <th style="width:130px; text-align:center;">Certificate & Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                     `;
+
+                    rows.forEach((row, sIdx) => {
+                        let placeBadge = 'place-other';
+                        if (row.place === "FIRST Place") placeBadge = 'place-1';
+                        else if (row.place === "SECOND Place") placeBadge = 'place-2';
+                        else if (row.place === "THIRD Place") placeBadge = 'place-3';
+
+                        catHTML += `
+                            <tr>
+                                <td style="text-align:center; font-weight:600;">${sIdx + 1}</td>
+                                <td style="text-align:center; font-weight:700; color:#0c2340;">${row.lotNumber || 'N/A'}</td>
+                                <td>
+                                    ${(() => {
+                                        const members = getTeamMembersForResult(row);
+                                        if (members && members.length > 1) {
+                                            const memberNames = members.map(m => m.name === row.candidateName ? `<b>${m.name}</b> (Leader)` : m.name).join(", ");
+                                            return `
+                                                <div>
+                                                    <b>${row.candidateName}</b> <span style="color:#d97706; font-size:10.5px; font-weight:700;">(Team Leader)</span>
+                                                    <div style="font-size:11px; color:#64748b; margin-top:3px; line-height:1.3;">
+                                                        <i class="fas fa-users" style="color:var(--accent);"></i> <b>Group (${members.length}):</b> ${memberNames}
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }
+                                        return `<b>${row.candidateName}</b>`;
+                                    })()}
+                                </td>
+                                <td>${row.studentClass} ${row.studentDivision || ''}</td>
+                                <td style="text-align:center;"><b>${row.score}</b></td>
+                                <td style="text-align:center;"><span style="font-weight:bold; color:var(--primary);">${row.grade}</span></td>
+                                <td style="text-align:center;"><span class="badge-place ${placeBadge}">${row.place}</span></td>
+                                <td style="text-align:center;">
+                                    <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
+                                        <button class="action-btn" style="padding:5px 8px; font-size:12px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-btn gold" style="padding:5px 8px; font-size:12px;" title="Print Certificate" onclick="openCertificateModal('${row.id}', true)">
+                                            <i class="fas fa-print"></i>
+                                        </button>
+                                        <button class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    catHTML += `</tbody></table></div></div>`;
                 });
 
-                catHTML += `</tbody></table></div>`;
+                catHTML += `</div></div>`;
             });
 
-            catHTML += `</div>`;
+            catHTML += `</div></div>`;
             container.innerHTML += catHTML;
         });
     }
@@ -7398,68 +7832,87 @@
             container.innerHTML += ptsTable;
         }
 
-        // Full items results list
+        // 3-Tier Hierarchy for the Print/View Modal
         const hierarchy = {};
         results.forEach(r => {
-            const cat = r.festCategory || getFestivalCategory(r.festName);
+            const cat = r.festCategory || getFestivalCategory(r.festName) || "Other";
+            const fName = r.festName || "General Fest";
+            const itemKey = `${r.itemName} (${r.itemCode || 'N/A'})`;
+
             if (!hierarchy[cat]) hierarchy[cat] = {};
-            const itemKey = `${r.itemName} (${r.itemCode})`;
-            if (!hierarchy[cat][itemKey]) hierarchy[cat][itemKey] = [];
-            hierarchy[cat][itemKey].push(r);
+            if (!hierarchy[cat][fName]) hierarchy[cat][fName] = {};
+            if (!hierarchy[cat][fName][itemKey]) hierarchy[cat][fName][itemKey] = [];
+
+            hierarchy[cat][fName][itemKey].push(r);
         });
 
+        // 1. Sort Categories (A-Z)
         const sortedCategories = Object.keys(hierarchy).sort((a, b) => a.localeCompare(b));
 
         sortedCategories.forEach(cat => {
             let catHTML = `
-                <div style="margin-bottom:16px;">
-                    <div style="background:var(--primary); color:#ffffff; padding:6px 10px; font-weight:800; font-size:13px; border-radius:4px; margin-bottom:8px;">
+                <div style="margin-bottom:20px;">
+                    <div style="background:var(--primary); color:#ffffff; padding:7px 12px; font-weight:800; font-size:13px; border-radius:4px; margin-bottom:10px;">
                         ${cat.toUpperCase()} RESULTS DIRECTORY
                     </div>
             `;
 
-            Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b)).forEach(itemKey => {
-                const rows = hierarchy[cat][itemKey];
-                rows.sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
+            // 2. Sort Festivals (A-Z)
+            const sortedFests = Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b));
 
+            sortedFests.forEach(fName => {
                 catHTML += `
-                    <div style="margin-bottom:12px; border:1px solid #cbd5e1; border-radius:4px; overflow:hidden;">
-                        <div style="background:#f8fafc; padding:6px 10px; font-weight:700; font-size:12px; border-bottom:1px solid #cbd5e1; display:flex; justify-content:space-between;">
-                            <span><b>${itemKey}</b></span>
-                            <span style="color:#64748b; font-size:11px;">Fest: ${rows[0].festName}</span>
-                        </div>
-                        <table style="width:100%; font-size:11px;">
-                            <thead>
-                                <tr style="background:#ffffff;">
-                                    <th style="width:40px; text-align:center;">#</th>
-                                    <th style="width:65px; text-align:center;">Lot</th>
-                                    <th style="width:75px;">Admn No</th>
-                                    <th>Candidate Name</th>
-                                    <th>Class & Div</th>
-                                    <th style="width:70px; text-align:center;">Score</th>
-                                    <th style="width:55px; text-align:center;">Grade</th>
-                                    <th style="width:110px; text-align:center;">Place</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <div style="margin: 10px 0 6px 0; padding: 5px 10px; background: #f1f5f9; border-left: 4px solid var(--accent); font-weight: 800; font-size: 12.5px; color: #0f172a;">
+                        <i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${fName}
+                    </div>
                 `;
 
-                rows.forEach((r, idx) => {
-                    catHTML += `
-                        <tr>
-                            <td style="text-align:center;">${idx + 1}</td>
-                            <td style="text-align:center; font-weight:700;">${r.lotNumber || '-'}</td>
-                            <td>${r.admissionNumber}</td>
-                            <td><b>${r.candidateName}</b></td>
-                            <td>${r.studentClass} ${r.studentDivision || ''}</td>
-                            <td style="text-align:center; font-weight:800;">${r.score}</td>
-                            <td style="text-align:center;"><b>${r.grade}</b></td>
-                            <td style="text-align:center;">${r.place}</td>
-                        </tr>
-                    `;
-                });
+                // 3. Sort Items (A-Z)
+                const sortedItems = Object.keys(hierarchy[cat][fName]).sort((a, b) => a.localeCompare(b));
 
-                catHTML += `</tbody></table></div>`;
+                sortedItems.forEach(itemKey => {
+                    const rows = hierarchy[cat][fName][itemKey];
+                    rows.sort((a, b) => parseFloat(b.score || 0) - parseFloat(a.score || 0));
+
+                    catHTML += `
+                        <div style="margin-bottom:12px; border:1px solid #cbd5e1; border-radius:4px; overflow:hidden;">
+                            <div style="background:#f8fafc; padding:6px 10px; font-weight:700; font-size:12px; border-bottom:1px solid #cbd5e1; display:flex; justify-content:space-between;">
+                                <span><b>${itemKey}</b></span>
+                                <span style="color:#64748b; font-size:11px;">Fest: ${fName}</span>
+                            </div>
+                            <table style="width:100%; font-size:11px;">
+                                <thead>
+                                    <tr style="background:#ffffff;">
+                                        <th style="width:40px; text-align:center;">#</th>
+                                        <th style="width:65px; text-align:center;">Lot</th>
+                                        <th style="width:75px;">Admn No</th>
+                                        <th>Candidate Name</th>
+                                        <th>Class & Div</th>
+                                        <th style="width:70px; text-align:center;">Score</th>
+                                        <th style="width:55px; text-align:center;">Grade</th>
+                                        <th style="width:110px; text-align:center;">Place</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    rows.forEach((r, idx) => {
+                        catHTML += `
+                            <tr>
+                                <td style="text-align:center;">${idx + 1}</td>
+                                <td style="text-align:center; font-weight:700;">${r.lotNumber || '-'}</td>
+                                <td>${r.admissionNumber}</td>
+                                <td><b>${r.candidateName}</b></td>
+                                <td>${r.studentClass} ${r.studentDivision || ''}</td>
+                                <td style="text-align:center; font-weight:800;">${r.score}</td>
+                                <td style="text-align:center;"><b>${r.grade}</b></td>
+                                <td style="text-align:center;">${r.place}</td>
+                            </tr>
+                        `;
+                    });
+
+                    catHTML += `</tbody></table></div>`;
+                });
             });
 
             catHTML += `</div>`;
@@ -7551,15 +8004,19 @@
     }
 
     // --- TAB 8: SUB-DISTRICT QUALIFIERS TAB ---
+    // 4. Toggle for Sub-District Tab Items (Starts Open by default)
     function toggleSubDistrictCollapse(headerEl) {
         const targetBody = headerEl.nextElementSibling;
         if (!targetBody) return;
         const chevron = headerEl.querySelector('.collapse-chevron');
-        const isClosed = targetBody.style.display === 'none';
-        targetBody.style.display = isClosed ? 'block' : 'none';
-        if (chevron) {
-            if (isClosed) chevron.classList.remove('collapsed');
-            else chevron.classList.add('collapsed');
+        const isClosed = window.getComputedStyle(targetBody).display === 'none' || targetBody.style.display === 'none';
+
+        if (isClosed) {
+            targetBody.style.display = 'block';
+            if (chevron) chevron.classList.remove('collapsed');
+        } else {
+            targetBody.style.display = 'none';
+            if (chevron) chevron.classList.add('collapsed');
         }
     }
 
@@ -8128,6 +8585,7 @@
         loadJudgeActivities();
         loadStudentLogs();
         renderAdminItemsTable();
+        renderAdminResultScrutinyTable();
     }
 
     function renderConvenorsTable() {
@@ -9874,7 +10332,490 @@
             showCustomDialog("Error", "Could not update registration.", "danger");
         }
     }
+      // ==========================================================================
+    // 16. ADMIN RESULT SCRUTINY & ROLE VISIBILITY CONTROLLER
+    // ==========================================================================
+    function onScrutinyCatChange() {
+        const cat = document.getElementById('scrutinyCatFilter').value;
+        const festSel = document.getElementById('scrutinyFestFilter');
+        festSel.innerHTML = '<option value="ALL">All Festivals</option>';
 
+        let fests = allFestNames.filter(festHasItems);
+        if (cat !== "ALL") {
+            fests = fests.filter(f => getFestivalCategory(f) === cat);
+        }
+        fests.forEach(f => {
+            festSel.innerHTML += `<option value="${f}">${f}</option>`;
+        });
+        renderAdminResultScrutinyTable();
+    }
+
+    function renderAdminResultScrutinyTable() {
+        const tbody = document.getElementById('scrutinyTbody');
+        if (!tbody) return;
+
+        const catFilt = document.getElementById('scrutinyCatFilter')?.value || "ALL";
+        const festFilt = document.getElementById('scrutinyFestFilter')?.value || "ALL";
+        const q = String(document.getElementById('scrutinySearch')?.value || "").toLowerCase().trim();
+
+        const visibilityMap = dbSettings.ItemResultVisibility || {};
+        tbody.innerHTML = "";
+
+        let items = dbFests.filter(f => isFestEnabled(f["Fest Name"])).sort((a, b) =>
+            String(a["Item"] || "").localeCompare(String(b["Item"] || ""))
+        );
+
+        if (catFilt !== "ALL") {
+            items = items.filter(f => getFestivalCategory(f["Fest Name"]) === catFilt);
+        }
+        if (festFilt !== "ALL") {
+            items = items.filter(f => f["Fest Name"] === festFilt);
+        }
+        if (q) {
+            items = items.filter(f =>
+                String(f["Item"] || "").toLowerCase().includes(q) ||
+                String(f["Item Code"] || "").toLowerCase().includes(q) ||
+                String(f["Fest Name"] || "").toLowerCase().includes(q)
+            );
+        }
+
+        if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:24px;">No items match selected filters.</td></tr>`;
+            return;
+        }
+
+        items.forEach((it, idx) => {
+            const code = it["Item Code"];
+            const isPublished = (dbSettings.PublishedItems || []).includes(code) || dbPublishedResults.some(p => p.itemCode === code);
+            const cfg = visibilityMap[code] || { student: true, judge: true };
+
+            const studentChecked = cfg.student !== false ? "checked" : "";
+            const judgeChecked = cfg.judge !== false ? "checked" : "";
+
+            tbody.innerHTML += `
+                <tr>
+                    <td style="text-align:center; font-weight:700; color:#64748b;">${idx + 1}</td>
+                    <td><b>${it["Item"]}</b> <span style="font-family:monospace; color:var(--primary); font-weight:700;">[${code}]</span></td>
+                    <td>${getFestivalCategory(it["Fest Name"])} &bull; <span style="color:#64748b;">${it["Fest Name"]}</span></td>
+                    <td style="text-align:center;">
+                        <span class="badge-place ${isPublished ? 'place-1' : 'place-other'}" style="font-size:11px;">
+                            ${isPublished ? '<i class="fas fa-check-circle" style="color:#059669;"></i> Published' : 'Pending'}
+                        </span>
+                    </td>
+                    <td style="text-align:center;">
+                        <label class="perm-tile" style="justify-content:center; padding:4px 8px;">
+                            <input type="checkbox" class="scrutiny-perm-student" data-code="${code}" ${studentChecked}> Viewable
+                        </label>
+                    </td>
+                    <td style="text-align:center;">
+                        <label class="perm-tile" style="justify-content:center; padding:4px 8px;">
+                            <input type="checkbox" class="scrutiny-perm-judge" data-code="${code}" ${judgeChecked}> Viewable
+                        </label>
+                    </td>
+                    <td style="text-align:center;">
+                        <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11.5px;" onclick="viewItemScrutinyBreakdown('${code}')" title="Breakdown">
+                            <i class="fas fa-eye"></i> Details
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function toggleAllScrutinyRoles(role, allow) {
+        const selector = role === 'student' ? '.scrutiny-perm-student' : '.scrutiny-perm-judge';
+        document.querySelectorAll(selector).forEach(chk => { chk.checked = allow; });
+    }
+
+    async function saveResultScrutinyConfig() {
+        if (!dbSettings.ItemResultVisibility) dbSettings.ItemResultVisibility = {};
+
+        const studentCheckboxes = document.querySelectorAll('.scrutiny-perm-student');
+        const judgeCheckboxes = document.querySelectorAll('.scrutiny-perm-judge');
+
+        studentCheckboxes.forEach(chk => {
+            const code = chk.dataset.code;
+            if (!dbSettings.ItemResultVisibility[code]) dbSettings.ItemResultVisibility[code] = {};
+            dbSettings.ItemResultVisibility[code].student = chk.checked;
+        });
+
+        judgeCheckboxes.forEach(chk => {
+            const code = chk.dataset.code;
+            if (!dbSettings.ItemResultVisibility[code]) dbSettings.ItemResultVisibility[code] = {};
+            dbSettings.ItemResultVisibility[code].judge = chk.checked;
+        });
+
+        showLoader("Saving Scrutiny Permissions...");
+        try {
+            await db.collection("config").doc("settings").set({
+                ItemResultVisibility: dbSettings.ItemResultVisibility
+            }, { merge: true });
+            hideLoader();
+            showCustomDialog("Scrutiny Saved", "Result role-visibility permissions successfully updated.", "success");
+        } catch (e) {
+            hideLoader();
+            showCustomDialog("Error", "Could not save scrutiny permissions.", "danger");
+        }
+    }
+
+    function viewItemScrutinyBreakdown(itemCode) {
+        const itemObj = dbFests.find(f => f["Item Code"] === itemCode);
+        const itemName = itemObj ? itemObj["Item"] : itemCode;
+        const results = dbPublishedResults.filter(r => r.itemCode === itemCode);
+
+        if (results.length === 0) {
+            return showCustomDialog(`Scrutiny: ${itemName}`, "No official results tabulated/published for this item yet.", "info");
+        }
+
+        let details = `<div style="text-align:left; max-height:300px; overflow-y:auto; font-size:12.5px;">` +
+                      `<p style="margin:0 0 8px 0; font-weight:700;">Published Winners (${results.length} Candidates):</p>` +
+                      `<table style="width:100%; font-size:11px; border-collapse:collapse;">` +
+                      `<tr style="background:#f1f5f9;"><th>Lot</th><th>Name</th><th>Class</th><th>Score</th><th>Grade</th><th>Place</th></tr>`;
+
+        results.forEach(r => {
+            details += `<tr><td>${r.lotNumber || '-'}</td><td><b>${r.candidateName}</b></td><td>${r.studentClass}</td><td>${r.score}</td><td>${r.grade}</td><td>${r.place}</td></tr>`;
+        });
+        details += `</table></div>`;
+
+        showCustomDialog(`Scrutiny: ${itemName} [${itemCode}]`, details, "info");
+    }
+
+    // ==========================================================================
+    // 17. L&L SECTION COLLAPSIBLES & MANUAL SHEETS ENGINE
+    // ==========================================================================
+    // 1. Toggle for L&L Tab Sections (Starts Open by default)
+    function toggleLLSection(bodyId, headerEl) {
+        const body = document.getElementById(bodyId);
+        if (!body) return;
+        const chevron = headerEl.querySelector('.collapse-chevron');
+        const isClosed = window.getComputedStyle(body).display === 'none' || body.style.display === 'none';
+
+        if (isClosed) {
+            body.style.display = 'block';
+            if (chevron) chevron.classList.remove('collapsed');
+        } else {
+            body.style.display = 'none';
+            if (chevron) chevron.classList.add('collapsed');
+        }
+    }
+
+    // Populate dropdowns for manual sheets when L&L tab opens
+    const _origInitLLTab = initLLTab;
+    initLLTab = function() {
+        if (typeof _origInitLLTab === "function") _origInitLLTab();
+
+        const judgeFestSel = document.getElementById('llJudgeFestFilter');
+        const tabFestSel = document.getElementById('llTabFestFilter');
+
+        [judgeFestSel, tabFestSel].forEach(sel => {
+            if (sel) {
+                sel.innerHTML = '<option value="ALL">All Fests</option>';
+                allFestNames.filter(f => isFestEnabled(f) && festHasItems(f)).forEach(f => {
+                    sel.innerHTML += `<option value="${f}">${f}</option>`;
+                });
+            }
+        });
+
+        populateLLJudgeItemFilter();
+        populateLLTabItemFilter();
+    };
+
+    function populateLLJudgeItemFilter() {
+        const fest = document.getElementById('llJudgeFestFilter')?.value || "ALL";
+        const itemSel = document.getElementById('llJudgeItemFilter');
+        if (!itemSel) return;
+        itemSel.innerHTML = '<option value="ALL">All Items</option>';
+
+        let fests = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
+        if (fest !== "ALL") fests = fests.filter(f => f["Fest Name"] === fest);
+
+        fests.sort((a,b) => String(a["Item"] || "").localeCompare(String(b["Item"] || ""))).forEach(it => {
+            itemSel.innerHTML += `<option value="${it["Item Code"]}">${it["Item"]} [${it["Item Code"]}]</option>`;
+        });
+        renderManualJudgeSheetPreview();
+    }
+
+    function populateLLTabItemFilter() {
+        const fest = document.getElementById('llTabFestFilter')?.value || "ALL";
+        const itemSel = document.getElementById('llTabItemFilter');
+        if (!itemSel) return;
+        itemSel.innerHTML = '<option value="ALL">All Items</option>';
+
+        let fests = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
+        if (fest !== "ALL") fests = fests.filter(f => f["Fest Name"] === fest);
+
+        fests.sort((a,b) => String(a["Item"] || "").localeCompare(String(b["Item"] || ""))).forEach(it => {
+            itemSel.innerHTML += `<option value="${it["Item Code"]}">${it["Item"]} [${it["Item Code"]}]</option>`;
+        });
+        renderManualTabSheetPreview();
+    }
+
+    // Generator: Builds a single manual sheet (Judgement or Tabulation, Populated or Blank)
+    function buildManualSheetHTML(type, itemObj, isBlank = false) {
+        const logoUrl = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png";
+        const isJudge = type === 'judge';
+
+        const classification = isBlank ? "........................................................" : (itemObj ? (itemObj["Festival Category"] || getFestivalCategory(itemObj["Fest Name"])) : "FESTIVAL");
+        const festName = isBlank ? "........................................................" : (itemObj ? itemObj["Fest Name"] : "GENERAL");
+        const itemName = isBlank ? "........................................................" : (itemObj ? itemObj["Item"] : "");
+        const itemCode = isBlank ? "........................" : (itemObj ? itemObj["Item Code"] : "");
+        const category = isBlank ? "........................" : (itemObj ? (itemObj["Category"] || "General") : "");
+
+        const convName = (!isBlank && itemObj && dbSettings.FestConvenors && dbSettings.FestConvenors[itemObj["Fest Name"]])
+            ? dbSettings.FestConvenors[itemObj["Fest Name"]]
+            : "THEJAS R";
+        const festDate = (!isBlank && itemObj) ? getCertIssueDate(itemObj["Fest Name"], "20/02/2026") : "..../..../2026";
+
+        // Criteria columns for Judgement sheet
+        let criteriaHeaders = "";
+        let criteriaCount = 4;
+        if (!isBlank && itemObj && dbSettings.ItemCriteria && dbSettings.ItemCriteria[itemObj["Item Code"]]) {
+            const list = dbSettings.ItemCriteria[itemObj["Item Code"]];
+            criteriaCount = list.length;
+            list.forEach((c, idx) => {
+                criteriaHeaders += `<th style="width:55px;">${c} (10)</th>`;
+            });
+        } else {
+            for (let i = 1; i <= criteriaCount; i++) {
+                criteriaHeaders += `<th style="width:55px;">Criteria ${i} (10)</th>`;
+            }
+        }
+
+        // Table Rows
+        let tableRowsHTML = "";
+        const maxRows = 16;
+
+        if (isBlank || !itemObj) {
+            for (let i = 1; i <= maxRows; i++) {
+                if (isJudge) {
+                    tableRowsHTML += `
+                        <tr>
+                            <td>${i}</td>
+                            <td class="cell-blank"></td>
+                            ${'<td></td>'.repeat(criteriaCount)}
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    `;
+                } else {
+                    tableRowsHTML += `
+                        <tr>
+                            <td>${i}</td>
+                            <td class="cell-blank"></td>
+                            <td></td><td></td><td></td><td></td><td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    `;
+                }
+            }
+        } else {
+            // Find allotted participant lots
+            const lots = [];
+            const seen = new Set();
+            dbRegistrations.filter(r => r["Item Code"] === itemObj["Item Code"] && r["Lot Number"]).forEach(r => {
+                if (!seen.has(r["Lot Number"])) {
+                    seen.add(r["Lot Number"]);
+                    lots.push(r["Lot Number"]);
+                }
+            });
+            lots.sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+
+            const totalRows = Math.max(lots.length, maxRows);
+            for (let i = 0; i < totalRows; i++) {
+                const lotVal = lots[i] || "";
+                if (isJudge) {
+                    tableRowsHTML += `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td style="font-weight:bold; font-size:12px;">${lotVal}</td>
+                            ${'<td></td>'.repeat(criteriaCount)}
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    `;
+                } else {
+                    tableRowsHTML += `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td style="font-weight:bold; font-size:12px;">${lotVal}</td>
+                            <td></td><td></td><td></td><td></td><td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    `;
+                }
+            }
+        }
+
+        return `
+            <div class="manual-sheet-page">
+                <div>
+                    <!-- School Details & Header -->
+                    <div class="manual-sheet-header">
+                        <div class="manual-sheet-header-top">
+                            <img src="${logoUrl}" alt="TDTTI Logo" class="manual-sheet-logo">
+                            <div class="manual-sheet-title">
+                                <h2>THIRUMALA DEVASWOM TEACHER TRAINING INSTITUTE</h2>
+                                <h4>THURAVOOR, CHERTHALA, ALAPPUZHA &bull; PIN: 688532</h4>
+                            </div>
+                        </div>
+                        <div class="manual-sheet-badge">
+                            ${isJudge ? 'OFFICIAL MANUAL JUDGEMENT SCORE SHEET' : 'OFFICIAL MANUAL TABULATION CONSOLIDATION SHEET'}
+                        </div>
+                    </div>
+
+                    <!-- Metadata Header Grid -->
+                    <div class="manual-meta-grid">
+                        <div class="manual-meta-item">Classification: <b>${classification}</b></div>
+                        <div class="manual-meta-item">Festival: <b>${festName}</b></div>
+                        <div class="manual-meta-item">Item Name: <b>${itemName}</b></div>
+                        <div class="manual-meta-item">Item Code: <b>${itemCode}</b> &bull; Category: <b>${category}</b></div>
+                    </div>
+
+                    <!-- Main Scoring Table -->
+                    <table class="manual-sheet-table">
+                        <thead>
+                            ${isJudge ? `
+                                <tr>
+                                    <th style="width:36px;">Sl No</th>
+                                    <th style="width:65px;">Lot No</th>
+                                    ${criteriaHeaders}
+                                    <th style="width:65px;">Total</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            ` : `
+                                <tr>
+                                    <th style="width:36px;">Sl No</th>
+                                    <th style="width:65px;">Lot No</th>
+                                    <th style="width:48px;">Jud 1</th>
+                                    <th style="width:48px;">Jud 2</th>
+                                    <th style="width:48px;">Jud 3</th>
+                                    <th style="width:48px;">Jud 4</th>
+                                    <th style="width:48px;">Jud 5</th>
+                                    <th style="width:65px;">Total</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            `}
+                        </thead>
+                        <tbody>
+                            ${tableRowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer with Date, Place and Signatories -->
+                <div class="manual-sheet-footer">
+                    <div>
+                        <div><b>Date:</b> ${festDate}</div>
+                        <div><b>Place:</b> Thuravoor</div>
+                    </div>
+                    ${isJudge ? `
+                        <div class="manual-sig-line">
+                            Judge Signature<br>
+                            <small style="font-weight:normal; color:#475569;">(Name & Phone)</small>
+                        </div>
+                        <div class="manual-sig-line">
+                            General Convenor<br>
+                            <small style="font-weight:normal; color:#475569;">(${convName})</small>
+                        </div>
+                    ` : `
+                        <div class="manual-sig-line">
+                            Tabulator Signature<br>
+                            <small style="font-weight:normal; color:#475569;">(Official)</small>
+                        </div>
+                        <div class="manual-sig-line">
+                            General Convenor<br>
+                            <small style="font-weight:normal; color:#475569;">(${convName})</small>
+                        </div>
+                        <div class="manual-sig-line">
+                            Principal<br>
+                            <small style="font-weight:normal; color:#475569;">(TDTTI Thuravoor)</small>
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderManualJudgeSheetPreview() {
+        const container = document.getElementById('llJudgeSheetPrintContainer');
+        if (!container) return;
+        const fest = document.getElementById('llJudgeFestFilter')?.value || "ALL";
+        const itemCode = document.getElementById('llJudgeItemFilter')?.value || "ALL";
+
+        let items = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
+        if (fest !== "ALL") items = items.filter(f => f["Fest Name"] === fest);
+        if (itemCode !== "ALL") items = items.filter(f => f["Item Code"] === itemCode);
+
+        if (items.length === 0) {
+            container.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">No items match selected filters.</p>`;
+            return;
+        }
+
+        container.innerHTML = buildManualSheetHTML('judge', items[0], false);
+    }
+
+    function renderManualTabSheetPreview() {
+        const container = document.getElementById('llTabSheetPrintContainer');
+        if (!container) return;
+        const fest = document.getElementById('llTabFestFilter')?.value || "ALL";
+        const itemCode = document.getElementById('llTabItemFilter')?.value || "ALL";
+
+        let items = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
+        if (fest !== "ALL") items = items.filter(f => f["Fest Name"] === fest);
+        if (itemCode !== "ALL") items = items.filter(f => f["Item Code"] === itemCode);
+
+        if (items.length === 0) {
+            container.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">No items match selected filters.</p>`;
+            return;
+        }
+
+        container.innerHTML = buildManualSheetHTML('tabulation', items[0], false);
+    }
+
+    // Modal Viewer & Print Handler for Manual Sheets
+    function openManualSheetView(type, isBlank = false, autoPrint = false) {
+        const modal = document.getElementById('llViewModal');
+        const titleEl = document.getElementById('llModalTitle');
+        const contentEl = document.getElementById('llModalContentArea');
+        if (!modal || !contentEl) return;
+
+        const isJudge = type === 'judge';
+        const fest = document.getElementById(isJudge ? 'llJudgeFestFilter' : 'llTabFestFilter')?.value || "ALL";
+        const itemCode = document.getElementById(isJudge ? 'llJudgeItemFilter' : 'llTabItemFilter')?.value || "ALL";
+
+        let items = dbFests.filter(f => isFestEnabled(f["Fest Name"]));
+        if (fest !== "ALL") items = items.filter(f => f["Fest Name"] === fest);
+        if (itemCode !== "ALL") items = items.filter(f => f["Item Code"] === itemCode);
+
+        let finalHTML = "";
+        if (isBlank) {
+            titleEl.innerHTML = `<i class="fas fa-file-lines"></i> Unfilled Blank ${isJudge ? 'Judgement' : 'Tabulation'} Sheet (Template)`;
+            finalHTML = buildManualSheetHTML(type, null, true);
+        } else {
+            titleEl.innerHTML = `<i class="fas fa-file-invoice"></i> Manual ${isJudge ? 'Judgement' : 'Tabulation'} Sheets (${items.length} Page(s))`;
+            items.forEach(it => {
+                finalHTML += buildManualSheetHTML(type, it, false);
+            });
+        }
+
+        contentEl.innerHTML = finalHTML;
+        modal.style.display = 'flex';
+
+        if (autoPrint) {
+            setTimeout(() => {
+                document.body.classList.remove('printing-cert', 'printing-report-portrait', 'printing-ll-portrait');
+                document.body.classList.add('printing-manual-sheet');
+                modal.classList.add('active-print');
+                window.print();
+                modal.classList.remove('active-print');
+                document.body.classList.remove('printing-manual-sheet');
+            }, 300);
+        }
+    }
+
+    
 
 
 </script>
