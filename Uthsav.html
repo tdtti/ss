@@ -19,7 +19,7 @@
 
 <style>
     /* ==========================================================================
-       MINIMALIST DESIGN SYSTEM (CLEAN, FUNCTIONAL & LIGHTWEIGHT)
+       1. MINIMALIST DESIGN SYSTEM (CLEAN, FUNCTIONAL & LIGHTWEIGHT)
        ========================================================================== */
     :root { 
         --bg-body: #f8fafc;
@@ -50,7 +50,7 @@
         --gold-pure: #d4af37;
         --gold-dark: #b89727;
         --gold-light: #fef9e7;
-        --corner-accent: #1e3a8a; /* Deep Royal Navy (Matching Regal Color - NOT Black) */
+        --corner-accent: #1e3a8a; /* Deep Royal Navy */
 
         --radius-sm: 6px;
         --radius-md: 10px;
@@ -75,7 +75,7 @@
     }
 
     /* ==========================================================================
-       1. MINIMALIST LOGIN SCREEN
+       2. MINIMALIST LOGIN SCREEN
        ========================================================================== */
     #loginScreen { 
         display: flex; 
@@ -205,7 +205,7 @@
     }
 
     /* ==========================================================================
-       2. MINIMALIST APP WRAPPER & HEADER
+       3. MINIMALIST APP WRAPPER & HEADER
        ========================================================================== */
     #appScreen { 
         display: none; 
@@ -270,7 +270,7 @@
         width: 100%; 
         position: relative;
         z-index: 1;
-        overflow: visible !important;
+        overflow: visible;
     }
     .section:focus-within { z-index: 50 !important; }
     .section-title { 
@@ -348,6 +348,7 @@
     .action-btn.success { background: var(--success); }
     .action-btn.success:hover { background: var(--success-hover); }
     .action-btn.purple { background: var(--purple); }
+    .action-btn.purple:hover { background: #6d28d9; }
     .action-btn.gold { background: #d97706; color: #ffffff; }
     .action-btn.gold:hover { background: #b45309; }
     .action-btn:disabled { background: #cbd5e1 !important; color: #94a3b8 !important; cursor: not-allowed; }
@@ -374,7 +375,7 @@
         display: inline-flex; 
         align-items: center; 
         gap: 5px; 
-        transition: all 0.12s ease;
+        transition: all 0.12s ease; 
     }
     .tap-btn.active { 
         background: #ffffff; 
@@ -387,7 +388,7 @@
     .tap-btn.active.danger { color: var(--danger); }
 
     /* ==========================================================================
-       3. NAVIGATION TABS
+       4. NAVIGATION TABS
        ========================================================================== */
     .tab { 
         display: flex; 
@@ -465,7 +466,7 @@
     }
 
     /* ==========================================================================
-       4. CARDS & CATEGORY BANNERS
+       5. CARDS & CATEGORY BANNERS
        ========================================================================== */
     .filters { 
         display: flex; 
@@ -525,6 +526,7 @@
     .record-card .timestamp { font-size: 11px; color: var(--text-light); }
 
     #cardsInd, #cardsGrp { display: block !important; width: 100% !important; }
+    
     .rec-classification-head {
         background: var(--primary);
         color: #ffffff;
@@ -555,7 +557,7 @@
     .rec-fest-head h5 { margin: 0; font-size: 14px; color: var(--text-main); font-weight: 700; }
 
     /* ==========================================================================
-       5. MINIMALIST CLEAN TABLES
+       6. MINIMALIST CLEAN TABLES
        ========================================================================== */
     .table-responsive { 
         overflow-x: auto; 
@@ -697,7 +699,7 @@
     }
 
     /* ==========================================================================
-       6. DIALOGS & LOADERS
+       7. DIALOGS & LOADERS
        ========================================================================== */
     #customDialogOverlay { 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -757,7 +759,7 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     /* ==========================================================================
-       7. UNIVERSAL MODAL SYSTEM & DUAL-AXIS SCROLLERS
+       8. UNIVERSAL MODAL SYSTEM & DUAL-AXIS SCROLLERS
        ========================================================================== */
     #certModal, #reportModal, #subDistrictModal, #resultReportModal {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -808,10 +810,9 @@
     .modal-scroll-body::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
     /* ==========================================================================
-       8. AUTO-FIT CERTIFICATE PREVIEW (100% VIEWABLE HEIGHT & WIDTH)
+       9. AUTO-FIT CERTIFICATE PREVIEW (100% VIEWABLE HEIGHT & WIDTH)
        ========================================================================== */
     .cert-modal-content {
-        /* Fine subtle mesh pattern */
         background-color: #ffffff;
         background-image: radial-gradient(#e5e7eb 0.75px, transparent 0.75px);
         background-size: 12px 12px;
@@ -829,7 +830,6 @@
         overflow: hidden;
     }
 
-    /* Auto-Fit Dual-Axis Wrapper (No Negative Scroll Cutoff) */
     .cert-scroll-wrapper {
         width: 100%; 
         flex: 1;
@@ -837,7 +837,7 @@
         -webkit-overflow-scrolling: touch; 
         display: flex; 
         justify-content: center;
-        align-items: center; /* Centers the scaled stage cleanly */
+        align-items: center;
         background: #f1f5f9; 
         border-radius: var(--radius-sm); 
         margin-top: 6px;
@@ -845,7 +845,6 @@
         box-sizing: border-box;
     }
 
-    /* Dynamic Stage that holds the scaled certificate */
     .cert-scale-stage {
         display: flex;
         justify-content: center;
@@ -859,7 +858,6 @@
         color: var(--text-muted); background: #ffffff; padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); margin-top: 6px;
     }
 
-    /* Fixed Aspect Ratio Container: 1040px x 735px (A4 Landscape 1.414:1) */
     .cert-container {
         width: 1040px;
         min-width: 1040px;
@@ -867,7 +865,6 @@
         height: 735px;
         min-height: 735px;
         max-height: 735px;
-        /* Fine subtle mesh pattern */
         background-color: #ffffff;
         background-image: radial-gradient(#e5e7eb 0.75px, transparent 0.75px);
         background-size: 12px 12px;
@@ -878,7 +875,6 @@
         flex-shrink: 0;
     }
 
-    /* Outer Heavy Pure Gold Border */
     .cert-outer-frame {
         border: 50px solid #d4af37 !important;
         height: 100%;
@@ -889,12 +885,10 @@
         background: #ffffff;
     }
 
-    /* Inner Gold Fillet with Rich Ivory Radiant Background */
     .cert-inner-frame {
         border: 9px solid #b89727 !important;
         outline: 6px dashed rgba(212, 175, 55, 0.75) !important;
         outline-offset: -20px;
-        padding: 40px;
         height: 100%;
         width: 100%;
         padding: 24px 34px 20px;
@@ -906,7 +900,6 @@
         background: radial-gradient(circle at center, #ffffff 60%, #fffdfa 90%, #fefbee 100%);
     }
 
-    /* Regal Non-Black Corners (Deep Royal Navy #1e3a8a) */
     .cert-corner {
         position: absolute;
         width: 36px;
@@ -920,7 +913,6 @@
     .corner-bl { bottom: 15px; left: 15px; border-width: 0 0 7px 7px; }
     .corner-br { bottom: 15px; right: 15px; border-width: 0 7px 7px 0; }
 
-    /* Watermark */
     .cert-watermark {
         position: absolute;
         top: 52%;
@@ -935,7 +927,6 @@
         background-size: contain;
     }
 
-    /* HEADER: Upscaled Logo & Tight Typography */
     .cert-header-row {
         display: flex;
         align-items: center;
@@ -1002,7 +993,6 @@
         letter-spacing: 0.5px;
     }
 
-    /* TITLE & SCRIPT */
     .cert-title-area {
         margin: 6px 0 2px;
         text-align: center;
@@ -1035,7 +1025,6 @@
         line-height: 1.1;
     }
 
-    /* MATTER & ADDRESSING AREA */
     .cert-body-area {
         position: relative;
         z-index: 2;
@@ -1085,7 +1074,6 @@
         border: 1px solid rgba(212, 175, 55, 0.4);
     }
 
-    /* SIGNATORY & 3D EMBOSSED GOLD SEAL SECTION */
     .cert-footer-row {
         display: flex;
         justify-content: space-between;
@@ -1130,7 +1118,6 @@
         margin-top: 2px;
     }
 
-    /* 3D Embossed Gold Seal with Ribbon Tails */
     .cert-gold-seal-wrapper {
         position: relative;
         display: flex;
@@ -1171,7 +1158,6 @@
     .ribbon-left { left: 24px; transform: rotate(20deg); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%); }
     .ribbon-right { right: 24px; transform: rotate(-20deg); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%); }
 
-    /* Group Member Selector Bar inside Certificate Modal */
     .cert-group-bar {
         display: flex;
         align-items: center;
@@ -1194,7 +1180,7 @@
     }
 
     /* ==========================================================================
-       9. STRICT PRINT RULES (WYSIWYG 1:1 REPRODUCTION ON A4)
+       10. STRICT PRINT RULES (WYSIWYG 1:1 REPRODUCTION ON A4)
        ========================================================================== */
     @page { 
         margin: 0 !important; 
@@ -1276,7 +1262,6 @@
             align-items: center !important;
         }
 
-        /* RESET SCREEN SCALE TO 1:1 UNTOUCHED VECTOR CANVAS FOR PRINT */
         body.printing-cert #certModal.active-print .cert-scale-stage {
             width: 100% !important;
             height: 100% !important;
@@ -1435,18 +1420,8 @@
         .no-print, .cert-mobile-hint { display: none !important; }
     }
 
-    @media (max-width: 768px) {
-        #appScreen { padding: 10px; }
-        .app-header { flex-direction: column; text-align: center; }
-        .header-right { text-align: center; }
-        .tab button span.tab-text { display: none; }
-        .tab button { padding: 9px 12px; position: relative; }
-        .tab-badge-notification { top: -2px; right: -2px; font-size: 8px; padding: 1px 4px; }
-        .section { padding: 16px; border-radius: var(--radius-md); }
-    }
-
     /* ==========================================================================
-       10. SCORING, LOT ALLOTMENT & ATTENDANCE
+       11. SCORING, LOT ALLOTMENT & ATTENDANCE
        ========================================================================== */
     .scoring-cards-grid {
         display: grid;
@@ -1576,7 +1551,7 @@
     }
 
     /* ==========================================================================
-       11. L&L (LABELS & LOTS) A4 PORTRAIT CANVAS & 20MM MARGINS
+       12. L&L (LABELS & LOTS) A4 PORTRAIT CANVAS & 20MM MARGINS
        ========================================================================== */
     #LLTab {
         width: 100% !important;
@@ -1617,34 +1592,6 @@
         padding: 4px 12px !important;
         border-radius: 20px !important;
         margin-bottom: 12px !important;
-    }
-
-    .ll-scroll-wrapper {
-        width: 100% !important;
-        max-height: 72vh !important;
-        overflow-x: auto !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        padding: 18px 12px !important;
-        background: #f1f5f9 !important;
-        border-radius: var(--radius-md) !important;
-        border: 1px solid var(--border) !important;
-        box-sizing: border-box !important;
-        text-align: center !important;
-    }
-
-    .ll-scroll-wrapper::-webkit-scrollbar { width: 8px; height: 8px; }
-    .ll-scroll-wrapper::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 4px; }
-    .ll-scroll-wrapper::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
-
-    #llItemsPrintContainer, 
-    #llLotsPrintContainer {
-        display: inline-flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        width: max-content !important;
-        margin: 0 auto !important;
-        padding: 0 !important;
     }
 
     .ll-page {
@@ -1897,7 +1844,7 @@
     }
 
     /* ==========================================================================
-       12. COLLAPSIBLE HEADERS, DROPDOWNS & MODAL ANIMATIONS
+       13. COLLAPSIBLE HEADERS, DROPDOWNS & MODAL ANIMATIONS
        ========================================================================== */
     .category-main-head.collapsible-header,
     .item-sub-head.collapsible-header,
@@ -1985,7 +1932,7 @@
     }
 
     /* ==========================================================================
-       13. ADMIN JUDGEMENT STATUS DASHBOARD & LED INDICATORS
+       14. ADMIN JUDGEMENT STATUS DASHBOARD & LED INDICATORS
        ========================================================================== */
     .led-indicator {
         width: 10px;
@@ -2102,7 +2049,7 @@
     }    
 
     /* ==========================================================================
-       14. BUILT-IN FLOATING CALENDAR POPUP
+       15. BUILT-IN FLOATING CALENDAR POPUP
        ========================================================================== */
     #miniCalendarPopup {
         position: absolute;
@@ -2194,7 +2141,7 @@
     }
 
     /* ==========================================================================
-       15. L&L COLLAPSIBLES & MANUAL SHEETS (JUDGEMENT & TABULATION)
+       16. L&L COLLAPSIBLES & MANUAL SHEETS (JUDGEMENT & TABULATION)
        ========================================================================== */
     .ll-section-head {
         cursor: pointer !important;
@@ -2325,6 +2272,7 @@
         font-weight: 700;
     }
 
+    /* Manual Sheets Dedicated Print Rule */
     @media print {
         body.printing-manual-sheet {
             background: #ffffff !important;
@@ -2364,52 +2312,100 @@
     }
 
     /* ==========================================================================
-       UNIVERSAL COLLAPSIBLE BEHAVIOR (EXPANDED BY DEFAULT)
+       17. MOBILE CONTAINMENT & OVERFLOW FIXES (SECTIONS 2, 3 & 4)
        ========================================================================== */
-    .collapsible-header,
-    .ll-section-head {
-        cursor: pointer !important;
-        user-select: none;
-        transition: background 0.15s ease;
-    }
-    .collapsible-header:hover,
-    .ll-section-head:hover { 
-        filter: brightness(0.97); 
+    #LLTab .section {
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important; /* Prevents 170mm/190mm canvas from breaking out of card */
     }
 
-    /* Chevron points DOWN when open/expanded (default) */
-    .collapse-chevron {
-        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        font-size: 12px;
-        margin-left: 8px;
-        display: inline-block;
-        transform: rotate(0deg); /* Points Down */
-    }
-
-    /* Chevron rotates to point RIGHT when clicked/collapsed */
-    .collapse-chevron.collapsed {
-        transform: rotate(-90deg) !important; /* Points Right */
-    }
-
-    /* Default state for all collapsible containers: OPEN */
-    .collapsible-content,
-    .rec-classification-body,
-    .records-grid,
-    .fest-collapsible-content,
-    .category-collapsible-content,
     .ll-section-body {
-        display: block;
-        width: 100%;
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
     }
-    .records-grid {
-        display: grid !important;
+
+    .ll-scroll-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 75vh !important;
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important; /* Momentum scrolling */
+        padding: 14px 8px !important;
+        background: #f1f5f9 !important;
+        border-radius: var(--radius-md) !important;
+        border: 1px solid var(--border) !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        text-align: center !important;
+    }
+
+    /* All preview containers contained inside scroll box */
+    #llItemsPrintContainer, 
+    #llLotsPrintContainer,
+    #llJudgeSheetPrintContainer, 
+    #llTabSheetPrintContainer {
+        display: inline-flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        width: max-content !important;
+        min-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    /* ==========================================================================
+       18. GENERAL MEDIA QUERIES & MOBILE ADJUSTMENTS
+       ========================================================================== */
+    @media (max-width: 768px) {
+        #appScreen { padding: 10px; }
+        .app-header { flex-direction: column; text-align: center; }
+        .header-right { text-align: center; }
+        .tab button span.tab-text { display: none; }
+        .tab button { padding: 9px 12px; position: relative; }
+        .tab-badge-notification { top: -2px; right: -2px; font-size: 8px; padding: 1px 4px; }
+        .section { padding: 16px; border-radius: var(--radius-md); }
+
+        /* L&L Mobile Toolbars & Cards */
+        #LLTab .section {
+            padding: 12px 10px !important;
+        }
+        .ll-toolbar {
+            padding: 10px 8px !important;
+            gap: 8px !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+        .ll-toolbar > div {
+            width: 100% !important;
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+        }
+        .ll-toolbar select {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: 1 1 100% !important;
+            font-size: 12px !important;
+        }
+        .ll-toolbar button {
+            flex: 1 1 auto !important;
+            font-size: 11px !important;
+            padding: 6px 10px !important;
+        }
+        .manual-sheet-page {
+            box-shadow: none !important;
+            margin-bottom: 20px !important;
+        }
     }
 
     option[value="Fest"] { display: none !important; }
     option[value="Sports"] { display: none !important; }
-
-
-    
 </style>
 
 </head>
@@ -2714,13 +2710,14 @@
                 </div>
                 <input type="text" id="filterSearch" placeholder="Search by name, item or admn no..." oninput="renderTables()" style="flex:2; min-width:200px;">
                 <select id="sortRecordsBy" onchange="renderTables()" style="min-width: 170px;">
-                    <option value="name_asc">Sort: Name (A-Z)</option>
-                    <option value="name_desc">Sort: Name (Z-A)</option>
-                    <option value="admn_asc">Sort: Admn No (Asc)</option>
-                    <option value="admn_desc">Sort: Admn No (Desc)</option>
-                    <option value="time_desc" selected>Sort: Newest First</option>
-                    <option value="time_asc">Sort: Oldest First</option>
-                </select>
+    <option value="item_asc" selected>Sort: Item Name (A-Z)</option>
+    <option value="name_asc">Sort: Name (A-Z)</option>
+    <option value="name_desc">Sort: Name (Z-A)</option>
+    <option value="admn_asc">Sort: Admn No (Asc)</option>
+    <option value="admn_desc">Sort: Admn No (Desc)</option>
+    <option value="time_desc">Sort: Newest First</option>
+    <option value="time_asc">Sort: Oldest First</option>
+</select>
             </div>
 
             <div class="section">
@@ -5120,18 +5117,26 @@
             let indFestsHTML = "";
             let grpFestsHTML = "";
 
-            Object.keys(hierarchy[cat]).sort().forEach(festName => {
-                let records = hierarchy[cat][festName];
+            // 1. Sort Festivals in Alphabetical Order (A-Z)
+            const sortedFestNames = Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b));
 
-                // Fest-specific sort or fallback to global sort
+            sortedFestNames.forEach(festName => {
+                let records = [...hierarchy[cat][festName]];
+
+                // 2. Sort Items and Records within each Fest
                 const sortBy = (isAdmin && adminFestSorts[festName]) ? adminFestSorts[festName] : globalSortBy;
                 records.sort((a, b) => {
                     if (sortBy === 'name_asc') return String(a.Name || "").localeCompare(String(b.Name || ""));
                     if (sortBy === 'name_desc') return String(b.Name || "").localeCompare(String(a.Name || ""));
-                    if (sortBy === 'admn_asc') return String(a["Admission Number"] || "").localeCompare(String(b["Admission Number"] || ""));
-                    if (sortBy === 'admn_desc') return String(b["Admission Number"] || "").localeCompare(String(a["Admission Number"] || ""));
+                    if (sortBy === 'admn_asc') return String(a["Admission Number"] || "").localeCompare(String(b["Admission Number"] || ""), undefined, { numeric: true });
+                    if (sortBy === 'admn_desc') return String(b["Admission Number"] || "").localeCompare(String(a["Admission Number"] || ""), undefined, { numeric: true });
                     if (sortBy === 'time_asc') return new Date(a.Timestamp || 0) - new Date(b.Timestamp || 0);
-                    return new Date(b.Timestamp || 0) - new Date(a.Timestamp || 0);
+                    if (sortBy === 'time_desc') return new Date(b.Timestamp || 0) - new Date(a.Timestamp || 0);
+
+                    // Default: Sort by Item Name (A-Z), then Candidate Name (A-Z)
+                    const itemCmp = String(a.Item || "").localeCompare(String(b.Item || ""));
+                    if (itemCmp !== 0) return itemCmp;
+                    return String(a.Name || "").localeCompare(String(b.Name || ""));
                 });
 
                 const indRecords = records.filter(r => parseInt(r["No of Participants"] || 1) === 1);
@@ -5142,35 +5147,39 @@
                 if (isAdmin) {
                     adminFestControls = `
                         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <select onchange="setAdminFestSort('${festName}', this.value)" style="padding:6px 10px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1;">
-                                <option value="time_desc" ${sortBy === 'time_desc' ? 'selected' : ''}>Sort: Newest</option>
+                            <select onchange="setAdminFestSort('${festName}', this.value)" style="padding:5px 9px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1;">
+                                <option value="item_asc" ${sortBy === 'item_asc' ? 'selected' : ''}>Sort: Item (A-Z)</option>
                                 <option value="name_asc" ${sortBy === 'name_asc' ? 'selected' : ''}>Sort: Name (A-Z)</option>
                                 <option value="name_desc" ${sortBy === 'name_desc' ? 'selected' : ''}>Sort: Name (Z-A)</option>
                                 <option value="admn_asc" ${sortBy === 'admn_asc' ? 'selected' : ''}>Sort: Admn No</option>
+                                <option value="time_desc" ${sortBy === 'time_desc' ? 'selected' : ''}>Sort: Newest</option>
                             </select>
-                            <button type="button" class="action-btn gold" style="padding:6px 12px; font-size:12px;" onclick="printFestSection('${festName}')" title="Print ${festName} Report">
+                            <button type="button" class="action-btn gold" style="padding:5px 10px; font-size:11.5px;" onclick="printFestSection('${festName}')" title="Print ${festName} Report">
                                 <i class="fas fa-print"></i> Print Fest
                             </button>
                         </div>
                     `;
                 }
 
-                // 1. INDIVIDUAL ITEMS CARDS
+                // -------------------------------------------------------------
+                // 1. INDIVIDUAL ITEMS: Permanent Non-Collapsible Fest Banner
+                // -------------------------------------------------------------
                 if (indRecords.length > 0) {
                     indFestsHTML += `
-    <div style="width:100%; margin-bottom:12px;">
-        <div class="rec-fest-head collapsible-header" onclick="if (!event.target.closest('select, button')) toggleRecSection(this)">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
-                <div>
-                    <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}</h5>
-                    <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${indRecords.length} Individual</span>
-                </div>
-            </div>
-            ${adminFestControls}
-        </div>
-        <div class="records-grid" style="display: none; margin-bottom:16px;">
-`;
+                        <div style="width:100%; margin-bottom:18px;">
+                            <!-- Non-collapsible clean banner (no chevron, no click-to-fold) -->
+                            <div class="rec-fest-head" style="cursor:default; margin-bottom:10px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <h5 style="margin:0; font-size:14.5px; font-weight:800; color:var(--text-main);">
+                                        <i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}
+                                    </h5>
+                                    <span style="font-size:11.5px; color:#64748b; font-weight:700;">(${indRecords.length} Individual Items)</span>
+                                </div>
+                                ${adminFestControls}
+                            </div>
+                            <!-- Cards grid always displayed (never hidden) -->
+                            <div class="records-grid" style="display:grid !important; margin-bottom:18px;">
+                    `;
 
                     indRecords.forEach(r => {
                         const actionButtons = isAdmin ? `
@@ -5203,22 +5212,25 @@
                     indFestsHTML += `</div></div>`;
                 }
 
-                // 2. GROUP ITEMS CARDS
+                // -------------------------------------------------------------
+                // 2. GROUP ITEMS: Permanent Non-Collapsible Fest Banner
+                // -------------------------------------------------------------
                 if (grpRecords.length > 0) {
                     grpFestsHTML += `
-    <div style="width:100%; margin-bottom:12px;">
-        <div class="rec-fest-head collapsible-header" onclick="if (!event.target.closest('select, button')) toggleRecSection(this)">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
-                <div>
-                    <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}</h5>
-                    <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${grpRecords.length} Group</span>
-                </div>
-            </div>
-            ${adminFestControls}
-        </div>
-        <div class="records-grid" style="display: none; margin-bottom:16px;">
-`;
+                        <div style="width:100%; margin-bottom:18px;">
+                            <!-- Non-collapsible clean banner (no chevron, no click-to-fold) -->
+                            <div class="rec-fest-head" style="cursor:default; margin-bottom:10px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <h5 style="margin:0; font-size:14.5px; font-weight:800; color:var(--text-main);">
+                                        <i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}
+                                    </h5>
+                                    <span style="font-size:11.5px; color:#64748b; font-weight:700;">(${grpRecords.length} Group Items)</span>
+                                </div>
+                                ${adminFestControls}
+                            </div>
+                            <!-- Cards grid always displayed (never hidden) -->
+                            <div class="records-grid" style="display:grid !important; margin-bottom:18px;">
+                    `;
 
                     grpRecords.forEach(r => {
                         const actionButtons = isAdmin ? `
@@ -5252,35 +5264,32 @@
                 }
             });
 
-            // 3. COLLAPSIBLE MAIN CATEGORY HEADER FOR INDIVIDUAL ITEMS
+            // 3. Category wrapper (stays open and neat)
             if (indFestsHTML) {
-    containerInd.innerHTML += `
-        <div style="width:100%; margin-bottom:14px;">
-            <div class="rec-classification-head collapsible-header" onclick="toggleRecSection(this)">
-                <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
-                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
-            </div>
-            <div class="rec-classification-body" style="display: none; width:100%;">
-                ${indFestsHTML}
-            </div>
-        </div>
-    `;
-}
+                containerInd.innerHTML += `
+                    <div style="width:100%; margin-bottom:18px;">
+                        <div class="rec-classification-head" style="cursor:default;">
+                            <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
+                        </div>
+                        <div class="rec-classification-body" style="display:block; width:100%;">
+                            ${indFestsHTML}
+                        </div>
+                    </div>
+                `;
+            }
 
-            // 4. COLLAPSIBLE MAIN CATEGORY HEADER FOR GROUP ITEMS
             if (grpFestsHTML) {
-    containerGrp.innerHTML += `
-        <div style="width:100%; margin-bottom:14px;">
-            <div class="rec-classification-head collapsible-header" onclick="toggleRecSection(this)">
-                <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
-                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
-            </div>
-            <div class="rec-classification-body" style="display: none; width:100%;">
-                ${grpFestsHTML}
-            </div>
-        </div>
-    `;
-}
+                containerGrp.innerHTML += `
+                    <div style="width:100%; margin-bottom:18px;">
+                        <div class="rec-classification-head" style="cursor:default;">
+                            <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
+                        </div>
+                        <div class="rec-classification-body" style="display:block; width:100%;">
+                            ${grpFestsHTML}
+                        </div>
+                    </div>
+                `;
+            }
         });
     }
 
