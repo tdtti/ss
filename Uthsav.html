@@ -2405,8 +2405,8 @@
         display: grid !important;
     }
 
-    option[value=""] { display: none !important; }
-    option[value=""] { display: none !important; }
+    option[value="Fest"] { display: none !important; }
+    option[value="Sports"] { display: none !important; }
 
 
     
@@ -2734,21 +2734,20 @@
             </div>
         </div>
 
-        <!-- TAB 9: L&L (LABELS & LOTS) TAB -->
+        
         <!-- TAB 9: L&L (LABELS & LOTS) TAB -->
         <div id="LLTab" class="tabcontent">
 
             <!-- SECTION 1: PARTICIPATING ITEMS LABELS (COLLAPSIBLE) -->
             <div class="section" style="padding:14px; margin-bottom:14px;">
                 <div class="ll-section-head" onclick="toggleLLSection('llItemsPrintSection', this)">
-                    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
-                        <i class="fas fa-ticket-alt"></i>
-                        <span>Section 1: Participating Item Labels (4 per A4 Page)</span>
-                    </h4>
-                    <i class="fas fa-chevron-down collapse-chevron"></i>
-                </div>
-
-                <div class="ll-section-body" id="llItemsPrintSection" style="display: block;">
+    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-ticket-alt"></i>
+        <span>Section 1: Participating Item Labels (4 per A4 Page)</span>
+    </h4>
+    <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+</div>
+<div class="ll-section-body" id="llItemsPrintSection" style="display: none;">
                     <div class="ll-toolbar no-print">
                         <div style="display:flex; align-items:center; gap:8px;">
                             <span style="font-size:12.5px; font-weight:700; color:#334155;">Filter Fest:</span>
@@ -2781,14 +2780,13 @@
             <!-- SECTION 2: PARTICIPANT LOT NUMBERS (COLLAPSIBLE) -->
             <div class="section" style="padding:14px; margin-bottom:14px;">
                 <div class="ll-section-head" onclick="toggleLLSection('llLotsPrintSection', this)">
-                    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
-                        <i class="fas fa-dice"></i>
-                        <span>Section 2: Lot Numbers (8 per A4 Page)</span>
-                    </h4>
-                    <i class="fas fa-chevron-down collapse-chevron"></i>
-                </div>
-
-                <div class="ll-section-body" id="llLotsPrintSection" style="display: block;">
+    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-dice"></i>
+        <span>Section 2: Lot Numbers (8 per A4 Page)</span>
+    </h4>
+    <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+</div>
+<div class="ll-section-body" id="llLotsPrintSection" style="display: none;">
                     <div class="ll-toolbar no-print">
                         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                             <span style="font-size:12.5px; font-weight:700; color:#334155;">Filters:</span>
@@ -2824,14 +2822,13 @@
             <!-- SECTION 3: MANUAL JUDGEMENT SHEET (NEW COLLAPSIBLE) -->
             <div class="section" style="padding:14px; margin-bottom:14px;">
                 <div class="ll-section-head" onclick="toggleLLSection('llManualJudgeSection', this)">
-                    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
-                        <i class="fas fa-gavel"></i>
-                        <span>Section 3: Manual Judgement Sheet (All Items / Blank)</span>
-                    </h4>
-                    <i class="fas fa-chevron-down collapse-chevron"></i>
-                </div>
-
-                <div class="ll-section-body" id="llManualJudgeSection" style="display: block;">
+    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-gavel"></i>
+        <span>Section 3: Manual Judgement Sheet (All Items / Blank)</span>
+    </h4>
+    <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+</div>
+<div class="ll-section-body" id="llManualJudgeSection" style="display: none;">
                     <div class="ll-toolbar no-print">
                         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                             <select id="llJudgeFestFilter" onchange="populateLLJudgeItemFilter()" style="font-size:12px;">
@@ -2870,14 +2867,13 @@
             <!-- SECTION 4: MANUAL TABULATION SHEET (NEW COLLAPSIBLE) -->
             <div class="section" style="padding:14px; margin-bottom:14px;">
                 <div class="ll-section-head" onclick="toggleLLSection('llManualTabSection', this)">
-                    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
-                        <i class="fas fa-table-list"></i>
-                        <span>Section 4: Manual Tabulation Sheet (Judges 1 to 5 / Blank)</span>
-                    </h4>
-                    <i class="fas fa-chevron-down collapse-chevron"></i>
-                </div>
-
-                <div class="ll-section-body" id="llManualTabSection" style="display: block;">
+    <h4 style="margin:0; font-size:15px; color:var(--primary); display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-table-list"></i>
+        <span>Section 4: Manual Tabulation Sheet (Judges 1 to 5 / Blank)</span>
+    </h4>
+    <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+</div>
+<div class="ll-section-body" id="llManualTabSection" style="display: none;">
                     <div class="ll-toolbar no-print">
                         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                             <select id="llTabFestFilter" onchange="populateLLTabItemFilter()" style="font-size:12px;">
@@ -5162,19 +5158,19 @@
                 // 1. INDIVIDUAL ITEMS CARDS
                 if (indRecords.length > 0) {
                     indFestsHTML += `
-                        <div style="width:100%; margin-bottom:15px;">
-                            <div class="rec-fest-head collapsible-header" onclick="if (!event.target.closest('select, button')) toggleRecSection(this)">
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <i class="fas fa-chevron-down collapse-chevron"></i>
-                                    <div>
-                                        <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}</h5>
-                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${indRecords.length} Individual</span>
-                                    </div>
-                                </div>
-                                ${adminFestControls}
-                            </div>
-                            <div class="records-grid" style="margin-bottom:20px; display:grid;">
-                    `;
+    <div style="width:100%; margin-bottom:12px;">
+        <div class="rec-fest-head collapsible-header" onclick="if (!event.target.closest('select, button')) toggleRecSection(this)">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+                <div>
+                    <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}</h5>
+                    <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${indRecords.length} Individual</span>
+                </div>
+            </div>
+            ${adminFestControls}
+        </div>
+        <div class="records-grid" style="display: none; margin-bottom:16px;">
+`;
 
                     indRecords.forEach(r => {
                         const actionButtons = isAdmin ? `
@@ -5210,19 +5206,19 @@
                 // 2. GROUP ITEMS CARDS
                 if (grpRecords.length > 0) {
                     grpFestsHTML += `
-                        <div style="width:100%; margin-bottom:15px;">
-                            <div class="rec-fest-head collapsible-header" onclick="if (!event.target.closest('select, button')) toggleRecSection(this)">
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <i class="fas fa-chevron-down collapse-chevron"></i>
-                                    <div>
-                                        <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}</h5>
-                                        <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${grpRecords.length} Group</span>
-                                    </div>
-                                </div>
-                                ${adminFestControls}
-                            </div>
-                            <div class="records-grid" style="margin-bottom:20px;">
-                    `;
+    <div style="width:100%; margin-bottom:12px;">
+        <div class="rec-fest-head collapsible-header" onclick="if (!event.target.closest('select, button')) toggleRecSection(this)">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+                <div>
+                    <h5 style="margin:0;"><i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}</h5>
+                    <span style="font-size:12px; color:#64748b; font-weight:600;">Total: ${grpRecords.length} Group</span>
+                </div>
+            </div>
+            ${adminFestControls}
+        </div>
+        <div class="records-grid" style="display: none; margin-bottom:16px;">
+`;
 
                     grpRecords.forEach(r => {
                         const actionButtons = isAdmin ? `
@@ -5258,33 +5254,33 @@
 
             // 3. COLLAPSIBLE MAIN CATEGORY HEADER FOR INDIVIDUAL ITEMS
             if (indFestsHTML) {
-                containerInd.innerHTML += `
-                    <div style="width:100%; margin-bottom:15px;">
-                        <div class="rec-classification-head collapsible-header" onclick="toggleRecSection(this)">
-                            <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
-                            <i class="fas fa-chevron-down collapse-chevron"></i>
-                        </div>
-                        <div class="rec-classification-body" style="width:100%; display:block;">
-                            ${indFestsHTML}
-                        </div>
-                    </div>
-                `;
-            }
+    containerInd.innerHTML += `
+        <div style="width:100%; margin-bottom:14px;">
+            <div class="rec-classification-head collapsible-header" onclick="toggleRecSection(this)">
+                <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
+                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+            </div>
+            <div class="rec-classification-body" style="display: none; width:100%;">
+                ${indFestsHTML}
+            </div>
+        </div>
+    `;
+}
 
             // 4. COLLAPSIBLE MAIN CATEGORY HEADER FOR GROUP ITEMS
             if (grpFestsHTML) {
-                containerGrp.innerHTML += `
-                    <div style="width:100%; margin-bottom:15px;">
-                        <div class="rec-classification-head collapsible-header" onclick="toggleRecSection(this)">
-                            <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
-                            <i class="fas fa-chevron-down collapse-chevron"></i>
-                        </div>
-                        <div class="rec-classification-body" style="width:100%;">
-                            ${grpFestsHTML}
-                        </div>
-                    </div>
-                `;
-            }
+    containerGrp.innerHTML += `
+        <div style="width:100%; margin-bottom:14px;">
+            <div class="rec-classification-head collapsible-header" onclick="toggleRecSection(this)">
+                <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
+                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+            </div>
+            <div class="rec-classification-body" style="display: none; width:100%;">
+                ${grpFestsHTML}
+            </div>
+        </div>
+    `;
+}
         });
     }
 
@@ -7619,33 +7615,32 @@
             hierarchy[cat][fName][itemKey].push(r);
         });
 
-        // 1. Sort Categories Alphabetically (A-Z)
+        // 1. Category Level (Minimised by default)
         const sortedCategories = Object.keys(hierarchy).sort((a, b) => a.localeCompare(b));
 
         sortedCategories.forEach(cat => {
             let catHTML = `
-                <div style="width:100%; margin-bottom:20px;">
+                <div style="width:100%; margin-bottom:14px;">
                     <div class="category-main-head collapsible-header" onclick="toggleResultSection(this)">
                         <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()} RESULTS</span>
-                        <i class="fas fa-chevron-down collapse-chevron"></i>
+                        <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
                     </div>
-                    <div class="category-collapsible-content" style="display: block; width: 100%;">
+                    <!-- Minimised body -->
+                    <div class="category-collapsible-content" style="display: none; width: 100%;">
             `;
 
-            // 2. Sort Festivals Alphabetically (A-Z)
+            // 2. Fest Level (Minimised by default)
             const sortedFests = Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b));
 
             sortedFests.forEach(festName => {
                 const festItemsObj = hierarchy[cat][festName];
-
-                // 3. Sort Items Alphabetically (A-Z)
                 const sortedItems = Object.keys(festItemsObj).sort((a, b) => a.localeCompare(b));
 
                 catHTML += `
-                    <div style="width:100%; margin-bottom:14px;">
-                        <div class="rec-fest-head collapsible-header" onclick="toggleResultSection(this)" style="margin: 10px 0 8px 0;">
+                    <div style="width:100%; margin-bottom:10px;">
+                        <div class="rec-fest-head collapsible-header" onclick="toggleResultSection(this)" style="margin: 8px 0 6px 0;">
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <i class="fas fa-chevron-down collapse-chevron"></i>
+                                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
                                 <h5 style="margin:0; font-size:14.5px; color:var(--text-main); font-weight:800;">
                                     <i class="fas fa-trophy" style="color:var(--warning);"></i> ${festName}
                                 </h5>
@@ -7654,19 +7649,20 @@
                                 ${sortedItems.length} Item(s)
                             </span>
                         </div>
-                        <div class="fest-collapsible-content" style="display: block; width: 100%; margin-bottom: 12px;">
+                        <!-- Minimised body -->
+                        <div class="fest-collapsible-content" style="display: none; width: 100%; margin-bottom: 8px;">
                 `;
 
+                // 3. Item Level (Minimised by default)
                 sortedItems.forEach(itemKey => {
                     const rows = festItemsObj[itemKey];
-                    // Sort candidate rows by score descending
                     rows.sort((a, b) => parseFloat(b.score || 0) - parseFloat(a.score || 0));
 
                     catHTML += `
-                        <div style="margin-bottom:12px; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;">
+                        <div style="margin-bottom:8px; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;">
                             <div class="item-sub-head collapsible-header" onclick="toggleResultSection(this)" style="margin:0; padding:10px 14px; background:#f8fafc;">
                                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                    <i class="fas fa-chevron-down collapse-chevron"></i>
+                                    <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
                                     <span><i class="fas fa-star" style="color:var(--warning);"></i> ${itemKey}</span>
                                     <span class="result-badge-new"><i class="fas fa-bolt"></i> NEW</span>
                                 </div>
@@ -7674,7 +7670,8 @@
                                     <i class="far fa-clock"></i> Published: ${rows[0].publishedAt || 'Official'}
                                 </span>
                             </div>
-                            <div class="table-responsive" style="margin:0; border:none; display: block;">
+                            <!-- Minimised body -->
+                            <div class="table-responsive" style="margin:0; border:none; display: none;">
                                 <table>
                                     <thead>
                                         <tr style="background:#ffffff;">
@@ -8138,19 +8135,19 @@
                     candidates.sort((a, b) => parseFloat(b.score || 0) - parseFloat(a.score || 0));
 
                     catHTML += `
-                        <div style="margin-bottom:10px; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;">
-                            <div class="item-sub-head collapsible-header" onclick="toggleSubDistrictCollapse(this)" style="margin:0; padding:10px 14px; cursor:pointer; background:#f8fafc; display:flex; justify-content:space-between; align-items:center;">
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <i class="fas fa-chevron-down collapse-chevron"></i>
-                                    <span style="font-weight:800; font-size:14px; color:var(--text-main);">${itemKey}</span>
-                                </div>
-                                <span class="badge-place place-1" style="font-size:11px; padding:3px 8px;">
-                                    ${candidates.length} Qualified (A Grade)
-                                </span>
-                            </div>
+    <div style="margin-bottom:10px; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;">
+        <div class="item-sub-head collapsible-header" onclick="toggleSubDistrictCollapse(this)" style="margin:0; padding:10px 14px; cursor:pointer; background:#f8fafc; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+                <span style="font-weight:800; font-size:14px; color:var(--text-main);">${itemKey}</span>
+            </div>
+            <span class="badge-place place-1" style="font-size:11px; padding:3px 8px;">
+                ${candidates.length} Qualified (A Grade)
+            </span>
+        </div>
 
-                            <div class="table-responsive" style="margin:0; border:none; display:block;">
-                                <table>
+        <div class="table-responsive" style="margin:0; border:none; display: none;">
+            <table>
                                     <thead>
                                         <tr style="background:#ffffff;">
                                             <th style="width:40px; text-align:center;">#</th>
