@@ -17,6 +17,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Great+Vibes&display=swap" rel="stylesheet">
 
+Here is the complete, fully integrated, and updated <style> block.
+
+It includes all design system styles, certificate auto-fitting, print media
+rules, the new manual judgement & tabulation sheets, the collapsible L&L
+headers, and the mobile containment/overflow fixes for Sections 2, 3, and 4.
+
+Replace your existing <style> ... </style> block entirely with this:
+
 <style>
     /* ==========================================================================
        1. MINIMALIST DESIGN SYSTEM (CLEAN, FUNCTIONAL & LIGHTWEIGHT)
@@ -2406,7 +2414,9 @@
 
     option[value="Fest"] { display: none !important; }
     option[value="Sports"] { display: none !important; }
+
 </style>
+
 
 </head>
 <body>
@@ -5048,11 +5058,12 @@
     function toggleRecSection(headerEl) {
         const targetBody = headerEl.nextElementSibling;
         if (!targetBody) return;
+
         const chevron = headerEl.querySelector('.collapse-chevron');
-        const isClosed = window.getComputedStyle(targetBody).display === 'none' || targetBody.style.display === 'none';
+        const isClosed = targetBody.style.display === 'none' || window.getComputedStyle(targetBody).display === 'none';
 
         if (isClosed) {
-            targetBody.style.display = '';
+            targetBody.style.display = targetBody.classList.contains('records-grid') ? 'grid' : 'block';
             if (chevron) chevron.classList.remove('collapsed');
         } else {
             targetBody.style.display = 'none';
@@ -5067,7 +5078,7 @@
         const clsFilt = document.getElementById('filterClass')?.value || "ALL";
         const divFilt = document.getElementById('filterDivision')?.value || "ALL";
         const txtFilt = String(document.getElementById('filterSearch')?.value || "").toLowerCase().trim();
-        const globalSortBy = document.getElementById('sortRecordsBy')?.value || "time_desc";
+        const globalSortBy = document.getElementById('sortRecordsBy')?.value || "name_asc";
 
         const containerInd = document.getElementById('cardsInd');
         const containerGrp = document.getElementById('cardsGrp');
@@ -5079,7 +5090,7 @@
         let data = [...dbRegistrations].filter(r => isFestEnabled(r["Name of Fest"]));
         const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
 
-        // If student is logged in, only show their own records
+        // If student is logged in, show only their registered records
         if (currentUser && currentUser.role === "Student") {
             data = data.filter(r => String(r["Admission Number"]) === String(currentUser.id));
         }
@@ -5099,198 +5110,191 @@
             return;
         }
 
-        // Group by Festival Classification -> Name of Fest
-        const hierarchy = {};
-        data.forEach(r => {
-            const cat = r["Festival Classification"] || getFestivalCategory(r["Name of Fest"]);
-            const fName = r["Name of Fest"] || "Other";
-            if (!hierarchy[cat]) hierarchy[cat] = {};
-            if (!hierarchy[cat][fName]) hierarchy[cat][fName] = [];
-            hierarchy[cat][fName].push(r);
-        });
+        // Helper: Builds 3-tier hierarchy: Festival Classification -> Fest Name -> Item Name
+        function buildHierarchy(recordsList) {
+            const hier = {};
+            recordsList.forEach(r => {
+                const cat = r["Festival Classification"] || getFestivalCategory(r["Name of Fest"]) || "Other";
+                const fName = r["Name of Fest"] || "General Fest";
+                const iName = r["Item"] || "General Item";
 
-        const mainCategories = ["Kalothswom", "Fest", "Sports"];
+                if (!hier[cat]) hier[cat] = {};
+                if (!hier[cat][fName]) hier[cat][fName] = {};
+                if (!hier[cat][fName][iName]) hier[cat][fName][iName] = [];
 
-        mainCategories.forEach(cat => {
-            if (!hierarchy[cat] || Object.keys(hierarchy[cat]).length === 0) return;
+                hier[cat][fName][iName].push(r);
+            });
+            return hier;
+        }
 
-            let indFestsHTML = "";
-            let grpFestsHTML = "";
+        const dataInd = data.filter(r => parseInt(r["No of Participants"] || 1) === 1);
+        const dataGrp = data.filter(r => parseInt(r["No of Participants"] || 1) > 1);
 
-            // 1. Sort Festivals in Alphabetical Order (A-Z)
-            const sortedFestNames = Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b));
+        const hierInd = buildHierarchy(dataInd);
+        const hierGrp = buildHierarchy(dataGrp);
 
-            sortedFestNames.forEach(festName => {
-                let records = [...hierarchy[cat][festName]];
+        // Helper: Renders 3-Tier Collapsible HTML (All 3 Tiers Collapsed by Default & Alphabetically Sorted)
+        function renderTieredHTML(hier, isGroup) {
+            let outputHTML = "";
 
-                // 2. Sort Items and Records within each Fest
-                const sortBy = (isAdmin && adminFestSorts[festName]) ? adminFestSorts[festName] : globalSortBy;
-                records.sort((a, b) => {
-                    if (sortBy === 'name_asc') return String(a.Name || "").localeCompare(String(b.Name || ""));
-                    if (sortBy === 'name_desc') return String(b.Name || "").localeCompare(String(a.Name || ""));
-                    if (sortBy === 'admn_asc') return String(a["Admission Number"] || "").localeCompare(String(b["Admission Number"] || ""), undefined, { numeric: true });
-                    if (sortBy === 'admn_desc') return String(b["Admission Number"] || "").localeCompare(String(a["Admission Number"] || ""), undefined, { numeric: true });
-                    if (sortBy === 'time_asc') return new Date(a.Timestamp || 0) - new Date(b.Timestamp || 0);
-                    if (sortBy === 'time_desc') return new Date(b.Timestamp || 0) - new Date(a.Timestamp || 0);
+            // TIER 1: Festival Classification (Sorted A-Z)
+            const sortedCategories = Object.keys(hier).sort((a, b) => a.localeCompare(b));
 
-                    // Default: Sort by Item Name (A-Z), then Candidate Name (A-Z)
-                    const itemCmp = String(a.Item || "").localeCompare(String(b.Item || ""));
-                    if (itemCmp !== 0) return itemCmp;
-                    return String(a.Name || "").localeCompare(String(b.Name || ""));
+            sortedCategories.forEach(cat => {
+                let catFestsHTML = "";
+
+                // TIER 2: Fest Name (Sorted A-Z)
+                const sortedFests = Object.keys(hier[cat]).sort((a, b) => a.localeCompare(b));
+
+                sortedFests.forEach(festName => {
+                    const itemsObj = hier[cat][festName];
+                    const sortedItems = Object.keys(itemsObj).sort((a, b) => a.localeCompare(b));
+
+                    let totalFestParticipants = 0;
+                    sortedItems.forEach(i => totalFestParticipants += itemsObj[i].length);
+
+                    // Fest-specific sort or fallback to global sort
+                    const sortBy = (isAdmin && adminFestSorts[festName]) ? adminFestSorts[festName] : globalSortBy;
+
+                    // Admin Toolbar for Fest
+                    let adminFestControls = "";
+                    if (isAdmin) {
+                        adminFestControls = `
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <select onchange="setAdminFestSort('${festName}', this.value)" style="padding:4px 8px; font-size:11.5px; border-radius:4px; border:1px solid #cbd5e1;">
+                                    <option value="name_asc" ${sortBy === 'name_asc' ? 'selected' : ''}>Sort: Name (A-Z)</option>
+                                    <option value="name_desc" ${sortBy === 'name_desc' ? 'selected' : ''}>Sort: Name (Z-A)</option>
+                                    <option value="admn_asc" ${sortBy === 'admn_asc' ? 'selected' : ''}>Sort: Admn No</option>
+                                    <option value="time_desc" ${sortBy === 'time_desc' ? 'selected' : ''}>Sort: Newest</option>
+                                </select>
+                                <button type="button" class="action-btn gold" style="padding:4px 9px; font-size:11px;" onclick="printFestSection('${festName}')" title="Print ${festName} Report">
+                                    <i class="fas fa-print"></i> Print Fest
+                                </button>
+                            </div>
+                        `;
+                    }
+
+                    let festItemsHTML = "";
+
+                    // TIER 3: Item(s) (Sorted A-Z)
+                    sortedItems.forEach(itemName => {
+                        let itemRecords = [...itemsObj[itemName]];
+
+                        // Sort candidates inside the item
+                        itemRecords.sort((a, b) => {
+                            if (sortBy === 'name_asc') return String(a.Name || "").localeCompare(String(b.Name || ""));
+                            if (sortBy === 'name_desc') return String(b.Name || "").localeCompare(String(a.Name || ""));
+                            if (sortBy === 'admn_asc') return String(a["Admission Number"] || "").localeCompare(String(b["Admission Number"] || ""), undefined, { numeric: true });
+                            if (sortBy === 'admn_desc') return String(b["Admission Number"] || "").localeCompare(String(a["Admission Number"] || ""), undefined, { numeric: true });
+                            if (sortBy === 'time_asc') return new Date(a.Timestamp || 0) - new Date(b.Timestamp || 0);
+                            if (sortBy === 'time_desc') return new Date(b.Timestamp || 0) - new Date(a.Timestamp || 0);
+                            return String(a.Name || "").localeCompare(String(b.Name || ""));
+                        });
+
+                        const itemCode = itemRecords[0]["Item Code"] || "-";
+                        const itemCategory = itemRecords[0]["Category"] || "General";
+
+                        let cardsHTML = "";
+                        itemRecords.forEach(r => {
+                            const actionButtons = isAdmin ? `
+                                <div style="display:inline-flex; gap:6px;">
+                                    <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11px;" onclick="openEditRegistrationModal('${r.id}')" title="Modify Registration">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
+                                        <i class="fas fa-trash-alt"></i> Delete
+                                    </button>
+                                </div>
+                            ` : '';
+
+                            cardsHTML += `
+                                <div class="record-card ${isGroup ? 'group-card' : ''}">
+                                    <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
+                                    <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
+                                    <p><span class="label">Admn No</span> <span>${r["Admission Number"]}</span></p>
+                                    <p><span class="label">Class & Div</span> <span>${r["Class"]} ${r["Division"]}</span></p>
+                                    <p><span class="label">Lot Number</span> <span style="font-weight:bold; color:var(--text-main);">${r["Lot Number"] || 'Not Allotted'}</span></p>
+                                    <p><span class="label">${isGroup ? 'Role in Team' : 'Category'}</span> <span style="color:${isGroup ? 'var(--warning)' : 'var(--primary)'}; font-weight:bold;">${isGroup ? r["Role in Event"] : r["Category"]}</span></p>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:6px;">
+                                        <span class="timestamp">${r["Timestamp"]}</span>
+                                        ${actionButtons}
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        // Tier 3 Collapsible Item Box (Collapsed by default)
+                        festItemsHTML += `
+                            <div style="margin-bottom:8px; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;">
+                                <div class="item-sub-head collapsible-header" onclick="toggleRecSection(this)" style="margin:0; padding:9px 13px; background:#f8fafc; display:flex; justify-content:space-between; align-items:center;">
+                                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                        <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+                                        <span style="font-weight:800; font-size:13.5px; color:var(--text-main);">${itemName}</span>
+                                        <span style="font-family:monospace; font-size:11px; color:#64748b;">[${itemCode}]</span>
+                                        <span class="fest-badge" style="background:#ffffff;">${itemRecords.length} ${isGroup ? 'member(s)' : 'participant(s)'}</span>
+                                    </div>
+                                    <span style="font-size:11px; font-weight:700; color:#475569;">${itemCategory}</span>
+                                </div>
+                                <!-- Cards Grid (Collapsed by default) -->
+                                <div class="records-grid" style="display: none; padding:12px; margin:0; background:#fcfcfc;">
+                                    ${cardsHTML}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    // Tier 2 Collapsible Fest Block (Collapsed by default)
+                    catFestsHTML += `
+                        <div style="width:100%; margin-bottom:10px;">
+                            <div class="rec-fest-head collapsible-header" onclick="if (!event.target.closest('select, button')) toggleRecSection(this)" style="margin:8px 0 6px 0;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
+                                    <h5 style="margin:0; font-size:14px; font-weight:800; color:var(--text-main);">
+                                        <i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}
+                                    </h5>
+                                    <span style="font-size:11.5px; color:#64748b; font-weight:700;">(${sortedItems.length} Items &bull; ${totalFestParticipants} ${isGroup ? 'Members' : 'Candidates'})</span>
+                                </div>
+                                ${adminFestControls}
+                            </div>
+                            <!-- Fest Content (Collapsed by default) -->
+                            <div class="rec-fest-body" style="display: none; width:100%; margin-bottom:8px;">
+                                ${festItemsHTML}
+                            </div>
+                        </div>
+                    `;
                 });
 
-                const indRecords = records.filter(r => parseInt(r["No of Participants"] || 1) === 1);
-                const grpRecords = records.filter(r => parseInt(r["No of Participants"] || 1) > 1);
-
-                // Admin Controls for each festival
-                let adminFestControls = "";
-                if (isAdmin) {
-                    adminFestControls = `
-                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                            <select onchange="setAdminFestSort('${festName}', this.value)" style="padding:5px 9px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1;">
-                                <option value="item_asc" ${sortBy === 'item_asc' ? 'selected' : ''}>Sort: Item (A-Z)</option>
-                                <option value="name_asc" ${sortBy === 'name_asc' ? 'selected' : ''}>Sort: Name (A-Z)</option>
-                                <option value="name_desc" ${sortBy === 'name_desc' ? 'selected' : ''}>Sort: Name (Z-A)</option>
-                                <option value="admn_asc" ${sortBy === 'admn_asc' ? 'selected' : ''}>Sort: Admn No</option>
-                                <option value="time_desc" ${sortBy === 'time_desc' ? 'selected' : ''}>Sort: Newest</option>
-                            </select>
-                            <button type="button" class="action-btn gold" style="padding:5px 10px; font-size:11.5px;" onclick="printFestSection('${festName}')" title="Print ${festName} Report">
-                                <i class="fas fa-print"></i> Print Fest
-                            </button>
+                // Tier 1 Collapsible Category Block (Collapsed by default)
+                outputHTML += `
+                    <div style="width:100%; margin-bottom:14px;">
+                        <div class="rec-classification-head collapsible-header" onclick="toggleRecSection(this)">
+                            <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
+                            <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
                         </div>
-                    `;
-                }
-
-                // -------------------------------------------------------------
-                // 1. INDIVIDUAL ITEMS: Permanent Non-Collapsible Fest Banner
-                // -------------------------------------------------------------
-                if (indRecords.length > 0) {
-                    indFestsHTML += `
-                        <div style="width:100%; margin-bottom:18px;">
-                            <!-- Non-collapsible clean banner (no chevron, no click-to-fold) -->
-                            <div class="rec-fest-head" style="cursor:default; margin-bottom:10px;">
-                                <div style="display:flex; align-items:center; gap:8px;">
-                                    <h5 style="margin:0; font-size:14.5px; font-weight:800; color:var(--text-main);">
-                                        <i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}
-                                    </h5>
-                                    <span style="font-size:11.5px; color:#64748b; font-weight:700;">(${indRecords.length} Individual Items)</span>
-                                </div>
-                                ${adminFestControls}
-                            </div>
-                            <!-- Cards grid always displayed (never hidden) -->
-                            <div class="records-grid" style="display:grid !important; margin-bottom:18px;">
-                    `;
-
-                    indRecords.forEach(r => {
-                        const actionButtons = isAdmin ? `
-                            <div style="display:inline-flex; gap:6px;">
-                                <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11px;" onclick="openEditRegistrationModal('${r.id}')" title="Modify Registration">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
-                                    <i class="fas fa-trash-alt"></i> Delete
-                                </button>
-                            </div>
-                        ` : '';
-
-                        indFestsHTML += `
-                            <div class="record-card">
-                                <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
-                                <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
-                                <p><span class="label">Admn No</span> <span>${r["Admission Number"]}</span></p>
-                                <p><span class="label">Class & Div</span> <span>${r["Class"]} ${r["Division"]}</span></p>
-                                <p><span class="label">Lot Number</span> <span style="font-weight:bold; color:var(--text-main);">${r["Lot Number"] || 'Not Allotted'}</span></p>
-                                <p><span class="label">Category</span> <span style="color:var(--primary); font-weight:bold;">${r["Category"]}</span></p>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:6px;">
-                                    <span class="timestamp">${r["Timestamp"]}</span>
-                                    ${actionButtons}
-                                </div>
-                            </div>
-                        `;
-                    });
-
-                    indFestsHTML += `</div></div>`;
-                }
-
-                // -------------------------------------------------------------
-                // 2. GROUP ITEMS: Permanent Non-Collapsible Fest Banner
-                // -------------------------------------------------------------
-                if (grpRecords.length > 0) {
-                    grpFestsHTML += `
-                        <div style="width:100%; margin-bottom:18px;">
-                            <!-- Non-collapsible clean banner (no chevron, no click-to-fold) -->
-                            <div class="rec-fest-head" style="cursor:default; margin-bottom:10px;">
-                                <div style="display:flex; align-items:center; gap:8px;">
-                                    <h5 style="margin:0; font-size:14.5px; font-weight:800; color:var(--text-main);">
-                                        <i class="fas fa-trophy" style="color:var(--warning); margin-right:6px;"></i> ${festName}
-                                    </h5>
-                                    <span style="font-size:11.5px; color:#64748b; font-weight:700;">(${grpRecords.length} Group Items)</span>
-                                </div>
-                                ${adminFestControls}
-                            </div>
-                            <!-- Cards grid always displayed (never hidden) -->
-                            <div class="records-grid" style="display:grid !important; margin-bottom:18px;">
-                    `;
-
-                    grpRecords.forEach(r => {
-                        const actionButtons = isAdmin ? `
-                            <div style="display:inline-flex; gap:6px;">
-                                <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11px;" onclick="openEditRegistrationModal('${r.id}')" title="Modify Registration">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11px;" onclick="deleteRegistrationCandidate('${r.id}')" title="Delete Candidate">
-                                    <i class="fas fa-trash-alt"></i> Delete
-                                </button>
-                            </div>
-                        ` : '';
-
-                        grpFestsHTML += `
-                            <div class="record-card group-card">
-                                <h4>${r["Item"]} <span class="fest-badge">${r["Name of Fest"]}</span></h4>
-                                <p><span class="label">Candidate</span> <b>${r["Name"]}</b></p>
-                                <p><span class="label">Admn No</span> <span>${r["Admission Number"]}</span></p>
-                                <p><span class="label">Class & Div</span> <span>${r["Class"]} ${r["Division"]}</span></p>
-                                <p><span class="label">Lot Number</span> <span style="font-weight:bold; color:var(--text-main);">${r["Lot Number"] || 'Not Allotted'}</span></p>
-                                <p><span class="label">Role in Team</span> <span style="color:var(--warning); font-weight:bold;">${r["Role in Event"]}</span></p>
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #f1f5f9; padding-top:6px;">
-                                    <span class="timestamp">${r["Timestamp"]}</span>
-                                    ${actionButtons}
-                                </div>
-                            </div>
-                        `;
-                    });
-
-                    grpFestsHTML += `</div></div>`;
-                }
+                        <!-- Classification Content (Collapsed by default) -->
+                        <div class="rec-classification-body" style="display: none; width:100%;">
+                            ${catFestsHTML}
+                        </div>
+                    </div>
+                `;
             });
 
-            // 3. Category wrapper (stays open and neat)
-            if (indFestsHTML) {
-                containerInd.innerHTML += `
-                    <div style="width:100%; margin-bottom:18px;">
-                        <div class="rec-classification-head" style="cursor:default;">
-                            <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
-                        </div>
-                        <div class="rec-classification-body" style="display:block; width:100%;">
-                            ${indFestsHTML}
-                        </div>
-                    </div>
-                `;
-            }
+            return outputHTML;
+        }
 
-            if (grpFestsHTML) {
-                containerGrp.innerHTML += `
-                    <div style="width:100%; margin-bottom:18px;">
-                        <div class="rec-classification-head" style="cursor:default;">
-                            <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()}</span>
-                        </div>
-                        <div class="rec-classification-body" style="display:block; width:100%;">
-                            ${grpFestsHTML}
-                        </div>
-                    </div>
-                `;
-            }
-        });
+        // Render Individual Items
+        if (dataInd.length > 0) {
+            containerInd.innerHTML = renderTieredHTML(hierInd, false);
+        } else {
+            containerInd.innerHTML = "<p style='width:100%; text-align:center; color:#94a3b8; padding:20px;'>No individual items found matching filters.</p>";
+        }
+
+        // Render Group Items
+        if (dataGrp.length > 0) {
+            containerGrp.innerHTML = renderTieredHTML(hierGrp, true);
+        } else {
+            containerGrp.innerHTML = "<p style='width:100%; text-align:center; color:#94a3b8; padding:20px;'>No group items found matching filters.</p>";
+        }
     }
 
     async function deleteRegistrationCandidate(regId) {
@@ -10820,10 +10824,6 @@
             }, 300);
         }
     }
-
-    
-
-
 </script>
 </body>
 </html>
