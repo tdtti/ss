@@ -9,7 +9,14 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
+    <!-- Mozilla PDF.js for Universal Cross-Device PDF Rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     
@@ -2652,6 +2659,70 @@
         border-radius: var(--radius-sm);
         margin-bottom: 10px;
         border: 1px solid var(--border);
+    }
+
+    /* ==========================================================================
+       NOTICE BOOK PDF.JS CANVAS VIEWER STYLES
+       ========================================================================== */
+    .notice-pdf-container {
+        width: 100%;
+        background: #334155;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 8px;
+    }
+    .notice-pdf-toolbar {
+        width: 100%;
+        background: #1e293b;
+        color: #ffffff;
+        padding: 8px 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 12px;
+        border-bottom: 1px solid #475569;
+    }
+    .notice-pdf-toolbar button {
+        background: #334155;
+        color: #ffffff;
+        border: 1px solid #64748b;
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: background 0.15s ease;
+    }
+    .notice-pdf-toolbar button:hover { background: #475569; }
+
+    .notice-pdf-canvas-wrapper {
+        width: 100%;
+        max-height: 650px;
+        overflow-y: auto;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 16px 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        box-sizing: border-box;
+        background: #475569;
+    }
+    .notice-pdf-page-canvas {
+        max-width: 100% !important;
+        height: auto !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        background: #ffffff;
+        border-radius: 2px;
     }
 
     option[value="Fest"] { display: none !important; }
@@ -11429,15 +11500,19 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         const isStudent = currentUser && currentUser.role === "Student";
         const isAdmin = currentUser && (currentUser.role === "Official" || (currentUser.access && currentUser.access.includes("3")));
 
-        // 1. Hide Filters Group for Students
+        // 1. Control Toolbar & Filter Visibility (Hidden for Students)
         const filtersGroup = document.getElementById('ecFiltersGroup');
         const toolbarSection = document.getElementById('ecToolbarSection');
+        const adminAddBtn = document.getElementById('ecAdminAddBtn');
+
         if (filtersGroup) {
             filtersGroup.style.display = isStudent ? 'none' : 'flex';
         }
         if (toolbarSection) {
-            // Keep toolbar visible for print button, but hide entirely if student doesn't need to print
             toolbarSection.style.display = isStudent ? 'none' : 'block';
+        }
+        if (adminAddBtn) {
+            adminAddBtn.style.display = isAdmin ? 'inline-flex' : 'none';
         }
 
         const catFilter = !isStudent ? (document.getElementById('ecFilterClassification')?.value || "ALL") : "ALL";
@@ -11446,15 +11521,21 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         let schedules = [...dbSchedules];
 
-        // Deduplicate records in memory
+        // Deduplicate records in memory by ID
         const uniqueMap = new Map();
-        schedules.forEach(s => { if (s.id && !uniqueMap.has(s.id)) uniqueMap.set(s.id, s); });
+        schedules.forEach(s => { 
+            if (s.id && !uniqueMap.has(s.id)) {
+                uniqueMap.set(s.id, s);
+            }
+        });
         schedules = Array.from(uniqueMap.values());
 
+        // Apply filters for non-students
         if (catFilter !== "ALL") {
             schedules = schedules.filter(s => (s.festivalClassification || getFestivalCategory(s.festName)) === catFilter);
         }
         if (festFilter !== "ALL") {
+            // Include common "ALL" fest items alongside the selected fest
             schedules = schedules.filter(s => s.festName === festFilter || s.festName === "ALL");
         }
         if (dayFilter !== "ALL") {
@@ -11465,10 +11546,10 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         const schoolLogo = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png";
 
         // =====================================================================
-        // SCHOOL DETAILS HEADER
+        // 1. SCHOOL DETAILS HEADER
         // =====================================================================
         fullHTML += `
-            <div class="event-chart-card" style="margin-bottom:14px; padding:14px 18px;">
+            <div class="event-chart-card" style="margin-bottom:16px; padding:14px 18px;">
                 <div class="event-chart-school-header" style="border:none; margin:0; padding:0;">
                     <img src="${schoolLogo}" alt="Logo" class="event-chart-school-logo">
                     <div class="event-chart-school-details">
@@ -11480,15 +11561,17 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         `;
 
         // =====================================================================
-        // NOTICE BOOK (COLLAPSIBLE - OPEN BY DEFAULT - ABOVE DAY 1)
+        // 2. NOTICE BOOK (COLLAPSIBLE - OPEN BY DEFAULT - ABOVE DAY 1)
         // =====================================================================
         if (dbNoticeBook && (dbNoticeBook.pdfUrl || dbNoticeBook.pdfData)) {
-            const noticeSrc = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
+            const rawSrc = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
             const noticeTitle = dbNoticeBook.title || "Official Programme Notice Book";
             const noticeDate = dbNoticeBook.publishedAt || "";
+            const isGoogleDrive = typeof rawSrc === 'string' && rawSrc.includes('drive.google.com');
 
             fullHTML += `
                 <div style="width:100%; margin-bottom:18px;">
+                    <!-- Notice Book Header: Non-collapsed by default -->
                     <div class="event-chart-notice-head collapsible-header" onclick="toggleResultSection(this)">
                         <div style="display:flex; align-items:center; gap:10px;">
                             <i class="fas fa-chevron-down collapse-chevron"></i>
@@ -11499,35 +11582,55 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         </span>
                     </div>
 
-                    <!-- Non-collapsed by default (display: block) -->
+                    <!-- Notice Book Body: Non-collapsed by default (display: block) -->
                     <div class="event-chart-notice-body" style="display:block; width:100%; margin-bottom:12px;">
                         <div class="notice-actions-bar">
                             <span style="font-size:13px; font-weight:700; color:var(--text-main);">
                                 <i class="fas fa-file-pdf" style="color:#dc2626; font-size:16px;"></i> ${noticeTitle}
                             </span>
-                            <div style="display:flex; gap:8px;">
-                                <a href="${noticeSrc}" target="_blank" class="action-btn" style="text-decoration:none; padding:5px 12px; font-size:12px;">
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button type="button" class="action-btn" style="padding:5px 12px; font-size:12px;" onclick="openNoticePdfFullscreen()">
                                     <i class="fas fa-external-link-alt"></i> Open Fullscreen
-                                </a>
-                                <a href="${noticeSrc}" download="Notice_Book.pdf" class="action-btn gold" style="text-decoration:none; padding:5px 12px; font-size:12px;">
+                                </button>
+                                <button type="button" class="action-btn gold" style="padding:5px 12px; font-size:12px;" onclick="downloadNoticePdf()">
                                     <i class="fas fa-download"></i> Download PDF
-                                </a>
+                                </button>
                             </div>
                         </div>
-                        <iframe src="${noticeSrc}#toolbar=0" class="notice-pdf-frame"></iframe>
+
+                        ${isGoogleDrive ? `
+                            <iframe src="${convertGoogleDriveUrl(rawSrc)}" style="width:100%; height:550px; border:1px solid #cbd5e1; border-radius:6px;"></iframe>
+                        ` : `
+                            <div id="noticePdfViewerContainer" class="notice-pdf-container">
+                                <div class="notice-pdf-toolbar">
+                                    <span id="noticePdfPageCountText" style="font-weight:700;">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading PDF...
+                                    </span>
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <button type="button" onclick="zoomNoticePdf(-0.2)"><i class="fas fa-search-minus"></i> Zoom Out</button>
+                                        <button type="button" onclick="zoomNoticePdf(0.2)"><i class="fas fa-search-plus"></i> Zoom In</button>
+                                        <button type="button" onclick="zoomNoticePdf('reset')"><i class="fas fa-redo"></i> Reset</button>
+                                    </div>
+                                </div>
+                                <div id="noticePdfCanvasWrapper" class="notice-pdf-canvas-wrapper">
+                                    <div id="noticePdfLoadingMsg" style="color:#ffffff; padding:40px; font-size:14px; text-align:center;">
+                                        <i class="fas fa-spinner fa-spin" style="font-size:24px; margin-bottom:8px; display:block;"></i> 
+                                        Rendering Notice Book...
+                                    </div>
+                                </div>
+                            </div>
+                        `}
                     </div>
                 </div>
             `;
         }
 
         // =====================================================================
-        // DAY-WISE SCHEDULES (DAY 1, DAY 2, DAY 3... COLLAPSIBLE - OPEN BY DEFAULT)
+        // 3. DAY-WISE SCHEDULES (DAY 1, DAY 2, DAY 3... OPEN BY DEFAULT)
         // =====================================================================
-        // Group by Day (Day I / Day II / Day III...)
         const daysMap = {};
         schedules.forEach(s => {
             const rawDay = s.day || "Day I";
-            // Normalize day key
             let dayKey = rawDay;
             if (rawDay.toLowerCase().includes("1") || rawDay === "Day I") dayKey = "Day I";
             else if (rawDay.toLowerCase().includes("2") || rawDay === "Day II") dayKey = "Day II";
@@ -11537,7 +11640,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             daysMap[dayKey].push(s);
         });
 
-        // Day sorting order (Day 1 -> Day 2 -> Day 3)
+        // Sequential Day sorting (Day 1 -> Day 2 -> Day 3)
         const dayOrder = ["Day I", "Day II", "Day III", "Day IV"];
         const sortedDays = Object.keys(daysMap).sort((a, b) => {
             const idxA = dayOrder.indexOf(a);
@@ -11551,6 +11654,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                 <div class="event-chart-card" style="text-align:center; padding:35px 20px;">
                     <i class="fas fa-calendar-times" style="font-size:36px; color:#cbd5e1; margin-bottom:10px;"></i>
                     <p style="color:#64748b; font-size:14px; font-weight:600; margin:0;">No scheduled programme items found.</p>
+                    ${isAdmin ? '<button class="action-btn success" style="margin-top:14px;" onclick="openScheduleModal(null)"><i class="fas fa-plus"></i> Add Event Schedule</button>' : ''}
                 </div>
             `;
             container.innerHTML = fullHTML;
@@ -11559,7 +11663,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         sortedDays.forEach((dayKey, dIdx) => {
             const events = daysMap[dayKey];
-            // Sort by order/time
+            // Sort by sequence order or time
             events.sort((a, b) => (parseInt(a.order) || 999) - (parseInt(b.order) || 999) || String(a.time).localeCompare(String(b.time)));
 
             const dayNumber = dIdx + 1;
@@ -11579,7 +11683,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         </div>
                     </div>
 
-                    <!-- Day Content: Non-collapsed by default (display: block) -->
+                    <!-- Day Content Body: Non-collapsed by default (display: block) -->
                     <div class="event-chart-day-body" style="display:block; width:100%; margin-bottom:14px;">
                         <div class="table-responsive" style="margin:0;">
                             <table>
@@ -11596,13 +11700,15 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             `;
 
             events.forEach((ev, idx) => {
+                // Check if the item is custom text (non-competitive)
                 const isCustomItem = ev.isCustom === true || !ev.itemCode || String(ev.itemCode).trim() === "" || ev.itemCode === "CUSTOM";
                 let statusHTML = "";
 
                 if (isCustomItem) {
-                    // Custom text items show simple dash
+                    // Display clean dash for custom text items (no LED indicator)
                     statusHTML = `<span style="font-weight:800; font-size:18px; color:#94a3b8;">-</span>`;
                 } else {
+                    // Display Live Judging Status with LEDs for competition items
                     const liveStatus = getItemLiveStatus(ev.itemCode);
                     if (liveStatus === "ACTIVE") {
                         statusHTML = `
@@ -11628,6 +11734,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                     }
                 }
 
+                // Edit/Delete action buttons (Hidden for Student login)
                 const actionCell = !isStudent ? `
                     <td style="text-align:center;">
                         <div style="display:inline-flex; gap:6px;">
@@ -11660,8 +11767,17 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         });
 
         container.innerHTML = fullHTML;
-    }
 
+        // Trigger PDF.js canvas rendering once the DOM is injected
+        if (dbNoticeBook && (dbNoticeBook.pdfUrl || dbNoticeBook.pdfData)) {
+            const rawSrc = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
+            if (!rawSrc.includes('drive.google.com') && typeof initNoticePdfJsViewer === "function") {
+                setTimeout(() => {
+                    initNoticePdfJsViewer(rawSrc);
+                }, 50);
+            }
+        }
+    }
 
     // --- 1. Populate Name of Fest with "ALL" and Filter Items ---
     function onSchedModalCatChange() {
@@ -11993,9 +12109,10 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                 <i class="fas fa-check-circle" style="color:#059669;"></i> 
                 Active Notice: <b>${dbNoticeBook.title || 'Notice Book'}</b> 
                 (${dbNoticeBook.publishedAt || ''}) &bull; 
-                <a href="${link}" target="_blank" style="color:var(--accent); text-decoration:underline;">View PDF</a>
+                <button type="button" class="action-btn secondary" style="padding:2px 8px; font-size:11px; margin-left:6px;" onclick="openNoticePdfFullscreen()">
+                    <i class="fas fa-eye"></i> View PDF
+                </button>
             `;
-
             if (deleteBtn) deleteBtn.style.display = 'inline-flex';
             if (titleInput) titleInput.value = dbNoticeBook.title || '';
             if (urlInput && dbNoticeBook.pdfUrl) urlInput.value = dbNoticeBook.pdfUrl;
@@ -12092,6 +12209,148 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             },
             true
         );
+    }
+
+
+    // ==========================================================================
+    // 22. PDF.JS CANVAS RENDERER & BLOB HANDLERS
+    // ==========================================================================
+    let currentNoticePdfDoc = null;
+    let currentNoticePdfScale = 1.15;
+
+    function getNoticePdfBlobUrl(pdfDataOrUrl) {
+        if (!pdfDataOrUrl) return "";
+        if (pdfDataOrUrl.startsWith("data:application/pdf;base64,")) {
+            try {
+                const base64Data = pdfDataOrUrl.split(',')[1];
+                const byteCharacters = atob(base64Data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+                return URL.createObjectURL(blob);
+            } catch (e) {
+                console.error("Base64 to blob error:", e);
+                return pdfDataOrUrl;
+            }
+        }
+        return pdfDataOrUrl;
+    }
+
+    async function initNoticePdfJsViewer(rawSrc) {
+        const wrapper = document.getElementById('noticePdfCanvasWrapper');
+        const pageText = document.getElementById('noticePdfPageCountText');
+        if (!wrapper) return;
+
+        try {
+            if (!window.pdfjsLib) {
+                // Fallback to Blob object if PDF.js library isn't available
+                const blobUrl = getNoticePdfBlobUrl(rawSrc);
+                wrapper.innerHTML = `<object data="${blobUrl}" type="application/pdf" style="width:100%; height:550px;"><p style="color:#fff; padding:20px;">PDF plugin unavailable. <a href="${blobUrl}" target="_blank" style="color:#60a5fa;">Click here to view PDF</a></p></object>`;
+                if (pageText) pageText.innerText = "PDF Document";
+                return;
+            }
+
+            let pdfDataToLoad;
+            if (rawSrc.startsWith('data:application/pdf;base64,')) {
+                const base64 = rawSrc.split(',')[1];
+                const binStr = atob(base64);
+                const len = binStr.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binStr.charCodeAt(i);
+                }
+                pdfDataToLoad = { data: bytes };
+            } else {
+                pdfDataToLoad = { url: rawSrc };
+            }
+
+            currentNoticePdfDoc = await pdfjsLib.getDocument(pdfDataToLoad).promise;
+            if (pageText) pageText.innerHTML = `<i class="fas fa-file-pdf" style="color:#ef4444; margin-right:5px;"></i> Total Pages: ${currentNoticePdfDoc.numPages}`;
+
+            renderAllNoticePdfPages();
+        } catch (err) {
+            console.error("PDF.js render error:", err);
+            const blobUrl = getNoticePdfBlobUrl(rawSrc);
+            wrapper.innerHTML = `
+                <div style="background:#ffffff; padding:24px; border-radius:8px; text-align:center; color:#0f172a; width:90%; max-width:440px; margin:30px auto; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+                    <i class="fas fa-file-pdf" style="font-size:36px; color:#ef4444; margin-bottom:10px;"></i>
+                    <p style="font-weight:700; margin:0 0 14px 0;">Notice Book is ready to view.</p>
+                    <div style="display:flex; justify-content:center; gap:8px;">
+                        <button type="button" class="action-btn" onclick="openNoticePdfFullscreen()"><i class="fas fa-external-link-alt"></i> Open Fullscreen</button>
+                        <button type="button" class="action-btn gold" onclick="downloadNoticePdf()"><i class="fas fa-download"></i> Download</button>
+                    </div>
+                </div>
+            `;
+            if (pageText) pageText.innerText = "Document Ready";
+        }
+    }
+
+    async function renderAllNoticePdfPages() {
+        const wrapper = document.getElementById('noticePdfCanvasWrapper');
+        if (!wrapper || !currentNoticePdfDoc) return;
+        wrapper.innerHTML = "";
+
+        const numPages = currentNoticePdfDoc.numPages;
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            const page = await currentNoticePdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: currentNoticePdfScale });
+
+            const canvas = document.createElement('canvas');
+            canvas.className = 'notice-pdf-page-canvas';
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            wrapper.appendChild(canvas);
+
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+        }
+    }
+
+    function zoomNoticePdf(delta) {
+        if (!currentNoticePdfDoc) return;
+        if (delta === 'reset') {
+            currentNoticePdfScale = 1.15;
+        } else {
+            currentNoticePdfScale = Math.max(0.7, Math.min(2.4, currentNoticePdfScale + delta));
+        }
+        renderAllNoticePdfPages();
+    }
+
+    function openNoticePdfFullscreen() {
+        if (!dbNoticeBook) return;
+        const raw = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
+        if (!raw) return;
+
+        if (raw.includes('drive.google.com')) {
+            window.open(convertGoogleDriveUrl(raw), '_blank');
+            return;
+        }
+
+        const blobUrl = getNoticePdfBlobUrl(raw);
+        window.open(blobUrl, '_blank');
+    }
+
+    function downloadNoticePdf() {
+        if (!dbNoticeBook) return;
+        const raw = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
+        if (!raw) return;
+
+        const blobUrl = getNoticePdfBlobUrl(raw);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = (dbNoticeBook.title ? dbNoticeBook.title.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Notice_Book') + '.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function convertGoogleDriveUrl(url) {
+        if (!url) return "";
+        return url.replace(/\/view(\?.*)?$/, '/preview').replace(/\/edit(\?.*)?$/, '/preview');
     }
 
 
