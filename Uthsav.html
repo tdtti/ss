@@ -3672,7 +3672,7 @@
                             <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_JudgementTab"> Tab 4: Judgement</label>
                             <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_RecTab"> Tab 2: View Records</label>
                             <!-- ADD THIS -->
-                            <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_EventChartTab" checked> Event Chart (Programme Scheduler)</label>
+                            <label class="perm-tile"><input type="checkbox" id="tabPerm_student_EventChartTab"> Event Chart (Programme Scheduler)</label>
                             <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_TabulationTab"> Tab 5: Tabulation</label>
                             <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_ResultTab"> Tab 6: Results</label>
                             <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_SubDistrictTab"> Tab 8: Sub-District</label>
@@ -4569,7 +4569,7 @@
             if (!dbSettings.Content_Protection) dbSettings.Content_Protection = "ENABLED";
             if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
             if (!dbSettings.Student_Allowed_Tabs) dbSettings.Student_Allowed_Tabs = ["RegTab", "RecTab", "EventChartTab", "ResultTab", "SubDistrictTab"];
-            if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementTab"];
+if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementTab", "EventChartTab"];
             if (!dbSettings.ItemResultVisibility) dbSettings.ItemResultVisibility = {};
             if (!dbSettings.HiddenFests) dbSettings.HiddenFests = [];
 
@@ -4750,7 +4750,7 @@
         const hasEnabledFests = allFestNames.some(f => dbSettings["Fest_" + f] !== "DISABLED");
         const isRegOpen = dbSettings.Global_Registration === "OPEN";
         const isRegVisibleSetting = dbSettings.Student_Reg_Visible !== "HIDE";
-        const studentTabs = dbSettings.Student_Allowed_Tabs || ["RegTab", "RecTab", "ResultTab", "SubDistrictTab"];
+        const studentTabs = dbSettings.Student_Allowed_Tabs || ["RegTab", "RecTab", "EventChartTab", "ResultTab", "SubDistrictTab"];
         const canStudentSeeTab1 = isRegOpen && isRegVisibleSetting && hasEnabledFests && studentTabs.includes("RegTab");
 
         const adminReportControls = document.getElementById('adminReportControls');
@@ -8722,13 +8722,15 @@
 
     async function saveTabPermissions() {
         const studentTabs = [];
-        ["RegTab", "RecTab", "ResultTab", "SubDistrictTab"].forEach(t => {
+        // Includes EventChartTab
+        ["RegTab", "RecTab", "EventChartTab", "ResultTab", "SubDistrictTab"].forEach(t => {
             const el = document.getElementById("tabPerm_student_" + t);
             if (el && el.checked) studentTabs.push(t);
         });
 
         const judgeTabs = [];
-        ["JudgementTab", "RecTab", "TabulationTab", "ResultTab", "SubDistrictTab"].forEach(t => {
+        // Includes EventChartTab
+        ["JudgementTab", "EventChartTab", "RecTab", "TabulationTab", "ResultTab", "SubDistrictTab"].forEach(t => {
             const el = document.getElementById("tabPerm_judge_" + t);
             if (el && el.checked) judgeTabs.push(t);
         });
@@ -8737,10 +8739,21 @@
         dbSettings.Judge_Allowed_Tabs = judgeTabs;
 
         showLoader("Saving Tab Permissions...");
-        await db.collection("config").doc("settings").set(dbSettings, { merge: true });
-        applySettingsToUI();
-        hideLoader();
-        showCustomDialog("Permissions Saved", "Role-based tab permissions updated successfully.", "success");
+        try {
+            // Explicitly commit Student_Allowed_Tabs and Judge_Allowed_Tabs to Firestore
+            await db.collection("config").doc("settings").set({
+                Student_Allowed_Tabs: studentTabs,
+                Judge_Allowed_Tabs: judgeTabs
+            }, { merge: true });
+
+            applySettingsToUI();
+            hideLoader();
+            showCustomDialog("Permissions Saved", "Role-based tab permissions updated and saved to database.", "success");
+        } catch (e) {
+            hideLoader();
+            console.error("Tab permission save error:", e);
+            showCustomDialog("Error", "Could not save tab permissions.", "danger");
+        }
     }
 
     function applySettingsToUI() {
@@ -11245,7 +11258,7 @@
         renderEventChart();
     }
 
-    function renderEventChart() {
+   function renderEventChart() {
         const container = document.getElementById('eventChartScheduleList');
         if (!container) return;
 
@@ -11253,16 +11266,21 @@
         const festFilter = document.getElementById('ecFilterFest')?.value || "ALL";
         const dayFilter = document.getElementById('ecFilterDay')?.value || "ALL";
 
-        const isAdmin = currentUser && (currentUser.role === "Official" || currentUser.access.includes("3"));
-        const isStudent = currentUser && currentUser.role === "Student";
+        const isAdmin = currentUser && (currentUser.role === "Official" || (currentUser.access && currentUser.access.includes("3")));
 
         let schedules = [...dbSchedules];
+
+        // Deduplicate records in memory by ID
+        const uniqueMap = new Map();
+        schedules.forEach(s => { if (s.id && !uniqueMap.has(s.id)) uniqueMap.set(s.id, s); });
+        schedules = Array.from(uniqueMap.values());
 
         if (catFilter !== "ALL") {
             schedules = schedules.filter(s => (s.festivalClassification || getFestivalCategory(s.festName)) === catFilter);
         }
         if (festFilter !== "ALL") {
-            schedules = schedules.filter(s => s.festName === festFilter);
+            // Include common "ALL" fest items alongside the selected fest
+            schedules = schedules.filter(s => s.festName === festFilter || s.festName === "ALL");
         }
         if (dayFilter !== "ALL") {
             schedules = schedules.filter(s => s.day === dayFilter);
@@ -11282,7 +11300,7 @@
         // Group by Fest Name -> Day
         const grouped = {};
         schedules.forEach(s => {
-            const fName = s.festName || "General Fest";
+            const fName = s.festName || "ALL";
             const dayKey = s.day || "Day I";
             if (!grouped[fName]) grouped[fName] = {};
             if (!grouped[fName][dayKey]) grouped[fName][dayKey] = [];
@@ -11293,18 +11311,17 @@
         const schoolLogo = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png";
 
         Object.keys(grouped).sort((a, b) => a.localeCompare(b)).forEach(fName => {
-            const fCat = getFestivalCategory(fName);
+            const fCat = (fName === "ALL") ? "GENERAL" : getFestivalCategory(fName);
+            const festBannerText = (fName === "ALL") ? "ALL FESTIVALS (COMMON EVENTS)" : `${fCat.toUpperCase()} &bull; ${fName}`;
 
             Object.keys(grouped[fName]).sort().forEach(dayKey => {
                 const events = grouped[fName][dayKey];
-                // Sort by sequence order or time
                 events.sort((a, b) => (parseInt(a.order) || 999) - (parseInt(b.order) || 999) || String(a.time).localeCompare(String(b.time)));
 
                 const scheduleDate = events[0].date || getCertIssueDate(fName, "20/02/2026");
 
                 fullHTML += `
                     <div class="event-chart-card">
-                        <!-- School Header with Details & Logo -->
                         <div class="event-chart-school-header">
                             <img src="${schoolLogo}" alt="Logo" class="event-chart-school-logo">
                             <div class="event-chart-school-details">
@@ -11313,11 +11330,10 @@
                             </div>
                         </div>
 
-                        <!-- Festival & Day (I/II) Meta Header -->
                         <div class="event-chart-meta-banner">
                             <div class="event-chart-fest-pill">
                                 <i class="fas fa-trophy" style="color:var(--warning);"></i>
-                                <span>${fCat.toUpperCase()} &bull; ${fName}</span>
+                                <span>${festBannerText}</span>
                             </div>
                             <div style="display:flex; align-items:center; gap:12px;">
                                 <span style="font-size:12px; font-weight:700; color:#475569;">
@@ -11327,7 +11343,6 @@
                             </div>
                         </div>
 
-                        <!-- Events Schedule Table -->
                         <div class="table-responsive" style="margin:0;">
                             <table>
                                 <thead>
@@ -11343,34 +11358,40 @@
                 `;
 
                 events.forEach((ev, idx) => {
-                    // Live Status Calculation with LED
-                    const liveStatus = getItemLiveStatus(ev.itemCode);
+                    // Check if event is custom text (non-competitive)
+                    const isCustomItem = ev.isCustom === true || !ev.itemCode || String(ev.itemCode).trim() === "" || ev.itemCode === "CUSTOM";
                     let statusHTML = "";
 
-                    if (liveStatus === "ACTIVE") {
-                        statusHTML = `
-                            <span style="display:inline-flex; align-items:center; font-weight:800; color:#059669; gap:6px;">
-                                <span class="led-indicator led-green-pulse"></span>
-                                ACTIVE (Running Now)
-                            </span>
-                        `;
-                    } else if (liveStatus === "COMPLETED") {
-                        statusHTML = `
-                            <span style="display:inline-flex; align-items:center; font-weight:800; color:#d97706; gap:6px;">
-                                <span class="led-indicator led-orange"></span>
-                                COMPLETED (Judgement Finished)
-                            </span>
-                        `;
+                    if (isCustomItem) {
+                        // Display simple dash for custom text items
+                        statusHTML = `<span style="font-weight:800; font-size:18px; color:#94a3b8;">-</span>`;
                     } else {
-                        statusHTML = `
-                            <span style="display:inline-flex; align-items:center; font-weight:700; color:#64748b; gap:6px;">
-                                <span class="led-indicator led-grey"></span>
-                                INACTIVE
-                            </span>
-                        `;
+                        // Display Live Judging Status with LEDs for competition items
+                        const liveStatus = getItemLiveStatus(ev.itemCode);
+                        if (liveStatus === "ACTIVE") {
+                            statusHTML = `
+                                <span style="display:inline-flex; align-items:center; font-weight:800; color:#059669; gap:6px;">
+                                    <span class="led-indicator led-green-pulse"></span>
+                                    ACTIVE (Running Now)
+                                </span>
+                            `;
+                        } else if (liveStatus === "COMPLETED") {
+                            statusHTML = `
+                                <span style="display:inline-flex; align-items:center; font-weight:800; color:#d97706; gap:6px;">
+                                    <span class="led-indicator led-orange"></span>
+                                    COMPLETED (Judgement Finished)
+                                </span>
+                            `;
+                        } else {
+                            statusHTML = `
+                                <span style="display:inline-flex; align-items:center; font-weight:700; color:#64748b; gap:6px;">
+                                    <span class="led-indicator led-grey"></span>
+                                    INACTIVE
+                                </span>
+                            `;
+                        }
                     }
 
-                    // Admin Action Buttons (Hidden for Student)
                     const actionCell = isAdmin ? `
                         <td style="text-align:center;">
                             <div style="display:inline-flex; gap:6px;">
@@ -11386,15 +11407,15 @@
 
                     fullHTML += `
                         <tr>
-        <td style="text-align:center; font-weight:700; color:#64748b;">${idx + 1}</td>
-        <td><span class="event-time-badge"><i class="far fa-clock"></i> ${ev.time || 'TBD'}</span></td>
-        <td>
-            <b style="color:var(--text-main); font-size:13.5px;">${ev.itemName}</b>
-            ${ev.itemCode ? `<span style="font-family:monospace; color:#2563eb; font-size:11px; margin-left:6px;">[${ev.itemCode}]</span>` : '<span style="color:#64748b; font-size:10.5px; margin-left:6px; font-style:italic;">(Special Event)</span>'}
-        </td>
-        <td style="text-align:center;">${statusHTML}</td>
-        ${actionCell}
-    </tr>
+                            <td style="text-align:center; font-weight:700; color:#64748b;">${idx + 1}</td>
+                            <td><span class="event-time-badge"><i class="far fa-clock"></i> ${ev.time || 'TBD'}</span></td>
+                            <td>
+                                <b style="color:var(--text-main); font-size:13.5px;">${ev.itemName}</b>
+                                ${ev.itemCode ? `<span style="font-family:monospace; color:#2563eb; font-size:11px; margin-left:6px;">[${ev.itemCode}]</span>` : ''}
+                            </td>
+                            <td style="text-align:center;">${statusHTML}</td>
+                            ${actionCell}
+                        </tr>
                     `;
                 });
 
@@ -11405,27 +11426,26 @@
         container.innerHTML = fullHTML;
     }
 
-    // Modal Operations (Admin)
+    // --- 1. Populate Name of Fest with "ALL" and Filter Items ---
     function onSchedModalCatChange() {
         const cat = document.getElementById('schedClassification')?.value || "Kalothswom";
         const festSel = document.getElementById('schedFestName');
-        festSel.innerHTML = "";
+        if (!festSel) return;
 
-        const fests = allFestNames.filter(f => getFestivalCategory(f) === cat && festHasItems(f));
+        // Add "ALL" as the primary option
+        festSel.innerHTML = '<option value="ALL">ALL</option>';
+
+        const fests = allFestNames.filter(f => (cat === "ALL" || getFestivalCategory(f) === cat) && festHasItems(f));
         fests.forEach(f => {
             festSel.innerHTML += `<option value="${f}">${f}</option>`;
         });
         populateSchedModalItems();
     }
 
-    // --- Instant Search & Custom Text for Schedule Programme Item ---
-    let currentSchedFestItems = [];
-
     function populateSchedModalItems() {
+        const cat = document.getElementById('schedClassification')?.value || "Kalothswom";
         const fest = document.getElementById('schedFestName')?.value;
         const searchInput = document.getElementById('schedItemSearchInput');
-        const codeInput = document.getElementById('schedItemCode');
-        const nameInput = document.getElementById('schedItemName');
 
         if (!fest) {
             currentSchedFestItems = [];
@@ -11433,9 +11453,16 @@
             return;
         }
 
-        currentSchedFestItems = dbFests
-            .filter(f => f["Fest Name"] === fest)
-            .sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
+        if (fest === "ALL") {
+            // Load all items under this classification (or all enabled fests)
+            currentSchedFestItems = dbFests
+                .filter(f => isFestEnabled(f["Fest Name"]) && (cat === "ALL" || getFestivalCategory(f["Fest Name"]) === cat))
+                .sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
+        } else {
+            currentSchedFestItems = dbFests
+                .filter(f => f["Fest Name"] === fest)
+                .sort((a, b) => String(a["Item"] || "").localeCompare(String(b["Item"] || "")));
+        }
 
         const currentQuery = searchInput ? searchInput.value.trim() : "";
         renderSchedDropdownList(currentSchedFestItems, currentQuery);
@@ -11523,7 +11550,7 @@
     }
 
 
-    // --- Modal Open, Save & Render Operations ---
+    // --- 2. Modal Open Operation ---
     function openScheduleModal(id = null) {
         document.getElementById('schedEditId').value = id || "";
         const titleEl = document.getElementById('scheduleModalTitle');
@@ -11534,7 +11561,7 @@
             if (ev) {
                 document.getElementById('schedClassification').value = ev.festivalClassification || getFestivalCategory(ev.festName);
                 onSchedModalCatChange();
-                document.getElementById('schedFestName').value = ev.festName;
+                document.getElementById('schedFestName').value = ev.festName || "ALL";
                 populateSchedModalItems();
 
                 const code = ev.itemCode ? ` [${ev.itemCode}]` : '';
@@ -11551,6 +11578,7 @@
             titleEl.innerHTML = `<i class="fas fa-calendar-plus" style="color:var(--accent);"></i> <span>Schedule Programme Item</span>`;
             document.getElementById('schedClassification').value = "Kalothswom";
             onSchedModalCatChange();
+            document.getElementById('schedFestName').value = "ALL";
             populateSchedModalItems();
 
             document.getElementById('schedItemSearchInput').value = "";
@@ -11573,7 +11601,14 @@
         document.getElementById('scheduleModalOverlay').style.display = 'none';
     }
 
+    // --- 3. Save Schedule with Double-Submission Lock & Duplicate Prevention ---
+    let isScheduleSaving = false;
+
     async function saveScheduledEvent() {
+        // Prevent concurrent double-execution on rapid/double clicks
+        if (isScheduleSaving) return;
+
+        const saveBtn = document.querySelector('#scheduleModalOverlay .action-btn.success');
         const editId = document.getElementById('schedEditId')?.value;
         const cat = document.getElementById('schedClassification')?.value;
         const fest = document.getElementById('schedFestName')?.value;
@@ -11586,12 +11621,11 @@
         let itemName = document.getElementById('schedItemName')?.value.trim() || rawInput;
         let itemCode = document.getElementById('schedItemCode')?.value.trim() || "";
 
-        // If user typed custom text directly without selecting from dropdown
         if (!itemName && rawInput) {
             itemName = rawInput;
         }
 
-        // Check if rawInput corresponds to a registered item code/name if itemCode wasn't explicitly set
+        // If user typed an item without selecting from dropdown, check if it matches a known item
         if (!itemCode && rawInput) {
             const clean = rawInput.replace(/\[.*?\]/, '').trim().toLowerCase();
             const matched = dbFests.find(f => 
@@ -11605,14 +11639,31 @@
         }
 
         if (!fest || !itemName || !time) {
-            return showCustomDialog("Incomplete Details", "Please select a Festival, enter/select a Programme Item, and specify the Time slot.", "warning");
+            return showCustomDialog("Incomplete Details", "Please select a Festival/Fest, enter/select a Programme Item, and specify the Time slot.", "warning");
+        }
+
+        // Flag custom items (items without an item code)
+        const isCustom = !itemCode || itemCode.trim() === "" || itemCode === "CUSTOM";
+
+        // Prevent accidental duplicate entry creation
+        if (!editId) {
+            const isDuplicate = dbSchedules.some(s => 
+                String(s.festName).trim().toLowerCase() === String(fest).trim().toLowerCase() && 
+                String(s.day).trim().toLowerCase() === String(day).trim().toLowerCase() && 
+                String(s.itemName).trim().toLowerCase() === String(itemName).trim().toLowerCase() && 
+                String(s.time).trim().toLowerCase() === String(time).trim().toLowerCase()
+            );
+            if (isDuplicate) {
+                return showCustomDialog("Duplicate Entry", `An entry for <b>${itemName}</b> at <b>${time}</b> on <b>${day}</b> already exists in the schedule.`, "warning");
+            }
         }
 
         const schedObj = {
             festivalClassification: cat,
             festName: fest,
-            itemCode: itemCode,
+            itemCode: isCustom ? "" : itemCode,
             itemName: itemName,
+            isCustom: isCustom,
             day: day,
             date: date,
             time: time,
@@ -11620,7 +11671,11 @@
             updatedAt: new Date().toLocaleString('en-IN')
         };
 
+        // Lock button during asynchronous write
+        isScheduleSaving = true;
+        if (saveBtn) saveBtn.disabled = true;
         showLoader("Saving Event Schedule...");
+
         try {
             if (editId) {
                 await db.collection("event_schedules").doc(editId).update(schedObj);
@@ -11629,7 +11684,10 @@
                 showCustomDialog("Updated", `Schedule for <b>${itemName}</b> updated successfully.`, "success");
             } else {
                 const docRef = await db.collection("event_schedules").add(schedObj);
-                dbSchedules.push({ ...schedObj, id: docRef.id });
+                // Push only if not already present
+                if (!dbSchedules.some(s => s.id === docRef.id)) {
+                    dbSchedules.push({ ...schedObj, id: docRef.id });
+                }
                 showCustomDialog("Scheduled", `<b>${itemName}</b> added to the ${day} schedule.`, "success");
             }
             hideLoader();
@@ -11639,6 +11697,9 @@
             hideLoader();
             console.error("Schedule error:", e);
             showCustomDialog("Error", "Could not save schedule.", "danger");
+        } finally {
+            isScheduleSaving = false;
+            if (saveBtn) saveBtn.disabled = false;
         }
     }
 
