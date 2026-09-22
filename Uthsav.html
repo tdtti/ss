@@ -753,7 +753,7 @@
         align-items: center; 
     }
     .spinner-ring { 
-        position: absolute; width: 44px; height: 44px; 
+        position: absolute width: 44px; height: 44px; 
         border: 3px solid #e2e8f0; 
         border-top: 3px solid var(--accent); 
         border-radius: 50%; animation: spin 0.8s linear infinite; 
@@ -1182,7 +1182,7 @@
     }
 
     /* ==========================================================================
-       10. STRICT PRINT RULES (WYSIWYG 1:1 REPRODUCTION ON A4)
+       10. STRICT PRINT RULES (CERTIFICATES, REPORTS, TABULATION)
        ========================================================================== */
     @page { 
         margin: 0 !important; 
@@ -1553,11 +1553,26 @@
     }
 
     /* ==========================================================================
-       12. L&L (LABELS & LOTS) A4 PORTRAIT CANVAS & 20MM MARGINS
+       12. L&L (LABELS & LOTS) CONTAINMENT & SCREEN CANVAS
        ========================================================================== */
     #LLTab {
         width: 100% !important;
         box-sizing: border-box !important;
+    }
+
+    #LLTab .section {
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+
+    .ll-section-body {
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        transition: max-height 0.2s ease-out;
     }
 
     .ll-toolbar {
@@ -1596,21 +1611,56 @@
         margin-bottom: 12px !important;
     }
 
-    .ll-page {
-        width: 170mm !important;
-        min-width: 170mm !important;
-        max-width: 170mm !important;
-        height: 256.5mm !important;
-        min-height: 256.5mm !important;
-        max-height: 256.5mm !important;
-        margin: 0 auto 26px auto !important;
+    .ll-scroll-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 75vh !important;
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 14px 8px !important;
+        background: #f1f5f9 !important;
+        border-radius: var(--radius-md) !important;
+        border: 1px solid var(--border) !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        text-align: center !important;
+    }
+
+    .ll-scroll-wrapper::-webkit-scrollbar { width: 8px; height: 8px; }
+    .ll-scroll-wrapper::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 4px; }
+    .ll-scroll-wrapper::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+
+    /* All 4 Screen Canvas Containers */
+    #llItemsPrintContainer, 
+    #llLotsPrintContainer,
+    #llJudgeSheetPrintContainer, 
+    #llTabSheetPrintContainer {
+        display: inline-flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        width: max-content !important;
+        min-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Screen Preview Canvas Representation of A4 Portrait */
+    .ll-page, .manual-sheet-page {
+        width: 195mm !important;
+        min-height: 275mm !important;
         background: #ffffff !important;
         box-sizing: border-box !important;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
-        display: block !important;
-        overflow: hidden !important;
+        margin: 0 auto 24px auto !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
         position: relative !important;
+        display: block !important;
         flex-shrink: 0 !important;
+    }
+
+    .ll-page {
+        overflow: hidden !important;
     }
 
     /* SECTION 1: 1 Column x 4 Rows (100% Width x 25% Height each) */
@@ -1751,98 +1801,6 @@
         z-index: 9999; display: none;
         justify-content: center; align-items: center; padding: 16px;
         box-sizing: border-box;
-    }
-
-    @page llPortraitPage {
-        size: 210mm 297mm portrait;
-        margin: 20mm !important;
-    }
-
-    @media print {
-        body.printing-ll-portrait {
-            page: llPortraitPage !important;
-            background: #ffffff !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-
-        body.printing-ll-portrait #appScreen,
-        body.printing-ll-portrait #loginScreen,
-        body.printing-ll-portrait #customDialogOverlay,
-        body.printing-ll-portrait #loadingOverlay,
-        body.printing-ll-portrait .app-header,
-        body.printing-ll-portrait .tab,
-        body.printing-ll-portrait .no-print {
-            display: none !important;
-        }
-
-        body.printing-ll-portrait #llViewModal.active-print,
-        body.printing-ll-portrait #llViewModal.active-print * {
-            visibility: visible !important;
-        }
-
-        body.printing-ll-portrait #llViewModal.active-print {
-            position: static !important;
-            display: block !important;
-            width: 100% !important;
-            height: auto !important;
-            background: #ffffff !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            overflow: visible !important;
-        }
-
-        body.printing-ll-portrait #llViewModal.active-print .report-modal-content {
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            max-height: none !important;
-            width: 100% !important;
-            height: auto !important;
-            overflow: visible !important;
-        }
-
-        body.printing-ll-portrait #llViewModal.active-print .modal-scroll-body {
-            overflow: visible !important;
-            max-height: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-        }
-
-        body.printing-ll-portrait #llViewModal.active-print #llModalContentArea {
-            display: block !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-
-        body.printing-ll-portrait #llViewModal.active-print .ll-page {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: 256.5mm !important;
-            max-height: 256.5mm !important;
-            box-sizing: border-box !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            page-break-after: always !important;
-            break-after: page !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            overflow: hidden !important;
-        }
-
-        body.printing-ll-portrait #llViewModal.active-print .ll-page:last-child {
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-        }
     }
 
     /* ==========================================================================
@@ -2143,7 +2101,7 @@
     }
 
     /* ==========================================================================
-       16. L&L COLLAPSIBLES & MANUAL SHEETS (JUDGEMENT & TABULATION)
+       16. L&L SECTION COLLAPSIBLES & MANUAL SHEETS
        ========================================================================== */
     .ll-section-head {
         cursor: pointer !important;
@@ -2159,22 +2117,14 @@
         transition: background 0.15s ease;
     }
     .ll-section-head:hover { background: #f8fafc !important; }
-    .ll-section-body { transition: max-height 0.2s ease-out; }
 
-    /* Manual Sheet A4 Portrait Canvas */
+    /* Manual Sheet Screen Card */
     .manual-sheet-page {
-        width: 190mm !important;
-        min-height: 270mm !important;
-        margin: 0 auto 30px auto !important;
-        background: #ffffff !important;
         padding: 14mm 14mm 12mm 14mm !important;
         border: 1.5px solid #1e293b !important;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
-        box-sizing: border-box !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
-        page-break-after: always !important;
     }
 
     .manual-sheet-header {
@@ -2274,16 +2224,42 @@
         font-weight: 700;
     }
 
-    /* Manual Sheets Dedicated Print Rule */
+    /* ==========================================================================
+       17. RESTRUCTURED FULL-PAGE A4 PORTRAIT PRINT ENGINE (ALL 4 SECTIONS)
+       ========================================================================== */
+    @page llPortraitPage {
+        size: 210mm 297mm portrait;
+        margin: 0 !important;
+    }
+
     @media print {
+        /* Force HTML and BODY to physical A4 Portrait (210mm x 297mm) */
+        html, 
+        body.printing-ll-portrait,
+        html, 
         body.printing-manual-sheet {
-            background: #ffffff !important;
+            page: llPortraitPage !important;
+            width: 210mm !important;
+            min-width: 210mm !important;
+            max-width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
             margin: 0 !important;
             padding: 0 !important;
-            width: 100% !important;
+            overflow: visible !important;
+            background: #ffffff !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
+
+        /* Hide all background app elements */
+        body.printing-ll-portrait #appScreen,
+        body.printing-ll-portrait #loginScreen,
+        body.printing-ll-portrait #customDialogOverlay,
+        body.printing-ll-portrait #loadingOverlay,
+        body.printing-ll-portrait .app-header,
+        body.printing-ll-portrait .tab,
+        body.printing-ll-portrait .no-print,
         body.printing-manual-sheet #appScreen,
         body.printing-manual-sheet #loginScreen,
         body.printing-manual-sheet #customDialogOverlay,
@@ -2293,76 +2269,170 @@
         body.printing-manual-sheet .no-print {
             display: none !important;
         }
+
+        /* Reveal Modal Wrapper for Printing */
+        body.printing-ll-portrait #llViewModal.active-print,
+        body.printing-ll-portrait #llViewModal.active-print *,
         body.printing-manual-sheet #llViewModal.active-print,
         body.printing-manual-sheet #llViewModal.active-print * {
             visibility: visible !important;
         }
+
+        body.printing-ll-portrait #llViewModal.active-print,
         body.printing-manual-sheet #llViewModal.active-print {
-            position: static !important;
-            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 210mm !important;
             margin: 0 !important;
             padding: 0 !important;
+            background: #ffffff !important;
+            display: block !important;
             box-shadow: none !important;
             overflow: visible !important;
         }
-        body.printing-manual-sheet #llViewModal.active-print .manual-sheet-page {
+
+        body.printing-ll-portrait #llViewModal.active-print .report-modal-content,
+        body.printing-manual-sheet #llViewModal.active-print .report-modal-content,
+        body.printing-ll-portrait #llViewModal.active-print .modal-scroll-body,
+        body.printing-manual-sheet #llViewModal.active-print .modal-scroll-body,
+        body.printing-ll-portrait #llViewModal.active-print #llModalContentArea,
+        body.printing-manual-sheet #llViewModal.active-print #llModalContentArea {
+            border: none !important;
             box-shadow: none !important;
-            margin: 0 auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 210mm !important;
+            max-width: 210mm !important;
+            height: auto !important;
+            overflow: visible !important;
+            background: transparent !important;
+            display: block !important;
+        }
+
+        /* 100% WIDTH & HEIGHT PAGE FIT RULES FOR ALL 4 SECTIONS */
+        body.printing-ll-portrait #llViewModal.active-print .ll-page,
+        body.printing-manual-sheet #llViewModal.active-print .ll-page,
+        body.printing-ll-portrait #llViewModal.active-print .manual-sheet-page,
+        body.printing-manual-sheet #llViewModal.active-print .manual-sheet-page {
+            width: 210mm !important;
+            min-width: 210mm !important;
+            max-width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
+            max-height: 297mm !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            box-shadow: none !important;
             page-break-after: always !important;
             break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            overflow: hidden !important;
+            background: #ffffff !important;
+            position: relative !important;
+        }
+
+        body.printing-ll-portrait #llViewModal.active-print .ll-page:last-child,
+        body.printing-manual-sheet #llViewModal.active-print .ll-page:last-child,
+        body.printing-ll-portrait #llViewModal.active-print .manual-sheet-page:last-child,
+        body.printing-manual-sheet #llViewModal.active-print .manual-sheet-page:last-child {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+        }
+
+        /* SECTION 1 PRINT: 4 EQUAL QUARTERS FITTING FULL HEIGHT */
+        body.printing-ll-portrait .ll-items-grid,
+        body.printing-manual-sheet .ll-items-grid {
+            height: 100% !important;
+            width: 100% !important;
+            display: grid !important;
+            grid-template-columns: 100% !important;
+            grid-template-rows: 25% 25% 25% 25% !important;
+            box-sizing: border-box !important;
+        }
+        body.printing-ll-portrait .ll-item-label,
+        body.printing-manual-sheet .ll-item-label {
+            width: 100% !important;
+            height: 100% !important;
+            padding: 16px 24px !important;
+            border: 2px dashed #0f172a !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+            text-align: center !important;
+        }
+        body.printing-ll-portrait .ll-item-subhead { font-size: 14px !important; margin-bottom: 5px !important; }
+        body.printing-ll-portrait .ll-item-festname { font-size: 18px !important; margin-bottom: 10px !important; }
+        body.printing-ll-portrait .ll-item-mainhead { font-size: 32px !important; line-height: 1.25 !important; }
+
+        /* SECTION 2 PRINT: 8 LOT LABELS FITTING FULL A4 */
+        body.printing-ll-portrait .ll-lots-grid,
+        body.printing-manual-sheet .ll-lots-grid {
+            height: 100% !important;
+            width: 100% !important;
+            display: grid !important;
+            grid-template-columns: 50% 50% !important;
+            grid-template-rows: 25% 25% 25% 25% !important;
+            box-sizing: border-box !important;
+        }
+        body.printing-ll-portrait .ll-lot-label,
+        body.printing-manual-sheet .ll-lot-label {
+            width: 100% !important;
+            height: 100% !important;
+            padding: 12px 16px !important;
+            border: 2px dashed #0f172a !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
+        body.printing-ll-portrait .ll-lot-number { font-size: 52px !important; line-height: 1 !important; margin: 0 0 6px 0 !important; }
+        body.printing-ll-portrait .ll-lot-meta { font-size: 11.5px !important; line-height: 1.3 !important; }
+        body.printing-ll-portrait .ll-lot-meta b { font-size: 13.5px !important; }
+
+        /* SECTIONS 3 & 4 PRINT: MANUAL SHEETS (100% A4 FIT) */
+        body.printing-ll-portrait .manual-sheet-page,
+        body.printing-manual-sheet .manual-sheet-page {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            padding: 10mm 12mm 10mm 12mm !important;
+            border: 2px solid #0f172a !important;
+        }
+        body.printing-ll-portrait .manual-sheet-header,
+        body.printing-manual-sheet .manual-sheet-header {
+            margin-bottom: 8px !important;
+            padding-bottom: 6px !important;
+        }
+        body.printing-ll-portrait .manual-meta-grid,
+        body.printing-manual-sheet .manual-meta-grid {
+            margin: 6px 0 8px 0 !important;
+            padding: 6px 12px !important;
+            font-size: 11.5px !important;
+        }
+        body.printing-ll-portrait .manual-sheet-table,
+        body.printing-manual-sheet .manual-sheet-table {
+            font-size: 11px !important;
+        }
+        body.printing-ll-portrait .manual-sheet-table th,
+        body.printing-manual-sheet .manual-sheet-table th,
+        body.printing-ll-portrait .manual-sheet-table td,
+        body.printing-manual-sheet .manual-sheet-table td {
+            padding: 5px 6px !important;
+        }
+        body.printing-ll-portrait .manual-sheet-footer,
+        body.printing-manual-sheet .manual-sheet-footer {
+            padding-top: 14px !important;
+            margin-top: 10px !important;
         }
     }
 
     /* ==========================================================================
-       17. MOBILE CONTAINMENT & OVERFLOW FIXES (SECTIONS 2, 3 & 4)
-       ========================================================================== */
-    #LLTab .section {
-        max-width: 100% !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important; /* Prevents 170mm/190mm canvas from breaking out of card */
-    }
-
-    .ll-section-body {
-        max-width: 100% !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
-    }
-
-    .ll-scroll-wrapper {
-        width: 100% !important;
-        max-width: 100% !important;
-        max-height: 75vh !important;
-        overflow-x: auto !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important; /* Momentum scrolling */
-        padding: 14px 8px !important;
-        background: #f1f5f9 !important;
-        border-radius: var(--radius-md) !important;
-        border: 1px solid var(--border) !important;
-        box-sizing: border-box !important;
-        display: block !important;
-        text-align: center !important;
-    }
-
-    /* All preview containers contained inside scroll box */
-    #llItemsPrintContainer, 
-    #llLotsPrintContainer,
-    #llJudgeSheetPrintContainer, 
-    #llTabSheetPrintContainer {
-        display: inline-flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        width: max-content !important;
-        min-width: 100% !important;
-        margin: 0 auto !important;
-        padding: 0 !important;
-        box-sizing: border-box !important;
-    }
-
-    /* ==========================================================================
-       18. GENERAL MEDIA QUERIES & MOBILE ADJUSTMENTS
+       18. GENERAL MEDIA QUERIES & MOBILE OVERFLOW ADJUSTMENTS
        ========================================================================== */
     @media (max-width: 768px) {
         #appScreen { padding: 10px; }
@@ -2373,7 +2443,7 @@
         .tab-badge-notification { top: -2px; right: -2px; font-size: 8px; padding: 1px 4px; }
         .section { padding: 16px; border-radius: var(--radius-md); }
 
-        /* L&L Mobile Toolbars & Cards */
+        /* L&L Mobile Viewport Rules */
         #LLTab .section {
             padding: 12px 10px !important;
         }
@@ -2408,7 +2478,6 @@
 
     option[value="Fest"] { display: none !important; }
     option[value="Sports"] { display: none !important; }
-
 </style>
 
 
@@ -9657,11 +9726,13 @@
         if (modal) modal.style.display = 'none';
     }
 
+    // Unified Print Executor for All 4 L&L Sections
     function executeLLPrint() {
         const modal = document.getElementById('llViewModal');
         if (!modal) return;
 
-        document.body.classList.remove('printing-cert', 'printing-report-portrait');
+        // Clean any active print classes
+        document.body.classList.remove('printing-cert', 'printing-report-portrait', 'printing-manual-sheet');
         document.body.classList.add('printing-ll-portrait');
         modal.classList.add('active-print');
 
@@ -10779,13 +10850,14 @@
     }
 
     // Modal Viewer & Print Handler for Manual Sheets
+    // Modal Viewer & Print Handler for Sections 3 & 4
     function openManualSheetView(type, isBlank = false, autoPrint = false) {
         const modal = document.getElementById('llViewModal');
         const titleEl = document.getElementById('llModalTitle');
         const contentEl = document.getElementById('llModalContentArea');
         if (!modal || !contentEl) return;
 
-        const isJudge = type === 'judge';
+        const isJudge = (type === 'judge');
         const fest = document.getElementById(isJudge ? 'llJudgeFestFilter' : 'llTabFestFilter')?.value || "ALL";
         const itemCode = document.getElementById(isJudge ? 'llJudgeItemFilter' : 'llTabItemFilter')?.value || "ALL";
 
@@ -10809,12 +10881,7 @@
 
         if (autoPrint) {
             setTimeout(() => {
-                document.body.classList.remove('printing-cert', 'printing-report-portrait', 'printing-ll-portrait');
-                document.body.classList.add('printing-manual-sheet');
-                modal.classList.add('active-print');
-                window.print();
-                modal.classList.remove('active-print');
-                document.body.classList.remove('printing-manual-sheet');
+                executeLLPrint();
             }, 300);
         }
     }
