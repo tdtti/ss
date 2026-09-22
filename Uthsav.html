@@ -7586,9 +7586,11 @@
 
         let results = [...dbPublishedResults];
 
-        // Filter based on Admin Scrutiny role permissions
+        // Check user roles
         const isStudent = currentUser && currentUser.role === "Student";
         const isJudge = currentUser && currentUser.role === "Judge";
+
+        // Filter based on Admin Scrutiny role permissions
         if (isStudent || isJudge) {
             const visibilityMap = dbSettings.ItemResultVisibility || {};
             results = results.filter(r => {
@@ -7675,9 +7677,7 @@
             return;
         }
 
-        // =========================================================================
-        // 3-TIER HIERARCHY: Classification (A-Z) -> Fest Name (A-Z) -> Item (A-Z)
-        // =========================================================================
+        // 3-Tier Hierarchy: Classification (A-Z) -> Fest Name (A-Z) -> Item (A-Z)
         const hierarchy = {};
         results.forEach(r => {
             const cat = r.festCategory || getFestivalCategory(r.festName) || "Other";
@@ -7691,7 +7691,7 @@
             hierarchy[cat][fName][itemKey].push(r);
         });
 
-        // 1. Category Level (Minimised by default)
+        // 1. Sort Categories Alphabetically (A-Z)
         const sortedCategories = Object.keys(hierarchy).sort((a, b) => a.localeCompare(b));
 
         sortedCategories.forEach(cat => {
@@ -7701,11 +7701,10 @@
                         <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()} RESULTS</span>
                         <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
                     </div>
-                    <!-- Minimised body -->
                     <div class="category-collapsible-content" style="display: none; width: 100%;">
             `;
 
-            // 2. Fest Level (Minimised by default)
+            // 2. Sort Festivals Alphabetically (A-Z)
             const sortedFests = Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b));
 
             sortedFests.forEach(festName => {
@@ -7725,11 +7724,10 @@
                                 ${sortedItems.length} Item(s)
                             </span>
                         </div>
-                        <!-- Minimised body -->
                         <div class="fest-collapsible-content" style="display: none; width: 100%; margin-bottom: 8px;">
                 `;
 
-                // 3. Item Level (Minimised by default)
+                // 3. Sort Items Alphabetically (A-Z)
                 sortedItems.forEach(itemKey => {
                     const rows = festItemsObj[itemKey];
                     rows.sort((a, b) => parseFloat(b.score || 0) - parseFloat(a.score || 0));
@@ -7746,7 +7744,6 @@
                                     <i class="far fa-clock"></i> Published: ${rows[0].publishedAt || 'Official'}
                                 </span>
                             </div>
-                            <!-- Minimised body -->
                             <div class="table-responsive" style="margin:0; border:none; display: none;">
                                 <table>
                                     <thead>
@@ -7803,9 +7800,11 @@
                                         <button class="action-btn gold" style="padding:5px 8px; font-size:12px;" title="Print Certificate" onclick="openCertificateModal('${row.id}', true)">
                                             <i class="fas fa-print"></i>
                                         </button>
-                                        <button class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
+                                        ${!isStudent ? `
+                                            <button class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        ` : ''}
                                     </div>
                                 </td>
                             </tr>
