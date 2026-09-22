@@ -7,6 +7,7 @@
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <!-- Font Awesome Icons -->
@@ -2597,6 +2598,62 @@
         }
     }
 
+    /* ==========================================================================
+       20. NOTICE BOOK & DAY-BASED EVENT CHART STYLES
+       ========================================================================== */
+    .event-chart-notice-head {
+        background: #1e3a8a !important; /* Deep Royal Navy */
+        color: #ffffff !important;
+        padding: 12px 18px !important;
+        border-radius: var(--radius-sm);
+        margin-bottom: 8px;
+        font-size: 15px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        user-select: none;
+    }
+    .event-chart-notice-head:hover { background: #172554 !important; }
+
+    .event-chart-day-head {
+        background: var(--primary) !important;
+        color: #ffffff !important;
+        padding: 12px 18px !important;
+        border-radius: var(--radius-sm);
+        margin-bottom: 8px;
+        font-size: 15px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        user-select: none;
+    }
+    .event-chart-day-head:hover { background: #1e293b !important; }
+
+    .notice-pdf-frame {
+        width: 100%;
+        height: 540px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: #f8fafc;
+    }
+
+    .notice-actions-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        background: #f1f5f9;
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        margin-bottom: 10px;
+        border: 1px solid var(--border);
+    }
+
     option[value="Fest"] { display: none !important; }
     option[value="Sports"] { display: none !important; }
 
@@ -2932,11 +2989,13 @@
         </div>
 
         <!-- TAB: EVENT CHART (PROGRAMME SCHEDULER) -->
+        <!-- TAB: EVENT CHART (PROGRAMME SCHEDULER) -->
         <div id="EventChartTab" class="tabcontent">
-            <!-- Filter Toolbar -->
-            <div class="section no-print" style="margin-bottom:16px;">
+            <!-- Filter Toolbar (Visible only to Admin/Officials) -->
+            <div class="section no-print" id="ecToolbarSection" style="margin-bottom:16px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1;">
+                    <!-- Filter Controls: Hidden for Student Login -->
+                    <div id="ecFiltersGroup" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1;">
                         <div class="form-group" style="margin:0; min-width:180px;">
                             <label style="font-size:11px; font-weight:700;">Classification</label>
                             <select id="ecFilterClassification" onchange="onEventChartCatChange()">
@@ -2956,12 +3015,14 @@
                             <label style="font-size:11px; font-weight:700;">Filter Day</label>
                             <select id="ecFilterDay" onchange="renderEventChart()">
                                 <option value="ALL">All Days</option>
-                                <option value="Day I">Day I</option>
-                                <option value="Day II">Day II</option>
-                                <option value="Day III">Day III</option>
+                                <option value="Day I">Day I / Day 1</option>
+                                <option value="Day II">Day II / Day 2</option>
+                                <option value="Day III">Day III / Day 3</option>
                             </select>
                         </div>
                     </div>
+                    
+                    <!-- Action Buttons -->
                     <div style="display:flex; gap:8px; align-items:flex-end;">
                         <button type="button" id="ecAdminAddBtn" class="action-btn success" style="display:none; padding:8px 14px;" onclick="openScheduleModal(null)">
                             <i class="fas fa-plus-circle"></i> <span>Add Schedule Event</span>
@@ -2976,7 +3037,7 @@
             <!-- Printable Event Chart Container -->
             <div id="eventChartPrintableContainer">
                 <div id="eventChartScheduleList">
-                    <p style="text-align:center; color:#94a3b8; padding:30px;">Loading Event Chart...</p>
+                    <p style="text-align:center; color:#94a3b8; padding:30px;">Loading Event Chart & Notice Book...</p>
                 </div>
             </div>
         </div>
@@ -3811,6 +3872,46 @@
                 </div>
             </div>
 
+            <!-- NOTICE BOOK MANAGEMENT (PDF UPLOAD) -->
+            <div class="section" id="adminNoticeBookSection">
+                <h4 class="section-title">
+                    <span><i class="fas fa-book"></i> Notice Book Management (PDF Upload)</span>
+                    <span id="adminNoticeStatusBadge" class="badge-place place-other">Not Published</span>
+                </h4>
+                <p style="font-size:13px; color:#64748b; margin:-6px 0 14px 0;">
+                    Upload the official festival <b>Notice Book (PDF)</b>. It will appear above Day 1 in the <b>Event Chart</b> for both students and officials.
+                </p>
+
+                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items:flex-end; gap:14px;">
+                    <div class="form-group">
+                        <label>Notice Book Title</label>
+                        <input type="text" id="adminNoticeTitleInput" placeholder="e.g. UTHSAV 2026 - Official Programme Notice Book">
+                    </div>
+                    <div class="form-group">
+                        <label>Upload PDF File (Max 2MB)</label>
+                        <input type="file" id="adminNoticeFileInput" accept="application/pdf" style="padding:6px;">
+                    </div>
+                    <div class="form-group">
+                        <label>Or Direct PDF Link (Optional URL)</label>
+                        <input type="text" id="adminNoticeUrlInput" placeholder="https://example.com/notice.pdf">
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px;">
+                    <div id="adminCurrentNoticeInfo" style="font-size:12.5px; color:#475569; font-weight:600;">
+                        No Notice Book uploaded yet.
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" id="btnAdminDeleteNotice" class="action-btn danger" style="display:none; padding:7px 13px;" onclick="deleteNoticeBook()">
+                            <i class="fas fa-trash-alt"></i> Remove Notice Book
+                        </button>
+                        <button type="button" class="action-btn success" style="padding:7px 16px;" onclick="uploadNoticeBook()">
+                            <i class="fas fa-cloud-upload-alt"></i> Save & Publish Notice Book
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="section">
                 <h4 class="section-title"><i class="fas fa-list-check"></i> Enabled Fests</h4>
                 <div class="fest-toggle-grid" id="adminFestList"></div>
@@ -4354,6 +4455,7 @@
     let dialogCallback = null;
     let editingUserId = null;
     let editingStudentDocId = null;
+    let dbNoticeBook = null;
 
     function getFestivalCategory(festName) {
         if (!festName) return "Kalothswom";
@@ -4538,17 +4640,22 @@
     // --- 7. INITIALIZATION ---
     window.onload = async function() {
         try {
-            const [stdSnap, festSnap, regSnap, userSnap, judgeSnap, scoresSnap, pubSnap, setSnap, schedSnap] = await Promise.all([
-                db.collection("students").get(),
-                db.collection("fests").get(),
-                db.collection("registrations").get(),
-                db.collection("users").get(),
-                db.collection("judges").get(),
-                db.collection("judge_scores").get(),
-                db.collection("published_results").get(),
-                db.collection("config").doc("settings").get(),
-                db.collection("event_schedules").get()
-            ]);
+            const [stdSnap, festSnap, regSnap, userSnap, judgeSnap, scoresSnap, pubSnap, setSnap, schedSnap, noticeSnap] = await Promise.all([
+        db.collection("students").get(),
+        db.collection("fests").get(),
+        db.collection("registrations").get(),
+        db.collection("users").get(),
+        db.collection("judges").get(),
+        db.collection("judge_scores").get(),
+        db.collection("published_results").get(),
+        db.collection("config").doc("settings").get(),
+        db.collection("event_schedules").get(),
+        db.collection("config").doc("notice_book").get() // <-- ADD THIS
+    ]);
+
+    if (noticeSnap && noticeSnap.exists) {
+        dbNoticeBook = noticeSnap.data();
+    }
 
             dbSchedules = schedSnap ? schedSnap.docs.map(doc => ({ ...doc.data(), id: doc.id })) : [];
 
@@ -8873,97 +8980,129 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
     }
 
     async function renderAdminPanel() {
-        document.getElementById('adminGlobalMsg').value = dbSettings.Global_Message || "";
-        updateTapButtonUI();
+        // 1. Display Message & System Control Tap Switches
+        const globalMsgInput = document.getElementById('adminGlobalMsg');
+        if (globalMsgInput) {
+            globalMsgInput.value = dbSettings.Global_Message || "";
+        }
+        if (typeof updateTapButtonUI === "function") {
+            updateTapButtonUI();
+        }
 
+        // 2. Festival Activation Grid & Date Pickers
         const festGrid = document.getElementById('adminFestList');
-        festGrid.style.display = "grid";
-        festGrid.style.gridTemplateColumns = "repeat(auto-fill, minmax(330px, 1fr))";
-        festGrid.style.gap = "14px";
-        festGrid.innerHTML = "";
+        if (festGrid) {
+            festGrid.style.display = "grid";
+            festGrid.style.gridTemplateColumns = "repeat(auto-fill, minmax(330px, 1fr))";
+            festGrid.style.gap = "14px";
+            festGrid.innerHTML = "";
 
-        const savedDates = dbSettings.FestDates || {};
+            const savedDates = dbSettings.FestDates || {};
 
-        allFestNames.filter(festHasItems).forEach(f => {
-            const isChecked = dbSettings["Fest_" + f] !== "DISABLED" ? "checked" : "";
-            const cat = getFestivalCategory(f);
-            const safeName = f.replace(/[^a-zA-Z0-9]/g, '_');
-            const festDateArr = savedDates[f] || [];
+            allFestNames.filter(festHasItems).forEach(f => {
+                const isChecked = dbSettings["Fest_" + f] !== "DISABLED" ? "checked" : "";
+                const cat = getFestivalCategory(f);
+                const safeName = f.replace(/[^a-zA-Z0-9]/g, '_');
+                const festDateArr = savedDates[f] || [];
 
-            let badgeColor = "#2563eb";
-            let badgeBg = "#eff6ff";
-            let badgeText = "FEST";
-            if (cat === "Kalothswom") {
-                badgeColor = "#7c3aed";
-                badgeBg = "#f5f3ff";
-                badgeText = "KALOTHSWOM (3 DAYS)";
-            } else if (cat === "Sports") {
-                badgeColor = "#059669";
-                badgeBg = "#ecfdf5";
-                badgeText = "SPORTS (1 DAY)";
-            }
+                let badgeColor = "#2563eb";
+                let badgeBg = "#eff6ff";
+                let badgeText = "FEST";
+                if (cat === "Kalothswom") {
+                    badgeColor = "#7c3aed";
+                    badgeBg = "#f5f3ff";
+                    badgeText = "KALOTHSWOM (3 DAYS)";
+                } else if (cat === "Sports") {
+                    badgeColor = "#059669";
+                    badgeBg = "#ecfdf5";
+                    badgeText = "SPORTS (1 DAY)";
+                }
 
-            const dateCount = (cat === "Kalothswom") ? 3 : 1;
-            let dateInputsHTML = "";
+                const dateCount = (cat === "Kalothswom") ? 3 : 1;
+                let dateInputsHTML = "";
 
-            for (let i = 0; i < dateCount; i++) {
-                const currentVal = festDateArr[i] || "";
-                const labelText = (cat === "Kalothswom") ? `Day ${i + 1} Date:` : `Event Date:`;
+                for (let i = 0; i < dateCount; i++) {
+                    const currentVal = festDateArr[i] || "";
+                    const labelText = (cat === "Kalothswom") ? `Day ${i + 1} Date:` : `Event Date:`;
 
-                dateInputsHTML += `
-                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px;">
-                        <span style="font-size:11.5px; font-weight:700; color:#475569; min-width:80px;">${labelText}</span>
-                        <div style="position:relative; display:flex; align-items:center; flex:1;">
-                            <input type="text" id="festDate_${safeName}_${i}" value="${currentVal}" 
-                                   placeholder="DD:MM:YYYY" maxlength="10"
-                                   oninput="autoFormatDateInput(this)"
-                                   style="width:100%; padding:6px 34px 6px 8px; font-size:12px; font-family:monospace; font-weight:700; border:1px solid #cbd5e1; border-radius:4px; color:#0f172a; background:#ffffff;">
-                            
-                            <button type="button" class="mcal-trigger-btn" 
-                                    onclick="openMiniCalendar('festDate_${safeName}_${i}', this)"
-                                    style="position:absolute; right:3px; width:26px; height:24px; background:#eff6ff; border:1px solid #dbeafe; border-radius:4px; color:#2563eb; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;" 
-                                    title="Select from calendar">
-                                <i class="far fa-calendar-alt" style="font-size:13px; pointer-events:none;"></i>
-                            </button>
+                    dateInputsHTML += `
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px;">
+                            <span style="font-size:11.5px; font-weight:700; color:#475569; min-width:80px;">${labelText}</span>
+                            <div style="position:relative; display:flex; align-items:center; flex:1;">
+                                <input type="text" id="festDate_${safeName}_${i}" value="${currentVal}" 
+                                       placeholder="DD:MM:YYYY" maxlength="10"
+                                       oninput="autoFormatDateInput(this)"
+                                       style="width:100%; padding:6px 34px 6px 8px; font-size:12px; font-family:monospace; font-weight:700; border:1px solid #cbd5e1; border-radius:4px; color:#0f172a; background:#ffffff;">
+                                
+                                <button type="button" class="mcal-trigger-btn" 
+                                        onclick="openMiniCalendar('festDate_${safeName}_${i}', this)"
+                                        style="position:absolute; right:3px; width:26px; height:24px; background:#eff6ff; border:1px solid #dbeafe; border-radius:4px; color:#2563eb; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;" 
+                                        title="Select from calendar">
+                                    <i class="far fa-calendar-alt" style="font-size:13px; pointer-events:none;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                festGrid.innerHTML += `
+                    <div style="background:#ffffff; border:1px solid var(--border); border-radius:8px; padding:12px 14px; box-shadow:var(--shadow-subtle);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:8px; margin-bottom:8px;">
+                            <label style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:13.5px; color:var(--text-main); cursor:pointer; margin:0;">
+                                <input type="checkbox" id="chk_${safeName}" ${isChecked} style="width:16px; height:16px; cursor:pointer;">
+                                <span>${f}</span>
+                            </label>
+                            <span style="font-size:10px; font-weight:800; color:${badgeColor}; background:${badgeBg}; padding:2px 7px; border-radius:12px; border:1px solid ${badgeColor}33;">
+                                ${badgeText}
+                            </span>
+                        </div>
+
+                        <div style="background:#f8fafc; padding:8px 10px; border-radius:6px; border:1px solid #e2e8f0;">
+                            <div style="font-size:10.5px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">
+                                <i class="fas fa-calendar-check" style="color:var(--accent);"></i> Certificate Date(s) [DD:MM:YYYY]
+                            </div>
+                            ${dateInputsHTML}
                         </div>
                     </div>
                 `;
-            }
+            });
+        }
 
-            festGrid.innerHTML += `
-                <div style="background:#ffffff; border:1px solid var(--border); border-radius:8px; padding:12px 14px; box-shadow:var(--shadow-subtle);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:8px; margin-bottom:8px;">
-                        <label style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:13.5px; color:var(--text-main); cursor:pointer; margin:0;">
-                            <input type="checkbox" id="chk_${safeName}" ${isChecked} style="width:16px; height:16px; cursor:pointer;">
-                            <span>${f}</span>
-                        </label>
-                        <span style="font-size:10px; font-weight:800; color:${badgeColor}; background:${badgeBg}; padding:2px 7px; border-radius:12px; border:1px solid ${badgeColor}33;">
-                            ${badgeText}
-                        </span>
-                    </div>
-
-                    <div style="background:#f8fafc; padding:8px 10px; border-radius:6px; border:1px solid #e2e8f0;">
-                        <div style="font-size:10.5px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">
-                            <i class="fas fa-calendar-check" style="color:var(--accent);"></i> Certificate Date(s) [DD:MM:YYYY]
-                        </div>
-                        ${dateInputsHTML}
-                    </div>
-                </div>
-            `;
-        });
-
+        // 3. Fest & Convenor Management Dropdown & Table
         const cSel = document.getElementById('convenorFestSelect');
-        cSel.innerHTML = '<option value="">-- Choose Fest --</option>';
-        allFestNames.filter(festHasItems).forEach(f => {
-            cSel.innerHTML += `<option value="${f}">${f}</option>`;
-        });
-        renderConvenorsTable();
+        if (cSel) {
+            cSel.innerHTML = '<option value="">-- Choose Fest --</option>';
+            allFestNames.filter(festHasItems).forEach(f => {
+                cSel.innerHTML += `<option value="${f}">${f}</option>`;
+            });
+        }
+        if (typeof renderConvenorsTable === "function") {
+            renderConvenorsTable();
+        }
 
-        renderUserTable();
-        loadJudgeActivities();
-        loadStudentLogs();
-        renderAdminItemsTable();
-        renderAdminResultScrutinyTable();
+        // 4. Notice Book PDF Management Panel
+        if (typeof renderAdminNoticeBookPanel === "function") {
+            renderAdminNoticeBookPanel();
+        }
+
+        // 5. Result Scrutiny Table
+        if (typeof renderAdminResultScrutinyTable === "function") {
+            renderAdminResultScrutinyTable();
+        }
+
+        // 6. User Management, Audit Logs, and Items Directory
+        if (typeof renderUserTable === "function") {
+            renderUserTable();
+        }
+        if (typeof loadJudgeActivities === "function") {
+            loadJudgeActivities();
+        }
+        if (typeof loadStudentLogs === "function") {
+            loadStudentLogs();
+        }
+        if (typeof renderAdminItemsTable === "function") {
+            renderAdminItemsTable();
+        }
     }
 
     function renderConvenorsTable() {
@@ -10083,14 +10222,15 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         if (tempStyle) tempStyle.remove();
     }
 
-    // --- REAL-TIME LIVE SYNC BETWEEN JUDGES & ADMIN ---
     let isRealtimeSyncActive = false;
 
     function setupRealtimeJudgementSync() {
         if (isRealtimeSyncActive) return;
         isRealtimeSyncActive = true;
 
-        // --- 1. SETTINGS & LIVE PROGRAMME STATUS LISTENER ---
+        // ---------------------------------------------------------------------
+        // 1. SETTINGS & LIVE PROGRAMME STATUS LISTENER
+        // ---------------------------------------------------------------------
         db.collection("config").doc("settings").onSnapshot(doc => {
             if (!doc.exists) return;
             const liveSettings = doc.data();
@@ -10116,26 +10256,31 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                 };
             }
 
+            // Sync role-based tab visibility live across all active user sessions
+            if (typeof applySettingsToUI === "function") {
+                applySettingsToUI();
+            }
+
             const isAdmin = currentUser && (currentUser.role === "Official" || (currentUser.access && currentUser.access.includes("3")));
-            
-            // Re-render live Event Chart (programme scheduler) whenever statuses or active items change
+
+            // Refresh Event Chart live LEDs and statuses if currently viewed
             const ecTab = document.getElementById('EventChartTab');
-            if (ecTab && ecTab.style.display === 'block') {
+            if (ecTab && ecTab.style.display === 'block' && typeof renderEventChart === "function") {
                 renderEventChart();
             }
 
             if (isAdmin) {
                 const judgeTab = document.getElementById('JudgementTab');
-                if (judgeTab && judgeTab.style.display === 'block') {
+                if (judgeTab && judgeTab.style.display === 'block' && typeof renderAdminJudgementDashboard === "function") {
                     renderAdminJudgementDashboard();
                 }
                 const emTab = document.getElementById('EventMgmtTab');
-                if (emTab && emTab.style.display === 'block') {
+                if (emTab && emTab.style.display === 'block' && typeof loadEventMgmtItemDetails === "function") {
                     loadEventMgmtItemDetails();
                 }
             } else if (currentUser && currentUser.role === "Judge") {
                 const currentCode = document.getElementById('judgeActiveItemsSelect')?.value;
-                if (currentCode) {
+                if (currentCode && typeof checkIsCriteriaConfirmed === "function") {
                     const isNowConfirmed = checkIsCriteriaConfirmed(currentCode);
 
                     if (!currentJudgeSession.criteriaConfirmed && isNowConfirmed) {
@@ -10147,25 +10292,26 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             }
         }, err => console.error("Realtime settings sync error:", err));
 
-        // --- 2. JUDGE SCORES LISTENER ---
+        // ---------------------------------------------------------------------
+        // 2. JUDGE SCORES LISTENER
+        // ---------------------------------------------------------------------
         db.collection("judge_scores").onSnapshot(snapshot => {
             dbJudgeScores = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
 
-            const isAdmin = currentUser && (currentUser.role === "Official" || (currentUser.access && currentUser.access.includes("3")));
-            
-            // Scores change an item's status, so refresh Event Chart LEDs immediately
+            // Completed judge scores affect item status, so update Event Chart LEDs live
             const ecTab = document.getElementById('EventChartTab');
-            if (ecTab && ecTab.style.display === 'block') {
+            if (ecTab && ecTab.style.display === 'block' && typeof renderEventChart === "function") {
                 renderEventChart();
             }
 
+            const isAdmin = currentUser && (currentUser.role === "Official" || (currentUser.access && currentUser.access.includes("3")));
             if (isAdmin) {
                 const judgeTab = document.getElementById('JudgementTab');
-                if (judgeTab && judgeTab.style.display === 'block') {
+                if (judgeTab && judgeTab.style.display === 'block' && typeof renderAdminJudgementDashboard === "function") {
                     renderAdminJudgementDashboard();
                 }
                 const tabTab = document.getElementById('TabulationTab');
-                if (tabTab && tabTab.style.display === 'block') {
+                if (tabTab && tabTab.style.display === 'block' && typeof renderTabulation === "function") {
                     renderTabulation();
                 }
             } else if (currentUser && currentUser.role === "Judge") {
@@ -10191,15 +10337,33 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             }
         }, err => console.error("Realtime judge scores sync error:", err));
 
-        // --- 3. EVENT SCHEDULES (EVENT CHART) REAL-TIME LISTENER ---
+        // ---------------------------------------------------------------------
+        // 3. EVENT SCHEDULES (EVENT CHART) REALTIME LISTENER
+        // ---------------------------------------------------------------------
         db.collection("event_schedules").onSnapshot(snapshot => {
             dbSchedules = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
             const ecTab = document.getElementById('EventChartTab');
-            if (ecTab && ecTab.style.display === 'block') {
+            if (ecTab && ecTab.style.display === 'block' && typeof renderEventChart === "function") {
                 renderEventChart();
             }
         }, err => console.error("Realtime event schedules sync error:", err));
+
+        // ---------------------------------------------------------------------
+        // 4. NOTICE BOOK REALTIME LISTENER
+        // ---------------------------------------------------------------------
+        db.collection("config").doc("notice_book").onSnapshot(doc => {
+            dbNoticeBook = doc.exists ? doc.data() : null;
+            if (typeof renderAdminNoticeBookPanel === "function") {
+                renderAdminNoticeBookPanel();
+            }
+            const ecTab = document.getElementById('EventChartTab');
+            if (ecTab && ecTab.style.display === 'block' && typeof renderEventChart === "function") {
+                renderEventChart();
+            }
+        }, err => console.error("Realtime notice book sync error:", err));
     }
+
+
     // --- BUILT-IN FLOATING CALENDAR ENGINE (DD:MM:YYYY) ---
     let miniCalState = {
         targetInputId: null,
@@ -11262,15 +11426,27 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         const container = document.getElementById('eventChartScheduleList');
         if (!container) return;
 
-        const catFilter = document.getElementById('ecFilterClassification')?.value || "ALL";
-        const festFilter = document.getElementById('ecFilterFest')?.value || "ALL";
-        const dayFilter = document.getElementById('ecFilterDay')?.value || "ALL";
-
+        const isStudent = currentUser && currentUser.role === "Student";
         const isAdmin = currentUser && (currentUser.role === "Official" || (currentUser.access && currentUser.access.includes("3")));
+
+        // 1. Hide Filters Group for Students
+        const filtersGroup = document.getElementById('ecFiltersGroup');
+        const toolbarSection = document.getElementById('ecToolbarSection');
+        if (filtersGroup) {
+            filtersGroup.style.display = isStudent ? 'none' : 'flex';
+        }
+        if (toolbarSection) {
+            // Keep toolbar visible for print button, but hide entirely if student doesn't need to print
+            toolbarSection.style.display = isStudent ? 'none' : 'block';
+        }
+
+        const catFilter = !isStudent ? (document.getElementById('ecFilterClassification')?.value || "ALL") : "ALL";
+        const festFilter = !isStudent ? (document.getElementById('ecFilterFest')?.value || "ALL") : "ALL";
+        const dayFilter = !isStudent ? (document.getElementById('ecFilterDay')?.value || "ALL") : "ALL";
 
         let schedules = [...dbSchedules];
 
-        // Deduplicate records in memory by ID
+        // Deduplicate records in memory
         const uniqueMap = new Map();
         schedules.forEach(s => { if (s.id && !uniqueMap.has(s.id)) uniqueMap.set(s.id, s); });
         schedules = Array.from(uniqueMap.values());
@@ -11279,70 +11455,132 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             schedules = schedules.filter(s => (s.festivalClassification || getFestivalCategory(s.festName)) === catFilter);
         }
         if (festFilter !== "ALL") {
-            // Include common "ALL" fest items alongside the selected fest
             schedules = schedules.filter(s => s.festName === festFilter || s.festName === "ALL");
         }
         if (dayFilter !== "ALL") {
             schedules = schedules.filter(s => s.day === dayFilter);
         }
 
-        if (schedules.length === 0) {
-            container.innerHTML = `
-                <div class="event-chart-card" style="text-align:center; padding:40px 20px;">
-                    <i class="fas fa-calendar-times" style="font-size:36px; color:#cbd5e1; margin-bottom:10px;"></i>
-                    <p style="color:#64748b; font-size:14px; font-weight:600; margin:0;">No programme schedules available for the selected filters.</p>
-                    ${isAdmin ? '<button class="action-btn success" style="margin-top:14px;" onclick="openScheduleModal(null)"><i class="fas fa-plus"></i> Add Event Schedule</button>' : ''}
-                </div>
-            `;
-            return;
-        }
-
-        // Group by Fest Name -> Day
-        const grouped = {};
-        schedules.forEach(s => {
-            const fName = s.festName || "ALL";
-            const dayKey = s.day || "Day I";
-            if (!grouped[fName]) grouped[fName] = {};
-            if (!grouped[fName][dayKey]) grouped[fName][dayKey] = [];
-            grouped[fName][dayKey].push(s);
-        });
-
         let fullHTML = "";
         const schoolLogo = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png";
 
-        Object.keys(grouped).sort((a, b) => a.localeCompare(b)).forEach(fName => {
-            const fCat = (fName === "ALL") ? "GENERAL" : getFestivalCategory(fName);
-            const festBannerText = (fName === "ALL") ? "ALL FESTIVALS (COMMON EVENTS)" : `${fCat.toUpperCase()} &bull; ${fName}`;
+        // =====================================================================
+        // SCHOOL DETAILS HEADER
+        // =====================================================================
+        fullHTML += `
+            <div class="event-chart-card" style="margin-bottom:14px; padding:14px 18px;">
+                <div class="event-chart-school-header" style="border:none; margin:0; padding:0;">
+                    <img src="${schoolLogo}" alt="Logo" class="event-chart-school-logo">
+                    <div class="event-chart-school-details">
+                        <h2>THIRUMALA DEVASWOM TEACHER TRAINING INSTITUTE</h2>
+                        <h4>THURAVOOR, ALAPPUZHA &bull; UTHSAV ANNUAL MEET &bull; PROGRAMME SCHEDULE</h4>
+                    </div>
+                </div>
+            </div>
+        `;
 
-            Object.keys(grouped[fName]).sort().forEach(dayKey => {
-                const events = grouped[fName][dayKey];
-                events.sort((a, b) => (parseInt(a.order) || 999) - (parseInt(b.order) || 999) || String(a.time).localeCompare(String(b.time)));
+        // =====================================================================
+        // NOTICE BOOK (COLLAPSIBLE - OPEN BY DEFAULT - ABOVE DAY 1)
+        // =====================================================================
+        if (dbNoticeBook && (dbNoticeBook.pdfUrl || dbNoticeBook.pdfData)) {
+            const noticeSrc = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
+            const noticeTitle = dbNoticeBook.title || "Official Programme Notice Book";
+            const noticeDate = dbNoticeBook.publishedAt || "";
 
-                const scheduleDate = events[0].date || getCertIssueDate(fName, "20/02/2026");
+            fullHTML += `
+                <div style="width:100%; margin-bottom:18px;">
+                    <div class="event-chart-notice-head collapsible-header" onclick="toggleResultSection(this)">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <i class="fas fa-chevron-down collapse-chevron"></i>
+                            <span><i class="fas fa-book-open" style="color:#fef08a;"></i> ${noticeTitle.toUpperCase()}</span>
+                        </div>
+                        <span style="font-size:11.5px; font-weight:700; color:#e2e8f0;">
+                            ${noticeDate ? `<i class="far fa-clock"></i> ${noticeDate}` : 'PUBLISHED'}
+                        </span>
+                    </div>
 
-                fullHTML += `
-                    <div class="event-chart-card">
-                        <div class="event-chart-school-header">
-                            <img src="${schoolLogo}" alt="Logo" class="event-chart-school-logo">
-                            <div class="event-chart-school-details">
-                                <h2>THIRUMALA DEVASWOM TEACHER TRAINING INSTITUTE</h2>
-                                <h4>THURAVOOR, ALAPPUZHA &bull; UTHSAV ANNUAL PROGRAMME SCHEDULE</h4>
+                    <!-- Non-collapsed by default (display: block) -->
+                    <div class="event-chart-notice-body" style="display:block; width:100%; margin-bottom:12px;">
+                        <div class="notice-actions-bar">
+                            <span style="font-size:13px; font-weight:700; color:var(--text-main);">
+                                <i class="fas fa-file-pdf" style="color:#dc2626; font-size:16px;"></i> ${noticeTitle}
+                            </span>
+                            <div style="display:flex; gap:8px;">
+                                <a href="${noticeSrc}" target="_blank" class="action-btn" style="text-decoration:none; padding:5px 12px; font-size:12px;">
+                                    <i class="fas fa-external-link-alt"></i> Open Fullscreen
+                                </a>
+                                <a href="${noticeSrc}" download="Notice_Book.pdf" class="action-btn gold" style="text-decoration:none; padding:5px 12px; font-size:12px;">
+                                    <i class="fas fa-download"></i> Download PDF
+                                </a>
                             </div>
                         </div>
+                        <iframe src="${noticeSrc}#toolbar=0" class="notice-pdf-frame"></iframe>
+                    </div>
+                </div>
+            `;
+        }
 
-                        <div class="event-chart-meta-banner">
-                            <div class="event-chart-fest-pill">
-                                <i class="fas fa-trophy" style="color:var(--warning);"></i>
-                                <span>${festBannerText}</span>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <span style="font-size:12px; font-weight:700; color:#475569;">
-                                    <i class="far fa-calendar-check" style="color:var(--accent);"></i> Date: <b>${scheduleDate}</b>
-                                </span>
-                                <span class="event-chart-day-badge">${dayKey.toUpperCase()}</span>
-                            </div>
+        // =====================================================================
+        // DAY-WISE SCHEDULES (DAY 1, DAY 2, DAY 3... COLLAPSIBLE - OPEN BY DEFAULT)
+        // =====================================================================
+        // Group by Day (Day I / Day II / Day III...)
+        const daysMap = {};
+        schedules.forEach(s => {
+            const rawDay = s.day || "Day I";
+            // Normalize day key
+            let dayKey = rawDay;
+            if (rawDay.toLowerCase().includes("1") || rawDay === "Day I") dayKey = "Day I";
+            else if (rawDay.toLowerCase().includes("2") || rawDay === "Day II") dayKey = "Day II";
+            else if (rawDay.toLowerCase().includes("3") || rawDay === "Day III") dayKey = "Day III";
+
+            if (!daysMap[dayKey]) daysMap[dayKey] = [];
+            daysMap[dayKey].push(s);
+        });
+
+        // Day sorting order (Day 1 -> Day 2 -> Day 3)
+        const dayOrder = ["Day I", "Day II", "Day III", "Day IV"];
+        const sortedDays = Object.keys(daysMap).sort((a, b) => {
+            const idxA = dayOrder.indexOf(a);
+            const idxB = dayOrder.indexOf(b);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            return a.localeCompare(b);
+        });
+
+        if (sortedDays.length === 0) {
+            fullHTML += `
+                <div class="event-chart-card" style="text-align:center; padding:35px 20px;">
+                    <i class="fas fa-calendar-times" style="font-size:36px; color:#cbd5e1; margin-bottom:10px;"></i>
+                    <p style="color:#64748b; font-size:14px; font-weight:600; margin:0;">No scheduled programme items found.</p>
+                </div>
+            `;
+            container.innerHTML = fullHTML;
+            return;
+        }
+
+        sortedDays.forEach((dayKey, dIdx) => {
+            const events = daysMap[dayKey];
+            // Sort by order/time
+            events.sort((a, b) => (parseInt(a.order) || 999) - (parseInt(b.order) || 999) || String(a.time).localeCompare(String(b.time)));
+
+            const dayNumber = dIdx + 1;
+            const scheduleDate = events[0].date || "";
+
+            fullHTML += `
+                <div style="width:100%; margin-bottom:18px;">
+                    <!-- Day Header: Collapsible (Non-collapsed by default) -->
+                    <div class="event-chart-day-head collapsible-header" onclick="toggleResultSection(this)">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <i class="fas fa-chevron-down collapse-chevron"></i>
+                            <span><i class="fas fa-calendar-day"></i> DAY ${dayNumber} SCHEDULE (${dayKey.toUpperCase()})</span>
                         </div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            ${scheduleDate ? `<span style="font-size:12px; color:#cbd5e1; font-weight:600;"><i class="far fa-calendar-alt"></i> ${scheduleDate}</span>` : ''}
+                            <span class="badge-place place-1" style="font-size:11px;">${events.length} Event(s)</span>
+                        </div>
+                    </div>
 
+                    <!-- Day Content: Non-collapsed by default (display: block) -->
+                    <div class="event-chart-day-body" style="display:block; width:100%; margin-bottom:14px;">
                         <div class="table-responsive" style="margin:0;">
                             <table>
                                 <thead>
@@ -11350,81 +11588,80 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                                         <th style="width:45px; text-align:center;">Sl No</th>
                                         <th style="width:170px;">Time</th>
                                         <th>Programme Item</th>
-                                        <th style="width:230px; text-align:center;">Current Status</th>
-                                        ${isAdmin ? '<th style="width:110px; text-align:center;">Actions</th>' : ''}
+                                        <th style="width:220px; text-align:center;">Current Status</th>
+                                        ${!isStudent ? '<th style="width:110px; text-align:center;">Actions</th>' : ''}
                                     </tr>
                                 </thead>
                                 <tbody>
-                `;
+            `;
 
-                events.forEach((ev, idx) => {
-                    // Check if event is custom text (non-competitive)
-                    const isCustomItem = ev.isCustom === true || !ev.itemCode || String(ev.itemCode).trim() === "" || ev.itemCode === "CUSTOM";
-                    let statusHTML = "";
+            events.forEach((ev, idx) => {
+                const isCustomItem = ev.isCustom === true || !ev.itemCode || String(ev.itemCode).trim() === "" || ev.itemCode === "CUSTOM";
+                let statusHTML = "";
 
-                    if (isCustomItem) {
-                        // Display simple dash for custom text items
-                        statusHTML = `<span style="font-weight:800; font-size:18px; color:#94a3b8;">-</span>`;
+                if (isCustomItem) {
+                    // Custom text items show simple dash
+                    statusHTML = `<span style="font-weight:800; font-size:18px; color:#94a3b8;">-</span>`;
+                } else {
+                    const liveStatus = getItemLiveStatus(ev.itemCode);
+                    if (liveStatus === "ACTIVE") {
+                        statusHTML = `
+                            <span style="display:inline-flex; align-items:center; font-weight:800; color:#059669; gap:6px;">
+                                <span class="led-indicator led-green-pulse"></span>
+                                ACTIVE (Running Now)
+                            </span>
+                        `;
+                    } else if (liveStatus === "COMPLETED") {
+                        statusHTML = `
+                            <span style="display:inline-flex; align-items:center; font-weight:800; color:#d97706; gap:6px;">
+                                <span class="led-indicator led-orange"></span>
+                                COMPLETED (Judgement Finished)
+                            </span>
+                        `;
                     } else {
-                        // Display Live Judging Status with LEDs for competition items
-                        const liveStatus = getItemLiveStatus(ev.itemCode);
-                        if (liveStatus === "ACTIVE") {
-                            statusHTML = `
-                                <span style="display:inline-flex; align-items:center; font-weight:800; color:#059669; gap:6px;">
-                                    <span class="led-indicator led-green-pulse"></span>
-                                    ACTIVE (Running Now)
-                                </span>
-                            `;
-                        } else if (liveStatus === "COMPLETED") {
-                            statusHTML = `
-                                <span style="display:inline-flex; align-items:center; font-weight:800; color:#d97706; gap:6px;">
-                                    <span class="led-indicator led-orange"></span>
-                                    COMPLETED (Judgement Finished)
-                                </span>
-                            `;
-                        } else {
-                            statusHTML = `
-                                <span style="display:inline-flex; align-items:center; font-weight:700; color:#64748b; gap:6px;">
-                                    <span class="led-indicator led-grey"></span>
-                                    INACTIVE
-                                </span>
-                            `;
-                        }
+                        statusHTML = `
+                            <span style="display:inline-flex; align-items:center; font-weight:700; color:#64748b; gap:6px;">
+                                <span class="led-indicator led-grey"></span>
+                                INACTIVE
+                            </span>
+                        `;
                     }
+                }
 
-                    const actionCell = isAdmin ? `
-                        <td style="text-align:center;">
-                            <div style="display:inline-flex; gap:6px;">
-                                <button type="button" class="action-btn secondary" style="padding:4px 7px; font-size:11px;" onclick="openScheduleModal('${ev.id}')" title="Modify Event">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button type="button" class="action-btn danger" style="padding:4px 7px; font-size:11px;" onclick="deleteScheduledEvent('${ev.id}')" title="Delete Event">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
+                const actionCell = !isStudent ? `
+                    <td style="text-align:center;">
+                        <div style="display:inline-flex; gap:6px;">
+                            <button type="button" class="action-btn secondary" style="padding:4px 7px; font-size:11px;" onclick="openScheduleModal('${ev.id}')" title="Modify Event">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="action-btn danger" style="padding:4px 7px; font-size:11px;" onclick="deleteScheduledEvent('${ev.id}')" title="Delete Event">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                ` : '';
+
+                fullHTML += `
+                    <tr>
+                        <td style="text-align:center; font-weight:700; color:#64748b;">${idx + 1}</td>
+                        <td><span class="event-time-badge"><i class="far fa-clock"></i> ${ev.time || 'TBD'}</span></td>
+                        <td>
+                            <b style="color:var(--text-main); font-size:13.5px;">${ev.itemName}</b>
+                            ${ev.itemCode ? `<span style="font-family:monospace; color:#2563eb; font-size:11px; margin-left:6px;">[${ev.itemCode}]</span>` : ''}
+                            ${ev.festName && ev.festName !== 'ALL' ? `<small style="color:#64748b; margin-left:4px;">(${ev.festName})</small>` : ''}
                         </td>
-                    ` : '';
-
-                    fullHTML += `
-                        <tr>
-                            <td style="text-align:center; font-weight:700; color:#64748b;">${idx + 1}</td>
-                            <td><span class="event-time-badge"><i class="far fa-clock"></i> ${ev.time || 'TBD'}</span></td>
-                            <td>
-                                <b style="color:var(--text-main); font-size:13.5px;">${ev.itemName}</b>
-                                ${ev.itemCode ? `<span style="font-family:monospace; color:#2563eb; font-size:11px; margin-left:6px;">[${ev.itemCode}]</span>` : ''}
-                            </td>
-                            <td style="text-align:center;">${statusHTML}</td>
-                            ${actionCell}
-                        </tr>
-                    `;
-                });
-
-                fullHTML += `</tbody></table></div></div>`;
+                        <td style="text-align:center;">${statusHTML}</td>
+                        ${actionCell}
+                    </tr>
+                `;
             });
+
+            fullHTML += `</tbody></table></div></div></div>`;
         });
 
         container.innerHTML = fullHTML;
     }
+
 
     // --- 1. Populate Name of Fest with "ALL" and Filter Items ---
     function onSchedModalCatChange() {
@@ -11734,6 +11971,129 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         window.print();
         document.body.classList.remove('printing-event-chart');
     }
+
+    // ==========================================================================
+    // 21. NOTICE BOOK ADMIN UPLOAD & MANAGEMENT CONTROLLER
+    // ==========================================================================
+    function renderAdminNoticeBookPanel() {
+        const statusBadge = document.getElementById('adminNoticeStatusBadge');
+        const currentInfo = document.getElementById('adminCurrentNoticeInfo');
+        const deleteBtn = document.getElementById('btnAdminDeleteNotice');
+        const titleInput = document.getElementById('adminNoticeTitleInput');
+        const urlInput = document.getElementById('adminNoticeUrlInput');
+
+        if (!statusBadge || !currentInfo) return;
+
+        if (dbNoticeBook && (dbNoticeBook.pdfUrl || dbNoticeBook.pdfData)) {
+            statusBadge.className = 'badge-place place-1';
+            statusBadge.innerText = 'Published & Active';
+
+            const link = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
+            currentInfo.innerHTML = `
+                <i class="fas fa-check-circle" style="color:#059669;"></i> 
+                Active Notice: <b>${dbNoticeBook.title || 'Notice Book'}</b> 
+                (${dbNoticeBook.publishedAt || ''}) &bull; 
+                <a href="${link}" target="_blank" style="color:var(--accent); text-decoration:underline;">View PDF</a>
+            `;
+
+            if (deleteBtn) deleteBtn.style.display = 'inline-flex';
+            if (titleInput) titleInput.value = dbNoticeBook.title || '';
+            if (urlInput && dbNoticeBook.pdfUrl) urlInput.value = dbNoticeBook.pdfUrl;
+        } else {
+            statusBadge.className = 'badge-place place-other';
+            statusBadge.innerText = 'Not Published';
+            currentInfo.innerText = 'No Notice Book published yet.';
+            if (deleteBtn) deleteBtn.style.display = 'none';
+        }
+    }
+
+    async function uploadNoticeBook() {
+        const fileInput = document.getElementById('adminNoticeFileInput');
+        const urlInput = document.getElementById('adminNoticeUrlInput');
+        const titleInput = document.getElementById('adminNoticeTitleInput');
+
+        const title = (titleInput?.value || "Official Programme Notice Book").trim();
+        const externalUrl = (urlInput?.value || "").trim();
+        const file = fileInput?.files ? fileInput.files[0] : null;
+
+        if (!file && !externalUrl) {
+            return showCustomDialog("File Required", "Please select a PDF file to upload or enter a direct PDF link.", "warning");
+        }
+
+        showLoader("Publishing Notice Book...");
+        try {
+            let pdfData = "";
+            let pdfUrl = externalUrl;
+
+            // Handle file upload
+            if (file) {
+                if (file.type !== "application/pdf") {
+                    hideLoader();
+                    return showCustomDialog("Invalid File", "Only PDF files are supported for the Notice Book.", "warning");
+                }
+
+                // If file is within 900KB, convert to Base64 (works without Firebase Storage rules)
+                if (file.size <= 900 * 1024) {
+                    pdfData = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                } else if (typeof firebase.storage === "function") {
+                    // Larger PDF: Upload to Firebase Storage
+                    const storageRef = firebase.storage().ref("notice_book/notice_book.pdf");
+                    const snapshot = await storageRef.put(file);
+                    pdfUrl = await snapshot.ref.getDownloadURL();
+                } else {
+                    hideLoader();
+                    return showCustomDialog("File Too Large", "For direct in-database storage, please keep the PDF under 900KB, or upload it to Google Drive/Cloud and paste the direct link.", "warning");
+                }
+            }
+
+            const noticeObj = {
+                title: title,
+                pdfUrl: pdfUrl,
+                pdfData: pdfData,
+                publishedAt: new Date().toLocaleString('en-IN')
+            };
+
+            await db.collection("config").doc("notice_book").set(noticeObj);
+            dbNoticeBook = noticeObj;
+
+            hideLoader();
+            renderAdminNoticeBookPanel();
+            if (fileInput) fileInput.value = "";
+            showCustomDialog("Notice Published", `<b>${title}</b> has been published above Day 1 in the Event Chart.`, "success");
+        } catch (e) {
+            hideLoader();
+            console.error("Notice Book upload error:", e);
+            showCustomDialog("Upload Failed", "Could not save Notice Book. " + (e.message || ""), "danger");
+        }
+    }
+
+    async function deleteNoticeBook() {
+        showCustomDialog(
+            "Remove Notice Book?",
+            "Are you sure you want to remove the published Notice Book from the Event Chart?",
+            "danger",
+            async () => {
+                showLoader("Removing Notice Book...");
+                try {
+                    await db.collection("config").doc("notice_book").delete();
+                    dbNoticeBook = null;
+                    hideLoader();
+                    renderAdminNoticeBookPanel();
+                    showCustomDialog("Removed", "Notice Book removed from Event Chart.", "success");
+                } catch (e) {
+                    hideLoader();
+                    showCustomDialog("Error", "Could not delete Notice Book.", "danger");
+                }
+            },
+            true
+        );
+    }
+
 
 </script>
 </body>
