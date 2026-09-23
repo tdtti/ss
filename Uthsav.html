@@ -10,12 +10,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <!-- Mozilla PDF.js for Universal Cross-Device PDF Rendering -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>
-        if (window.pdfjsLib) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        }
-    </script>
+    
 
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -2640,93 +2635,84 @@
     }
     .event-chart-day-head:hover { background: #1e293b !important; }
 
-    .notice-pdf-frame {
-        width: 100%;
-        height: 540px;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        background: #f8fafc;
-    }
-
-    .notice-actions-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 10px;
-        background: #f1f5f9;
-        padding: 10px 14px;
-        border-radius: var(--radius-sm);
-        margin-bottom: 10px;
-        border: 1px solid var(--border);
-    }
-
+    
     /* ==========================================================================
-       NOTICE BOOK PDF.JS CANVAS VIEWER STYLES
+       NOTICE BOOK MULTIPLE IMAGES STYLES
        ========================================================================== */
-    .notice-pdf-container {
-        width: 100%;
-        background: #334155;
-        border-radius: var(--radius-sm);
-        overflow: hidden;
-        border: 1px solid var(--border);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-top: 8px;
-    }
-    .notice-pdf-toolbar {
-        width: 100%;
-        background: #1e293b;
-        color: #ffffff;
-        padding: 8px 14px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 8px;
-        font-size: 12px;
-        border-bottom: 1px solid #475569;
-    }
-    .notice-pdf-toolbar button {
-        background: #334155;
-        color: #ffffff;
-        border: 1px solid #64748b;
-        padding: 4px 10px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        transition: background 0.15s ease;
-    }
-    .notice-pdf-toolbar button:hover { background: #475569; }
-
-    .notice-pdf-canvas-wrapper {
-        width: 100%;
-        max-height: 650px;
-        overflow-y: auto;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        padding: 16px 10px;
+    .notice-images-stream {
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 16px;
-        box-sizing: border-box;
-        background: #475569;
+        width: 100%;
+        margin-top: 10px;
     }
-    .notice-pdf-page-canvas {
-        max-width: 100% !important;
-        height: auto !important;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    .notice-page-card {
+        width: 100%;
+        max-width: 820px;
         background: #ffffff;
-        border-radius: 2px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+    }
+    .notice-page-header {
+        background: var(--surface-subtle);
+        padding: 6px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+    }
+    .notice-page-img {
+        width: 100%;
+        height: auto;
+        display: block;
+        cursor: zoom-in;
+        transition: opacity 0.15s ease;
+    }
+    .notice-page-img:hover { opacity: 0.95; }
+
+    /* Admin Tab Thumbnail Preview Strip */
+    .admin-notice-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+        width: 100%;
+    }
+    .admin-notice-thumb-box {
+        position: relative;
+        border: 1.5px solid var(--border);
+        border-radius: 6px;
+        overflow: hidden;
+        background: #f8fafc;
+        aspect-ratio: 1 / 1.3;
+    }
+    .admin-notice-thumb-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .admin-notice-thumb-badge {
+        position: absolute;
+        bottom: 3px;
+        left: 3px;
+        background: rgba(15, 23, 42, 0.85);
+        color: #ffffff;
+        font-size: 9.5px;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 3px;
     }
 
     option[value="Fest"] { display: none !important; }
-    option[value="Sports"] { display: none !important; }
+    option[value="Kalothswom"] { display: none !important; }
 
 </style>
 
@@ -3798,18 +3784,19 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label style="color:var(--purple); font-size:15px;"><i class="fas fa-gavel"></i> Judge Login Viewable Tabs</label>
-                        <div style="display:flex; flex-direction:column; gap:8px; margin-top:5px;">
-                            <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_JudgementTab"> Tab 4: Judgement</label>
-                            <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_RecTab"> Tab 2: View Records</label>
-                            <!-- ADD THIS -->
-                            <label class="perm-tile"><input type="checkbox" id="tabPerm_student_EventChartTab"> Event Chart (Programme Scheduler)</label>
-                            <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_TabulationTab"> Tab 5: Tabulation</label>
-                            <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_ResultTab"> Tab 6: Results</label>
-                            <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_SubDistrictTab"> Tab 8: Sub-District</label>
-                        </div>
-                    </div>
+                    <!-- Line 996: Judge Login Viewable Tabs -->
+<div class="form-group">
+    <label style="color:var(--purple); font-size:15px;"><i class="fas fa-gavel"></i> Judge Login Viewable Tabs</label>
+    <div style="display:flex; flex-direction:column; gap:8px; margin-top:5px;">
+        <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_JudgementTab"> Tab 4: Judgement</label>
+        <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_RecTab"> Tab 2: View Records</label>
+        <!-- BUG HERE: ID is tabPerm_student_EventChartTab instead of tabPerm_judge_EventChartTab -->
+        <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_EventChartTab"> Event Chart (Programme Scheduler)</label>
+        <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_TabulationTab"> Tab 5: Tabulation</label>
+        <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_ResultTab"> Tab 6: Results</label>
+        <label class="perm-tile"><input type="checkbox" id="tabPerm_judge_SubDistrictTab"> Tab 8: Sub-District</label>
+    </div>
+</div>
                 </div>
                 <button class="action-btn" style="margin-top:10px;" onclick="saveTabPermissions()"><i class="fas fa-save"></i> Save Tab Visibility</button>
             </div>
@@ -3896,9 +3883,15 @@
                 </p>
                 <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                     <div class="form-group">
-                        <label>Select Festival</label>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <label style="margin:0;">Select Festival</label>
+                            <button type="button" class="action-btn success" style="padding:2px 8px; font-size:11px;" onclick="startAddNewFest()" title="Create a brand-new festival">
+                                <i class="fas fa-plus"></i> New Fest
+                            </button>
+                        </div>
                         <select id="convenorFestSelect" onchange="onConvenorFestSelectChange()">
                             <option value="">-- Choose Fest --</option>
+                            <option value="ADD_NEW" style="font-weight:bold; color:var(--accent);">➕ Add New Festival...</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -3943,40 +3936,46 @@
                 </div>
             </div>
 
-            <!-- NOTICE BOOK MANAGEMENT (PDF UPLOAD) -->
+            <!-- NOTICE BOOK MANAGEMENT (MULTIPLE IMAGES) -->
             <div class="section" id="adminNoticeBookSection">
                 <h4 class="section-title">
-                    <span><i class="fas fa-book"></i> Notice Book Management (PDF Upload)</span>
+                    <span><i class="fas fa-images"></i> Notice Book Management (Multiple Images)</span>
                     <span id="adminNoticeStatusBadge" class="badge-place place-other">Not Published</span>
                 </h4>
                 <p style="font-size:13px; color:#64748b; margin:-6px 0 14px 0;">
-                    Upload the official festival <b>Notice Book (PDF)</b>. It will appear above Day 1 in the <b>Event Chart</b> for both students and officials.
+                    Upload the official festival <b>Notice Book pages as images</b> (PNG, JPG, JPEG). You can select <b>multiple image pages at once</b>. They will automatically be optimized and rendered as sequential pages above Day 1 in the Event Chart.
                 </p>
 
-                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items:flex-end; gap:14px;">
+                <div class="row" style="grid-template-columns: 2fr 1fr; align-items:flex-end; gap:14px;">
                     <div class="form-group">
                         <label>Notice Book Title</label>
                         <input type="text" id="adminNoticeTitleInput" placeholder="e.g. UTHSAV 2026 - Official Programme Notice Book">
                     </div>
                     <div class="form-group">
-                        <label>Upload PDF File (Max 2MB)</label>
-                        <input type="file" id="adminNoticeFileInput" accept="application/pdf" style="padding:6px;">
-                    </div>
-                    <div class="form-group">
-                        <label>Or Direct PDF Link (Optional URL)</label>
-                        <input type="text" id="adminNoticeUrlInput" placeholder="https://example.com/notice.pdf">
+                        <label>Select Image Pages (Hold Ctrl / Shift to pick multiple)</label>
+                        <input type="file" id="adminNoticeImagesInput" accept="image/*" multiple onchange="onAdminNoticeFilesSelected(this)" style="padding:6px;">
                     </div>
                 </div>
 
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px;">
+                <!-- Preview of Uploaded / Selected Pages -->
+                <div id="adminNoticePreviewArea" style="margin-top:10px;">
+                    <div style="font-size:12px; font-weight:700; color:var(--text-main); margin-bottom:6px;">
+                        <i class="fas fa-layer-group"></i> Notice Book Pages: <span id="adminNoticePageCount">0 pages</span>
+                    </div>
+                    <div id="adminNoticeThumbnails" class="admin-notice-preview-grid">
+                        <p style="color:#94a3b8; font-size:12px; grid-column:1/-1;">No notice pages uploaded yet.</p>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:16px; border-top:1px solid #edf2f7; padding-top:12px;">
                     <div id="adminCurrentNoticeInfo" style="font-size:12.5px; color:#475569; font-weight:600;">
-                        No Notice Book uploaded yet.
+                        No Notice Book published yet.
                     </div>
                     <div style="display:flex; gap:8px;">
-                        <button type="button" id="btnAdminDeleteNotice" class="action-btn danger" style="display:none; padding:7px 13px;" onclick="deleteNoticeBook()">
+                        <button type="button" id="btnAdminDeleteNotice" class="action-btn danger" style="display:none; padding:7px 14px;" onclick="deleteNoticeBook()">
                             <i class="fas fa-trash-alt"></i> Remove Notice Book
                         </button>
-                        <button type="button" class="action-btn success" style="padding:7px 16px;" onclick="uploadNoticeBook()">
+                        <button type="button" class="action-btn success" style="padding:7px 18px;" onclick="uploadNoticeBook()">
                             <i class="fas fa-cloud-upload-alt"></i> Save & Publish Notice Book
                         </button>
                     </div>
@@ -4527,6 +4526,7 @@
     let editingUserId = null;
     let editingStudentDocId = null;
     let dbNoticeBook = null;
+    let stagedNoticeImages = []; // Stores Base64 images for preview/save
 
     function getFestivalCategory(festName) {
         if (!festName) return "Kalothswom";
@@ -4822,7 +4822,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         } catch (err) {
             hideLoader();
             console.error("Initialization Error:", err);
-            showCustomDialog("System Error", "Database could not be loaded. Please check console.", "danger");
+            showCustomDialog("Network Error", "Retry Again !!!", "danger");
         }
     };
 
@@ -9070,7 +9070,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
             const savedDates = dbSettings.FestDates || {};
 
-            allFestNames.filter(festHasItems).forEach(f => {
+            allFestNames.forEach(f => {
                 const isChecked = dbSettings["Fest_" + f] !== "DISABLED" ? "checked" : "";
                 const cat = getFestivalCategory(f);
                 const safeName = f.replace(/[^a-zA-Z0-9]/g, '_');
@@ -9139,11 +9139,11 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             });
         }
 
-        // 3. Fest & Convenor Management Dropdown & Table
+        // 3. Fest & Convenor Management Dropdown with "➕ Add New Festival..." Option
         const cSel = document.getElementById('convenorFestSelect');
         if (cSel) {
-            cSel.innerHTML = '<option value="">-- Choose Fest --</option>';
-            allFestNames.filter(festHasItems).forEach(f => {
+            cSel.innerHTML = '<option value="">-- Choose Fest --</option><option value="ADD_NEW" style="font-weight:bold; color:var(--accent);">➕ Add New Festival...</option>';
+            allFestNames.forEach(f => {
                 cSel.innerHTML += `<option value="${f}">${f}</option>`;
             });
         }
@@ -9151,7 +9151,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             renderConvenorsTable();
         }
 
-        // 4. Notice Book PDF Management Panel
+        // 4. Notice Book Management Panel (Multiple Images)
         if (typeof renderAdminNoticeBookPanel === "function") {
             renderAdminNoticeBookPanel();
         }
@@ -9176,24 +9176,65 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
+    // --- 2. Handle Dropdown Selection (Triggers Add or Edit) ---
+    function onConvenorFestSelectChange() {
+        const selected = document.getElementById('convenorFestSelect').value;
+        if (!selected) {
+            cancelFestEdit();
+            return;
+        }
+        if (selected === "ADD_NEW") {
+            startAddNewFest();
+            return;
+        }
+        editFestConvenor(selected);
+    }
+
+    // --- 3. Start Add New Festival Form ---
+    function startAddNewFest() {
+        selectedEditingFestOldName = null;
+        document.getElementById('convenorFestSelect').value = "ADD_NEW";
+        
+        const nameInput = document.getElementById('convenorFestNameInput');
+        nameInput.value = "";
+        nameInput.placeholder = "Type New Festival Name (e.g. Sanskritotsavam)";
+        
+        document.getElementById('convenorFestCategorySelect').value = "Kalothswom";
+        document.getElementById('convenorNameInput').value = "THEJAS R";
+
+        document.getElementById('btnCancelFestEdit').style.display = 'inline-flex';
+        document.getElementById('btnSaveFestConvenor').innerHTML = `<i class="fas fa-plus-circle"></i> Create Festival`;
+        
+        nameInput.focus();
+    }
+
+    // --- 4. Render Convenors Table (Displays All Festivals) ---
     function renderConvenorsTable() {
         const tbody = document.getElementById('convenorsTbody');
         if (!tbody) return;
         tbody.innerHTML = "";
         const convenors = dbSettings.FestConvenors || {};
 
-        allFestNames.filter(festHasItems).forEach(f => {
+        if (allFestNames.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#94a3b8; padding:20px;">No festivals registered yet.</td></tr>`;
+            return;
+        }
+
+        allFestNames.forEach(f => {
             const conv = convenors[f] || "THEJAS R";
+            const cat = getFestivalCategory(f);
+            const safeFestName = f.replace(/'/g, "\\'");
+
             tbody.innerHTML += `
                 <tr>
-                    <td><b>${f}</b></td>
+                    <td><b>${f}</b> <span style="font-size:11px; color:#64748b;">(${cat})</span></td>
                     <td>${conv}</td>
                     <td style="text-align:center;">
                         <div style="display:inline-flex; gap:6px;">
-                            <button class="action-btn" style="padding:4px 8px; font-size:12px;" onclick="editFestConvenor('${f}')" title="Modify Fest & Convenor">
+                            <button type="button" class="action-btn" style="padding:4px 8px; font-size:12px;" onclick="editFestConvenor('${safeFestName}')" title="Modify Fest & Convenor">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            <button class="action-btn danger" style="padding:4px 8px; font-size:12px;" onclick="deleteFestConvenor('${f}')" title="Reset Convenor">
+                            <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:12px;" onclick="deleteFestConvenor('${safeFestName}')" title="Delete Festival Completely">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -9203,52 +9244,71 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         });
     }
 
-    function onConvenorFestSelectChange() {
-        const selected = document.getElementById('convenorFestSelect').value;
-        if (!selected) {
-            cancelFestEdit();
-            return;
-        }
-        editFestConvenor(selected);
-    }
-
-    function editFestConvenor(festName) {
-        selectedEditingFestOldName = festName;
-        document.getElementById('convenorFestSelect').value = festName;
-        document.getElementById('convenorFestNameInput').value = festName;
-        
-        const currentCat = getFestivalCategory(festName);
-        const catSelect = document.getElementById('convenorFestCategorySelect');
-        if (catSelect) catSelect.value = currentCat;
-
-        document.getElementById('convenorNameInput').value = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) || "THEJAS R";
-
-        document.getElementById('btnCancelFestEdit').style.display = 'inline-flex';
-        document.getElementById('btnSaveFestConvenor').innerHTML = `<i class="fas fa-save"></i> Update Fest & Convenor`;
-        document.getElementById('convenorFestNameInput').focus();
-    }
-
-    function cancelFestEdit() {
-        selectedEditingFestOldName = null;
-        document.getElementById('convenorFestSelect').value = "";
-        document.getElementById('convenorFestNameInput').value = "";
-        document.getElementById('convenorNameInput').value = "";
-        const catSelect = document.getElementById('convenorFestCategorySelect');
-        if (catSelect) catSelect.value = "Kalothswom";
-        document.getElementById('btnCancelFestEdit').style.display = 'none';
-        document.getElementById('btnSaveFestConvenor').innerHTML = `<i class="fas fa-save"></i> Save / Update`;
-    }
-
+    // --- 5. Save / Add Brand-New Festival OR Update Existing ---
     async function saveFestAndConvenor() {
-        const oldFest = selectedEditingFestOldName || document.getElementById('convenorFestSelect').value;
+        const selectedSelectVal = document.getElementById('convenorFestSelect')?.value;
+        const isCreatingNew = (selectedSelectVal === "ADD_NEW") || (!selectedEditingFestOldName);
+        
+        const oldFest = isCreatingNew ? null : selectedEditingFestOldName;
         const newFest = document.getElementById('convenorFestNameInput').value.trim();
         const convenor = document.getElementById('convenorNameInput').value.trim();
-        const targetCategory = document.getElementById('convenorFestCategorySelect')?.value || getFestivalCategory(oldFest) || "Kalothswom";
+        const targetCategory = document.getElementById('convenorFestCategorySelect')?.value || "Kalothswom";
 
         if (!newFest || !convenor) {
-            return showCustomDialog("Incomplete Details", "Please provide both the Fest Name and Convenor Name.", "warning");
+            return showCustomDialog("Incomplete Details", "Please provide both the Festival Name and Convenor Name.", "warning");
         }
 
+        // --- SCENARIO A: CREATING A BRAND-NEW FESTIVAL ---
+        if (isCreatingNew) {
+            if (allFestNames.some(f => f.trim().toLowerCase() === newFest.toLowerCase())) {
+                return showCustomDialog("Festival Exists", `A festival named <b>"${newFest}"</b> already exists in the system.`, "warning");
+            }
+
+            showLoader(`Creating new festival: ${newFest}...`);
+            try {
+                if (!allFestNames.includes(newFest)) allFestNames.push(newFest);
+                allFestNames.sort((a, b) => a.localeCompare(b));
+
+                if (!classificationMap[targetCategory]) classificationMap[targetCategory] = [];
+                if (!classificationMap[targetCategory].includes(newFest)) {
+                    classificationMap[targetCategory].push(newFest);
+                    classificationMap[targetCategory].sort((a, b) => a.localeCompare(b));
+                }
+
+                if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
+                dbSettings.FestConvenors[newFest] = convenor;
+                dbSettings["Fest_" + newFest] = "ENABLED";
+
+                if (dbSettings.HiddenFests) {
+                    dbSettings.HiddenFests = dbSettings.HiddenFests.filter(f => f !== newFest);
+                }
+
+                dbSettings.AllFestNames = allFestNames;
+                dbSettings.ClassificationMap = classificationMap;
+
+                await db.collection("config").doc("settings").set({
+                    AllFestNames: allFestNames,
+                    ClassificationMap: classificationMap,
+                    HiddenFests: dbSettings.HiddenFests || [],
+                    [`FestConvenors.${newFest}`]: convenor,
+                    [`Fest_${newFest}`]: "ENABLED"
+                }, { merge: true });
+
+                hideLoader();
+                cancelFestEdit();
+                populateClassificationDropdown();
+                renderAdminPanel();
+                applySettingsToUI();
+                showCustomDialog("Festival Added", `New festival <b>"${newFest}"</b> successfully created under <b>${targetCategory}</b>.`, "success");
+            } catch (e) {
+                hideLoader();
+                console.error("New festival creation error:", e);
+                showCustomDialog("Error", "Could not create new festival.", "danger");
+            }
+            return;
+        }
+
+        // --- SCENARIO B: RENAMING OR MOVING AN EXISTING FESTIVAL ---
         const isRenamed = oldFest && (newFest !== oldFest);
         const oldCategory = oldFest ? getFestivalCategory(oldFest) : targetCategory;
         const isCategoryChanged = oldCategory !== targetCategory;
@@ -9311,8 +9371,8 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         });
 
                         if (!dbSettings.HiddenFests) dbSettings.HiddenFests = [];
-                        if (isRenamed) {
-                            if (!dbSettings.HiddenFests.includes(oldFest)) dbSettings.HiddenFests.push(oldFest);
+                        if (isRenamed && !dbSettings.HiddenFests.includes(oldFest)) {
+                            dbSettings.HiddenFests.push(oldFest);
                         }
                         dbSettings.HiddenFests = dbSettings.HiddenFests.filter(f => f !== newFest);
 
@@ -9326,10 +9386,8 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         if (!classificationMap[targetCategory]) classificationMap[targetCategory] = [];
                         if (!classificationMap[targetCategory].includes(newFest)) {
                             classificationMap[targetCategory].push(newFest);
+                            classificationMap[targetCategory].sort((a, b) => a.localeCompare(b));
                         }
-                        Object.keys(classificationMap).forEach(cat => {
-                            classificationMap[cat].sort((a, b) => a.localeCompare(b));
-                        });
 
                         if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
                         dbSettings.FestConvenors[newFest] = convenor;
@@ -9351,7 +9409,6 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         }
 
                         batch.update(db.collection("config").doc("settings"), settingsUpdate);
-
                         await batch.commit();
 
                         dbFests.forEach(f => { 
@@ -9396,17 +9453,17 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             return;
         }
 
-        const targetFest = oldFest || newFest;
+        // --- SCENARIO C: ONLY CONVENOR UPDATED ---
         showLoader("Saving Convenor Details...");
         try {
             if (!dbSettings.FestConvenors) dbSettings.FestConvenors = {};
-            dbSettings.FestConvenors[targetFest] = convenor;
+            dbSettings.FestConvenors[oldFest] = convenor;
 
             await db.collection("config").doc("settings").set(dbSettings, { merge: true });
             hideLoader();
             cancelFestEdit();
             renderConvenorsTable();
-            showCustomDialog("Saved", `Convenor for <b>${targetFest}</b> updated to <b>${convenor}</b>.`, "success");
+            showCustomDialog("Saved", `Convenor for <b>${oldFest}</b> updated to <b>${convenor}</b>.`, "success");
         } catch (e) {
             hideLoader();
             console.error(e);
@@ -9414,25 +9471,137 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
+    // --- Permanently Delete Festival, Assigned Convenor, and Associated Records ---
     async function deleteFestConvenor(festName) {
+        if (!festName) return;
+
         showCustomDialog(
-            "Reset Convenor?", 
-            `Reset Convenor for <b>${festName}</b> back to default (THEJAS R)?`, 
-            "warning", 
+            "Delete Festival Completely?", 
+            `Are you sure you want to permanently delete <b>"${festName}"</b>?<br><br>` +
+            `<span style="color:var(--danger); font-size:12px;">⚠️ This will completely remove the festival, its assigned convenor, and all associated items from the system.</span>`, 
+            "danger", 
             async () => {
-                if (dbSettings.FestConvenors) {
-                    delete dbSettings.FestConvenors[festName];
-                    showLoader("Resetting Convenor...");
-                    await db.collection("config").doc("settings").set(dbSettings, { merge: true });
-                    hideLoader();
+                showLoader(`Permanently removing ${festName}...`);
+                try {
+                    const batch = db.batch();
+
+                    // 1. Delete all items associated with this festival from 'fests' collection
+                    const itemsSnap = await db.collection("fests").where("Fest Name", "==", festName).get();
+                    itemsSnap.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    // Also wipe from in-memory items array
+                    dbFests = dbFests.filter(f => f["Fest Name"] !== festName);
+
+                    // 2. Remove from active in-memory festival lists
+                    allFestNames = allFestNames.filter(f => f !== festName);
+                    Object.keys(classificationMap).forEach(cat => {
+                        classificationMap[cat] = classificationMap[cat].filter(f => f !== festName);
+                    });
+
+                    // 3. Mark as hidden so hardcoded defaults cannot resurrect it on refresh
+                    if (!dbSettings.HiddenFests) dbSettings.HiddenFests = [];
+                    if (!dbSettings.HiddenFests.includes(festName)) {
+                        dbSettings.HiddenFests.push(festName);
+                    }
+
+                    // 4. Remove convenor, dates, and activation settings
+                    if (dbSettings.FestConvenors) {
+                        delete dbSettings.FestConvenors[festName];
+                    }
+                    if (dbSettings.FestDates) {
+                        delete dbSettings.FestDates[festName];
+                    }
+                    delete dbSettings["Fest_" + festName];
+
+                    dbSettings.AllFestNames = allFestNames;
+                    dbSettings.ClassificationMap = classificationMap;
+
+                    // 5. Commit all deletions to settings document
+                    const settingsRef = db.collection("config").doc("settings");
+                    batch.update(settingsRef, {
+                        AllFestNames: allFestNames,
+                        ClassificationMap: classificationMap,
+                        HiddenFests: dbSettings.HiddenFests,
+                        [`FestConvenors.${festName}`]: firebase.firestore.FieldValue.delete(),
+                        [`FestDates.${festName}`]: firebase.firestore.FieldValue.delete(),
+                        [`Fest_${festName}`]: firebase.firestore.FieldValue.delete()
+                    });
+
+                    await batch.commit();
+
+                    // 6. Reset form, dropdowns, and re-render tables
                     cancelFestEdit();
+                    populateClassificationDropdown();
                     renderConvenorsTable();
-                    showCustomDialog("Reset Done", `Convenor for <b>${festName}</b> reset to default.`, "success");
+                    renderAdminPanel();
+                    applySettingsToUI();
+
+                    hideLoader();
+                    showCustomDialog(
+                        "Festival Deleted", 
+                        `Festival <b>"${festName}"</b> and its convenor have been completely removed.`, 
+                        "success"
+                    );
+                } catch (e) {
+                    hideLoader();
+                    console.error("Fest deletion error:", e);
+                    // Fallback using set with merge if batch update threw an error
+                    try {
+                        await db.collection("config").doc("settings").set({
+                            AllFestNames: allFestNames,
+                            ClassificationMap: classificationMap,
+                            HiddenFests: dbSettings.HiddenFests || []
+                        }, { merge: true });
+                        cancelFestEdit();
+                        populateClassificationDropdown();
+                        renderConvenorsTable();
+                        renderAdminPanel();
+                        applySettingsToUI();
+                        showCustomDialog("Deleted", `Festival <b>"${festName}"</b> removed.`, "success");
+                    } catch (err) {
+                        showCustomDialog("Error", "Could not delete festival completely. " + (err.message || ""), "danger");
+                    }
                 }
             }, 
             true
         );
     }
+
+    
+
+    
+
+    function editFestConvenor(festName) {
+        selectedEditingFestOldName = festName;
+        document.getElementById('convenorFestSelect').value = festName;
+        document.getElementById('convenorFestNameInput').value = festName;
+        
+        const currentCat = getFestivalCategory(festName);
+        const catSelect = document.getElementById('convenorFestCategorySelect');
+        if (catSelect) catSelect.value = currentCat;
+
+        document.getElementById('convenorNameInput').value = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) || "THEJAS R";
+
+        document.getElementById('btnCancelFestEdit').style.display = 'inline-flex';
+        document.getElementById('btnSaveFestConvenor').innerHTML = `<i class="fas fa-save"></i> Update Fest & Convenor`;
+        document.getElementById('convenorFestNameInput').focus();
+    }
+
+    function cancelFestEdit() {
+        selectedEditingFestOldName = null;
+        document.getElementById('convenorFestSelect').value = "";
+        document.getElementById('convenorFestNameInput').value = "";
+        document.getElementById('convenorNameInput').value = "";
+        const catSelect = document.getElementById('convenorFestCategorySelect');
+        if (catSelect) catSelect.value = "Kalothswom";
+        document.getElementById('btnCancelFestEdit').style.display = 'none';
+        document.getElementById('btnSaveFestConvenor').innerHTML = `<i class="fas fa-save"></i> Save / Update`;
+    }
+
+    
+
+    
 
     function clearJudgeLogs() {
         showCustomDialog(
@@ -11561,13 +11730,28 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         `;
 
         // =====================================================================
-        // 2. NOTICE BOOK (COLLAPSIBLE - OPEN BY DEFAULT - ABOVE DAY 1)
+        // 2. NOTICE BOOK (MULTIPLE IMAGES - COLLAPSIBLE - OPEN BY DEFAULT)
         // =====================================================================
-        if (dbNoticeBook && (dbNoticeBook.pdfUrl || dbNoticeBook.pdfData)) {
-            const rawSrc = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
+        const noticeImages = (dbNoticeBook && Array.isArray(dbNoticeBook.images)) ? dbNoticeBook.images : [];
+
+        if (dbNoticeBook && noticeImages.length > 0) {
             const noticeTitle = dbNoticeBook.title || "Official Programme Notice Book";
             const noticeDate = dbNoticeBook.publishedAt || "";
-            const isGoogleDrive = typeof rawSrc === 'string' && rawSrc.includes('drive.google.com');
+
+            let pagesHTML = "";
+            noticeImages.forEach((imgSrc, idx) => {
+                pagesHTML += `
+                    <div class="notice-page-card">
+                        <div class="notice-page-header">
+                            <span><i class="far fa-file-image" style="color:var(--accent);"></i> Page ${idx + 1} of ${noticeImages.length}</span>
+                            <a href="${imgSrc}" download="Notice_Page_${idx + 1}.jpg" class="action-btn secondary" style="padding:2px 8px; font-size:11px; text-decoration:none;">
+                                <i class="fas fa-download"></i> Download Page
+                            </a>
+                        </div>
+                        <img src="${imgSrc}" alt="${noticeTitle} - Page ${idx + 1}" class="notice-page-img" onclick="window.open('${imgSrc}', '_blank')" title="Click to view full size">
+                    </div>
+                `;
+            });
 
             fullHTML += `
                 <div style="width:100%; margin-bottom:18px;">
@@ -11577,49 +11761,25 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                             <i class="fas fa-chevron-down collapse-chevron"></i>
                             <span><i class="fas fa-book-open" style="color:#fef08a;"></i> ${noticeTitle.toUpperCase()}</span>
                         </div>
-                        <span style="font-size:11.5px; font-weight:700; color:#e2e8f0;">
-                            ${noticeDate ? `<i class="far fa-clock"></i> ${noticeDate}` : 'PUBLISHED'}
-                        </span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="badge-place place-1" style="font-size:11px;">${noticeImages.length} Pages</span>
+                            <span style="font-size:11.5px; font-weight:700; color:#e2e8f0;">
+                                ${noticeDate ? `<i class="far fa-clock"></i> ${noticeDate}` : 'PUBLISHED'}
+                            </span>
+                        </div>
                     </div>
 
                     <!-- Notice Book Body: Non-collapsed by default (display: block) -->
                     <div class="event-chart-notice-body" style="display:block; width:100%; margin-bottom:12px;">
                         <div class="notice-actions-bar">
                             <span style="font-size:13px; font-weight:700; color:var(--text-main);">
-                                <i class="fas fa-file-pdf" style="color:#dc2626; font-size:16px;"></i> ${noticeTitle}
+                                <i class="fas fa-images" style="color:#2563eb; font-size:16px;"></i> ${noticeTitle} (${noticeImages.length} Pages)
                             </span>
-                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                                <button type="button" class="action-btn" style="padding:5px 12px; font-size:12px;" onclick="openNoticePdfFullscreen()">
-                                    <i class="fas fa-external-link-alt"></i> Open Fullscreen
-                                </button>
-                                <button type="button" class="action-btn gold" style="padding:5px 12px; font-size:12px;" onclick="downloadNoticePdf()">
-                                    <i class="fas fa-download"></i> Download PDF
-                                </button>
-                            </div>
+                            <small style="color:#64748b; font-weight:600;">Tap any page to open full size</small>
                         </div>
-
-                        ${isGoogleDrive ? `
-                            <iframe src="${convertGoogleDriveUrl(rawSrc)}" style="width:100%; height:550px; border:1px solid #cbd5e1; border-radius:6px;"></iframe>
-                        ` : `
-                            <div id="noticePdfViewerContainer" class="notice-pdf-container">
-                                <div class="notice-pdf-toolbar">
-                                    <span id="noticePdfPageCountText" style="font-weight:700;">
-                                        <i class="fas fa-spinner fa-spin"></i> Loading PDF...
-                                    </span>
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <button type="button" onclick="zoomNoticePdf(-0.2)"><i class="fas fa-search-minus"></i> Zoom Out</button>
-                                        <button type="button" onclick="zoomNoticePdf(0.2)"><i class="fas fa-search-plus"></i> Zoom In</button>
-                                        <button type="button" onclick="zoomNoticePdf('reset')"><i class="fas fa-redo"></i> Reset</button>
-                                    </div>
-                                </div>
-                                <div id="noticePdfCanvasWrapper" class="notice-pdf-canvas-wrapper">
-                                    <div id="noticePdfLoadingMsg" style="color:#ffffff; padding:40px; font-size:14px; text-align:center;">
-                                        <i class="fas fa-spinner fa-spin" style="font-size:24px; margin-bottom:8px; display:block;"></i> 
-                                        Rendering Notice Book...
-                                    </div>
-                                </div>
-                            </div>
-                        `}
+                        <div class="notice-images-stream">
+                            ${pagesHTML}
+                        </div>
                     </div>
                 </div>
             `;
@@ -12088,106 +12248,181 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         document.body.classList.remove('printing-event-chart');
     }
 
-    // ==========================================================================
-    // 21. NOTICE BOOK ADMIN UPLOAD & MANAGEMENT CONTROLLER
-    // ==========================================================================
+    // Helper: Resizes and compresses images so multiple pages easily fit in Firestore (< 150KB per page)
+    function compressImageFile(file, maxWidth = 1200, quality = 0.78) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxWidth) {
+                        h = Math.round((h * maxWidth) / w);
+                        w = maxWidth;
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Handles picking multiple images in Admin Tab and shows preview thumbnails
+    async function onAdminNoticeFilesSelected(input) {
+        if (!input.files || input.files.length === 0) return;
+
+        showLoader("Processing & Optimizing Images...");
+        stagedNoticeImages = [];
+
+        try {
+            // Sort files by name so Page 1, Page 2... stay in order
+            const files = Array.from(input.files).sort((a, b) => 
+                a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+            );
+
+            for (let i = 0; i < files.length; i++) {
+                const compressedDataUrl = await compressImageFile(files[i]);
+                stagedNoticeImages.push(compressedDataUrl);
+            }
+
+            renderAdminNoticeThumbnails(stagedNoticeImages);
+            hideLoader();
+        } catch (err) {
+            hideLoader();
+            console.error("Image processing error:", err);
+            showCustomDialog("Error", "Could not process selected image files.", "danger");
+        }
+    }
+
+    function renderAdminNoticeThumbnails(imagesArray) {
+        const grid = document.getElementById('adminNoticeThumbnails');
+        const countSpan = document.getElementById('adminNoticePageCount');
+        if (!grid) return;
+
+        grid.innerHTML = "";
+        const count = imagesArray ? imagesArray.length : 0;
+        if (countSpan) countSpan.innerText = `${count} page(s)`;
+
+        if (!imagesArray || imagesArray.length === 0) {
+            grid.innerHTML = `<p style="color:#94a3b8; font-size:12px; grid-column:1/-1;">No notice pages uploaded yet.</p>`;
+            return;
+        }
+
+        imagesArray.forEach((imgSrc, idx) => {
+            grid.innerHTML += `
+                <div class="admin-notice-thumb-box">
+                    <img src="${imgSrc}" alt="Page ${idx + 1}" onclick="window.open('${imgSrc}', '_blank')">
+                    <span class="admin-notice-thumb-badge">P. ${idx + 1}</span>
+                </div>
+            `;
+        });
+    }
+
     function renderAdminNoticeBookPanel() {
         const statusBadge = document.getElementById('adminNoticeStatusBadge');
         const currentInfo = document.getElementById('adminCurrentNoticeInfo');
         const deleteBtn = document.getElementById('btnAdminDeleteNotice');
         const titleInput = document.getElementById('adminNoticeTitleInput');
-        const urlInput = document.getElementById('adminNoticeUrlInput');
 
         if (!statusBadge || !currentInfo) return;
 
-        if (dbNoticeBook && (dbNoticeBook.pdfUrl || dbNoticeBook.pdfData)) {
+        const images = (dbNoticeBook && Array.isArray(dbNoticeBook.images)) ? dbNoticeBook.images : [];
+
+        if (dbNoticeBook && images.length > 0) {
             statusBadge.className = 'badge-place place-1';
             statusBadge.innerText = 'Published & Active';
 
-            const link = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
             currentInfo.innerHTML = `
                 <i class="fas fa-check-circle" style="color:#059669;"></i> 
                 Active Notice: <b>${dbNoticeBook.title || 'Notice Book'}</b> 
-                (${dbNoticeBook.publishedAt || ''}) &bull; 
-                <button type="button" class="action-btn secondary" style="padding:2px 8px; font-size:11px; margin-left:6px;" onclick="openNoticePdfFullscreen()">
-                    <i class="fas fa-eye"></i> View PDF
-                </button>
+                (${images.length} Pages &bull; Published: ${dbNoticeBook.publishedAt || ''})
             `;
+
             if (deleteBtn) deleteBtn.style.display = 'inline-flex';
             if (titleInput) titleInput.value = dbNoticeBook.title || '';
-            if (urlInput && dbNoticeBook.pdfUrl) urlInput.value = dbNoticeBook.pdfUrl;
+            renderAdminNoticeThumbnails(images);
         } else {
             statusBadge.className = 'badge-place place-other';
             statusBadge.innerText = 'Not Published';
             currentInfo.innerText = 'No Notice Book published yet.';
             if (deleteBtn) deleteBtn.style.display = 'none';
+            renderAdminNoticeThumbnails([]);
         }
     }
 
     async function uploadNoticeBook() {
-        const fileInput = document.getElementById('adminNoticeFileInput');
-        const urlInput = document.getElementById('adminNoticeUrlInput');
         const titleInput = document.getElementById('adminNoticeTitleInput');
-
         const title = (titleInput?.value || "Official Programme Notice Book").trim();
-        const externalUrl = (urlInput?.value || "").trim();
-        const file = fileInput?.files ? fileInput.files[0] : null;
 
-        if (!file && !externalUrl) {
-            return showCustomDialog("File Required", "Please select a PDF file to upload or enter a direct PDF link.", "warning");
+        // Use newly staged images, or retain previously saved ones if only title was edited
+        let imagesToSave = stagedNoticeImages.length > 0 
+            ? stagedNoticeImages 
+            : (dbNoticeBook && Array.isArray(dbNoticeBook.images) ? dbNoticeBook.images : []);
+
+        if (imagesToSave.length === 0) {
+            return showCustomDialog("Images Required", "Please select at least one image file for the Notice Book.", "warning");
         }
 
-        showLoader("Publishing Notice Book...");
+        showLoader("Publishing Multi-Page Notice Book...");
         try {
-            let pdfData = "";
-            let pdfUrl = externalUrl;
-
-            // Handle file upload
-            if (file) {
-                if (file.type !== "application/pdf") {
-                    hideLoader();
-                    return showCustomDialog("Invalid File", "Only PDF files are supported for the Notice Book.", "warning");
-                }
-
-                // If file is within 900KB, convert to Base64 (works without Firebase Storage rules)
-                if (file.size <= 900 * 1024) {
-                    pdfData = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = reject;
-                        reader.readAsDataURL(file);
-                    });
-                } else if (typeof firebase.storage === "function") {
-                    // Larger PDF: Upload to Firebase Storage
-                    const storageRef = firebase.storage().ref("notice_book/notice_book.pdf");
-                    const snapshot = await storageRef.put(file);
-                    pdfUrl = await snapshot.ref.getDownloadURL();
-                } else {
-                    hideLoader();
-                    return showCustomDialog("File Too Large", "For direct in-database storage, please keep the PDF under 900KB, or upload it to Google Drive/Cloud and paste the direct link.", "warning");
-                }
-            }
-
             const noticeObj = {
                 title: title,
-                pdfUrl: pdfUrl,
-                pdfData: pdfData,
+                images: imagesToSave,
                 publishedAt: new Date().toLocaleString('en-IN')
             };
 
             await db.collection("config").doc("notice_book").set(noticeObj);
             dbNoticeBook = noticeObj;
+            stagedNoticeImages = [];
+
+            const fileInput = document.getElementById('adminNoticeImagesInput');
+            if (fileInput) fileInput.value = "";
 
             hideLoader();
             renderAdminNoticeBookPanel();
-            if (fileInput) fileInput.value = "";
-            showCustomDialog("Notice Published", `<b>${title}</b> has been published above Day 1 in the Event Chart.`, "success");
+            showCustomDialog("Notice Published", `<b>${title}</b> (${imagesToSave.length} pages) has been published above Day 1 in the Event Chart.`, "success");
         } catch (e) {
             hideLoader();
             console.error("Notice Book upload error:", e);
             showCustomDialog("Upload Failed", "Could not save Notice Book. " + (e.message || ""), "danger");
         }
     }
+
+    async function deleteNoticeBook() {
+        showCustomDialog(
+            "Remove Notice Book?",
+            "Are you sure you want to remove the published Notice Book images from the Event Chart?",
+            "danger",
+            async () => {
+                showLoader("Removing Notice Book...");
+                try {
+                    await db.collection("config").doc("notice_book").delete();
+                    dbNoticeBook = null;
+                    stagedNoticeImages = [];
+                    const fileInput = document.getElementById('adminNoticeImagesInput');
+                    if (fileInput) fileInput.value = "";
+                    hideLoader();
+                    renderAdminNoticeBookPanel();
+                    showCustomDialog("Removed", "Notice Book removed from Event Chart.", "success");
+                } catch (e) {
+                    hideLoader();
+                    showCustomDialog("Error", "Could not delete Notice Book.", "danger");
+                }
+            },
+            true
+        );
+    }
+
+    
 
     async function deleteNoticeBook() {
         showCustomDialog(
@@ -12212,147 +12447,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
     }
 
 
-    // ==========================================================================
-    // 22. PDF.JS CANVAS RENDERER & BLOB HANDLERS
-    // ==========================================================================
-    let currentNoticePdfDoc = null;
-    let currentNoticePdfScale = 1.15;
-
-    function getNoticePdfBlobUrl(pdfDataOrUrl) {
-        if (!pdfDataOrUrl) return "";
-        if (pdfDataOrUrl.startsWith("data:application/pdf;base64,")) {
-            try {
-                const base64Data = pdfDataOrUrl.split(',')[1];
-                const byteCharacters = atob(base64Data);
-                const byteNumbers = new Array(byteCharacters.length);
-                for (let i = 0; i < byteCharacters.length; i++) {
-                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                }
-                const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], { type: 'application/pdf' });
-                return URL.createObjectURL(blob);
-            } catch (e) {
-                console.error("Base64 to blob error:", e);
-                return pdfDataOrUrl;
-            }
-        }
-        return pdfDataOrUrl;
-    }
-
-    async function initNoticePdfJsViewer(rawSrc) {
-        const wrapper = document.getElementById('noticePdfCanvasWrapper');
-        const pageText = document.getElementById('noticePdfPageCountText');
-        if (!wrapper) return;
-
-        try {
-            if (!window.pdfjsLib) {
-                // Fallback to Blob object if PDF.js library isn't available
-                const blobUrl = getNoticePdfBlobUrl(rawSrc);
-                wrapper.innerHTML = `<object data="${blobUrl}" type="application/pdf" style="width:100%; height:550px;"><p style="color:#fff; padding:20px;">PDF plugin unavailable. <a href="${blobUrl}" target="_blank" style="color:#60a5fa;">Click here to view PDF</a></p></object>`;
-                if (pageText) pageText.innerText = "PDF Document";
-                return;
-            }
-
-            let pdfDataToLoad;
-            if (rawSrc.startsWith('data:application/pdf;base64,')) {
-                const base64 = rawSrc.split(',')[1];
-                const binStr = atob(base64);
-                const len = binStr.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    bytes[i] = binStr.charCodeAt(i);
-                }
-                pdfDataToLoad = { data: bytes };
-            } else {
-                pdfDataToLoad = { url: rawSrc };
-            }
-
-            currentNoticePdfDoc = await pdfjsLib.getDocument(pdfDataToLoad).promise;
-            if (pageText) pageText.innerHTML = `<i class="fas fa-file-pdf" style="color:#ef4444; margin-right:5px;"></i> Total Pages: ${currentNoticePdfDoc.numPages}`;
-
-            renderAllNoticePdfPages();
-        } catch (err) {
-            console.error("PDF.js render error:", err);
-            const blobUrl = getNoticePdfBlobUrl(rawSrc);
-            wrapper.innerHTML = `
-                <div style="background:#ffffff; padding:24px; border-radius:8px; text-align:center; color:#0f172a; width:90%; max-width:440px; margin:30px auto; box-shadow:0 4px 12px rgba(0,0,0,0.2);">
-                    <i class="fas fa-file-pdf" style="font-size:36px; color:#ef4444; margin-bottom:10px;"></i>
-                    <p style="font-weight:700; margin:0 0 14px 0;">Notice Book is ready to view.</p>
-                    <div style="display:flex; justify-content:center; gap:8px;">
-                        <button type="button" class="action-btn" onclick="openNoticePdfFullscreen()"><i class="fas fa-external-link-alt"></i> Open Fullscreen</button>
-                        <button type="button" class="action-btn gold" onclick="downloadNoticePdf()"><i class="fas fa-download"></i> Download</button>
-                    </div>
-                </div>
-            `;
-            if (pageText) pageText.innerText = "Document Ready";
-        }
-    }
-
-    async function renderAllNoticePdfPages() {
-        const wrapper = document.getElementById('noticePdfCanvasWrapper');
-        if (!wrapper || !currentNoticePdfDoc) return;
-        wrapper.innerHTML = "";
-
-        const numPages = currentNoticePdfDoc.numPages;
-        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-            const page = await currentNoticePdfDoc.getPage(pageNum);
-            const viewport = page.getViewport({ scale: currentNoticePdfScale });
-
-            const canvas = document.createElement('canvas');
-            canvas.className = 'notice-pdf-page-canvas';
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            wrapper.appendChild(canvas);
-
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
-        }
-    }
-
-    function zoomNoticePdf(delta) {
-        if (!currentNoticePdfDoc) return;
-        if (delta === 'reset') {
-            currentNoticePdfScale = 1.15;
-        } else {
-            currentNoticePdfScale = Math.max(0.7, Math.min(2.4, currentNoticePdfScale + delta));
-        }
-        renderAllNoticePdfPages();
-    }
-
-    function openNoticePdfFullscreen() {
-        if (!dbNoticeBook) return;
-        const raw = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
-        if (!raw) return;
-
-        if (raw.includes('drive.google.com')) {
-            window.open(convertGoogleDriveUrl(raw), '_blank');
-            return;
-        }
-
-        const blobUrl = getNoticePdfBlobUrl(raw);
-        window.open(blobUrl, '_blank');
-    }
-
-    function downloadNoticePdf() {
-        if (!dbNoticeBook) return;
-        const raw = dbNoticeBook.pdfUrl || dbNoticeBook.pdfData;
-        if (!raw) return;
-
-        const blobUrl = getNoticePdfBlobUrl(raw);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = (dbNoticeBook.title ? dbNoticeBook.title.replace(/[^a-zA-Z0-9_-]/g, '_') : 'Notice_Book') + '.pdf';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    function convertGoogleDriveUrl(url) {
-        if (!url) return "";
-        return url.replace(/\/view(\?.*)?$/, '/preview').replace(/\/edit(\?.*)?$/, '/preview');
-    }
-
+    
 
 </script>
 </body>
