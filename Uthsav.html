@@ -765,7 +765,7 @@
     /* ==========================================================================
        8. UNIVERSAL MODAL SYSTEM & DUAL-AXIS SCROLLERS
        ========================================================================== */
-    #certModal, #reportModal, #subDistrictModal, #resultReportModal {
+    #certModal, #reportModal, #subDistrictModal, #resultReportModal, #eventChartModal {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(15, 23, 42, 0.5); 
         z-index: 9998; display: none;
@@ -2712,7 +2712,7 @@
     }
 
     option[value="Fest"] { display: none !important; }
-    option[value="Kalothswom"] { display: none !important; }
+    option[value=""] { display: none !important; }
 
 </style>
 
@@ -3081,14 +3081,17 @@
                     </div>
                     
                     <!-- Action Buttons -->
-                    <div style="display:flex; gap:8px; align-items:flex-end;">
-                        <button type="button" id="ecAdminAddBtn" class="action-btn success" style="display:none; padding:8px 14px;" onclick="openScheduleModal(null)">
-                            <i class="fas fa-plus-circle"></i> <span>Add Schedule Event</span>
-                        </button>
-                        <button type="button" class="action-btn gold" style="padding:8px 14px;" onclick="printEventChart()">
-                            <i class="fas fa-print"></i> <span>Print Chart</span>
-                        </button>
-                    </div>
+                    <div style="display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;">
+    <button type="button" id="ecAdminAddBtn" class="action-btn success" style="display:none; padding:7px 13px;" onclick="openScheduleModal(null)">
+        <i class="fas fa-plus-circle"></i> <span>Add Event</span>
+    </button>
+    <button type="button" class="action-btn" style="padding:7px 13px;" onclick="openEventChartReport(false)" title="View Programme Schedule Chart">
+        <i class="fas fa-eye"></i> <span>View</span>
+    </button>
+    <button type="button" class="action-btn gold" style="padding:7px 13px;" onclick="openEventChartReport(true)" title="Print Programme Schedule Chart">
+        <i class="fas fa-print"></i> <span>Print</span>
+    </button>
+</div>
                 </div>
             </div>
 
@@ -4364,6 +4367,52 @@
         </div>
     </div>
 </div>
+
+<!-- EVENT CHART PROGRAMME REPORT MODAL (MATCHING FEST PARTICIPANTS REPORT) -->
+<div id="eventChartModal">
+    <div class="report-modal-content">
+        <div class="report-modal-header no-print">
+            <button class="action-btn secondary" onclick="closeEventChartReport()" title="Back to Event Chart">
+                <i class="fas fa-arrow-left"></i> <span>Back</span>
+            </button>
+            <h3 style="margin:0; color:var(--text-main); font-size:17px;">
+                <i class="fas fa-calendar-check"></i> Programme Schedule Directory
+            </h3>
+            <button class="action-btn gold" onclick="printModalDocument('eventChartModal', 'portrait')" title="Print Schedule Report">
+                <i class="fas fa-print"></i> <span>Print Schedule (A4)</span>
+            </button>
+        </div>
+
+        <div class="modal-scroll-body" id="printableEventChartArea">
+            <div style="text-align:center; margin-bottom:16px;">
+                <h2 style="margin:0; color:#0c3c78; font-size:20px;">THIRUMALA DEVASWOM TEACHER TRAINING INSTITUTE</h2>
+                <h4 style="margin:3px 0; color:#555;">THURAVOOR, ALAPPUZHA - UTHSAV ANNUAL MEET</h4>
+                <div style="font-size:15px; font-weight:bold; color:var(--primary); margin-top:5px;" id="eventChartHeaderTitle">OFFICIAL PROGRAMME SCHEDULE DIRECTORY</div>
+                <div style="font-size:11.5px; color:#888;" id="eventChartMetaInfo">Generated on: DD.MM.YYYY</div>
+            </div>
+
+            <div id="eventChartReportContent"></div>
+
+            <!-- Official Signatories Footer -->
+            <div style="display:flex; justify-content:space-between; margin-top:35px; padding:0 15px;">
+                <div style="text-align:center;">
+                    <b id="eventChartReportConvenorName">General Convenor</b><br>
+                    <span style="font-size:11px; color:#555;">Programme Committee</span>
+                </div>
+                <div style="text-align:center;">
+                    <div style="width:65px; height:65px; border:2px dashed #bbb; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto; font-size:11px; color:#888;">
+                        (Seal)
+                    </div>
+                </div>
+                <div style="text-align:center;">
+                    <b>Principal</b><br>
+                    <span style="font-size:11px; color:#555;">TDTTI Thuravoor</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- 5. SUB-DISTRICT LEVEL QUALIFIED REPORT MODAL (DUAL SCROLL & COMPLETE PRINT) -->
 <div id="subDistrictModal">
@@ -11673,16 +11722,17 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         const isStudent = currentUser && currentUser.role === "Student";
         const isAdmin = currentUser && (currentUser.role === "Official" || (currentUser.access && currentUser.access.includes("3")));
 
-        // 1. Control Toolbar & Filter Visibility (Hidden for Students)
+        // 1. Control Toolbar & Filter Visibility
         const filtersGroup = document.getElementById('ecFiltersGroup');
         const toolbarSection = document.getElementById('ecToolbarSection');
         const adminAddBtn = document.getElementById('ecAdminAddBtn');
 
+        // Hide filter dropdowns for students, keep toolbar open for View/Print
         if (filtersGroup) {
             filtersGroup.style.display = isStudent ? 'none' : 'flex';
         }
         if (toolbarSection) {
-            toolbarSection.style.display = isStudent ? 'none' : 'block';
+            toolbarSection.style.display = 'block';
         }
         if (adminAddBtn) {
             adminAddBtn.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -12245,13 +12295,145 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         );
     }
 
-    function printEventChart() {
-        document.body.classList.remove('printing-cert', 'printing-report-portrait', 'printing-ll-portrait');
-        document.body.classList.add('printing-event-chart');
-        window.print();
-        document.body.classList.remove('printing-event-chart');
+    // --- EVENT CHART REPORT MODAL (VIEW & PRINT HANDLER) ---
+    function openEventChartReport(autoPrint = false) {
+        const modal = document.getElementById('eventChartModal');
+        const contentDiv = document.getElementById('eventChartReportContent');
+        if (!modal || !contentDiv) return;
+
+        const isStudent = currentUser && currentUser.role === "Student";
+        const catFilter = !isStudent ? (document.getElementById('ecFilterClassification')?.value || "ALL") : "ALL";
+        const festFilter = !isStudent ? (document.getElementById('ecFilterFest')?.value || "ALL") : "ALL";
+        const dayFilter = !isStudent ? (document.getElementById('ecFilterDay')?.value || "ALL") : "ALL";
+
+        let schedules = [...dbSchedules];
+
+        // Deduplicate records in memory by ID
+        const uniqueMap = new Map();
+        schedules.forEach(s => { if (s.id && !uniqueMap.has(s.id)) uniqueMap.set(s.id, s); });
+        schedules = Array.from(uniqueMap.values());
+
+        // Apply active toolbar filters
+        if (catFilter !== "ALL") {
+            schedules = schedules.filter(s => (s.festivalClassification || getFestivalCategory(s.festName)) === catFilter);
+        }
+        if (festFilter !== "ALL") {
+            schedules = schedules.filter(s => s.festName === festFilter || s.festName === "ALL");
+        }
+        if (dayFilter !== "ALL") {
+            schedules = schedules.filter(s => s.day === dayFilter);
+        }
+
+        // Header and Meta
+        let title = "OFFICIAL PROGRAMME SCHEDULE DIRECTORY";
+        if (festFilter !== "ALL") {
+            title = `${festFilter.toUpperCase()} - PROGRAMME SCHEDULE DIRECTORY`;
+        } else if (catFilter !== "ALL") {
+            title = `${catFilter.toUpperCase()} - PROGRAMME SCHEDULE DIRECTORY`;
+        }
+        document.getElementById('eventChartHeaderTitle').innerText = title;
+        document.getElementById('eventChartMetaInfo').innerText = `Total Scheduled Items: ${schedules.length} | Generated on: ${new Date().toLocaleString('en-IN')}`;
+
+        const convName = (festFilter !== "ALL" && dbSettings.FestConvenors && dbSettings.FestConvenors[festFilter])
+            ? dbSettings.FestConvenors[festFilter]
+            : "THEJAS R";
+        const convenorLabel = document.getElementById('eventChartReportConvenorName');
+        if (convenorLabel) convenorLabel.innerText = convName;
+
+        if (schedules.length === 0) {
+            contentDiv.innerHTML = `<p style="text-align:center; color:#94a3b8; padding:30px;">No scheduled programme items found matching this filter.</p>`;
+        } else {
+            // Group schedules by Day (Day I, Day II, Day III...)
+            const daysMap = {};
+            schedules.forEach(s => {
+                const rawDay = s.day || "Day I";
+                let dayKey = rawDay;
+                if (rawDay.toLowerCase().includes("1") || rawDay === "Day I") dayKey = "Day I";
+                else if (rawDay.toLowerCase().includes("2") || rawDay === "Day II") dayKey = "Day II";
+                else if (rawDay.toLowerCase().includes("3") || rawDay === "Day III") dayKey = "Day III";
+
+                if (!daysMap[dayKey]) daysMap[dayKey] = [];
+                daysMap[dayKey].push(s);
+            });
+
+            const dayOrder = ["Day I", "Day II", "Day III", "Day IV"];
+            const sortedDays = Object.keys(daysMap).sort((a, b) => {
+                const idxA = dayOrder.indexOf(a);
+                const idxB = dayOrder.indexOf(b);
+                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                return a.localeCompare(b);
+            });
+
+            let tablesHTML = "";
+            sortedDays.forEach((dayKey, dIdx) => {
+                const events = daysMap[dayKey];
+                events.sort((a, b) => (parseInt(a.order) || 999) - (parseInt(b.order) || 999) || String(a.time).localeCompare(String(b.time)));
+
+                const scheduleDate = events[0].date || "";
+
+                tablesHTML += `
+                    <div style="margin-bottom:18px;">
+                        <div style="background:#f1f5f9; border-left:4px solid var(--accent); padding:6px 12px; font-weight:800; font-size:12.5px; color:#0f172a; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+                            <span><i class="fas fa-calendar-day"></i> DAY ${dIdx + 1} (${dayKey.toUpperCase()})</span>
+                            <span style="font-size:11px; font-weight:600; color:#475569;">${scheduleDate ? `Date: ${scheduleDate} &bull; ` : ''}${events.length} Event(s)</span>
+                        </div>
+                        <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:12px;">
+                            <thead>
+                                <tr style="background:#f8fafc;">
+                                    <th style="width:40px; text-align:center;">#</th>
+                                    <th style="width:160px;">Time Slot</th>
+                                    <th>Programme Item</th>
+                                    <th style="width:140px;">Festival / Fest</th>
+                                    <th style="width:130px; text-align:center;">Current Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                events.forEach((ev, idx) => {
+                    const isCustom = ev.isCustom === true || !ev.itemCode || String(ev.itemCode).trim() === "" || ev.itemCode === "CUSTOM";
+                    let statusText = "-";
+
+                    if (!isCustom) {
+                        const liveStatus = getItemLiveStatus(ev.itemCode);
+                        if (liveStatus === "ACTIVE") statusText = "ACTIVE (Running Now)";
+                        else if (liveStatus === "COMPLETED") statusText = "COMPLETED";
+                        else statusText = "INACTIVE";
+                    }
+
+                    tablesHTML += `
+                        <tr>
+                            <td style="text-align:center; font-weight:700;">${idx + 1}</td>
+                            <td><b>${ev.time || 'TBD'}</b></td>
+                            <td>
+                                <b>${ev.itemName}</b>
+                                ${ev.itemCode ? `<span style="font-family:monospace; color:#2563eb; font-size:10px; margin-left:4px;">[${ev.itemCode}]</span>` : ''}
+                            </td>
+                            <td>${ev.festName === 'ALL' ? 'All Festivals' : ev.festName}</td>
+                            <td style="text-align:center; font-weight:700;">${statusText}</td>
+                        </tr>
+                    `;
+                });
+
+                tablesHTML += `</tbody></table></div>`;
+            });
+
+            contentDiv.innerHTML = tablesHTML;
+        }
+
+        modal.style.display = 'flex';
+
+        if (autoPrint) {
+            setTimeout(() => {
+                printModalDocument('eventChartModal', 'portrait');
+            }, 300);
+        }
     }
 
+    function closeEventChartReport() {
+        const modal = document.getElementById('eventChartModal');
+        if (modal) modal.style.display = 'none';
+    }
     // Helper: Resizes and compresses images so multiple pages easily fit in Firestore (< 150KB per page)
     function compressImageFile(file, maxWidth = 1200, quality = 0.78) {
         return new Promise((resolve, reject) => {
