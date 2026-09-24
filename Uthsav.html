@@ -2712,6 +2712,74 @@
     }
 
     /* ==========================================================================
+       23. QUICK SPORTS REGISTRATION (MULTI-ITEM RAPID ENTRY)
+       ========================================================================== */
+    .quick-sports-section {
+        background: #ffffff;
+        border: 1.5px solid #10b981;
+        border-left: 6px solid #059669;
+        border-radius: var(--radius-lg);
+        padding: 18px 22px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow-sm);
+    }
+    .quick-sports-student-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        padding: 12px 16px;
+        border-radius: var(--radius-md);
+        margin: 12px 0 16px 0;
+    }
+    .quick-sports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+        max-height: 420px;
+        overflow-y: auto;
+        padding: 4px;
+    }
+    .quick-sports-tile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        background: #ffffff;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.15s ease;
+    }
+    .quick-sports-tile:hover {
+        border-color: #10b981;
+        background: #f0fdf4;
+    }
+    .quick-sports-tile.selected {
+        border-color: #059669;
+        background: #ecfdf5;
+        box-shadow: 0 1px 3px rgba(5, 150, 105, 0.15);
+    }
+    .quick-sports-tile.disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: #f1f5f9 !important;
+        border-color: var(--border) !important;
+    }
+    .quick-sports-tile input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        margin: 0;
+        accent-color: #059669;
+    }
+
+    /* ==========================================================================
        MULTI-LOT EVALUATION SCOREBOARD STYLES
        ========================================================================== */
     .multi-lot-table {
@@ -2800,6 +2868,59 @@
         margin-bottom: 10px;
         border-bottom: 1px solid var(--border-subtle);
     }
+
+
+    /* ==========================================================================
+       RESTRUCTURED ADMIN JUDGES PANEL ON JUDGEMENT CARDS
+       ========================================================================== */
+    .admin-card-judges-panel {
+        background: var(--surface-subtle);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        margin-top: 10px;
+    }
+    .admin-card-judges-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 11.5px;
+    }
+    .admin-judge-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 11.5px;
+        margin-bottom: 5px;
+        transition: background 0.12s ease;
+    }
+    .admin-judge-row:last-child {
+        margin-bottom: 0;
+    }
+    .admin-judge-row:hover {
+        background: #f8fafc;
+    }
+    .master-judge-pill {
+        background: #f5f3ff;
+        color: #7c3aed;
+        border: 1px solid #ddd6fe;
+        font-size: 9px;
+        font-weight: 800;
+        padding: 1px 6px;
+        border-radius: 3px;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+    }
+    
 
     option[value="Fest"] { display: none !important; }
     option[value=""] { display: none !important; }
@@ -2963,6 +3084,101 @@
                 <h2 style="color:#d35400; margin:0 0 10px 0;">Registration is currently closed.</h2>
                 <p id="regCustomMsg" style="font-size:16px; font-weight:bold; margin:0;"></p>
             </div>
+
+            <!-- QUICK SPORTS REGISTRATION (RAPID MULTI-ITEM ENTRY) -->
+            <div class="quick-sports-section" id="quickSportsSection">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1.5px solid #edf2f7; padding-bottom:10px;">
+                    <div>
+                        <h4 style="margin:0; font-size:16px; color:#065f46; display:flex; align-items:center; gap:8px;">
+                            <i class="fas fa-running" style="font-size:20px; color:#059669;"></i>
+                            <span>Quick Sports Registration (Multi-Item)</span>
+                        </h4>
+                        <small style="color:#64748b; font-size:12px;">Fetch participant details once, check off multiple sports items, and register instantly.</small>
+                    </div>
+                    <span class="badge-place place-2" style="font-size:11px; font-weight:800; background:#dcfce7; color:#166534; border:1px solid #86efac;">
+                        <i class="fas fa-bolt"></i> Instant Entry
+                    </span>
+                </div>
+
+                <!-- 1. Participant Search & Selection -->
+                <div style="margin-top:14px;">
+                    <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:6px;">
+                        <i class="fas fa-user-search"></i> 1. Fetch Participant Details:
+                    </label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="quickSportsSearchInput" 
+                               placeholder="🔍 Search candidate by Admission No, Name, or Class..." 
+                               oninput="searchQuickSportsStudent(this.value)" 
+                               autocomplete="off" style="width:100%;">
+                        <div id="quickSportsSearchResults" class="autocomplete-items"></div>
+                    </div>
+                </div>
+
+                <!-- 2. Candidate Details Card (Populated upon selection) -->
+                <div id="quickSportsStudentCard" class="quick-sports-student-card" style="display:none;">
+                    <div>
+                        <span style="font-size:11px; font-weight:800; color:#059669; text-transform:uppercase; letter-spacing:0.5px;">Selected Candidate:</span>
+                        <h3 id="quickSportsName" style="margin:2px 0; font-size:17px; color:#0f172a;">Candidate Name</h3>
+                        <div style="font-size:12px; color:#334155;">
+                            Admission No: <b id="quickSportsAdmn">-</b> &bull; 
+                            Class & Div: <b id="quickSportsClass">-</b> &bull; 
+                            Gender: <span id="quickSportsGender" style="font-weight:800; color:#059669;">-</span>
+                        </div>
+                    </div>
+                    <button type="button" class="action-btn secondary" style="padding:5px 12px; font-size:11.5px;" onclick="resetQuickSportsStudent()">
+                        <i class="fas fa-user-times"></i> Change Candidate
+                    </button>
+                </div>
+
+                <!-- NEW: Date of Birth & Age Category Determination Card -->
+                <div id="quickSportsDobContainer" style="display:none; margin: 12px 0; background: #ffffff; border: 1.5px dashed #059669; border-radius: var(--radius-md); padding: 14px 18px;">
+                    <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-items: center; gap: 14px;">
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size:12.5px; font-weight:700; color:#0f172a; display:flex; align-items:center; gap:6px;">
+                                <i class="fas fa-birthday-cake" style="color:#ec4899;"></i> 
+                                <span>Date of Birth (DOB)</span>
+                                <span style="color:var(--danger);">*</span>
+                            </label>
+                            <input type="date" id="quickSportsDobInput" onchange="onQuickSportsDobChange(this.value)" required style="font-weight:700; font-size:14px; padding:8px 12px;">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size:12px; font-weight:700; color:#475569;">Verified Age Category:</label>
+                            <div id="quickSportsAgeCategoryDisplay" style="min-height:36px; display:flex; align-items:center;">
+                                <span style="color:#94a3b8; font-size:12.5px; font-style:italic;">Enter Date of Birth to unlock events</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Multiple Sports Items Selection -->
+                <div id="quickSportsItemsArea" style="display:none; margin-top:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">
+                        <label style="font-size:12.5px; font-weight:700; color:#1e293b; margin:0;">
+                            <i class="fas fa-medal" style="color:#d97706;"></i> 2. Select Sports Events:
+                        </label>
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" class="action-btn secondary" style="padding:3px 8px; font-size:11px;" onclick="toggleAllQuickSports(true)">Select All</button>
+                            <button type="button" class="action-btn secondary" style="padding:3px 8px; font-size:11px;" onclick="toggleAllQuickSports(false)">Deselect All</button>
+                        </div>
+                    </div>
+
+                    <!-- Items Grid -->
+                    <div id="quickSportsGrid" class="quick-sports-grid">
+                        <p style="color:#94a3b8; font-size:12px; grid-column:1/-1;">Select a candidate above to view eligible sports items.</p>
+                    </div>
+
+                    <!-- Save Action Bar -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:16px; border-top:1.5px solid #edf2f7; padding-top:14px;">
+                        <div style="font-size:13px; font-weight:700; color:#334155;">
+                            Selected: <span id="quickSportsSelectedCount" style="color:#059669; font-weight:800; font-size:15px;">0</span> items
+                        </div>
+                        <button type="button" id="btnQuickSportsSubmit" class="action-btn success" style="padding:10px 22px; font-size:14px;" onclick="saveQuickSportsRegistration()">
+                            <i class="fas fa-bolt"></i> Register Selected Items Instantly
+                        </button>
+                    </div>
+                </div>
+            </div>
+
 
             <form id="registrationForm" onsubmit="submitForm(event)">
                 <div class="section">
@@ -3678,7 +3894,7 @@
                     </div>
                 </div>
 
-                <<!-- MULTI-LOT EVALUATION BOARD -->
+                <!-- MULTI-LOT EVALUATION BOARD -->
                 <div class="section" id="singleLotSection" style="display:none;">
                     <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <span style="display:flex; align-items:center; gap:8px;">
@@ -3707,25 +3923,7 @@
                     <div id="multiLotEvaluationContainer">
                         <p style="text-align:center; color:#94a3b8; padding:30px;">Loading evaluation lots...</p>
                     </div>
-                </div>
-
-                    <div class="row" style="margin-bottom:15px; align-items:flex-end;">
-                        <div class="form-group" style="margin:0;">
-                            <label>Select Lot Number</label>
-                            <select id="judgeCurrentLotSelect" onchange="renderCurrentLotCard()"></select>
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label>Attendance Status</label>
-                            <div class="tap-switch-group" style="width:100%;">
-                                <button type="button" id="attPresentBtn" class="tap-btn active success" style="flex:1;" onclick="setLotAttendance(true)">
-                                    <i class="fas fa-user-check"></i> Present
-                                </button>
-                                <button type="button" id="attAbsentBtn" class="tap-btn" style="flex:1;" onclick="setLotAttendance(false)">
-                                    <i class="fas fa-user-slash"></i> Absent
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                
 
                     <div id="singleLotCardContainer"></div>
 
@@ -3883,6 +4081,17 @@
                         <input type="text" id="adminGlobalMsg" placeholder="e.g. Closed for Tabulation">
                     </div>
                 </div>
+                <div class="form-group">
+                        <label>Quick Sports Registration (Multi-Item)</label>
+                        <div class="tap-switch-group">
+                            <button type="button" id="tapQuickSportsShow" class="tap-btn active success" onclick="setTapSetting('Quick_Sports_Visible', 'SHOW')">
+                                <i class="fas fa-eye"></i> SHOW
+                            </button>
+                            <button type="button" id="tapQuickSportsHide" class="tap-btn" onclick="setTapSetting('Quick_Sports_Visible', 'HIDE')">
+                                <i class="fas fa-eye-slash"></i> HIDE
+                            </button>
+                        </div>
+                    </div>
                 <button class="action-btn" onclick="saveAdminSettings()"><i class="fas fa-save"></i> Save System Settings</button>
             </div>
 
@@ -4850,6 +5059,13 @@
         
         const tabBtn = document.getElementById('btn' + tabId);
         if (tabBtn) tabBtn.classList.add('active');
+
+        if (tabId === 'RegTab') {
+        initQuickSportsSection();
+        if (currentUser && currentUser.role !== 'Student') {
+            renderStudentMasterTable();
+        }
+    }
 
         if (tabId === 'ResultTab') {
             const badge = document.getElementById('resultNewBadge');
@@ -6141,7 +6357,9 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         if (!modal) return;
 
         const isCert = (modalId === 'certModal' || orientation === 'landscape');
-        
+        if (isCert && currentActiveCertResult) {
+        markCertificateAsPrinted(currentActiveCertResult.id); // <-- Record print if printed from modal preview
+    }
         // Remove prior printing classes
         document.body.classList.remove('printing-cert', 'printing-report-portrait', 'printing-ll-portrait');
 
@@ -6829,18 +7047,18 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         const createCardHTML = (f, statusClass) => {
             const code = f["Item Code"];
+            const cleanCode = String(code).trim().toLowerCase();
             const festName = f["Fest Name"];
             const itemName = f["Item"];
             const category = f["Category"] || "General";
 
+            // Live active tracking
             const livePresence = dbSettings.LiveJudgeActiveItems && dbSettings.LiveJudgeActiveItems[code];
             const now = Date.now();
             const lastPing = livePresence ? (livePresence.lastPing || livePresence.selectedAt || 0) : 0;
             const isFresh = livePresence && (now - lastPing < 15000);
-            
-            const isBeingEvaluated = !!livePresence && isFresh;
-            const activeJudgeName = livePresence ? (livePresence.judgeName || "Judge") : "";
 
+            // Participants and Attendance
             const regs = dbRegistrations.filter(r => r["Item Code"] === code || r["Item"] === itemName);
             const totalParticipants = regs.length;
 
@@ -6869,21 +7087,94 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                 else presentCount++;
             });
 
-            const assignedJudges = dbJudges.filter(j => (j.assignedItems || []).includes(code)).map(j => j.name);
-            const judgeListText = assignedJudges.length > 0 ? assignedJudges.join(", ") : "No judge allotted";
+            // -----------------------------------------------------------------
+            // RESTRUCTURED JUDGES SECTION (ALPHABETICAL A-Z, FULL CAPS, LIVE LEDS)
+            // -----------------------------------------------------------------
+            const assignedJudges = dbJudges.filter(j => 
+                (j.assignedItems || []).some(c => String(c).trim().toLowerCase() === cleanCode)
+            );
+
+            // 1. Sort Judges in Alphabetical Order (A-Z)
+            assignedJudges.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+
+            // 2. Identify Master Judge
+            const masterJudgeObj = assignedJudges.find(j => isJudgeMasterForItem(j, code));
+            const masterJudgeName = masterJudgeObj ? String(masterJudgeObj.name || "").toUpperCase() : "NOT DESIGNATED";
+
+            let judgeRowsHTML = "";
+
+            if (assignedJudges.length === 0) {
+                judgeRowsHTML = `
+                    <div style="padding:8px 10px; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; font-size:11.5px; color:#94a3b8; text-align:center;">
+                        No judges allotted yet
+                    </div>
+                `;
+            } else {
+                assignedJudges.forEach(j => {
+                    const jPhone = String(j.phone || "").trim();
+                    const jName = String(j.name || "").trim().toLowerCase();
+                    const judgeUpperName = String(j.name || "").toUpperCase();
+                    const isMaster = isJudgeMasterForItem(j, code);
+
+                    // Check if this judge submitted their scorecard
+                    const hasSubmitted = dbJudgeScores.some(s => 
+                        String(s.itemCode).trim().toLowerCase() === cleanCode && 
+                        s.locked === true &&
+                        (
+                            (s.judgePhone && String(s.judgePhone).trim() === jPhone) ||
+                            (s.judgeName && String(s.judgeName).trim().toLowerCase() === jName)
+                        )
+                    );
+
+                    // Check if this judge is currently active/evaluating
+                    const isLiveJudge = isFresh && (
+                        (livePresence.judgePhone && String(livePresence.judgePhone).trim() === jPhone) ||
+                        (livePresence.judgeName && String(livePresence.judgeName).trim().toLowerCase() === jName)
+                    );
+
+                    let statusText = "INACTIVE";
+                    let ledClass = "led-grey";
+                    let statusColor = "#64748b";
+                    let statusKey = "inactive";
+
+                    if (hasSubmitted) {
+                        statusText = "COMPLETED";
+                        ledClass = "led-orange";
+                        statusColor = "#d97706";
+                        statusKey = "completed";
+                    } else if (isLiveJudge) {
+                        statusText = "ACTIVE";
+                        ledClass = "led-green-pulse";
+                        statusColor = "#059669";
+                        statusKey = "active";
+                    }
+
+                    judgeRowsHTML += `
+                        <div class="admin-judge-row">
+                            <div style="display:flex; align-items:center; gap:6px; overflow:hidden;">
+                                <span class="led-indicator ${ledClass}" style="margin:0;" title="${statusText}"></span>
+                                <span style="font-weight:800; color:#0f172a; letter-spacing:0.3px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">
+                                    ${judgeUpperName}
+                                </span>
+                                ${isMaster ? `<span class="master-judge-pill">MASTER JUDGE</span>` : ''}
+                            </div>
+                            <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+                                <span class="judge-status-badge" data-itemcode="${code}" data-status="${statusKey}" style="font-size:10.5px; font-weight:800; color:${statusColor};">
+                                    ${statusText}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
 
             return `
                 <div class="admin-judge-card ${statusClass}">
                     <div>
+                        <!-- Header with Item Code (EVALUATING badge removed) -->
                         <div class="admin-judge-card-header">
                             <span class="fest-badge">${festName}</span>
                             <div style="display:flex; align-items:center; gap:6px;">
-                                ${isBeingEvaluated ? `
-                                    <span class="eval-active-pill" data-itemcode="${code}" title="Judge ${activeJudgeName} is currently evaluating this item!">
-                                        <span class="led-indicator led-green-pulse"></span>
-                                        <span style="font-size:10px; font-weight:800; color:#059669;">EVALUATING</span>
-                                    </span>
-                                ` : ''}
                                 <span style="font-size:11px; font-weight:700; color:var(--text-muted); font-family:monospace;">[${code}]</span>
                             </div>
                         </div>
@@ -6891,6 +7182,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Category: <b>${category}</b></div>
                     </div>
 
+                    <!-- Statistics Grid -->
                     <div class="admin-stats-grid">
                         <div class="admin-stat-item">
                             <span class="admin-stat-label">Participants:</span>
@@ -6910,8 +7202,19 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         </div>
                     </div>
 
-                    <div style="font-size:11px; color:var(--text-muted); border-top:1px solid var(--border-subtle); padding-top:6px;">
-                        <i class="fas fa-user-tie"></i> <b>Judges:</b> ${judgeListText}
+                    <!-- Restructured Judges Panel -->
+                    <div class="admin-card-judges-panel">
+                        <div class="admin-card-judges-head">
+                            <span style="font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:5px;">
+                                <i class="fas fa-gavel" style="color:var(--purple);"></i> NO. OF JUDGES: ${assignedJudges.length}
+                            </span>
+                            <span style="font-size:10.5px; font-weight:700; color:#475569;">
+                                MASTER: <b style="color:var(--purple);">${masterJudgeName}</b>
+                            </span>
+                        </div>
+                        <div style="display:flex; flex-direction:column;">
+                            ${judgeRowsHTML}
+                        </div>
                     </div>
                 </div>
             `;
@@ -7381,7 +7684,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                 renderCriteriaChips(true);
                 if (confirmedBadge) confirmedBadge.style.display = 'flex';
                 if (singleLotSec) singleLotSec.style.display = 'block';
-                updateLotDropdownAndProgress();
+                renderMultiLotEvaluation();
             } else {
                 if (criteriaSec) criteriaSec.style.display = 'none';
                 if (singleLotSec) singleLotSec.style.display = 'none';
@@ -7442,7 +7745,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             if (confirmedBadge) confirmedBadge.style.display = 'block';
             if (singleLotSec) singleLotSec.style.display = 'block';
 
-            updateLotDropdownAndProgress();
+            renderMultiLotEvaluation();
 
             hideLoader();
             showCustomDialog("Criteria Confirmed", "Evaluation criteria confirmed and locked. Marks entry is now unlocked for all judges.", "success");
@@ -7754,13 +8057,164 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
     
+    function updateMultiLotProgress() {
+        // ... (existing multi-lot progress code) ...
+    }
+
+
+    // ==========================================================================
+    // PASTE saveCurrentLotMarks() RIGHT HERE
+    // ==========================================================================
+    function saveCurrentLotMarks() {
+        if (!currentJudgeSession || !currentJudgeSession.criteriaConfirmed) {
+            return showCustomDialog("Action Locked", "Marks cannot be saved until the Master Judge confirms evaluation criteria.", "warning");
+        }
+
+        const units = currentJudgeSession.units || [];
+        if (units.length === 0) {
+            return showCustomDialog("No Lots", "No registered lots found to evaluate for this item.", "warning");
+        }
+
+        const multiInputs = document.querySelectorAll('.multi-lot-score-input');
+
+        if (multiInputs.length > 0) {
+            if (!currentJudgeSession.unitScores) currentJudgeSession.unitScores = {};
+            if (!currentJudgeSession.savedUnitIds) currentJudgeSession.savedUnitIds = new Set();
+
+            let evaluatedCount = 0;
+
+            units.forEach(u => {
+                let data = currentJudgeSession.unitScores[u.id];
+                if (!data) {
+                    data = {
+                        unitId: u.id,
+                        lotNumber: u["Lot Number"] || "N/A",
+                        critMap: {},
+                        score: 0,
+                        maxMarks: (currentJudgeCriteria.length || 1) * 10,
+                        percentage: 0,
+                        grade: "D",
+                        isAbsent: false,
+                        isEvaluated: false
+                    };
+                    currentJudgeSession.unitScores[u.id] = data;
+                }
+
+                const isAbsent = (data.isAbsent === true);
+                const critMap = {};
+                let sum = 0;
+
+                const inputs = document.querySelectorAll(`.multi-lot-score-input[data-unitid="${u.id}"]`);
+                inputs.forEach(inp => {
+                    const critName = inp.dataset.crit;
+                    let val = parseFloat(inp.value) || 0;
+                    if (val > 10) val = 10;
+                    if (val < 0) val = 0;
+                    critMap[critName] = isAbsent ? 0 : val;
+                    sum += (isAbsent ? 0 : val);
+                });
+
+                data.critMap = critMap;
+                data.maxMarks = (currentJudgeCriteria.length || 1) * 10;
+
+                if (isAbsent) {
+                    data.score = 0;
+                    data.percentage = 0;
+                    data.grade = "Absent";
+                    data.isEvaluated = true;
+                } else {
+                    data.score = sum;
+                    data.percentage = data.maxMarks > 0 ? (sum / data.maxMarks) * 100 : 0;
+                    data.grade = calculateGrade(data.percentage).grade;
+                    if (sum > 0 || data.isEvaluated) {
+                        data.isEvaluated = true;
+                    }
+                }
+
+                if (data.isEvaluated || isAbsent || sum > 0) {
+                    currentJudgeSession.savedUnitIds.add(u.id);
+                    evaluatedCount++;
+                }
+
+                const totalEl = document.getElementById(`total_${u.id}`);
+                const gradeEl = document.getElementById(`grade_${u.id}`);
+                if (totalEl) totalEl.innerText = data.score.toFixed(1);
+                if (gradeEl) {
+                    gradeEl.innerText = data.grade;
+                    gradeEl.className = `badge-place ${data.grade === 'A' ? 'place-1' : (data.grade === 'B' ? 'place-2' : (data.grade === 'C' ? 'place-3' : 'place-other'))}`;
+                }
+
+                const cardTotalEl = document.getElementById(`card_total_${u.id}`);
+                const cardGradeEl = document.getElementById(`card_grade_${u.id}`);
+                if (cardTotalEl) cardTotalEl.innerText = data.score.toFixed(1);
+                if (cardGradeEl) {
+                    cardGradeEl.innerText = data.grade;
+                    cardGradeEl.className = `badge-place ${data.grade === 'A' ? 'place-1' : (data.grade === 'B' ? 'place-2' : (data.grade === 'C' ? 'place-3' : 'place-other'))}`;
+                }
+            });
+
+            if (typeof updateMultiLotProgress === "function") {
+                updateMultiLotProgress();
+            }
+
+            const finalizeSec = document.getElementById('finalizeJudgementSection');
+            if (finalizeSec) finalizeSec.style.display = 'block';
+
+            showCustomDialog(
+                "Marks Recorded", 
+                `Marks for <b>${evaluatedCount} of ${units.length} lots</b> have been updated.<br><br>` +
+                `You can modify scores at any time or click <b>Finalize & Lock Judgement</b> when ready.`, 
+                "success"
+            );
+            return;
+        }
+
+        const lotSelect = document.getElementById('judgeCurrentLotSelect');
+        const unitId = lotSelect?.value;
+        if (!unitId) return;
+
+        const unit = units.find(u => u.id === unitId);
+        const lotNumber = unit ? (unit["Lot Number"] || "N/A") : "N/A";
+        const isAbsent = (currentJudgeSession.isAbsent === true);
+        const totalInp = document.getElementById('singleLotTotalScore');
+        const score = isAbsent ? 0 : (parseFloat(totalInp ? totalInp.value : 0) || 0);
+        const maxMarks = (currentJudgeCriteria.length || 1) * 10;
+        const percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
+        const grade = isAbsent ? "Absent" : calculateGrade(percentage).grade;
+
+        const critMap = {};
+        document.querySelectorAll('.single-crit-input').forEach(inp => {
+            critMap[inp.dataset.crit] = isAbsent ? 0 : (parseFloat(inp.value) || 0);
+        });
+
+        if (!currentJudgeSession.unitScores) currentJudgeSession.unitScores = {};
+        if (!currentJudgeSession.savedUnitIds) currentJudgeSession.savedUnitIds = new Set();
+
+        currentJudgeSession.unitScores[unitId] = {
+            unitId: unitId,
+            lotNumber: lotNumber,
+            score: score,
+            maxMarks: maxMarks,
+            percentage: percentage,
+            grade: grade,
+            critMap: critMap,
+            isAbsent: isAbsent,
+            isEvaluated: true
+        };
+
+        currentJudgeSession.savedUnitIds.add(unitId);
+
+        if (typeof updateLotDropdownAndProgress === "function") {
+            updateLotDropdownAndProgress();
+        } else if (typeof updateMultiLotProgress === "function") {
+            updateMultiLotProgress();
+        }
+
+        showCustomDialog("Lot Saved", `Marks for <b>Lot ${lotNumber}</b> recorded successfully.`, "success");
+    }
+      
 
     
-
-    
-
-    
-
     // ==========================================================================
     // FINALIZE & LOCK JUDGEMENT (INDEPENDENT SUBMISSION - NO WAITING)
     // ==========================================================================
@@ -8505,20 +8959,26 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                                 <td style="text-align:center;"><span style="font-weight:bold; color:var(--primary);">${row.grade}</span></td>
                                 <td style="text-align:center;"><span class="badge-place ${placeBadge}">${row.place}</span></td>
                                 <td style="text-align:center;">
-                                    <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
-                                        <button class="action-btn" style="padding:5px 8px; font-size:12px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-btn gold" style="padding:5px 8px; font-size:12px;" title="Print Certificate" onclick="openCertificateModal('${row.id}', true)">
-                                            <i class="fas fa-print"></i>
-                                        </button>
-                                        ${!isStudent ? `
-                                            <button class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        ` : ''}
-                                    </div>
-                                </td>
+        ${(() => {
+            const isPrinted = isCertificatePrinted(row.id, row);
+            return `
+                <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
+                    <button type="button" class="action-btn" style="padding:5px 8px; font-size:12px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <!-- Fades only the print icon if printed previously, remains fully clickable to print again -->
+                    <button type="button" class="action-btn gold" id="print_btn_${row.id}" style="padding:5px 8px; font-size:12px;" title="${isPrinted ? 'Print already taken (Click to print again)' : 'Print Certificate'}" onclick="openCertificateModal('${row.id}', true)">
+                        <i class="fas fa-print" id="print_icon_${row.id}" style="${isPrinted ? 'opacity: 0.35;' : ''}"></i>
+                    </button>
+                    ${!isStudent ? `
+                        <button type="button" class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        })()}
+    </td>
                             </tr>
                         `;
                     });
@@ -8706,10 +9166,11 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         modal.style.display = 'flex';
 
         if (autoPrint) {
-            setTimeout(() => {
-                printModalDocument('resultReportModal', 'portrait');
-            }, 300);
-        }
+        markCertificateAsPrinted(resId); // <-- Record print
+        setTimeout(() => {
+            printModalDocument('certModal', 'landscape');
+        }, 350);
+    }
     }
 
     function closeResultsReport() {
@@ -9103,8 +9564,17 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
     function setTapSetting(key, val) {
         dbSettings[key] = val;
         updateTapButtonUI();
+
         if (key === 'Content_Protection') {
             applySecurityProtection();
+        }
+
+        // Instantly update Quick Sports visibility on current screen & save to Firestore for all users
+        if (key === 'Quick_Sports_Visible') {
+            initQuickSportsSection();
+            db.collection("config").doc("settings").set({
+                Quick_Sports_Visible: val
+            }, { merge: true }).catch(err => console.error("Error updating Quick Sports setting:", err));
         }
     }
 
@@ -9127,7 +9597,16 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             btnStudentHide.className = `tap-btn ${!isStudentShow ? 'active danger' : ''}`;
         }
 
-        // 3. Admin Judgement View Mode (Read-Only) Enabled / Disabled
+        // 3. Quick Sports Registration (Multi-Item) Show / Hide
+        const isQuickSportsShow = dbSettings.Quick_Sports_Visible !== "HIDE";
+        const btnQSShow = document.getElementById('tapQuickSportsShow');
+        const btnQSHide = document.getElementById('tapQuickSportsHide');
+        if (btnQSShow && btnQSHide) {
+            btnQSShow.className = `tap-btn ${isQuickSportsShow ? 'active success' : ''}`;
+            btnQSHide.className = `tap-btn ${!isQuickSportsShow ? 'active danger' : ''}`;
+        }
+
+        // 4. Admin Judgement View Mode (Read-Only) Enabled / Disabled
         const isAdminReadOnly = dbSettings.Admin_ReadOnly_Judgement !== "DISABLED";
         const btnAdminReadOnlyOn = document.getElementById('tapAdminReadOnlyOn');
         const btnAdminReadOnlyOff = document.getElementById('tapAdminReadOnlyOff');
@@ -9136,7 +9615,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             btnAdminReadOnlyOff.className = `tap-btn ${!isAdminReadOnly ? 'active primary' : ''}`;
         }
 
-        // 4. Content Protection (Anti-Copy / Inspect) Enabled / Disabled
+        // 5. Content Security Protection Enabled / Disabled
         const isProtected = dbSettings.Content_Protection === "ENABLED";
         const btnSecurityOn = document.getElementById('tapSecurityOn');
         const btnSecurityOff = document.getElementById('tapSecurityOff');
@@ -9145,7 +9624,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             btnSecurityOff.className = `tap-btn ${!isProtected ? 'active primary' : ''}`;
         }
 
-        // 5. Role-Based Navigation Tab Permissions
+        // 6. Role-Based Navigation Tab Permissions
         const studentTabs = dbSettings.Student_Allowed_Tabs || ["RegTab", "RecTab", "EventChartTab", "ResultTab", "SubDistrictTab"];
         const judgeTabs = dbSettings.Judge_Allowed_Tabs || ["JudgementTab", "EventChartTab", "RecTab", "TabulationTab", "ResultTab", "SubDistrictTab"];
 
@@ -9214,7 +9693,9 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         const canStudentSeeTab1 = isRegOpen && isRegVisibleSetting && hasEnabledFests && studentTabs.includes("RegTab");
 
-        // --- Tab Navigation Visibility Controls ---
+        // -------------------------------------------------------------
+        // 1. NAVIGATION TAB VISIBILITY (ROLE-BASED)
+        // -------------------------------------------------------------
         const btnReg = document.getElementById('btnRegTab');
         if (btnReg) btnReg.style.display = (isAdmin || (isStudent && canStudentSeeTab1)) ? 'flex' : 'none';
 
@@ -9247,7 +9728,9 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         const btnAdmin = document.getElementById('btnAdminTab');
         if (btnAdmin) btnAdmin.style.display = isAdmin ? 'flex' : 'none';
 
-        // --- Safe Route Redirect for Students if Tab 1 is Closed ---
+        // -------------------------------------------------------------
+        // 2. SAFE TAB REDIRECT FOR STUDENTS IF REGISTRATION IS CLOSED
+        // -------------------------------------------------------------
         const regContent = document.getElementById('RegTab');
         if (isStudent && !canStudentSeeTab1) {
             if (regContent) regContent.style.display = 'none';
@@ -9264,7 +9747,16 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             }
         }
 
-        // --- Student Global Notice Banner ---
+        // -------------------------------------------------------------
+        // 3. QUICK SPORTS REGISTRATION DISPLAY CHECK
+        // -------------------------------------------------------------
+        if (typeof initQuickSportsSection === "function") {
+            initQuickSportsSection();
+        }
+
+        // -------------------------------------------------------------
+        // 4. STUDENT GLOBAL NOTIFICATION BANNER
+        // -------------------------------------------------------------
         const studentNotice = document.getElementById('studentGlobalNoticeBanner');
         const studentNoticeText = document.getElementById('studentGlobalNoticeText');
         if (studentNotice && studentNoticeText) {
@@ -9283,10 +9775,22 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             }
         }
 
-        // --- Directory & Control Panels ---
+        // -------------------------------------------------------------
+        // 5. DIRECTORIES & FORM PANELS
+        // -------------------------------------------------------------
         const studentMasterSec = document.getElementById('studentMasterSection');
         if (studentMasterSec) {
             studentMasterSec.style.display = isStudent ? 'none' : 'block';
+        }
+
+        const adminFilters = document.getElementById('adminFilters');
+        if (adminFilters) {
+            adminFilters.style.display = isStudent ? 'none' : 'contents';
+        }
+
+        const adminReportControls = document.getElementById('adminReportControls');
+        if (adminReportControls) {
+            adminReportControls.style.display = isAdmin ? 'flex' : 'none';
         }
 
         if (dbSettings.Global_Registration === "CLOSED") {
@@ -9298,7 +9802,9 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             document.getElementById('regClosedMsg').style.display = 'none';
         }
 
-        // --- Report Filter Dropdown Sync ---
+        // -------------------------------------------------------------
+        // 6. REPORT FEST SELECTOR SYNC
+        // -------------------------------------------------------------
         const repFestSelect = document.getElementById('reportFestSelect');
         if (repFestSelect) {
             const curRepVal = repFestSelect.value;
@@ -9313,7 +9819,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         applySecurityProtection();
     }
-
+    
     async function renderAdminPanel() {
         // 1. Display Message & System Control Tap Switches
         const globalMsgInput = document.getElementById('adminGlobalMsg');
@@ -11021,11 +11527,11 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             const liveMap = dbSettings.LiveJudgeActiveItems || {};
             let hasExpired = false;
 
-            document.querySelectorAll('.eval-active-pill').forEach(pill => {
-                const code = pill.dataset.itemcode;
+            document.querySelectorAll('.judge-status-badge[data-itemcode]').forEach(el => {
+                const code = el.dataset.itemcode;
                 const presence = liveMap[code];
                 const lastPing = presence ? (presence.lastPing || presence.selectedAt || 0) : 0;
-                if (!presence || (now - lastPing >= 15000)) {
+                if (el.dataset.status === 'active' && (!presence || (now - lastPing >= 15000))) {
                     hasExpired = true;
                 }
             });
@@ -11233,6 +11739,9 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
     // BATCH PRINT: Generates and prints each group member's certificate on its own A4 sheet
     function printAllGroupCertificates() {
+        if (currentActiveCertResult) {
+        markCertificateAsPrinted(currentActiveCertResult.id); // <-- Record print for group certificates
+        }
         if (!currentCertMembers || !currentActiveCertResult) return;
 
         const wrapper = document.querySelector('.cert-scroll-wrapper');
@@ -12821,27 +13330,482 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
     
 
-    async function deleteNoticeBook() {
-        showCustomDialog(
-            "Remove Notice Book?",
-            "Are you sure you want to remove the published Notice Book from the Event Chart?",
-            "danger",
-            async () => {
-                showLoader("Removing Notice Book...");
-                try {
-                    await db.collection("config").doc("notice_book").delete();
-                    dbNoticeBook = null;
-                    hideLoader();
-                    renderAdminNoticeBookPanel();
-                    showCustomDialog("Removed", "Notice Book removed from Event Chart.", "success");
-                } catch (e) {
-                    hideLoader();
-                    showCustomDialog("Error", "Could not delete Notice Book.", "danger");
-                }
-            },
-            true
+// ==========================================================================
+    // 24. QUICK SPORTS REGISTRATION CONTROLLER (WITH DOB & AGE CATEGORIES)
+    // ==========================================================================
+    let currentQuickSportsStudent = null;
+    let currentQuickSportsDob = "";
+    let currentQuickSportsAgeCat = null;
+    let quickSportsAvailableItems = [];
+
+    // Helper: Calculates Age Category based on Date of Birth
+    function calculateSportsAgeCategory(dobStr) {
+        if (!dobStr) return null;
+        
+        // Normalize date to YYYY-MM-DD
+        let isoDate = "";
+        if (dobStr.includes("-")) {
+            const parts = dobStr.split("-");
+            if (parts[0].length === 4) {
+                isoDate = dobStr; // YYYY-MM-DD
+            } else if (parts[2].length === 4) {
+                isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`; // DD-MM-YYYY
+            }
+        } else if (dobStr.includes(":") || dobStr.includes("/")) {
+            const separator = dobStr.includes(":") ? ":" : "/";
+            const parts = dobStr.split(separator);
+            if (parts[2].length === 4) {
+                isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+        }
+
+        if (!isoDate) isoDate = dobStr;
+
+        // Criteria Evaluation
+        if (isoDate >= "2015-01-01") {
+            return {
+                category: "Kiddies",
+                title: "Kiddies (Under 12)",
+                rule: "Born on or after 01-01-2015",
+                badgeBg: "#fef3c7",
+                badgeColor: "#92400e",
+                badgeBorder: "#fde68a",
+                icon: "fa-child"
+            };
+        } else if (isoDate >= "2013-01-01") {
+            return {
+                category: "Sub Juniors",
+                title: "Sub Juniors (Under 14)",
+                rule: "Born on or after 01-01-2013",
+                badgeBg: "#dbeafe",
+                badgeColor: "#1e40af",
+                badgeBorder: "#bfdbfe",
+                icon: "fa-user"
+            };
+        } else {
+            return {
+                category: "DElED",
+                title: "DElED (Above 14)",
+                rule: "Born Before 01-01-2013",
+                badgeBg: "#d1fae5",
+                badgeColor: "#065f46",
+                badgeBorder: "#a7f3d0",
+                icon: "fa-user-graduate"
+            };
+        }
+    }
+
+    // Helper: Detects which age category a sports item belongs to
+    function getItemSportsAgeCategory(item) {
+        const text = `${item["Item"] || ""} ${item["Category"] || ""} ${item["Item Code"] || ""}`.toLowerCase();
+        
+        if (text.includes("kiddies") || text.includes("kiddy") || text.includes("under 12") || text.includes("u-12") || text.includes("u12") || text.includes("lp")) {
+            return "Kiddies";
+        }
+        if (text.includes("sub junior") || text.includes("sub-junior") || text.includes("subjuniors") || text.includes("sub-juniors") || text.includes("under 14") || text.includes("u-14") || text.includes("u14") || text.includes("up")) {
+            return "Sub Juniors";
+        }
+        if (text.includes("deled") || text.includes("d.el.ed") || text.includes("dled") || text.includes("ttc") || text.includes("above 14") || text.includes("senior")) {
+            return "DElED";
+        }
+        
+        return "General"; // Unrestricted or open sports items
+    }
+
+    function initQuickSportsSection() {
+        const section = document.getElementById('quickSportsSection');
+        if (!section) return;
+
+        // INSTANT HIDE CHECK: If disabled in System Control, hide immediately
+        if (dbSettings.Quick_Sports_Visible === "HIDE") {
+            section.style.display = 'none';
+            return;
+        }
+
+        // Verify if Sports festival is enabled
+        const sportsFests = allFestNames.filter(f => getFestivalCategory(f) === "Sports" && isFestEnabled(f));
+        if (sportsFests.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+        section.style.display = 'block';
+
+        // Auto-fetch if student is logged in
+        if (currentUser && currentUser.role === "Student") {
+            const st = dbStudents.find(s => String(s["Admission Number"]).trim() === String(currentUser.id).trim());
+            if (st) {
+                selectQuickSportsStudent(st);
+                const searchInp = document.getElementById('quickSportsSearchInput');
+                if (searchInp) searchInp.parentElement.style.display = 'none';
+                const changeBtn = document.querySelector('#quickSportsStudentCard button');
+                if (changeBtn) changeBtn.style.display = 'none';
+            }
+        }
+    }
+
+    function searchQuickSportsStudent(query) {
+        const q = String(query || "").trim().toLowerCase();
+        const resultsBox = document.getElementById('quickSportsSearchResults');
+        if (!resultsBox) return;
+        resultsBox.innerHTML = "";
+        if (!q) return;
+
+        const matches = dbStudents.filter(s => 
+            String(s["Admission Number"] || "").toLowerCase().includes(q) ||
+            String(s["Name"] || "").toLowerCase().includes(q) ||
+            String(s["Class"] || "").toLowerCase().includes(q)
+        ).slice(0, 10);
+
+        if (matches.length === 0) {
+            resultsBox.innerHTML = `<div style="padding:8px 12px; color:#94a3b8; font-size:12px;">No student found</div>`;
+            return;
+        }
+
+        matches.forEach(st => {
+            const div = document.createElement('div');
+            div.innerHTML = `<b>${st["Admission Number"]}</b> - ${st["Name"]} (${st["Class"]} ${st["Division"] || ''}) <span style="color:#059669; font-size:11px;">[${st["Gender"]}]</span>`;
+            div.onclick = () => selectQuickSportsStudent(st);
+            resultsBox.appendChild(div);
+        });
+    }
+
+    function selectQuickSportsStudent(st) {
+        currentQuickSportsStudent = st;
+
+        document.getElementById('quickSportsSearchResults').innerHTML = "";
+        const searchInput = document.getElementById('quickSportsSearchInput');
+        if (searchInput) searchInput.value = "";
+
+        document.getElementById('quickSportsName').innerText = st["Name"];
+        document.getElementById('quickSportsAdmn').innerText = st["Admission Number"];
+        document.getElementById('quickSportsClass').innerText = `${st["Class"]} ${st["Division"] || ''}`;
+        document.getElementById('quickSportsGender').innerText = st["Gender"] === 'M' ? 'Male (Boys)' : (st["Gender"] === 'F' ? 'Female (Girls)' : st["Gender"]);
+
+        document.getElementById('quickSportsStudentCard').style.display = 'flex';
+        document.getElementById('quickSportsDobContainer').style.display = 'block';
+
+        // Pre-fill DOB if stored in student master
+        const rawDob = st["DOB"] || st["Date of Birth"] || "";
+        const dobInput = document.getElementById('quickSportsDobInput');
+        if (rawDob && dobInput) {
+            let formatted = rawDob;
+            if (rawDob.includes(":") || rawDob.includes("/")) {
+                const sep = rawDob.includes(":") ? ":" : "/";
+                const p = rawDob.split(sep);
+                if (p[2]?.length === 4) formatted = `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+            }
+            dobInput.value = formatted;
+            onQuickSportsDobChange(formatted);
+        } else if (dobInput) {
+            dobInput.value = "";
+            onQuickSportsDobChange("");
+        }
+    }
+
+    function onQuickSportsDobChange(dobValue) {
+        currentQuickSportsDob = dobValue;
+        const display = document.getElementById('quickSportsAgeCategoryDisplay');
+        const itemsArea = document.getElementById('quickSportsItemsArea');
+
+        if (!dobValue) {
+            currentQuickSportsAgeCat = null;
+            if (display) {
+                display.innerHTML = `<span style="color:#94a3b8; font-size:12.5px; font-style:italic;">Enter Date of Birth to unlock events</span>`;
+            }
+            if (itemsArea) itemsArea.style.display = 'none';
+            return;
+        }
+
+        currentQuickSportsAgeCat = calculateSportsAgeCategory(dobValue);
+
+        if (display && currentQuickSportsAgeCat) {
+            display.innerHTML = `
+                <div style="background:${currentQuickSportsAgeCat.badgeBg}; color:${currentQuickSportsAgeCat.badgeColor}; border:1px solid ${currentQuickSportsAgeCat.badgeBorder}; padding:4px 12px; border-radius:6px; font-size:13px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+                    <i class="fas ${currentQuickSportsAgeCat.icon}"></i>
+                    <span>${currentQuickSportsAgeCat.title}</span>
+                    <small style="font-weight:600; opacity:0.85; margin-left:4px;">(${currentQuickSportsAgeCat.rule})</small>
+                </div>
+            `;
+        }
+
+        if (itemsArea) itemsArea.style.display = 'block';
+        renderQuickSportsItems();
+    }
+
+    function resetQuickSportsStudent() {
+        currentQuickSportsStudent = null;
+        currentQuickSportsDob = "";
+        currentQuickSportsAgeCat = null;
+
+        document.getElementById('quickSportsStudentCard').style.display = 'none';
+        document.getElementById('quickSportsDobContainer').style.display = 'none';
+        document.getElementById('quickSportsItemsArea').style.display = 'none';
+        document.getElementById('quickSportsGrid').innerHTML = "";
+        document.getElementById('quickSportsSelectedCount').innerText = "0";
+
+        const searchInp = document.getElementById('quickSportsSearchInput');
+        if (searchInp) {
+            searchInp.value = "";
+            searchInp.parentElement.style.display = 'block';
+            searchInp.focus();
+        }
+    }
+
+    // Renders sports items filtered by GENDER and AGE CATEGORY (Kiddies / Sub Juniors / DElED)
+    function renderQuickSportsItems() {
+        const grid = document.getElementById('quickSportsGrid');
+        if (!grid || !currentQuickSportsStudent || !currentQuickSportsAgeCat) return;
+        grid.innerHTML = "";
+
+        const stGender = String(currentQuickSportsStudent["Gender"] || "").trim().toUpperCase();
+        const stAdmn = String(currentQuickSportsStudent["Admission Number"]).trim();
+        const targetAgeGroup = currentQuickSportsAgeCat.category; // "Kiddies" | "Sub Juniors" | "DElED"
+
+        // 1. Filter enabled sports items matching GENDER and AGE CATEGORY
+        quickSportsAvailableItems = dbFests.filter(f => {
+            const isSports = getFestivalCategory(f["Fest Name"]) === "Sports";
+            const isEnabled = isFestEnabled(f["Fest Name"]);
+            
+            // Gender match
+            const cat = String(f["Category"] || "").trim().toUpperCase();
+            let genderMatch = true;
+            if (cat === 'M' && stGender !== 'M') genderMatch = false;
+            if (cat === 'F' && stGender !== 'F') genderMatch = false;
+
+            // Age category match
+            const itemAgeCat = getItemSportsAgeCategory(f);
+            let ageMatch = (itemAgeCat === targetAgeGroup || itemAgeCat === "General");
+
+            return isSports && isEnabled && genderMatch && ageMatch;
+        }).sort((a, b) => String(a["Item"]).localeCompare(String(b["Item"])));
+
+        if (quickSportsAvailableItems.length === 0) {
+            grid.innerHTML = `
+                <div style="grid-column:1/-1; padding:20px; text-align:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
+                    <i class="fas fa-info-circle" style="color:#64748b; font-size:18px; margin-bottom:6px;"></i>
+                    <div style="font-weight:700; color:#334155; font-size:13px;">No events found specifically for ${currentQuickSportsAgeCat.title} (${stGender === 'M' ? 'Boys' : 'Girls'}).</div>
+                    <small style="color:#94a3b8;">Add sports items tagged with '${currentQuickSportsAgeCat.category}' in the Bulk Items Directory.</small>
+                </div>
+            `;
+            return;
+        }
+
+        // 2. Existing registrations lookup
+        const existingRegs = new Set(
+            dbRegistrations.filter(r => 
+                String(r["Admission Number"]).trim() === stAdmn &&
+                (r["Festival Classification"] === "Sports" || getFestivalCategory(r["Name of Fest"]) === "Sports")
+            ).map(r => r["Item Code"] || r["Item"])
         );
-    }    
+
+        quickSportsAvailableItems.forEach((it, idx) => {
+            const isAlreadyRegistered = existingRegs.has(it["Item Code"]) || existingRegs.has(it["Item"]);
+            
+            const tile = document.createElement('div');
+            tile.className = `quick-sports-tile ${isAlreadyRegistered ? 'disabled' : ''}`;
+            tile.id = `qs_tile_${idx}`;
+
+            tile.innerHTML = `
+                <input type="checkbox" id="qs_chk_${idx}" value="${idx}" 
+                       ${isAlreadyRegistered ? 'disabled' : ''} 
+                       onchange="onQuickSportsCheckChanged(${idx})">
+                <div style="flex:1;">
+                    <div style="font-weight:700; font-size:13px; color:#0f172a;">${it["Item"]}</div>
+                    <div style="font-size:11px; color:#64748b;">
+                        Code: <b>${it["Item Code"] || '-'}</b> &bull; ${it["Category"] || 'General'}
+                    </div>
+                </div>
+                ${isAlreadyRegistered ? '<span class="badge-place place-2" style="font-size:10px; font-weight:700;">Already Registered</span>' : ''}
+            `;
+
+            if (!isAlreadyRegistered) {
+                tile.onclick = (e) => {
+                    if (e.target.tagName !== 'INPUT') {
+                        const chk = document.getElementById(`qs_chk_${idx}`);
+                        chk.checked = !chk.checked;
+                        onQuickSportsCheckChanged(idx);
+                    }
+                };
+            }
+
+            grid.appendChild(tile);
+        });
+
+        updateQuickSportsSelectedCount();
+    }
+
+    function onQuickSportsCheckChanged(idx) {
+        const chk = document.getElementById(`qs_chk_${idx}`);
+        const tile = document.getElementById(`qs_tile_${idx}`);
+        if (chk && tile) {
+            if (chk.checked) tile.classList.add('selected');
+            else tile.classList.remove('selected');
+        }
+        updateQuickSportsSelectedCount();
+    }
+
+    function updateQuickSportsSelectedCount() {
+        const selected = document.querySelectorAll('#quickSportsGrid input[type="checkbox"]:checked');
+        const countSpan = document.getElementById('quickSportsSelectedCount');
+        if (countSpan) countSpan.innerText = selected.length;
+    }
+
+    function toggleAllQuickSports(selectAll) {
+        const checkboxes = document.querySelectorAll('#quickSportsGrid input[type="checkbox"]:not(:disabled)');
+        checkboxes.forEach(chk => {
+            chk.checked = selectAll;
+            const idx = chk.value;
+            const tile = document.getElementById(`qs_tile_${idx}`);
+            if (tile) {
+                if (selectAll) tile.classList.add('selected');
+                else tile.classList.remove('selected');
+            }
+        });
+        updateQuickSportsSelectedCount();
+    }
+
+    async function saveQuickSportsRegistration() {
+        if (!currentQuickSportsStudent) {
+            return showCustomDialog("Candidate Missing", "Please select a student first.", "warning");
+        }
+        if (!currentQuickSportsDob) {
+            return showCustomDialog("DOB Required", "Please enter the student's Date of Birth (DOB) to verify age eligibility.", "warning");
+        }
+
+        const checkedBoxes = Array.from(document.querySelectorAll('#quickSportsGrid input[type="checkbox"]:checked'));
+        if (checkedBoxes.length === 0) {
+            return showCustomDialog("No Items Selected", "Please check at least one sports event to register.", "warning");
+        }
+
+        const submitBtn = document.getElementById('btnQuickSportsSubmit');
+        if (submitBtn) submitBtn.disabled = true;
+
+        showLoader(`Registering ${checkedBoxes.length} Sports Event(s)...`);
+        try {
+            const batch = db.batch();
+            const timestamp = new Date().toLocaleString('en-IN');
+            const newEntries = [];
+
+            checkedBoxes.forEach(chk => {
+                const it = quickSportsAvailableItems[parseInt(chk.value, 10)];
+                if (!it) return;
+
+                const entry = {
+                    "Timestamp": timestamp,
+                    "Admission Number": currentQuickSportsStudent["Admission Number"],
+                    "Name": currentQuickSportsStudent["Name"],
+                    "Class": String(currentQuickSportsStudent["Class"]),
+                    "Division": String(currentQuickSportsStudent["Division"] || ""),
+                    "DOB": currentQuickSportsDob,
+                    "Age Category": currentQuickSportsAgeCat ? currentQuickSportsAgeCat.category : "",
+                    "Name of Fest": it["Fest Name"] || "Sports Day",
+                    "Festival Classification": "Sports",
+                    "Festival Category": "Sports",
+                    "Item": it["Item"],
+                    "Item Code": it["Item Code"] || "",
+                    "Category": it["Category"] || "General",
+                    "No of Participants": parseInt(it["No of Participants"]) || 1,
+                    "Role in Event": "Participant",
+                    "Lot Number": ""
+                };
+
+                const ref = db.collection("registrations").doc();
+                batch.set(ref, entry);
+                newEntries.push({ ...entry, id: ref.id });
+            });
+
+            // Update student's DOB in student master if not already recorded
+            if (currentQuickSportsStudent.id && !currentQuickSportsStudent["DOB"]) {
+                batch.update(db.collection("students").doc(currentQuickSportsStudent.id), {
+                    "DOB": currentQuickSportsDob
+                });
+                currentQuickSportsStudent["DOB"] = currentQuickSportsDob;
+            }
+
+            await batch.commit();
+
+            newEntries.forEach(e => dbRegistrations.push(e));
+
+            if (currentUser && currentUser.role === "Student") {
+                logStudentAction(`Quick registered for ${newEntries.length} sports items (${currentQuickSportsAgeCat.category})`);
+            }
+
+            hideLoader();
+            if (submitBtn) submitBtn.disabled = false;
+
+            showCustomDialog(
+                "Registration Successful", 
+                `<b>${currentQuickSportsStudent["Name"]}</b> was registered for <b>${newEntries.length} Event(s)</b> under <b>${currentQuickSportsAgeCat.title}</b>!`, 
+                "success"
+            );
+
+            renderQuickSportsItems();
+            if (typeof renderTables === "function") renderTables();
+        } catch (e) {
+            hideLoader();
+            if (submitBtn) submitBtn.disabled = false;
+            console.error("Quick sports registration error:", e);
+            showCustomDialog("Registration Error", "Could not complete registration. " + (e.message || ""), "danger");
+        }
+    }
+
+
+    // --- CERTIFICATE PRINT STATUS TRACKER ---
+    function isCertificatePrinted(resId, row) {
+        if (row && (row.printed === true || String(row.printed) === "true")) {
+            return true;
+        }
+        try {
+            const saved = JSON.parse(localStorage.getItem("uthsav_printed_certificates") || "[]");
+            if (saved.includes(resId)) return true;
+        } catch(e) {}
+        return false;
+    }
+
+    function markCertificateAsPrinted(resId) {
+        if (!resId) return;
+
+        // 1. Update in-memory result object
+        const r = dbPublishedResults.find(x => x.id === resId);
+        if (r) {
+            r.printed = true;
+            r.printedAt = new Date().toLocaleString('en-IN');
+        }
+
+        // 2. Persist in localStorage backup
+        try {
+            let saved = JSON.parse(localStorage.getItem("uthsav_printed_certificates") || "[]");
+            if (!saved.includes(resId)) {
+                saved.push(resId);
+                localStorage.setItem("uthsav_printed_certificates", JSON.stringify(saved));
+            }
+        } catch(e) {}
+
+        // 3. Persist in Firestore permanently
+        try {
+            db.collection("published_results").doc(resId).update({
+                printed: true,
+                printedAt: new Date().toLocaleString('en-IN')
+            });
+        } catch(e) {
+            console.error("Error saving certificate print status:", e);
+        }
+
+        // 4. Immediately fade the icon on the active page without needing a refresh
+        updatePrintIconStatus(resId);
+    }
+
+    function updatePrintIconStatus(resId) {
+        const icon = document.getElementById(`print_icon_${resId}`);
+        const btn = document.getElementById(`print_btn_${resId}`);
+        if (icon) {
+            icon.style.opacity = "0.35";
+        }
+        if (btn) {
+            btn.title = "Print already taken (Click to print again)";
+        }
+    }
+    
 
 </script>
 </html>
