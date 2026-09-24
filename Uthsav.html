@@ -2711,6 +2711,96 @@
         border-radius: 3px;
     }
 
+    /* ==========================================================================
+       MULTI-LOT EVALUATION SCOREBOARD STYLES
+       ========================================================================== */
+    .multi-lot-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        background: #ffffff;
+    }
+    .multi-lot-table th {
+        background: #0f172a !important;
+        color: #ffffff !important;
+        padding: 10px 8px !important;
+        font-size: 11.5px !important;
+        letter-spacing: 0.5px;
+        text-align: center !important;
+        white-space: nowrap;
+    }
+    .multi-lot-table td {
+        padding: 8px 6px !important;
+        vertical-align: middle;
+        text-align: center !important;
+        border-bottom: 1px solid var(--border);
+    }
+    .multi-lot-table tr:hover {
+        background: #f8fafc;
+    }
+    .multi-lot-table tr.lot-row-absent {
+        background: #fff1f2 !important;
+        opacity: 0.75;
+    }
+    .multi-lot-score-input {
+        width: 65px;
+        text-align: center;
+        font-weight: 800;
+        font-size: 14px;
+        padding: 6px 4px;
+        border: 1.5px solid var(--border);
+        border-radius: 4px;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .multi-lot-score-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        outline: none;
+    }
+    .multi-lot-total-val {
+        font-size: 15px;
+        font-weight: 900;
+        color: var(--primary);
+        display: inline-block;
+        min-width: 48px;
+    }
+
+    /* Multi-Lot Cards Layout */
+    .multi-lot-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+        gap: 14px;
+        width: 100%;
+    }
+    .multi-lot-card {
+        background: #ffffff;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: 14px;
+        box-shadow: var(--shadow-subtle);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .multi-lot-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent);
+    }
+    .multi-lot-card.card-absent {
+        background: #fff5f5;
+        border-color: #fecaca;
+        opacity: 0.8;
+    }
+    .multi-lot-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
     option[value="Fest"] { display: none !important; }
     option[value=""] { display: none !important; }
 
@@ -3588,11 +3678,36 @@
                     </div>
                 </div>
 
+                <<!-- MULTI-LOT EVALUATION BOARD -->
                 <div class="section" id="singleLotSection" style="display:none;">
-                    <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-                        <span><i class="fas fa-calculator"></i> Marks Entry (Single Lot Evaluation)</span>
-                        <span id="lotProgressIndicator" class="lot-progress-pill">0/0</span>
+                    <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                            <i class="fas fa-table-cells" style="color:var(--accent);"></i>
+                            <span>Marks Entry (Multi-Lot Evaluation)</span>
+                        </span>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <!-- Dual View Switcher (Table vs Cards) -->
+                            <div class="tap-switch-group no-print">
+                                <button type="button" id="btnViewTable" class="tap-btn active primary" onclick="switchMultiLotView('table')">
+                                    <i class="fas fa-table"></i> Table
+                                </button>
+                                <button type="button" id="btnViewCards" class="tap-btn" onclick="switchMultiLotView('cards')">
+                                    <i class="fas fa-th-large"></i> Cards
+                                </button>
+                            </div>
+                            <span id="lotProgressIndicator" class="lot-progress-pill">0/0 Evaluated</span>
+                        </div>
                     </div>
+
+                    <p style="font-size:12.5px; color:#64748b; margin:-6px 0 14px 0;">
+                        <i class="fas fa-info-circle"></i> Blind evaluation by <b>Lot Number</b>. Enter scores (0 to 10) for each criterion or toggle <b>Absent</b>. Scores and grades calculate live.
+                    </p>
+
+                    <!-- Multi-Lot Container (Populated with Table or Cards) -->
+                    <div id="multiLotEvaluationContainer">
+                        <p style="text-align:center; color:#94a3b8; padding:30px;">Loading evaluation lots...</p>
+                    </div>
+                </div>
 
                     <div class="row" style="margin-bottom:15px; align-items:flex-end;">
                         <div class="form-group" style="margin:0;">
@@ -7245,7 +7360,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                 if (confirmedBadge) confirmedBadge.style.display = 'flex';
                 if (editBtn) editBtn.style.display = 'inline-flex';
                 if (singleLotSec) singleLotSec.style.display = 'block';
-                updateLotDropdownAndProgress();
+                renderMultiLotEvaluation();
             } else {
                 renderCriteriaChips(false);
                 if (addBtn) addBtn.style.display = 'inline-flex';
@@ -7338,189 +7453,313 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
-    function updateLotDropdownAndProgress() {
-        const lotSelect = document.getElementById('judgeCurrentLotSelect');
-        const progressEl = document.getElementById('lotProgressIndicator');
-        const singleLotSec = document.getElementById('singleLotSection');
-        const finalizeSec = document.getElementById('finalizeJudgementSection');
-        
-        const totalLots = currentJudgeSession.units.length;
-        const remainingUnits = currentJudgeSession.units.filter(u => !currentJudgeSession.savedUnitIds.has(u.id));
-        const evaluatedCount = currentJudgeSession.savedUnitIds.size;
+    // ==========================================================================
+    // MULTI-LOT EVALUATION CONTROLLER (REPLACES SINGLE-LOT LOGIC)
+    // ==========================================================================
+    let currentMultiLotView = "table"; // "table" or "cards"
 
-        if (totalLots === 0) {
-            document.getElementById('singleLotCardContainer').innerHTML = `<p style="text-align:center; color:#94a3b8; padding:30px;">No registered candidates found for this item.</p>`;
-            progressEl.innerText = "0/0";
-            return;
+    function switchMultiLotView(mode) {
+        currentMultiLotView = mode;
+        const btnTable = document.getElementById('btnViewTable');
+        const btnCards = document.getElementById('btnViewCards');
+
+        if (btnTable && btnCards) {
+            btnTable.className = `tap-btn ${mode === 'table' ? 'active primary' : ''}`;
+            btnCards.className = `tap-btn ${mode === 'cards' ? 'active primary' : ''}`;
         }
-
-        if (remainingUnits.length === 0) {
-            singleLotSec.style.display = 'none';
-            finalizeSec.style.display = 'block';
-            progressEl.innerText = `${totalLots}/${totalLots} (Completed)`;
-            document.getElementById('judgeSigningStatus').innerText = `All ${totalLots} lots have been evaluated. Click below to lock.`;
-            return;
-        }
-
-        lotSelect.innerHTML = "";
-        remainingUnits.forEach((u, i) => {
-            lotSelect.innerHTML += `<option value="${u.id}">Lot ${u["Lot Number"] || 'N/A'}</option>`;
-        });
-
-        const currentActiveUnit = remainingUnits[0];
-        const currentLotDisplay = currentActiveUnit["Lot Number"] || (evaluatedCount + 1);
-        progressEl.innerText = `${evaluatedCount + 1}/${totalLots} (Lot ${currentLotDisplay} out of ${totalLots})`;
-
-        renderCurrentLotCard();
+        renderMultiLotEvaluation();
     }
 
-    function renderCurrentLotCard() {
-        const lotSelect = document.getElementById('judgeCurrentLotSelect');
-        const container = document.getElementById('singleLotCardContainer');
-        const unitId = lotSelect.value;
-        if (!unitId) return;
+    // Pre-populates and renders all lots simultaneously
+    function renderMultiLotEvaluation() {
+        const container = document.getElementById('multiLotEvaluationContainer');
+        const singleLotSec = document.getElementById('singleLotSection');
+        const finalizeSec = document.getElementById('finalizeJudgementSection');
+        if (!container) return;
 
-        const unit = currentJudgeSession.units.find(u => u.id === unitId);
-        if (!unit) return;
+        const units = currentJudgeSession.units || [];
+        const criteria = currentJudgeCriteria || [];
 
-        setLotAttendance(true);
+        if (units.length === 0) {
+            container.innerHTML = `<p style="text-align:center; color:#94a3b8; padding:30px;">No registered candidates found for this item.</p>`;
+            return;
+        }
 
-        let cardHTML = `
-            <div class="single-lot-box" data-unitid="${unit.id}">
-                <div class="single-lot-header">
-                    <div>
-                        <span style="font-size:12px; font-weight:700; color:#64748b; text-transform:uppercase;"></span>
-                        <h2 style="margin:2px 0 0 0; font-size:24px; font-weight:900; color:#0f172a;">
-                            Lot No: <span style="color:var(--primary);">${unit["Lot Number"] || 'Unassigned'}</span>
-                        </h2>
-                    </div>
-                    <div style="text-align:right;">
-                        <span style="font-size:11px; font-weight:700; color:#64748b;">AUTO GRADE</span>
-                        <div id="singleLotGradeBadge" class="badge-place place-1" style="font-size:14px; font-weight:900; padding:4px 14px; display:block;">D</div>
-                    </div>
-                </div>
+        // Initialize score entries in session for all units
+        if (!currentJudgeSession.unitScores) currentJudgeSession.unitScores = {};
+        
+        units.forEach(u => {
+            if (!currentJudgeSession.unitScores[u.id]) {
+                const critMap = {};
+                criteria.forEach(c => { critMap[c] = 0; });
+                currentJudgeSession.unitScores[u.id] = {
+                    unitId: u.id,
+                    lotNumber: u["Lot Number"] || "N/A",
+                    critMap: critMap,
+                    score: 0,
+                    maxMarks: criteria.length * 10,
+                    percentage: 0,
+                    grade: "D",
+                    isAbsent: false,
+                    isEvaluated: false
+                };
+            }
+        });
 
-                <div class="criteria-list-wrapper">
+        if (currentMultiLotView === "table") {
+            renderMultiLotTable(units, criteria, container);
+        } else {
+            renderMultiLotCards(units, criteria, container);
+        }
+
+        updateMultiLotProgress();
+        if (singleLotSec) singleLotSec.style.display = 'block';
+        if (finalizeSec) finalizeSec.style.display = 'block';
+    }
+
+    // --- 1. Table View (Consolidated Score Sheet) ---
+    function renderMultiLotTable(units, criteria, container) {
+        let theadCrit = "";
+        criteria.forEach(c => {
+            theadCrit += `<th style="width:75px;">${c}<br><small style="opacity:0.8;">(10)</small></th>`;
+        });
+
+        let rowsHTML = "";
+        units.forEach(u => {
+            const data = currentJudgeSession.unitScores[u.id];
+            const isAbsent = data.isAbsent;
+
+            let critInputs = "";
+            criteria.forEach(c => {
+                const val = (data.critMap && data.critMap[c] !== undefined) ? data.critMap[c] : 0;
+                critInputs += `
+                    <td>
+                        <input type="number" min="0" max="10" step="0.5" 
+                               class="multi-lot-score-input" 
+                               data-unitid="${u.id}" data-crit="${c}"
+                               value="${val}" 
+                               ${isAbsent ? 'disabled' : ''}
+                               oninput="onMultiLotCritInput('${u.id}', '${c}', this.value)">
+                    </td>
+                `;
+            });
+
+            const placeBadge = data.grade === 'A' ? 'place-1' : (data.grade === 'B' ? 'place-2' : (data.grade === 'C' ? 'place-3' : 'place-other'));
+
+            rowsHTML += `
+                <tr id="lot_row_${u.id}" class="${isAbsent ? 'lot-row-absent' : ''}">
+                    <td>
+                        <span class="scoring-lot-pill" style="font-size:12px; padding:3px 10px;">
+                            Lot ${u["Lot Number"] || 'N/A'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="tap-switch-group">
+                            <button type="button" class="tap-btn ${!isAbsent ? 'active success' : ''}" 
+                                    style="padding:3px 8px; font-size:11px;" 
+                                    onclick="setMultiLotAttendance('${u.id}', true)">
+                                <i class="fas fa-check"></i> Present
+                            </button>
+                            <button type="button" class="tap-btn ${isAbsent ? 'active danger' : ''}" 
+                                    style="padding:3px 8px; font-size:11px;" 
+                                    onclick="setMultiLotAttendance('${u.id}', false)">
+                                <i class="fas fa-times"></i> Absent
+                            </button>
+                        </div>
+                    </td>
+                    ${critInputs}
+                    <td>
+                        <span id="total_${u.id}" class="multi-lot-total-val">${data.score.toFixed(1)}</span>
+                    </td>
+                    <td>
+                        <span id="grade_${u.id}" class="badge-place ${isAbsent ? 'place-other' : placeBadge}" style="font-weight:900; font-size:12px;">
+                            ${data.grade}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+
+        container.innerHTML = `
+            <div class="table-responsive" style="margin:0; border-radius:var(--radius-sm);">
+                <table class="multi-lot-table">
+                    <thead>
+                        <tr>
+                            <th style="width:85px;">Lot No</th>
+                            <th style="width:145px;">Attendance</th>
+                            ${theadCrit}
+                            <th style="width:80px;">Total</th>
+                            <th style="width:70px;">Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML}
+                    </tbody>
+                </table>
+            </div>
         `;
+    }
 
-        currentJudgeCriteria.forEach((crit, cIdx) => {
-            cardHTML += `
-                <div class="criteria-entry-row">
-                    <label>${crit} <small style="color:#64748b;">(Max 10)</small></label>
-                    <input type="number" min="0" max="10" step="0.5" class="score-input single-crit-input"
-                           data-crit="${crit}" data-critidx="${cIdx}"
-                           oninput="recalculateCurrentLotScore()"
-                           value="0">
+    // --- 2. Card View (Responsive Multi-Lot Grid) ---
+    function renderMultiLotCards(units, criteria, container) {
+        let cardsHTML = "";
+        units.forEach(u => {
+            const data = currentJudgeSession.unitScores[u.id];
+            const isAbsent = data.isAbsent;
+
+            let critRows = "";
+            criteria.forEach(c => {
+                const val = (data.critMap && data.critMap[c] !== undefined) ? data.critMap[c] : 0;
+                critRows += `
+                    <div class="scoring-crit-row">
+                        <label>${c} <small style="color:#64748b;">(10)</small></label>
+                        <input type="number" min="0" max="10" step="0.5" 
+                               class="multi-lot-score-input" 
+                               data-unitid="${u.id}" data-crit="${c}"
+                               value="${val}" 
+                               ${isAbsent ? 'disabled' : ''}
+                               oninput="onMultiLotCritInput('${u.id}', '${c}', this.value)" style="width:75px;">
+                    </div>
+                `;
+            });
+
+            const placeBadge = data.grade === 'A' ? 'place-1' : (data.grade === 'B' ? 'place-2' : (data.grade === 'C' ? 'place-3' : 'place-other'));
+
+            cardsHTML += `
+                <div id="lot_card_${u.id}" class="multi-lot-card ${isAbsent ? 'card-absent' : ''}">
+                    <div class="multi-lot-card-header">
+                        <span class="scoring-lot-pill">
+                            <i class="fas fa-ticket-alt"></i> Lot ${u["Lot Number"] || 'N/A'}
+                        </span>
+                        <div class="tap-switch-group">
+                            <button type="button" class="tap-btn ${!isAbsent ? 'active success' : ''}" 
+                                    style="padding:3px 8px; font-size:11px;" 
+                                    onclick="setMultiLotAttendance('${u.id}', true)">
+                                Present
+                            </button>
+                            <button type="button" class="tap-btn ${isAbsent ? 'active danger' : ''}" 
+                                    style="padding:3px 8px; font-size:11px;" 
+                                    onclick="setMultiLotAttendance('${u.id}', false)">
+                                Absent
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="scoring-criteria-list">
+                        ${critRows}
+                    </div>
+
+                    <div class="scoring-card-footer">
+                        <span style="font-size:13px; font-weight:700; color:#475569;">
+                            Total: <b id="card_total_${u.id}" style="color:var(--primary); font-size:15px;">${data.score.toFixed(1)}</b>
+                        </span>
+                        <span id="card_grade_${u.id}" class="badge-place ${isAbsent ? 'place-other' : placeBadge}" style="font-weight:900;">
+                            ${data.grade}
+                        </span>
+                    </div>
                 </div>
             `;
         });
 
-        cardHTML += `
-                </div>
-
-                <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #e2e8f0; padding-top:14px; margin-top:10px;">
-                    <span style="font-size:15px; font-weight:800; color:#1e293b;">Total Score:</span>
-                    <input type="text" id="singleLotTotalScore" readonly value="0.0" class="total-score-display">
-                </div>
-            </div>
-        `;
-
-        container.innerHTML = cardHTML;
-        recalculateCurrentLotScore();
+        container.innerHTML = `<div class="multi-lot-cards-grid">${cardsHTML}</div>`;
     }
 
-    function setLotAttendance(isPresent) {
-        currentJudgeSession.isAbsent = !isPresent;
-        const presBtn = document.getElementById('attPresentBtn');
-        const absBtn = document.getElementById('attAbsentBtn');
+    // --- Live Recalculation as Marks are Typed ---
+    function onMultiLotCritInput(unitId, critName, valStr) {
+        let val = parseFloat(valStr) || 0;
+        if (val > 10) val = 10;
+        if (val < 0) val = 0;
 
-        if (presBtn && absBtn) {
-            presBtn.className = `tap-btn ${isPresent ? 'active success' : ''}`;
-            absBtn.className = `tap-btn ${!isPresent ? 'active danger' : ''}`;
-        }
+        const data = currentJudgeSession.unitScores[unitId];
+        if (!data) return;
 
-        const inputs = document.querySelectorAll('.single-crit-input');
-        const totalInp = document.getElementById('singleLotTotalScore');
-        const gradeBadge = document.getElementById('singleLotGradeBadge');
+        data.critMap[critName] = val;
+        data.isEvaluated = true;
 
+        recalculateMultiLotScore(unitId);
+    }
+
+    function setMultiLotAttendance(unitId, isPresent) {
+        const data = currentJudgeSession.unitScores[unitId];
+        if (!data) return;
+
+        data.isAbsent = !isPresent;
+        data.isEvaluated = true;
+
+        // If absent, zero out criteria
         if (!isPresent) {
-            inputs.forEach(inp => { inp.value = "0"; inp.disabled = true; });
-            if (totalInp) totalInp.value = "0.0";
-            if (gradeBadge) {
-                gradeBadge.innerText = "Absent";
-                gradeBadge.style.backgroundColor = "#fee2e2";
-                gradeBadge.style.color = "#991b1b";
-            }
+            Object.keys(data.critMap).forEach(k => { data.critMap[k] = 0; });
+        }
+
+        // Re-render row or card to update disabled states cleanly
+        renderMultiLotEvaluation();
+    }
+
+    function recalculateMultiLotScore(unitId) {
+        const data = currentJudgeSession.unitScores[unitId];
+        if (!data) return;
+
+        if (data.isAbsent) {
+            data.score = 0;
+            data.percentage = 0;
+            data.grade = "Absent";
         } else {
-            inputs.forEach(inp => { inp.disabled = false; });
-            recalculateCurrentLotScore();
+            let sum = 0;
+            Object.values(data.critMap).forEach(v => { sum += (parseFloat(v) || 0); });
+            data.score = sum;
+            data.maxMarks = (currentJudgeCriteria.length || 1) * 10;
+            data.percentage = data.maxMarks > 0 ? (sum / data.maxMarks) * 100 : 0;
+            data.grade = calculateGrade(data.percentage).grade;
         }
+
+        // Update Table Cells
+        const totalEl = document.getElementById(`total_${unitId}`);
+        const gradeEl = document.getElementById(`grade_${unitId}`);
+        if (totalEl) totalEl.innerText = data.score.toFixed(1);
+        if (gradeEl) {
+            gradeEl.innerText = data.grade;
+            gradeEl.className = `badge-place ${data.grade === 'A' ? 'place-1' : (data.grade === 'B' ? 'place-2' : (data.grade === 'C' ? 'place-3' : 'place-other'))}`;
+        }
+
+        // Update Card Cells
+        const cardTotalEl = document.getElementById(`card_total_${unitId}`);
+        const cardGradeEl = document.getElementById(`card_grade_${unitId}`);
+        if (cardTotalEl) cardTotalEl.innerText = data.score.toFixed(1);
+        if (cardGradeEl) {
+            cardGradeEl.innerText = data.grade;
+            cardGradeEl.className = `badge-place ${data.grade === 'A' ? 'place-1' : (data.grade === 'B' ? 'place-2' : (data.grade === 'C' ? 'place-3' : 'place-other'))}`;
+        }
+
+        updateMultiLotProgress();
     }
 
-    function recalculateCurrentLotScore() {
-        if (currentJudgeSession.isAbsent) return;
+    function updateMultiLotProgress() {
+        const progressEl = document.getElementById('lotProgressIndicator');
+        const units = currentJudgeSession.units || [];
+        if (!progressEl || units.length === 0) return;
 
-        const inputs = document.querySelectorAll('.single-crit-input');
-        let sum = 0;
-        inputs.forEach(inp => {
-            let val = parseFloat(inp.value) || 0;
-            if (val > 10) { val = 10; inp.value = 10; }
-            if (val < 0) { val = 0; inp.value = 0; }
-            sum += val;
+        let completedCount = 0;
+        units.forEach(u => {
+            const d = currentJudgeSession.unitScores[u.id];
+            if (d && (d.isAbsent || d.score > 0 || d.isEvaluated)) {
+                completedCount++;
+            }
         });
 
-        const maxMarks = currentJudgeCriteria.length * 10;
-        const percentage = maxMarks > 0 ? (sum / maxMarks) * 100 : 0;
-        const gObj = calculateGrade(percentage);
-
-        const totalInp = document.getElementById('singleLotTotalScore');
-        if (totalInp) totalInp.value = sum.toFixed(1);
-
-        const gradeBadge = document.getElementById('singleLotGradeBadge');
-        if (gradeBadge) {
-            gradeBadge.innerText = gObj.grade;
-            gradeBadge.style.backgroundColor = gObj.bg;
-            gradeBadge.style.color = gObj.col;
+        progressEl.innerText = `${completedCount}/${units.length} Evaluated`;
+        if (completedCount === units.length) {
+            progressEl.style.background = "#059669";
+        } else {
+            progressEl.style.background = "var(--primary)";
         }
     }
+    
 
-    function saveCurrentLotMarks() {
-        if (!currentJudgeSession.criteriaConfirmed) {
-            return showCustomDialog("Action Locked", "Marks cannot be saved until the Master Judge confirms evaluation criteria.", "warning");
-        }
+    
 
-        const lotSelect = document.getElementById('judgeCurrentLotSelect');
-        const unitId = lotSelect?.value;
-        if (!unitId) return;
+    
 
-        const unit = (currentJudgeSession.units || []).find(u => u.id === unitId);
-        const lotNumber = unit ? (unit["Lot Number"] || "N/A") : "N/A";
-
-        const isAbsent = currentJudgeSession.isAbsent;
-        const score = isAbsent ? 0 : (parseFloat(document.getElementById('singleLotTotalScore').value) || 0);
-        const maxMarks = currentJudgeCriteria.length * 10;
-        const percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
-        const grade = isAbsent ? "Absent" : calculateGrade(percentage).grade;
-
-        const critMap = {};
-        document.querySelectorAll('.single-crit-input').forEach(inp => {
-            critMap[inp.dataset.crit] = isAbsent ? 0 : (parseFloat(inp.value) || 0);
-        });
-
-        currentJudgeSession.unitScores[unitId] = {
-            unitId: unitId,
-            lotNumber: lotNumber,
-            score: score,
-            maxMarks: maxMarks,
-            percentage: percentage,
-            grade: grade,
-            critMap: critMap,
-            isAbsent: isAbsent
-        };
-
-        currentJudgeSession.savedUnitIds.add(unitId);
-        updateLotDropdownAndProgress();
-    }
+    
 
     // ==========================================================================
     // FINALIZE & LOCK JUDGEMENT (INDEPENDENT SUBMISSION - NO WAITING)
@@ -7536,12 +7775,20 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         const itemName = festObj ? festObj["Item"] : cleanCode;
         const totalUnits = currentJudgeSession.units ? currentJudgeSession.units.length : 0;
 
-        // 1. Validation: Current judge must have scored all lots
-        if (currentJudgeSession.savedUnitIds.size < totalUnits) {
+        // 1. Validation: All lots must have an evaluation state (scored or marked absent)
+        const unevaluated = [];
+        currentJudgeSession.units.forEach(u => {
+            const data = currentJudgeSession.unitScores[u.id];
+            if (!data || (!data.isAbsent && data.score === 0 && !data.isEvaluated)) {
+                unevaluated.push(u["Lot Number"] || "N/A");
+            }
+        });
+
+        if (unevaluated.length > 0) {
             return showCustomDialog(
                 "Evaluation Incomplete",
-                `Please evaluate and save all lots before submitting.<br><br>` +
-                `Scored: <b>${currentJudgeSession.savedUnitIds.size} of ${totalUnits} lots</b>.`,
+                `Please enter scores or mark as Absent for all lots before submitting.<br><br>` +
+                `<b>Pending Lots:</b> ${unevaluated.join(', ')}`,
                 "warning"
             );
         }
@@ -7550,23 +7797,22 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         const isMultiJudge = assignedJudges.length > 1;
         const isMaster = isJudgeMasterForItem(currentUser, cleanCode);
 
-        // 2. Confirmation Prompt (Independent submission for each judge)
         const promptTitle = (isMultiJudge && !isMaster) ? "Submit Your Evaluation?" : "Finalize & Lock Judgement?";
         const promptMsg = (isMultiJudge && !isMaster)
-            ? `Submit your official evaluation scorecard for <b>${itemName} [${cleanCode}]</b>?<br><br>Your scores will be recorded and locked.`
-            : `Officially lock your judgement for <b>${itemName} [${cleanCode}]</b>?<br><br>All your scores will be permanently submitted.`;
+            ? `Submit your official scorecard for all ${totalUnits} lots in <b>${itemName} [${cleanCode}]</b>?`
+            : `Officially lock your judgement for all ${totalUnits} lots in <b>${itemName} [${cleanCode}]</b>?`;
 
         showCustomDialog(
             promptTitle,
             promptMsg,
             "warning",
             async () => {
-                showLoader("Submitting Scores...");
+                showLoader("Submitting Multi-Lot Scores...");
                 try {
                     const batch = db.batch();
                     const timestamp = new Date().toLocaleString('en-IN');
 
-                    // 3. Batch commit current judge's individual scores
+                    // Batch commit scores for all lots
                     currentJudgeSession.units.forEach(unit => {
                         const scoreData = currentJudgeSession.unitScores[unit.id];
                         if (!scoreData) return;
@@ -7601,22 +7847,20 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         dbJudgeScores.push({ ...scoreDoc, id: ref.id });
                     });
 
-                    // 4. Check if ALL assigned judges have now submitted their scorecards
+                    // Check if all assigned judges have completed evaluation
                     const lockedJudgePhones = new Set(
                         dbJudgeScores.filter(s => s.itemCode === cleanCode && s.locked)
                                      .map(s => String(s.judgePhone || "").trim())
                     );
-                    lockedJudgePhones.add(String(currentUser.id || "").trim()); // Include this submission
+                    lockedJudgePhones.add(String(currentUser.id || "").trim());
 
                     const allJudgesFinished = assignedJudges.length > 0 && assignedJudges.every(j => 
                         lockedJudgePhones.has(String(j.phone || "").trim())
                     );
 
-                    // 5. Update settings document
                     const settingsDocRef = db.collection("config").doc("settings");
                     const settingsUpdates = {};
 
-                    // If all assigned judges are done (or if single judge event), mark as COMPLETED
                     if (allJudgesFinished || !isMultiJudge) {
                         if (!dbSettings.CompletedProgrammes) dbSettings.CompletedProgrammes = [];
                         if (!dbSettings.ActiveProgrammes) dbSettings.ActiveProgrammes = [];
@@ -7633,7 +7877,6 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         settingsUpdates.ActiveProgrammes = dbSettings.ActiveProgrammes;
                     }
 
-                    // Turn off this judge's live evaluating presence LED
                     if (dbSettings.LiveJudgeActiveItems && dbSettings.LiveJudgeActiveItems[cleanCode]) {
                         delete dbSettings.LiveJudgeActiveItems[cleanCode];
                     }
@@ -7641,7 +7884,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
                     batch.update(settingsDocRef, settingsUpdates);
 
-                    // 6. Audit Log
+                    // Audit Log
                     const logRef = db.collection("judge_logs").doc();
                     batch.set(logRef, {
                         timestamp: timestamp,
@@ -7650,9 +7893,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         itemCode: cleanCode,
                         itemName: itemName,
                         criteriaCount: currentJudgeCriteria.length,
-                        status: allJudgesFinished 
-                            ? "All Judges Submitted (Event Completed)" 
-                            : (isMaster ? "Master Judge Scorecard Submitted" : "Panel Scorecard Submitted")
+                        status: `Multi-Lot Scorecard (${totalUnits} lots) Submitted`
                     });
 
                     await batch.commit();
@@ -7660,50 +7901,20 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                     hideLoader();
                     showCustomDialog(
                         allJudgesFinished ? "Event Completed" : "Scorecard Submitted",
-                        allJudgesFinished
-                            ? `All judges have completed evaluation for <b>${itemName}</b>. The event is now officially marked as <b>COMPLETED</b>.`
-                            : `Your scorecard for <b>${itemName}</b> has been locked and submitted successfully.`,
+                        `All ${totalUnits} lots for <b>${itemName}</b> submitted and locked successfully.`,
                         "success"
                     );
 
-                    // 7. Instantly clear selections & remove finalized item from judge's dropdown
-                    const searchInput = document.getElementById('judgeActiveItemsSearchInput');
-                    const hiddenSelect = document.getElementById('judgeActiveItemsSelect');
-                    const festMeta = document.getElementById('judgeItemFestMeta');
-                    const codeMeta = document.getElementById('judgeItemCodeMeta');
-
-                    if (searchInput) searchInput.value = "";
-                    if (hiddenSelect) hiddenSelect.value = "";
-                    if (festMeta) festMeta.value = "";
-                    if (codeMeta) codeMeta.value = "";
-
-                    // Hide scoring panels and criteria sections
+                    // Reset form and reinitialize
+                    document.getElementById('judgeActiveItemsSearchInput').value = "";
+                    document.getElementById('judgeActiveItemsSelect').value = "";
                     document.getElementById('singleLotSection').style.display = 'none';
                     document.getElementById('finalizeJudgementSection').style.display = 'none';
-                    document.getElementById('judgementLockedBanner').style.display = 'none';
-                    document.getElementById('judgeCriteriaSection').style.display = 'none';
-                    document.getElementById('panelJudgeWaitingCriteria').style.display = 'none';
-
-                    // Reset in-memory session
-                    currentJudgeSession = {
-                        itemCode: "",
-                        criteriaConfirmed: false,
-                        units: [],
-                        savedUnitIds: new Set(),
-                        unitScores: {},
-                        isAbsent: false
-                    };
-
-                    // Re-render dropdown so finalized item is purged immediately
                     initJudgementTab();
-
-                    if (typeof loadEventMgmtItemDetails === "function") {
-                        loadEventMgmtItemDetails();
-                    }
                 } catch (err) {
                     hideLoader();
-                    console.error("Judgement submission error:", err);
-                    showCustomDialog("Submission Error", "Could not submit scores. Please try again.", "danger");
+                    console.error("Judgement submit error:", err);
+                    showCustomDialog("Submission Error", "Could not submit scorecard.", "danger");
                 }
             },
             true
@@ -12630,10 +12841,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             },
             true
         );
-    }
-
-
-    
+    }    
 
 </script>
 </html>
