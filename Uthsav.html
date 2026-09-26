@@ -3056,8 +3056,15 @@
             <input type="text" id="judgeLoginPhone" placeholder="Password">
             <button class="login-btn" style="background:var(--primary);" onclick="loginJudge()">Enter Judgement Panel</button>
         </div>
-    </div>
+    <!-- PUBLIC RESULTS ACCESS BUTTON -->
+        <div style="margin-top: 18px; border-top: 1px solid var(--border); padding-top: 14px;">
+            <button type="button" class="action-btn" style="width: 100%; background: #2563eb; padding: 10px; font-weight:700;" onclick="openPublicResults()">
+                <i class="fas fa-globe"></i> View Published Results (Public Access)
+            </button>
+        </div>
+    </div> <!-- end login-box -->
 </div>
+
 
 <!-- 2. MAIN APPLICATION -->
 <div id="appScreen">
@@ -4006,8 +4013,7 @@
         </div>
 
         <!-- TAB 6: RESULT TAB -->
-        <div id="ResultTab" class="tabcontent">
-            <div class="filters">
+        <div class="filters">
                 <select id="resultFilterCategory" onchange="renderResults()">
                     <option value="ALL">All Classifications</option>
                     <option value="Kalothswom">Kalothswom</option>
@@ -4022,7 +4028,114 @@
                 <button type="button" class="action-btn gold" onclick="openResultsReport(true)" title="Print Complete Results Directory">
                     <i class="fas fa-print"></i> <span>Print Results</span>
                 </button>
+
+                <!-- NEW: Share Public Results Link -->
+                <button type="button" class="action-btn purple" onclick="copyPublicResultsLink()" title="Copy direct public results link for sharing without login">
+                    <i class="fas fa-share-alt"></i> <span>Share Public Link</span>
+                </button>
+
+                <!-- NEW: Admin Toggle for Quick Certificate Generator -->
+                <button type="button" id="btnToggleQuickCert" class="action-btn gold" style="display:none;" onclick="toggleQuickCertSection()" title="Quick Generate Certificate">
+                    <i class="fas fa-certificate"></i> <span>Quick Certificate</span>
+                </button>
             </div>
+
+            <!-- QUICK GENERATE CERTIFICATE SECTION (ADMIN ONLY - INSTANT FETCH OR CUSTOM ENTRY) -->
+            <div class="section no-print" id="quickCertSection" style="display:none; border-left: 5px solid var(--gold-pure); background:#ffffff; margin-bottom: 20px;">
+                <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <span style="color:#854d0e; font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-certificate" style="color:var(--gold-pure); font-size:18px;"></i> Quick Certificate Generator (Instant Fetch or Custom Entry)
+                    </span>
+                    <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11px;" onclick="toggleQuickCertSection()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+                <p style="font-size:12.5px; color:#64748b; margin:-6px 0 14px 0;">
+                    Search a student or competition item to auto-fetch details from database, or type completely custom values. Click <b>Preview</b> or <b>Print</b> to produce the official A4 certificate.
+                </p>
+
+                <!-- ROW 1: Candidate Details (Search or Custom Entry) -->
+                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group" style="margin:0;">
+                        <label>Candidate Name (with prefix)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="qcName" placeholder="e.g. Kumari. MANIKARNIKA D PRABHU" oninput="searchQuickCertStudent(this.value)" autocomplete="off">
+                            <div id="qcStudentResults" class="autocomplete-items"></div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Admission No</label>
+                        <input type="text" id="qcAdmn" placeholder="e.g. 6767">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Standard (Class)</label>
+                        <input type="text" id="qcClass" placeholder="e.g. 5">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Division</label>
+                        <input type="text" id="qcDiv" placeholder="e.g. B">
+                    </div>
+                </div>
+
+                <!-- ROW 2: Event & Festival Details -->
+                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group" style="margin:0;">
+                        <label>Competition Item</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="qcItem" placeholder="e.g. IT QUIZ ( ഐ.ടി. ക്വിസ് )" oninput="searchQuickCertItem(this.value)" autocomplete="off">
+                            <div id="qcItemResults" class="autocomplete-items"></div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Name of Fest</label>
+                        <input type="text" id="qcFest" placeholder="e.g. IT FEST">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Place / Standing</label>
+                        <input type="text" id="qcPlace" placeholder="e.g. FIRST Place" value="FIRST Place">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Grade</label>
+                        <input type="text" id="qcGrade" placeholder="e.g. A Grade" value="A Grade">
+                    </div>
+                </div>
+
+                <!-- ROW 3: Date, Place & Signatory Details -->
+                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                    <div class="form-group" style="margin:0;">
+                        <label>Event Held On (Citation Date)</label>
+                        <input type="text" id="qcEventDate" placeholder="e.g. 11/09/2026" value="11/09/2026">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Certificate Issue Date</label>
+                        <input type="text" id="qcIssueDate" placeholder="e.g. 11/09/2026" value="11/09/2026">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Convenor Name</label>
+                        <input type="text" id="qcConvenor" placeholder="e.g. THEJAS R" value="THEJAS R">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Place of Issue</label>
+                        <input type="text" id="qcPlaceName" placeholder="e.g. Thuravoor" value="Thuravoor">
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-top:1px solid #edf2f7; padding-top:12px;">
+                    <button type="button" class="action-btn secondary" style="padding:7px 14px; font-size:12px;" onclick="resetQuickCertForm()">
+                        <i class="fas fa-rotate-left"></i> Reset Form
+                    </button>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="action-btn" style="padding:8px 18px; font-size:13px;" onclick="generateQuickCertificate(false)">
+                            <i class="fas fa-eye"></i> Preview Certificate
+                        </button>
+                        <button type="button" class="action-btn gold" style="padding:8px 18px; font-size:13px;" onclick="generateQuickCertificate(true)">
+                            <i class="fas fa-print"></i> Print Certificate (A4)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
 
             <div id="resultsContainer">
                 <p style="text-align:center; color:#999; padding:40px;">No published results available yet.</p>
@@ -5239,6 +5352,14 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             hideLoader();
 
             const saved = localStorage.getItem("uthsavOfficial");
+            // Check for Public Results URL access: ?view=results or ?public=results
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('view') === 'results' || urlParams.get('public') === 'results') {
+                hideLoader();
+                openPublicResults();
+                return;
+            }
+
             if (saved) { 
                 let u = JSON.parse(saved); 
                 startSession(u.id, u.name, u.role || "Official", u.access || "1,2,3"); 
@@ -8792,9 +8913,10 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         let results = [...dbPublishedResults];
 
-        // Check user roles
+        // 1. Declare User Roles (Fixes ReferenceError: isAdmin is not defined)
         const isStudent = currentUser && currentUser.role === "Student";
         const isJudge = currentUser && currentUser.role === "Judge";
+        const isAdmin = Boolean(currentUser && (currentUser.role === "Official" || (currentUser.access && String(currentUser.access).includes("3"))));
 
         // Filter based on Admin Scrutiny role permissions
         if (isStudent || isJudge) {
@@ -8899,11 +9021,10 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         const top3Places = ["FIRST Place", "SECOND Place", "THIRD Place"];
 
-        // 1. LEVEL 1: Category Headers (A-Z)
+        // LEVEL 1: Category Headers (A-Z)
         const sortedCategories = Object.keys(hierarchy).sort((a, b) => a.localeCompare(b));
 
         sortedCategories.forEach(cat => {
-            // Compute Category-wide 1st, 2nd, 3rd print tally
             let catTop3Total = 0;
             let catTop3Printed = 0;
             Object.keys(hierarchy[cat]).forEach(fn => {
@@ -8918,7 +9039,8 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             });
 
             const isCatAllPrinted = (catTop3Total > 0 && catTop3Printed === catTop3Total);
-            const catPrintSummaryHTML = catTop3Total > 0 ? `
+            // Visible ONLY to Admin
+            const catPrintSummaryHTML = (isAdmin && catTop3Total > 0) ? `
                 <span class="cert-print-pill ${isCatAllPrinted ? 'printed' : 'pending'}" style="font-size:11px; margin-right:8px;" title="Category Print Tally: ${catTop3Printed} of ${catTop3Total} Certificates Printed (1st, 2nd, 3rd)">
                     <i class="fas fa-print"></i> 1st-3rd: ${catTop3Printed}/${catTop3Total} <span class="print-text">Printed</span>
                 </span>
@@ -8936,14 +9058,13 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                     <div class="category-collapsible-content" style="display: none; width: 100%;">
             `;
 
-            // 2. LEVEL 2: Fest Headers (A-Z)
+            // LEVEL 2: Fest Headers (A-Z)
             const sortedFests = Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b));
 
             sortedFests.forEach(festName => {
                 const festItemsObj = hierarchy[cat][festName];
                 const sortedItems = Object.keys(festItemsObj).sort((a, b) => a.localeCompare(b));
 
-                // Compute Fest-wide 1st, 2nd, 3rd print tally
                 let festTop3Total = 0;
                 let festTop3Printed = 0;
                 sortedItems.forEach(ik => {
@@ -8956,7 +9077,8 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                 });
 
                 const isFestAllPrinted = (festTop3Total > 0 && festTop3Printed === festTop3Total);
-                const festPrintSummaryHTML = festTop3Total > 0 ? `
+                // Visible ONLY to Admin
+                const festPrintSummaryHTML = (isAdmin && festTop3Total > 0) ? `
                     <span class="cert-print-pill ${isFestAllPrinted ? 'printed' : 'pending'}" style="font-size:11px;" title="Festival Print Tally: ${festTop3Printed} of ${festTop3Total} Certificates Printed (1st, 2nd, 3rd)">
                         <i class="fas fa-print"></i> 1st-3rd: ${festTop3Printed}/${festTop3Total} <span class="print-text">Printed</span>
                     </span>
@@ -8981,24 +9103,25 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         <div class="fest-collapsible-content" style="display: none; width: 100%; margin-bottom: 8px;">
                 `;
 
-                // 3. LEVEL 3: Item Headers (A-Z) with CONCERNED 1st, 2nd, 3rd Print Status
+                // LEVEL 3: Item Headers (A-Z)
                 sortedItems.forEach(itemKey => {
                     const rows = festItemsObj[itemKey];
                     rows.sort((a, b) => parseFloat(b.score || 0) - parseFloat(a.score || 0));
 
-                    // Build Concerned 1st, 2nd, 3rd Place Status Badges for this specific Item
+                    // Visible ONLY to Admin
                     const top3Rows = rows.filter(r => top3Places.includes(r.place));
                     let itemPrintPillsHTML = "";
 
-                    if (top3Rows.length > 0) {
+                    if (isAdmin && top3Rows.length > 0) {
                         let pills = "";
                         top3Rows.forEach(r => {
                             const isP = isCertificatePrinted(r.id, r);
                             const rank = r.place === "FIRST Place" ? "1st" : (r.place === "SECOND Place" ? "2nd" : "3rd");
+                            const cName = typeof escapeHtml === "function" ? escapeHtml(r.candidateName || '') : (r.candidateName || '');
                             pills += `
                                 <span class="cert-print-pill ${isP ? 'printed' : 'pending'}" 
                                       id="hdr_pill_${r.id}" 
-                                      title="${rank} Place (${escapeHtml(r.candidateName || '')}): ${isP ? 'Certificate Printed' : 'Certificate Pending'}">
+                                      title="${rank} Place (${cName}): ${isP ? 'Certificate Printed' : 'Certificate Pending'}">
                                     <b>${rank}</b>: ${isP ? '<i class="fas fa-check"></i> <span class="print-text">Printed</span>' : '<i class="fas fa-clock"></i> <span class="print-text">Pending</span>'}
                                 </span>
                             `;
@@ -9015,7 +9138,6 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                                     <span class="result-badge-new"><i class="fas fa-bolt"></i> NEW</span>
                                 </div>
                                 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                                    <!-- CONCERNED 1ST, 2ND, 3RD PRINT STATUS SUMMARY -->
                                     ${itemPrintPillsHTML}
                                     <span style="font-size:11.5px; font-weight:normal; color:#64748b;">
                                         <i class="far fa-clock"></i> ${rows[0].publishedAt ? rows[0].publishedAt.split(',')[0] : 'Official'}
@@ -9077,7 +9199,6 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                                         <button type="button" class="action-btn" style="padding:5px 8px; font-size:12px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <!-- Faded print icon if print was taken in the past -->
                                         <button type="button" class="action-btn gold" id="print_btn_${row.id}" style="padding:5px 8px; font-size:12px;" title="${isPrinted ? 'Print already taken (Click to print again)' : 'Print Certificate'}" onclick="openCertificateModal('${row.id}', true)">
                                             <i class="fas fa-print" id="print_icon_${row.id}" style="${isPrinted ? 'opacity: 0.35;' : ''}"></i>
                                         </button>
@@ -9826,6 +9947,11 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
 
         const btnRes = document.getElementById('btnResultTab');
+        const btnToggleQuickCert = document.getElementById('btnToggleQuickCert');
+        if (btnToggleQuickCert) {
+            btnToggleQuickCert.style.display = isAdmin ? 'inline-flex' : 'none';
+        }
+        
         if (btnRes) btnRes.style.display = (isAdmin || (isStudent && studentTabs.includes("ResultTab")) || (isJudge && judgeTabs.includes("ResultTab"))) ? 'flex' : 'none';
 
         const btnSD = document.getElementById('btnSubDistrictTab');
@@ -13926,6 +14052,217 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
     
+    // ==========================================================================
+    // 25. PUBLIC RESULTS ACCESS CONTROLLER (VIEW WITHOUT LOGIN)
+    // ==========================================================================
+    function openPublicResults() {
+        // Initialize as a read-only Public Guest
+        currentUser = { id: 'public', name: 'Public Guest', role: 'Public', access: '' };
+
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appScreen').style.display = 'block';
+        document.getElementById('headerName').innerText = "Public Visitor";
+        document.getElementById('headerRole').innerText = "Guest";
+
+        // Hide all administrative & student-specific tabs
+        document.querySelectorAll('.tab button').forEach(b => b.style.display = 'none');
+        
+        // Show only the Results Tab
+        const btnRes = document.getElementById('btnResultTab');
+        if (btnRes) btnRes.style.display = 'flex';
+
+        // Hide notice banners & admin controls
+        const studentNotice = document.getElementById('studentGlobalNoticeBanner');
+        if (studentNotice) studentNotice.style.display = 'none';
+
+        openTab('ResultTab');
+    }
+
+    function copyPublicResultsLink() {
+        // Construct direct public link with ?view=results
+        const url = window.location.origin + window.location.pathname + '?view=results';
+        
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(() => {
+                showCustomDialog("Public Link Copied", `The direct results link has been copied to your clipboard:<br><br><code style="word-break:break-all; font-size:12px; color:#2563eb;">${url}</code><br><br>Anyone can open this link to view published results without logging in.`, "success");
+            }).catch(() => fallbackCopy(url));
+        } else {
+            fallbackCopy(url);
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showCustomDialog("Public Link Copied", `Direct results link:<br><br><code style="word-break:break-all; font-size:12px; color:#2563eb;">${text}</code>`, "success");
+            } catch (err) {
+                prompt("Copy this public results link:", text);
+            }
+            document.body.removeChild(ta);
+        }
+    }
+
+    // ==========================================================================
+    // 26. QUICK CERTIFICATE GENERATOR CONTROLLER (INSTANT FETCH / CUSTOM ENTRY)
+    // ==========================================================================
+    function toggleQuickCertSection() {
+        const sec = document.getElementById('quickCertSection');
+        if (!sec) return;
+        sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+        if (sec.style.display === 'block') {
+            sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    // Search and auto-fetch student details from database
+    function searchQuickCertStudent(query) {
+        const q = String(query || "").trim().toLowerCase();
+        const resultsBox = document.getElementById('qcStudentResults');
+        if (!resultsBox) return;
+        resultsBox.innerHTML = "";
+        if (!q) return;
+
+        const matches = dbStudents.filter(s => 
+            String(s["Admission Number"] || "").toLowerCase().includes(q) ||
+            String(s["Name"] || "").toLowerCase().includes(q) ||
+            String(s["Class"] || "").toLowerCase().includes(q)
+        ).slice(0, 8);
+
+        matches.forEach(st => {
+            const div = document.createElement('div');
+            div.innerHTML = `<b>${st["Admission Number"]}</b> - ${st["Name"]} (${st["Class"]} ${st["Division"] || ''})`;
+            div.onclick = () => selectQuickCertStudent(st);
+            resultsBox.appendChild(div);
+        });
+    }
+
+    function selectQuickCertStudent(st) {
+        const isGirl = String(st["Gender"] || "").toUpperCase() === 'F';
+        const salutation = isGirl ? 'Kumari.' : 'Master.';
+        let cleanName = String(st["Name"] || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
+
+        document.getElementById('qcName').value = `${salutation} ${cleanName}`;
+        document.getElementById('qcAdmn').value = st["Admission Number"] || "";
+        document.getElementById('qcClass').value = st["Class"] || "";
+        document.getElementById('qcDiv').value = st["Division"] || "";
+        document.getElementById('qcStudentResults').innerHTML = "";
+    }
+
+    // Search and auto-fetch item and fest details from database
+    function searchQuickCertItem(query) {
+        const q = String(query || "").trim().toLowerCase();
+        const resultsBox = document.getElementById('qcItemResults');
+        if (!resultsBox) return;
+        resultsBox.innerHTML = "";
+        if (!q) return;
+
+        const matches = dbFests.filter(f => 
+            String(f["Item"] || "").toLowerCase().includes(q) ||
+            String(f["Item Code"] || "").toLowerCase().includes(q) ||
+            String(f["Fest Name"] || "").toLowerCase().includes(q)
+        ).slice(0, 8);
+
+        matches.forEach(it => {
+            const div = document.createElement('div');
+            div.innerHTML = `<b>${it["Item"]}</b> [${it["Item Code"]}] <small style="color:#64748b;">(${it["Fest Name"]})</small>`;
+            div.onclick = () => selectQuickCertItem(it);
+            resultsBox.appendChild(div);
+        });
+    }
+
+    function selectQuickCertItem(it) {
+        document.getElementById('qcItem').value = it["Item"] || "";
+        document.getElementById('qcFest').value = it["Fest Name"] || "";
+        
+        // Auto-fetch convenor for this festival
+        const fest = it["Fest Name"];
+        const conv = (dbSettings.FestConvenors && dbSettings.FestConvenors[fest]) ? dbSettings.FestConvenors[fest] : "THEJAS R";
+        document.getElementById('qcConvenor').value = conv;
+
+        // Auto-fetch date if available
+        const festDate = getCertIssueDate(fest, "11/09/2026");
+        document.getElementById('qcEventDate').value = festDate;
+        document.getElementById('qcIssueDate').value = festDate;
+
+        document.getElementById('qcItemResults').innerHTML = "";
+    }
+
+    function resetQuickCertForm() {
+        document.getElementById('qcName').value = "";
+        document.getElementById('qcAdmn').value = "";
+        document.getElementById('qcClass').value = "";
+        document.getElementById('qcDiv').value = "";
+        document.getElementById('qcItem').value = "";
+        document.getElementById('qcFest').value = "";
+        document.getElementById('qcPlace').value = "FIRST Place";
+        document.getElementById('qcGrade').value = "A Grade";
+        document.getElementById('qcEventDate').value = "11/09/2026";
+        document.getElementById('qcIssueDate').value = "11/09/2026";
+        document.getElementById('qcConvenor').value = "THEJAS R";
+        document.getElementById('qcPlaceName').value = "Thuravoor";
+    }
+
+    // Generate certificate using custom or fetched parameters
+    function generateQuickCertificate(autoPrint = false) {
+        const name = (document.getElementById('qcName')?.value || "").trim();
+        const admn = (document.getElementById('qcAdmn')?.value || "").trim();
+        const cls = (document.getElementById('qcClass')?.value || "").trim();
+        const div = (document.getElementById('qcDiv')?.value || "").trim();
+        const item = (document.getElementById('qcItem')?.value || "").trim();
+        const fest = (document.getElementById('qcFest')?.value || "UTHSAV").trim();
+        const place = (document.getElementById('qcPlace')?.value || "FIRST Place").trim();
+        const grade = (document.getElementById('qcGrade')?.value || "A Grade").trim();
+        const eventDate = (document.getElementById('qcEventDate')?.value || "11/09/2026").trim();
+        const issueDate = (document.getElementById('qcIssueDate')?.value || "11/09/2026").trim();
+        const convenor = (document.getElementById('qcConvenor')?.value || "THEJAS R").trim();
+        const placeName = (document.getElementById('qcPlaceName')?.value || "Thuravoor").trim();
+
+        if (!name || !item) {
+            return showCustomDialog("Incomplete Details", "Please provide at least Candidate Name and Competition Item.", "warning");
+        }
+
+        // Render directly into #certModal
+        document.getElementById('certStudentName').innerText = name.toUpperCase();
+        document.getElementById('certStudentClass').innerHTML = `Standard: <b>${cls} ${div}</b> &bull; Admission No: <b>${admn || '-'}</b>`;
+        document.getElementById('certIssueDate').innerText = `Date: ${issueDate}`;
+        document.getElementById('certFestBadge').innerText = fest.toUpperCase();
+        document.getElementById('certConvenorName').innerText = convenor;
+
+        // Custom citation statement
+        document.getElementById('certStatement').innerHTML = `
+            has distinguished themselves by winning the <span class="cert-highlight-badge">${place}</span> with <span class="cert-highlight-badge">${grade}</span><br> in the <b>${item}</b> competition <br>held as part of <b>${fest.toUpperCase()}</b> on <b>${eventDate}</b>.
+        `;
+
+        // Update footer place if available
+        const placeSpan = document.querySelector('#certModal .cert-date-place span:last-child');
+        if (placeSpan) placeSpan.innerText = `Place: ${placeName}`;
+
+        // Hide group member switcher bar for single custom certificate
+        const groupBar = document.getElementById('certGroupMemberBar');
+        if (groupBar) groupBar.style.display = 'none';
+
+        // Display the Certificate Modal
+        const certModal = document.getElementById('certModal');
+        certModal.style.display = 'flex';
+
+        // Auto-fit to viewport
+        isCertActualSize = false;
+        setTimeout(() => {
+            if (typeof autoFitCertificate === "function") autoFitCertificate();
+        }, 50);
+
+        if (autoPrint) {
+            setTimeout(() => {
+                printModalDocument('certModal', 'landscape');
+            }, 350);
+        }
+    }
+
 
 </script>
 </html>
