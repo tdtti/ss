@@ -4054,18 +4054,24 @@
                     Search a student or competition item to auto-fetch details from database, or type completely custom values. Click <b>Preview</b> or <b>Print</b> to produce the official A4 certificate.
                 </p>
 
-                <!-- ROW 1: Candidate Details (Search or Custom Entry) -->
-                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                <!-- ROW 1: Candidate Details (Instant Fetch from DB or Custom Entry) -->
+                <div class="row" style="grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                     <div class="form-group" style="margin:0;">
-                        <label>Candidate Name (with prefix)</label>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <label style="margin:0;">Candidate Name (with prefix)</label>
+                            <span style="font-size:11px; font-weight:700; color:var(--accent);"><i class="fas fa-search"></i> Instant Fetch / New</span>
+                        </div>
                         <div class="autocomplete-container">
-                            <input type="text" id="qcName" placeholder="e.g. Kumari. MANIKARNIKA D PRABHU" oninput="searchQuickCertStudent(this.value)" autocomplete="off">
+                            <input type="text" id="qcName" 
+                                   placeholder="🔍 Type Name or Admn No to fetch..." 
+                                   oninput="searchQuickCertStudent(this.value)" 
+                                   autocomplete="off">
                             <div id="qcStudentResults" class="autocomplete-items"></div>
                         </div>
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label>Admission No</label>
-                        <input type="text" id="qcAdmn" placeholder="e.g. 6767">
+                        <input type="text" id="qcAdmn" placeholder="e.g. 6767" oninput="searchQuickCertByAdmn(this.value)">
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label>Standard (Class)</label>
@@ -4077,12 +4083,12 @@
                     </div>
                 </div>
 
-                <!-- ROW 2: Event & Festival Details -->
-                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+                <!-- ROW 2: Event Details, Place & Grade Select Dropdowns -->
+                <div class="row" style="grid-template-columns: 2fr 1.5fr 1.2fr 1fr; gap: 12px; margin-bottom: 12px;">
                     <div class="form-group" style="margin:0;">
                         <label>Competition Item</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="qcItem" placeholder="e.g. IT QUIZ ( ഐ.ടി. ക്വിസ് )" oninput="searchQuickCertItem(this.value)" autocomplete="off">
+                            <input type="text" id="qcItem" placeholder="🔍 e.g. IT QUIZ ( ഐ.ടി. ക്വിസ് )" oninput="searchQuickCertItem(this.value)" autocomplete="off">
                             <div id="qcItemResults" class="autocomplete-items"></div>
                         </div>
                     </div>
@@ -4090,13 +4096,25 @@
                         <label>Name of Fest</label>
                         <input type="text" id="qcFest" placeholder="e.g. IT FEST">
                     </div>
+                    <!-- SELECT DROPDOWN FOR PLACE / STANDING -->
                     <div class="form-group" style="margin:0;">
                         <label>Place / Standing</label>
-                        <input type="text" id="qcPlace" placeholder="e.g. FIRST Place" value="FIRST Place">
+                        <select id="qcPlace" style="font-weight:700;">
+                            <option value="FIRST Place" selected>FIRST Place</option>
+                            <option value="SECOND Place">SECOND Place</option>
+                            <option value="THIRD Place">THIRD Place</option>
+                            <option value="CONSOLATION PRIZE">CONSOLATION PRIZE</option>
+                        </select>
                     </div>
+                    <!-- SELECT DROPDOWN FOR GRADE -->
                     <div class="form-group" style="margin:0;">
                         <label>Grade</label>
-                        <input type="text" id="qcGrade" placeholder="e.g. A Grade" value="A Grade">
+                        <select id="qcGrade" style="font-weight:700;">
+                            <option value="A Grade" selected>A Grade (A)</option>
+                            <option value="B Grade">B Grade (B)</option>
+                            <option value="C Grade">C Grade (C)</option>
+                            <option value="D Grade">D Grade (D)</option>
+                        </select>
                     </div>
                 </div>
 
@@ -14119,7 +14137,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
-    // Search and auto-fetch student details from database
+    // --- 1. Instant Fetch Student by Name or Add as New ---
     function searchQuickCertStudent(query) {
         const q = String(query || "").trim().toLowerCase();
         const resultsBox = document.getElementById('qcStudentResults');
@@ -14127,31 +14145,153 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         resultsBox.innerHTML = "";
         if (!q) return;
 
+        // Search database by Name, Admission Number, or Class
         const matches = dbStudents.filter(s => 
             String(s["Admission Number"] || "").toLowerCase().includes(q) ||
             String(s["Name"] || "").toLowerCase().includes(q) ||
             String(s["Class"] || "").toLowerCase().includes(q)
         ).slice(0, 8);
 
+        // "Add as New / Custom" option at the top of the search dropdown
+        const customDiv = document.createElement('div');
+        customDiv.style.background = '#f0fdf4';
+        customDiv.style.color = '#166534';
+        customDiv.style.fontWeight = '700';
+        customDiv.style.borderBottom = '1px solid #bbf7d0';
+        customDiv.innerHTML = `<i class="fas fa-plus-circle" style="color:#10b981; margin-right:6px;"></i> Add as New: "<b>${escapeHtml(query.trim())}</b>"`;
+        customDiv.onclick = () => {
+            document.getElementById('qcName').value = query.trim();
+            resultsBox.innerHTML = "";
+            document.getElementById('qcAdmn').focus();
+        };
+        resultsBox.appendChild(customDiv);
+
         matches.forEach(st => {
+            const isGirl = String(st["Gender"] || "").toUpperCase() === 'F';
+            const prefix = isGirl ? 'Kumari.' : 'Master.';
+            const cleanName = String(st["Name"] || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
+            const fullNameWithPrefix = `${prefix} ${cleanName}`;
+
             const div = document.createElement('div');
-            div.innerHTML = `<b>${st["Admission Number"]}</b> - ${st["Name"]} (${st["Class"]} ${st["Division"] || ''})`;
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><b>${fullNameWithPrefix}</b> <small style="color:#64748b;">(Std: ${st["Class"] || ''} ${st["Division"] || ''})</small></span>
+                    <span class="badge-place place-2" style="font-size:10px;">Admn: ${st["Admission Number"] || '-'}</span>
+                </div>
+            `;
             div.onclick = () => selectQuickCertStudent(st);
             resultsBox.appendChild(div);
         });
     }
 
+    // --- 2. Instant Fetch Student by Admission No ---
+    function searchQuickCertByAdmn(admnQuery) {
+        const q = String(admnQuery || "").trim().toLowerCase();
+        if (!q) return;
+
+        const match = dbStudents.find(s => String(s["Admission Number"] || "").trim().toLowerCase() === q);
+        if (match) {
+            selectQuickCertStudent(match);
+        }
+    }
+
+    // --- 3. Auto-populate Candidate Details upon Database Selection ---
     function selectQuickCertStudent(st) {
         const isGirl = String(st["Gender"] || "").toUpperCase() === 'F';
         const salutation = isGirl ? 'Kumari.' : 'Master.';
         let cleanName = String(st["Name"] || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
 
+        // Auto-fills with Prefix, Name, Admission No, Standard, and Division
         document.getElementById('qcName').value = `${salutation} ${cleanName}`;
         document.getElementById('qcAdmn').value = st["Admission Number"] || "";
         document.getElementById('qcClass').value = st["Class"] || "";
         document.getElementById('qcDiv').value = st["Division"] || "";
-        document.getElementById('qcStudentResults').innerHTML = "";
+
+        const resultsBox = document.getElementById('qcStudentResults');
+        if (resultsBox) resultsBox.innerHTML = "";
     }
+
+    // --- 4. Reset Form to Default Template Values ---
+    function resetQuickCertForm() {
+        document.getElementById('qcName').value = "Kumari. MANIKARNIKA D PRABHU";
+        document.getElementById('qcAdmn').value = "6767";
+        document.getElementById('qcClass').value = "5";
+        document.getElementById('qcDiv').value = "B";
+        document.getElementById('qcItem').value = "IT QUIZ ( ഐ.ടി. ക്വിസ് )";
+        document.getElementById('qcFest').value = "IT FEST";
+        document.getElementById('qcPlace').value = "FIRST Place";
+        document.getElementById('qcGrade').value = "A Grade";
+        document.getElementById('qcEventDate').value = "11/09/2026";
+        document.getElementById('qcIssueDate').value = "11/09/2026";
+        document.getElementById('qcConvenor').value = "THEJAS R";
+        document.getElementById('qcPlaceName').value = "Thuravoor";
+
+        const resBox = document.getElementById('qcStudentResults');
+        if (resBox) resBox.innerHTML = "";
+        const itemBox = document.getElementById('qcItemResults');
+        if (itemBox) itemBox.innerHTML = "";
+    }
+
+    // --- 5. Generate and Preview / Print Certificate ---
+    function generateQuickCertificate(autoPrint = false) {
+        const name = (document.getElementById('qcName')?.value || "").trim();
+        const admn = (document.getElementById('qcAdmn')?.value || "").trim();
+        const cls = (document.getElementById('qcClass')?.value || "").trim();
+        const div = (document.getElementById('qcDiv')?.value || "").trim();
+        const item = (document.getElementById('qcItem')?.value || "").trim();
+        const fest = (document.getElementById('qcFest')?.value || "UTHSAV").trim();
+        const place = (document.getElementById('qcPlace')?.value || "FIRST Place").trim();
+        const rawGrade = (document.getElementById('qcGrade')?.value || "A Grade").trim();
+        const eventDate = (document.getElementById('qcEventDate')?.value || "11/09/2026").trim();
+        const issueDate = (document.getElementById('qcIssueDate')?.value || "11/09/2026").trim();
+        const convenor = (document.getElementById('qcConvenor')?.value || "THEJAS R").trim();
+        const placeName = (document.getElementById('qcPlaceName')?.value || "Thuravoor").trim();
+
+        if (!name || !item) {
+            return showCustomDialog("Incomplete Details", "Please provide at least Candidate Name and Competition Item.", "warning");
+        }
+
+        // Clean Grade format
+        const grade = rawGrade.toLowerCase().includes("grade") ? rawGrade : `${rawGrade} Grade`;
+
+        // Render values into #certModal
+        document.getElementById('certStudentName').innerText = name.toUpperCase();
+        document.getElementById('certStudentClass').innerHTML = `Standard: <b>${cls} ${div}</b> &bull; Admission No: <b>${admn || '-'}</b>`;
+        document.getElementById('certIssueDate').innerText = `Date: ${issueDate}`;
+        document.getElementById('certFestBadge').innerText = fest.toUpperCase();
+        document.getElementById('certConvenorName').innerText = convenor;
+
+        // Custom Citation Paragraph
+        document.getElementById('certStatement').innerHTML = `
+            has distinguished themselves by winning the <span class="cert-highlight-badge">${place}</span> with <span class="cert-highlight-badge">${grade}</span><br> in the <b>${item}</b> competition <br>held as part of <b>${fest.toUpperCase()}</b> on <b>${eventDate}</b>.
+        `;
+
+        // Footer Place
+        const placeSpan = document.querySelector('#certModal .cert-date-place span:last-child');
+        if (placeSpan) placeSpan.innerText = `Place: ${placeName}`;
+
+        // Hide group member switcher bar
+        const groupBar = document.getElementById('certGroupMemberBar');
+        if (groupBar) groupBar.style.display = 'none';
+
+        // Display Modal
+        const certModal = document.getElementById('certModal');
+        certModal.style.display = 'flex';
+
+        // Auto-fit to viewport
+        isCertActualSize = false;
+        setTimeout(() => {
+            if (typeof autoFitCertificate === "function") autoFitCertificate();
+        }, 50);
+
+        if (autoPrint) {
+            setTimeout(() => {
+                printModalDocument('certModal', 'landscape');
+            }, 350);
+        }
+    }
+
+   
 
     // Search and auto-fetch item and fest details from database
     function searchQuickCertItem(query) {
@@ -14191,78 +14331,5 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         document.getElementById('qcItemResults').innerHTML = "";
     }
-
-    function resetQuickCertForm() {
-        document.getElementById('qcName').value = "";
-        document.getElementById('qcAdmn').value = "";
-        document.getElementById('qcClass').value = "";
-        document.getElementById('qcDiv').value = "";
-        document.getElementById('qcItem').value = "";
-        document.getElementById('qcFest').value = "";
-        document.getElementById('qcPlace').value = "FIRST Place";
-        document.getElementById('qcGrade').value = "A Grade";
-        document.getElementById('qcEventDate').value = "11/09/2026";
-        document.getElementById('qcIssueDate').value = "11/09/2026";
-        document.getElementById('qcConvenor').value = "THEJAS R";
-        document.getElementById('qcPlaceName').value = "Thuravoor";
-    }
-
-    // Generate certificate using custom or fetched parameters
-    function generateQuickCertificate(autoPrint = false) {
-        const name = (document.getElementById('qcName')?.value || "").trim();
-        const admn = (document.getElementById('qcAdmn')?.value || "").trim();
-        const cls = (document.getElementById('qcClass')?.value || "").trim();
-        const div = (document.getElementById('qcDiv')?.value || "").trim();
-        const item = (document.getElementById('qcItem')?.value || "").trim();
-        const fest = (document.getElementById('qcFest')?.value || "UTHSAV").trim();
-        const place = (document.getElementById('qcPlace')?.value || "FIRST Place").trim();
-        const grade = (document.getElementById('qcGrade')?.value || "A Grade").trim();
-        const eventDate = (document.getElementById('qcEventDate')?.value || "11/09/2026").trim();
-        const issueDate = (document.getElementById('qcIssueDate')?.value || "11/09/2026").trim();
-        const convenor = (document.getElementById('qcConvenor')?.value || "THEJAS R").trim();
-        const placeName = (document.getElementById('qcPlaceName')?.value || "Thuravoor").trim();
-
-        if (!name || !item) {
-            return showCustomDialog("Incomplete Details", "Please provide at least Candidate Name and Competition Item.", "warning");
-        }
-
-        // Render directly into #certModal
-        document.getElementById('certStudentName').innerText = name.toUpperCase();
-        document.getElementById('certStudentClass').innerHTML = `Standard: <b>${cls} ${div}</b> &bull; Admission No: <b>${admn || '-'}</b>`;
-        document.getElementById('certIssueDate').innerText = `Date: ${issueDate}`;
-        document.getElementById('certFestBadge').innerText = fest.toUpperCase();
-        document.getElementById('certConvenorName').innerText = convenor;
-
-        // Custom citation statement
-        document.getElementById('certStatement').innerHTML = `
-            has distinguished themselves by winning the <span class="cert-highlight-badge">${place}</span> with <span class="cert-highlight-badge">${grade}</span><br> in the <b>${item}</b> competition <br>held as part of <b>${fest.toUpperCase()}</b> on <b>${eventDate}</b>.
-        `;
-
-        // Update footer place if available
-        const placeSpan = document.querySelector('#certModal .cert-date-place span:last-child');
-        if (placeSpan) placeSpan.innerText = `Place: ${placeName}`;
-
-        // Hide group member switcher bar for single custom certificate
-        const groupBar = document.getElementById('certGroupMemberBar');
-        if (groupBar) groupBar.style.display = 'none';
-
-        // Display the Certificate Modal
-        const certModal = document.getElementById('certModal');
-        certModal.style.display = 'flex';
-
-        // Auto-fit to viewport
-        isCertActualSize = false;
-        setTimeout(() => {
-            if (typeof autoFitCertificate === "function") autoFitCertificate();
-        }, 50);
-
-        if (autoPrint) {
-            setTimeout(() => {
-                printModalDocument('certModal', 'landscape');
-            }, 350);
-        }
-    }
-
-
 </script>
 </html>
