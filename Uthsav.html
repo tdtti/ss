@@ -561,7 +561,7 @@
     .rec-fest-head h5 { margin: 0; font-size: 14px; color: var(--text-main); font-weight: 700; }
 
     /* ==========================================================================
-       6. MINIMALIST CLEAN TABLES
+       6. MINIMALIST CLEAN TABLES & PLACE BADGES
        ========================================================================== */
     .table-responsive { 
         overflow-x: auto; 
@@ -615,7 +615,7 @@
     }
     .item-sub-head { 
         background: #ffffff; 
-        border: 1px solid var(--border);
+        border: 1px solid var(--border); 
         border-left: 3px solid var(--accent); 
         color: var(--text-main); 
         padding: 10px 14px; 
@@ -841,7 +841,7 @@
         -webkit-overflow-scrolling: touch; 
         display: flex; 
         justify-content: center;
-        align-items: center;
+        align-items: flex-start;
         background: #f1f5f9; 
         border-radius: var(--radius-sm); 
         margin-top: 6px;
@@ -851,6 +851,7 @@
 
     .cert-scale-stage {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         transition: transform 0.15s ease;
@@ -877,6 +878,7 @@
         box-sizing: border-box;
         padding: 12px;
         flex-shrink: 0;
+        margin-bottom: 24px;
     }
 
     .cert-outer-frame {
@@ -1184,7 +1186,7 @@
     }
 
     /* ==========================================================================
-       10. STRICT PRINT RULES (CERTIFICATES, REPORTS, TABULATION)
+       10. STRICT PRINT RULES (CERTIFICATES, REPORTS, TABULATION, BATCH)
        ========================================================================== */
     @page { 
         margin: 0 !important; 
@@ -1193,8 +1195,53 @@
     @media print {
         body * { visibility: hidden !important; }
         
-        /* 1. SINGLE-PAGE CERTIFICATE PRINTING (A4 LANDSCAPE) */
-        html, body.printing-cert {
+        /* ==========================================================================
+       DEDICATED A4 LANDSCAPE PAGE DEFINITION (MULTI-PAGE PAGINATION ENGINE)
+       ========================================================================== */
+    @page certLandscapeSheet {
+        size: 297mm 210mm landscape;
+        margin: 0 !important;
+    }
+
+    @media print {
+        body * { visibility: hidden !important; }
+
+        /* Hide all UI elements during certificate print */
+        body.printing-cert #appScreen,
+        body.printing-cert #loginScreen,
+        body.printing-cert #customDialogOverlay,
+        body.printing-cert #loadingOverlay,
+        body.printing-cert #reportModal,
+        body.printing-cert #subDistrictModal,
+        body.printing-cert #resultReportModal,
+        body.printing-cert #llPrintModal,
+        body.printing-cert #llViewModal,
+        body.printing-cert .no-print,
+        body.printing-batch-cert #appScreen,
+        body.printing-batch-cert #loginScreen,
+        body.printing-batch-cert #customDialogOverlay,
+        body.printing-batch-cert #loadingOverlay,
+        body.printing-batch-cert #reportModal,
+        body.printing-batch-cert #subDistrictModal,
+        body.printing-batch-cert #resultReportModal,
+        body.printing-batch-cert #llPrintModal,
+        body.printing-batch-cert #llViewModal,
+        body.printing-batch-cert .no-print {
+            display: none !important;
+        }
+
+        /* Reveal Certificate Modal */
+        body.printing-cert #certModal.active-print,
+        body.printing-cert #certModal.active-print *,
+        body.printing-batch-cert #certModal.active-print,
+        body.printing-batch-cert #certModal.active-print * {
+            visibility: visible !important;
+        }
+
+        /* 1. SINGLE CERTIFICATE PRINTING (EXACT 1 PAGE) */
+        html.printing-cert, 
+        body.printing-cert {
+            page: certLandscapeSheet !important;
             width: 297mm !important;
             height: 210mm !important;
             max-height: 210mm !important;
@@ -1204,23 +1251,6 @@
             background: #ffffff !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-        }
-
-        body.printing-cert #appScreen,
-        body.printing-cert #loginScreen,
-        body.printing-cert #customDialogOverlay,
-        body.printing-cert #loadingOverlay,
-        body.printing-cert #reportModal,
-        body.printing-cert #subDistrictModal,
-        body.printing-cert #resultReportModal,
-        body.printing-cert #llPrintModal,
-        body.printing-cert #llViewModal {
-            display: none !important;
-        }
-
-        body.printing-cert #certModal.active-print, 
-        body.printing-cert #certModal.active-print * { 
-            visibility: visible !important; 
         }
 
         body.printing-cert #certModal.active-print {
@@ -1237,111 +1267,118 @@
             justify-content: center !important;
             align-items: center !important;
             overflow: hidden !important;
-            page-break-after: avoid !important;
-            break-after: avoid !important;
         }
 
-        body.printing-cert #certModal.active-print .cert-modal-content {
+        body.printing-cert #certModal.active-print .cert-modal-content,
+        body.printing-cert #certModal.active-print .cert-scroll-wrapper,
+        body.printing-cert #certModal.active-print .cert-scale-stage {
             border: none !important;
             box-shadow: none !important;
             padding: 0 !important;
+            margin: 0 !important;
             width: 297mm !important;
             height: 210mm !important;
             max-height: 210mm !important;
+            overflow: hidden !important;
             background: #ffffff !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-        }
-
-        body.printing-cert #certModal.active-print .cert-scroll-wrapper { 
-            background: none !important; 
-            padding: 0 !important; 
-            margin: 0 !important;
-            overflow: visible !important; 
-            width: 297mm !important;
-            height: 210mm !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-        }
-
-        body.printing-cert #certModal.active-print .cert-scale-stage {
-            width: 100% !important;
-            height: 100% !important;
-            display: block !important;
             transform: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
         }
 
         body.printing-cert #certModal.active-print .cert-container {
             width: 297mm !important;
             max-width: 297mm !important;
-            height: 210mm !important;
-            max-height: 210mm !important;
-            transform: none !important;
+            height: 209.5mm !important;
+            max-height: 209.5mm !important;
             padding: 0 !important;
-            margin: auto !important;
+            margin: 0 auto !important;
             box-shadow: none !important;
+            transform: none !important;
             page-break-after: avoid !important;
             break-after: avoid !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
+            background: #ffffff !important;
         }
 
-        /* 2. BATCH PRINTING (INDIVIDUAL CERTIFICATES FOR EACH GROUP MEMBER) */
+        /* 2. MULTI-PAGE BATCH PRINTING (INDIVIDUAL CERTIFICATE PER PAGE FOR EVERY GROUP MEMBER) */
+        html.printing-batch-cert,
         body.printing-batch-cert {
+            page: certLandscapeSheet !important;
             width: 297mm !important;
-            background: #ffffff !important;
+            height: auto !important;
+            min-height: 100% !important;
+            max-height: none !important;
             margin: 0 !important;
             padding: 0 !important;
+            overflow: visible !important;
+            background: #ffffff !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
-        body.printing-batch-cert #appScreen,
-        body.printing-batch-cert #loginScreen,
-        body.printing-batch-cert #customDialogOverlay,
-        body.printing-batch-cert #loadingOverlay,
-        body.printing-batch-cert #reportModal,
-        body.printing-batch-cert #subDistrictModal,
-        body.printing-batch-cert #llPrintModal,
-        body.printing-batch-cert #llViewModal {
-            display: none !important;
-        }
-        body.printing-batch-cert #certModal.active-print,
-        body.printing-batch-cert #certModal.active-print * {
-            visibility: visible !important;
-        }
+
         body.printing-batch-cert #certModal.active-print {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 297mm !important;
+            position: static !important;
             display: block !important;
-            background: #fff !important;
-        }
-        body.printing-batch-cert #certModal.active-print .cert-scroll-wrapper {
+            width: 297mm !important;
+            height: auto !important;
+            max-height: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
             overflow: visible !important;
-            background: none !important;
-            padding: 0 !important;
-            display: block !important;
+            background: #ffffff !important;
+            box-shadow: none !important;
+            border: none !important;
         }
-        body.printing-batch-cert #certModal.active-print .cert-container {
+
+        body.printing-batch-cert #certModal.active-print .cert-modal-content,
+        body.printing-batch-cert #certModal.active-print .cert-scroll-wrapper,
+        body.printing-batch-cert #certModal.active-print .cert-scale-stage {
+            position: static !important;
+            display: block !important;
             width: 297mm !important;
-            height: 210mm !important;
-            max-height: 210mm !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            margin: 0 !important;
             padding: 0 !important;
-            margin: 0 auto 0 auto !important;
-            page-break-after: always !important;
-            break-after: page !important;
+            border: none !important;
+            box-shadow: none !important;
+            transform: none !important;
+            background: #ffffff !important;
+        }
+
+        body.printing-batch-cert #certModal.active-print .cert-individual-wrapper {
+            display: block !important;
+            width: 297mm !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        body.printing-batch-cert #certModal.active-print .cert-container {
+            display: block !important;
+            width: 297mm !important;
+            min-width: 297mm !important;
+            max-width: 297mm !important;
+            height: 209.5mm !important;
+            min-height: 209.5mm !important;
+            max-height: 209.5mm !important;
+            padding: 0 !important;
+            margin: 0 auto !important;
+            transform: none !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+            page-break-after: always !important;
+            break-after: page !important;
         }
-        body.printing-batch-cert #certModal.active-print .cert-container:last-child {
+
+        /* Prevent trailing blank sheet after the final certificate */
+        body.printing-batch-cert #certModal.active-print .cert-container:last-child,
+        body.printing-batch-cert #certModal.active-print .cert-individual-wrapper:last-child .cert-container {
             page-break-after: avoid !important;
             break-after: avoid !important;
         }
+    }
 
         /* 3. UNIVERSAL A4 PORTRAIT MULTI-PAGE REPORTS */
         body.printing-report-portrait {
@@ -1633,7 +1670,6 @@
     .ll-scroll-wrapper::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 4px; }
     .ll-scroll-wrapper::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
 
-    /* All 4 Screen Canvas Containers */
     #llItemsPrintContainer, 
     #llLotsPrintContainer,
     #llJudgeSheetPrintContainer, 
@@ -1648,7 +1684,6 @@
         box-sizing: border-box !important;
     }
 
-    /* Screen Preview Canvas Representation of A4 Portrait */
     .ll-page, .manual-sheet-page {
         width: 195mm !important;
         min-height: 275mm !important;
@@ -1665,7 +1700,7 @@
         overflow: hidden !important;
     }
 
-    /* SECTION 1: 1 Column x 4 Rows (100% Width x 25% Height each) */
+    /* SECTION 1: 1 Column x 4 Rows */
     .ll-items-grid {
         display: grid !important;
         grid-template-columns: 100% !important;
@@ -2120,7 +2155,6 @@
     }
     .ll-section-head:hover { background: #f8fafc !important; }
 
-    /* Manual Sheet Screen Card */
     .manual-sheet-page {
         padding: 14mm 14mm 12mm 14mm !important;
         border: 1.5px solid #1e293b !important;
@@ -2227,7 +2261,7 @@
     }
 
     /* ==========================================================================
-       17. RESTRUCTURED FULL-PAGE A4 PORTRAIT PRINT ENGINE (ALL 4 SECTIONS)
+       17. RESTRUCTURED FULL-PAGE A4 PORTRAIT PRINT ENGINE (L&L)
        ========================================================================== */
     @page llPortraitPage {
         size: 210mm 297mm portrait;
@@ -2235,7 +2269,6 @@
     }
 
     @media print {
-        /* Force HTML and BODY to physical A4 Portrait (210mm x 297mm) */
         html, 
         body.printing-ll-portrait,
         html, 
@@ -2254,7 +2287,6 @@
             print-color-adjust: exact !important;
         }
 
-        /* Hide all background app elements */
         body.printing-ll-portrait #appScreen,
         body.printing-ll-portrait #loginScreen,
         body.printing-ll-portrait #customDialogOverlay,
@@ -2272,7 +2304,6 @@
             display: none !important;
         }
 
-        /* Reveal Modal Wrapper for Printing */
         body.printing-ll-portrait #llViewModal.active-print,
         body.printing-ll-portrait #llViewModal.active-print *,
         body.printing-manual-sheet #llViewModal.active-print,
@@ -2312,7 +2343,6 @@
             display: block !important;
         }
 
-        /* 100% WIDTH & HEIGHT PAGE FIT RULES FOR ALL 4 SECTIONS */
         body.printing-ll-portrait #llViewModal.active-print .ll-page,
         body.printing-manual-sheet #llViewModal.active-print .ll-page,
         body.printing-ll-portrait #llViewModal.active-print .manual-sheet-page,
@@ -2343,7 +2373,6 @@
             break-after: avoid !important;
         }
 
-        /* SECTION 1 PRINT: 4 EQUAL QUARTERS FITTING FULL HEIGHT */
         body.printing-ll-portrait .ll-items-grid,
         body.printing-manual-sheet .ll-items-grid {
             height: 100% !important;
@@ -2370,7 +2399,6 @@
         body.printing-ll-portrait .ll-item-festname { font-size: 18px !important; margin-bottom: 10px !important; }
         body.printing-ll-portrait .ll-item-mainhead { font-size: 32px !important; line-height: 1.25 !important; }
 
-        /* SECTION 2 PRINT: 8 LOT LABELS FITTING FULL A4 */
         body.printing-ll-portrait .ll-lots-grid,
         body.printing-manual-sheet .ll-lots-grid {
             height: 100% !important;
@@ -2396,7 +2424,6 @@
         body.printing-ll-portrait .ll-lot-meta { font-size: 11.5px !important; line-height: 1.3 !important; }
         body.printing-ll-portrait .ll-lot-meta b { font-size: 13.5px !important; }
 
-        /* SECTIONS 3 & 4 PRINT: MANUAL SHEETS (100% A4 FIT) */
         body.printing-ll-portrait .manual-sheet-page,
         body.printing-manual-sheet .manual-sheet-page {
             display: flex !important;
@@ -2445,7 +2472,6 @@
         .tab-badge-notification { top: -2px; right: -2px; font-size: 8px; padding: 1px 4px; }
         .section { padding: 16px; border-radius: var(--radius-md); }
 
-        /* L&L Mobile Viewport Rules */
         #LLTab .section {
             padding: 12px 10px !important;
         }
@@ -2561,7 +2587,6 @@
         white-space: nowrap;
     }
 
-    /* Print styling for Event Chart */
     @media print {
         body.printing-event-chart {
             background: #ffffff !important;
@@ -2604,7 +2629,7 @@
        20. NOTICE BOOK & DAY-BASED EVENT CHART STYLES
        ========================================================================== */
     .event-chart-notice-head {
-        background: #1e3a8a !important; /* Deep Royal Navy */
+        background: #1e3a8a !important;
         color: #ffffff !important;
         padding: 12px 18px !important;
         border-radius: var(--radius-sm);
@@ -2635,10 +2660,6 @@
     }
     .event-chart-day-head:hover { background: #1e293b !important; }
 
-    
-    /* ==========================================================================
-       NOTICE BOOK MULTIPLE IMAGES STYLES
-       ========================================================================== */
     .notice-images-stream {
         display: flex;
         flex-direction: column;
@@ -2678,7 +2699,6 @@
     }
     .notice-page-img:hover { opacity: 0.95; }
 
-    /* Admin Tab Thumbnail Preview Strip */
     .admin-notice-preview-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -2712,7 +2732,7 @@
     }
 
     /* ==========================================================================
-       23. QUICK SPORTS REGISTRATION (MULTI-ITEM RAPID ENTRY)
+       21. QUICK SPORTS REGISTRATION (MULTI-ITEM RAPID ENTRY)
        ========================================================================== */
     .quick-sports-section {
         background: #ffffff;
@@ -2780,7 +2800,7 @@
     }
 
     /* ==========================================================================
-       MULTI-LOT EVALUATION SCOREBOARD STYLES
+       22. MULTI-LOT EVALUATION SCOREBOARD STYLES
        ========================================================================== */
     .multi-lot-table {
         width: 100%;
@@ -2833,7 +2853,6 @@
         min-width: 48px;
     }
 
-    /* Multi-Lot Cards Layout */
     .multi-lot-cards-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -2869,9 +2888,8 @@
         border-bottom: 1px solid var(--border-subtle);
     }
 
-
     /* ==========================================================================
-       RESTRUCTURED ADMIN JUDGES PANEL ON JUDGEMENT CARDS
+       23. ADMIN JUDGES PANEL ON JUDGEMENT CARDS
        ========================================================================== */
     .admin-card-judges-panel {
         background: var(--surface-subtle);
@@ -2903,12 +2921,8 @@
         margin-bottom: 5px;
         transition: background 0.12s ease;
     }
-    .admin-judge-row:last-child {
-        margin-bottom: 0;
-    }
-    .admin-judge-row:hover {
-        background: #f8fafc;
-    }
+    .admin-judge-row:last-child { margin-bottom: 0; }
+    .admin-judge-row:hover { background: #f8fafc; }
     .master-judge-pill {
         background: #f5f3ff;
         color: #7c3aed;
@@ -2920,10 +2934,9 @@
         letter-spacing: 0.5px;
         white-space: nowrap;
     }
-    
 
     /* ==========================================================================
-       PRINT STATUS SUMMARY PILLS FOR RESULTS COLLAPSIBLE HEADERS
+       24. PRINT STATUS SUMMARY PILLS
        ========================================================================== */
     .cert-print-pill {
         font-size: 10.5px;
@@ -2956,15 +2969,127 @@
     }
 
     @media (max-width: 768px) {
-        .cert-print-pill .print-text {
-            display: none; /* Shows compact "1st ✔" on phones */
-        }
+        .cert-print-pill .print-text { display: none; }
     }
 
+    /* ==========================================================================
+       25. RESTRUCTURED RESULT TAB: SUB-NAV, CHAMPIONSHIPS & WINNER CARDS
+       ========================================================================== */
+    .res-subnav-bar {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 6px 4px 12px 4px;
+        border-bottom: 2px solid var(--border-subtle);
+        margin-bottom: 18px;
+        -webkit-overflow-scrolling: touch;
+    }
 
-    option[value="Fest"] { display: none !important; }
+    .res-subtab-btn {
+        background: #ffffff;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px 14px;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--text-muted);
+        cursor: pointer;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all 0.15s ease;
+    }
+
+    .res-subtab-btn:hover {
+        background: var(--surface-subtle);
+        color: var(--text-main);
+        border-color: #cbd5e1;
+    }
+
+    .res-subtab-btn.active {
+        background: var(--primary);
+        color: #ffffff !important;
+        border-color: var(--primary);
+        box-shadow: var(--shadow-subtle);
+    }
+
+    .res-subtab-btn.active.kalo {
+        background: #7c3aed;
+        border-color: #7c3aed;
+    }
+
+    .res-subtab-btn.active.sports {
+        background: #059669;
+        border-color: #059669;
+    }
+
+    /* Sortable Table Column Headers */
+    th.sortable-th {
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.12s ease;
+    }
+
+    th.sortable-th:hover {
+        background: #e2e8f0;
+        color: var(--text-main);
+    }
+
+    /* Non-collapsible Item Winner Card */
+    .res-winner-card {
+        background: #ffffff;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-md);
+        margin-bottom: 16px;
+        overflow: hidden;
+        box-shadow: var(--shadow-subtle);
+    }
+
+    .res-winner-card-head {
+        background: #f8fafc;
+        border-bottom: 1.5px solid var(--border);
+        padding: 10px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .res-winner-card-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text-main);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .place-pill-1 {
+        background: #fef08a !important;
+        color: #854d0e !important;
+        border: 1px solid #facc15 !important;
+        font-weight: 900 !important;
+    }
+
+    .place-pill-2 {
+        background: #e2e8f0 !important;
+        color: #334155 !important;
+        border: 1px solid #cbd5e1 !important;
+        font-weight: 900 !important;
+    }
+
+    .place-pill-3 {
+        background: #ffedd5 !important;
+        color: #9a3412 !important;
+        border: 1px solid #fdba74 !important;
+        font-weight: 900 !important;
+    }
+
     option[value=""] { display: none !important; }
-
+    option[value=""] { display: none !important; }
 </style>
 
 
@@ -3754,11 +3879,11 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Admn No</th>
+                                <th style="width:90px;">Admn No</th>
                                 <th>Candidate / Team Leader</th>
-                                <th>Class & Div</th>
-                                <th>Current Lot Number</th>
-                                <th>Action</th>
+                                <th style="width:110px;">Class & Div</th>
+                                <th style="width:140px; text-align:center;">Current Lot Number</th>
+                                <th style="width:170px; text-align:center;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="lotAllocationTbody">
@@ -3997,14 +4122,23 @@
 
         <!-- TAB 5: TABULATION TAB -->
         <div id="TabulationTab" class="tabcontent">
-            <div class="filters">
-                <select id="tabFilterClassification" onchange="renderTabulation()">
-                    <option value="ALL">All Classifications</option>
-                    <option value="Kalothswom">Kalothswom</option>
-                    <option value="Fest">Fest</option>
-                    <option value="Sports">Sports</option>
-                </select>
-                <input type="text" id="tabSearch" placeholder="Search by Item, Code or Student..." oninput="renderTabulation()" style="flex:2;">
+            <div class="filters" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; gap:10px; flex:2; min-width:260px; flex-wrap:wrap;">
+                    <select id="tabFilterClassification" onchange="renderTabulation()">
+                        <option value="ALL">All Classifications</option>
+                        <option value="Kalothswom">Kalothswom</option>
+                        <option value="Fest">Fest</option>
+                        <option value="Sports">Sports</option>
+                    </select>
+                    <input type="text" id="tabSearch" placeholder="Search by Item, Code or Student..." oninput="renderTabulation()" style="flex:2; min-width:200px;">
+                </div>
+
+                <!-- ADMIN REPUBLISH BUTTON -->
+                <div id="tabAdminActionBtns" style="display:inline-flex; gap:8px;">
+                    <button type="button" class="action-btn danger" onclick="confirmClearAndRepublishAll()" title="Purge current results and regenerate directly from Tabulation scores">
+                        <i class="fas fa-rotate"></i> <span>Clear & Republish All Results</span>
+                    </button>
+                </div>
             </div>
 
             <div id="tabulationContainer">
@@ -4012,60 +4146,45 @@
             </div>
         </div>
 
-        <!-- TAB 6: RESULT TAB -->
-        <div class="filters">
-                <select id="resultFilterCategory" onchange="renderResults()">
-                    <option value="ALL">All Classifications</option>
-                    <option value="Kalothswom">Kalothswom</option>
-                    <option value="Fest">Fest</option>
-                    <option value="Sports">Sports</option>
-                </select>
-                <input type="text" id="resultSearch" placeholder="Search by student name, item or class..." oninput="renderResults()" style="flex:2;">
+        <!-- TAB 6: RESULT TAB (RESTRUCTURED) -->
+        <div id="ResultTab" class="tabcontent">
+            <!-- Global Action Bar -->
+            <div class="filters no-print" style="margin-bottom: 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <input type="text" id="resultSearch" placeholder="🔍 Search winner, item, class, or admission no..." oninput="renderActiveResultView()" style="flex:2; min-width: 220px;">
                 
-                <button type="button" class="action-btn" onclick="openResultsReport(false)" title="View Complete Results Directory">
-                    <i class="fas fa-eye"></i> <span>View Directory</span>
-                </button>
-                <button type="button" class="action-btn gold" onclick="openResultsReport(true)" title="Print Complete Results Directory">
-                    <i class="fas fa-print"></i> <span>Print Results</span>
-                </button>
-
-                <!-- NEW: Share Public Results Link -->
-                <button type="button" class="action-btn purple" onclick="copyPublicResultsLink()" title="Copy direct public results link for sharing without login">
-                    <i class="fas fa-share-alt"></i> <span>Share Public Link</span>
-                </button>
-
-                <!-- NEW: Admin Toggle for Quick Certificate Generator -->
-                <button type="button" id="btnToggleQuickCert" class="action-btn gold" style="display:none;" onclick="toggleQuickCertSection()" title="Quick Generate Certificate">
-                    <i class="fas fa-certificate"></i> <span>Quick Certificate</span>
-                </button>
+                <!-- ADMIN-ONLY ACTION BUTTONS: VIEWABLE ONLY FOR ADMIN LOGIN -->
+                <div id="resAdminButtons" style="display:none; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <button type="button" class="action-btn" onclick="openResultsReport(false)" title="View Complete Results Directory">
+                        <i class="fas fa-eye"></i> <span>View Directory</span>
+                    </button>
+                    <button type="button" class="action-btn gold" onclick="openResultsReport(true)" title="Print Complete Results Directory">
+                        <i class="fas fa-print"></i> <span>Print Results</span>
+                    </button>
+                    <button type="button" class="action-btn purple" onclick="copyPublicResultsLink()" title="Share Public Link">
+                        <i class="fas fa-share-alt"></i> <span>Share Public Link</span>
+                    </button>
+                    <button type="button" id="btnToggleQuickCert" class="action-btn gold" onclick="toggleQuickCertSection()" title="Quick Certificate Generator">
+                        <i class="fas fa-certificate"></i> <span>Quick Certificate</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- QUICK GENERATE CERTIFICATE SECTION (ADMIN ONLY - INSTANT FETCH OR CUSTOM ENTRY) -->
+            <!-- QUICK CERTIFICATE GENERATOR (ADMIN ONLY) -->
             <div class="section no-print" id="quickCertSection" style="display:none; border-left: 5px solid var(--gold-pure); background:#ffffff; margin-bottom: 20px;">
                 <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                     <span style="color:#854d0e; font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
-                        <i class="fas fa-certificate" style="color:var(--gold-pure); font-size:18px;"></i> Quick Certificate Generator (Instant Fetch or Custom Entry)
+                        <i class="fas fa-certificate" style="color:var(--gold-pure); font-size:18px;"></i> Quick Certificate Generator
                     </span>
                     <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11px;" onclick="toggleQuickCertSection()">
                         <i class="fas fa-times"></i> Close
                     </button>
                 </div>
-                <p style="font-size:12.5px; color:#64748b; margin:-6px 0 14px 0;">
-                    Search a student or competition item to auto-fetch details from database, or type completely custom values. Click <b>Preview</b> or <b>Print</b> to produce the official A4 certificate.
-                </p>
 
-                <!-- ROW 1: Candidate Details (Instant Fetch from DB or Custom Entry) -->
                 <div class="row" style="grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                     <div class="form-group" style="margin:0;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                            <label style="margin:0;">Candidate Name (with prefix)</label>
-                            <span style="font-size:11px; font-weight:700; color:var(--accent);"><i class="fas fa-search"></i> Instant Fetch / New</span>
-                        </div>
+                        <label>Candidate Name (with prefix)</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="qcName" 
-                                   placeholder="🔍 Type Name or Admn No to fetch..." 
-                                   oninput="searchQuickCertStudent(this.value)" 
-                                   autocomplete="off">
+                            <input type="text" id="qcName" placeholder="🔍 Type Name or Admn No..." oninput="searchQuickCertStudent(this.value)" autocomplete="off">
                             <div id="qcStudentResults" class="autocomplete-items"></div>
                         </div>
                     </div>
@@ -4083,12 +4202,11 @@
                     </div>
                 </div>
 
-                <!-- ROW 2: Event Details, Place & Grade Select Dropdowns -->
                 <div class="row" style="grid-template-columns: 2fr 1.5fr 1.2fr 1fr; gap: 12px; margin-bottom: 12px;">
                     <div class="form-group" style="margin:0;">
                         <label>Competition Item</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="qcItem" placeholder="🔍 e.g. IT QUIZ ( ഐ.ടി. ക്വിസ് )" oninput="searchQuickCertItem(this.value)" autocomplete="off">
+                            <input type="text" id="qcItem" placeholder="🔍 e.g. IT QUIZ" oninput="searchQuickCertItem(this.value)" autocomplete="off">
                             <div id="qcItemResults" class="autocomplete-items"></div>
                         </div>
                     </div>
@@ -4096,67 +4214,110 @@
                         <label>Name of Fest</label>
                         <input type="text" id="qcFest" placeholder="e.g. IT FEST">
                     </div>
-                    <!-- SELECT DROPDOWN FOR PLACE / STANDING -->
                     <div class="form-group" style="margin:0;">
                         <label>Place / Standing</label>
                         <select id="qcPlace" style="font-weight:700;">
                             <option value="FIRST Place" selected>FIRST Place</option>
                             <option value="SECOND Place">SECOND Place</option>
                             <option value="THIRD Place">THIRD Place</option>
-                            <option value="CONSOLATION PRIZE">CONSOLATION PRIZE</option>
                         </select>
                     </div>
-                    <!-- SELECT DROPDOWN FOR GRADE -->
                     <div class="form-group" style="margin:0;">
                         <label>Grade</label>
                         <select id="qcGrade" style="font-weight:700;">
                             <option value="A Grade" selected>A Grade (A)</option>
                             <option value="B Grade">B Grade (B)</option>
                             <option value="C Grade">C Grade (C)</option>
-                            <option value="D Grade">D Grade (D)</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- ROW 3: Date, Place & Signatory Details -->
                 <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
                     <div class="form-group" style="margin:0;">
-                        <label>Event Held On (Citation Date)</label>
-                        <input type="text" id="qcEventDate" placeholder="e.g. 11/09/2026" value="11/09/2026">
+                        <label>Event Date</label>
+                        <input type="text" id="qcEventDate" value="20/02/2026">
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label>Certificate Issue Date</label>
-                        <input type="text" id="qcIssueDate" placeholder="e.g. 11/09/2026" value="11/09/2026">
+                        <input type="text" id="qcIssueDate" value="20/02/2026">
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label>Convenor Name</label>
-                        <input type="text" id="qcConvenor" placeholder="e.g. THEJAS R" value="THEJAS R">
+                        <input type="text" id="qcConvenor" value="THEJAS R">
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label>Place of Issue</label>
-                        <input type="text" id="qcPlaceName" placeholder="e.g. Thuravoor" value="Thuravoor">
+                        <input type="text" id="qcPlaceName" value="Thuravoor">
                     </div>
                 </div>
 
-                <!-- Action Buttons -->
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-top:1px solid #edf2f7; padding-top:12px;">
-                    <button type="button" class="action-btn secondary" style="padding:7px 14px; font-size:12px;" onclick="resetQuickCertForm()">
-                        <i class="fas fa-rotate-left"></i> Reset Form
-                    </button>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #edf2f7; padding-top:12px;">
+                    <button type="button" class="action-btn secondary" onclick="resetQuickCertForm()"><i class="fas fa-rotate-left"></i> Reset</button>
                     <div style="display:flex; gap:8px;">
-                        <button type="button" class="action-btn" style="padding:8px 18px; font-size:13px;" onclick="generateQuickCertificate(false)">
-                            <i class="fas fa-eye"></i> Preview Certificate
-                        </button>
-                        <button type="button" class="action-btn gold" style="padding:8px 18px; font-size:13px;" onclick="generateQuickCertificate(true)">
-                            <i class="fas fa-print"></i> Print Certificate (A4)
-                        </button>
+                        <button type="button" class="action-btn" onclick="generateQuickCertificate(false)"><i class="fas fa-eye"></i> Preview</button>
+                        <button type="button" class="action-btn gold" onclick="generateQuickCertificate(true)"><i class="fas fa-print"></i> Print (A4)</button>
                     </div>
                 </div>
             </div>
 
+            <!-- RESULT TAB SUB-NAV (DYNAMIC FESTIVAL & CHAMPIONSHIP TABS) -->
+            <div class="res-subnav-bar no-print" id="resSubNavBar">
+                <button type="button" class="res-subtab-btn active" onclick="switchResultSubTab('championship')">
+                    <i class="fas fa-trophy" style="color:#d97706;"></i> <span>Class Championship</span>
+                </button>
+                <button type="button" class="res-subtab-btn" onclick="switchResultSubTab('individual')">
+                    <i class="fas fa-medal" style="color:#7c3aed;"></i> <span>Individual Champions</span>
+                </button>
+                <!-- Dynamic Festival Tabs will be injected here -->
+            </div>
 
-            <div id="resultsContainer">
-                <p style="text-align:center; color:#999; padding:40px;">No published results available yet.</p>
+            <!-- VIEW 1: OVERALL CHAMPIONSHIP POINTS TABLE -->
+            <div id="viewChampionship" class="res-subtab-view">
+                <div class="section" style="border-top: 4px solid var(--accent); margin-bottom: 20px;">
+                    <div class="section-title">
+                        <span><i class="fas fa-trophy" style="color:var(--gold-pure);"></i> Overall Championship Points Table</span>
+                        <small style="color:var(--text-muted); font-size:12px; font-weight:600;">(1st: 5 pts | 2nd: 3 pts | 3rd: 1 pt)</small>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="width:50px; text-align:center;">Rank</th>
+                                    <th>Class & Division</th>
+                                    <th style="text-align:center; background:#fefce8; color:#854d0e;">1st</th>
+                                    <th style="text-align:center; background:#f8fafc; color:#334155;">2nd</th>
+                                    <th style="text-align:center; background:#fff7ed; color:#9a3412;">3rd</th>
+                                    <th style="text-align:center; color:#7c3aed;">Kalothswom (Meghamalhar)</th>
+                                    <th style="text-align:center; color:#2563eb;">Fest</th>
+                                    <th style="text-align:center; color:#059669;">Sports</th>
+                                    <th style="text-align:center; font-weight:900; color:var(--primary); font-size:13px;">Total Points</th>
+                                </tr>
+                            </thead>
+                            <tbody id="championshipTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: INDIVIDUAL RANK SHEET -->
+            <div id="viewIndividual" class="res-subtab-view" style="display:none;">
+                <div class="section" style="border-top: 4px solid #7c3aed; margin-bottom: 20px;">
+                    <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <span><i class="fas fa-medal" style="color:#7c3aed;"></i> Individual Championship Rank Sheet</span>
+                        <span id="indivChampCount" class="badge-place place-2" style="font-size:11px;">0 Candidates</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead id="indivThead"></thead>
+                            <tbody id="indivTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 3: DYNAMIC FESTIVAL WINNERS (NON-COLLAPSIBLE, ONLY 1st, 2nd, 3rd) -->
+            <div id="viewFestWinners" class="res-subtab-view" style="display:none;">
+                <div id="festWinnersContainer"></div>
             </div>
         </div>
 
@@ -4714,9 +4875,9 @@
                 <i class="fas fa-award"></i> Certificate of Merit Preview
             </h3>
 
-            <button type="button" class="action-btn gold" onclick="printModalDocument('certModal', 'landscape')" title="Print Certificate">
-                <i class="fas fa-print"></i> <span>Print Certificate (A4)</span>
-            </button>
+            <button type="button" class="action-btn gold" id="btnMainCertPrint" onclick="printModalDocument('certModal', 'landscape')" title="Print Certificate">
+    <i class="fas fa-print"></i> <span id="btnMainCertPrintText">Print Certificate (A4)</span>
+</button>
         </div>
 
         <div id="certGroupMemberBar" class="cert-group-bar no-print" style="display:none;">
@@ -5075,6 +5236,13 @@
     let editingStudentDocId = null;
     let dbNoticeBook = null;
     let stagedNoticeImages = []; // Stores Base64 images for preview/save
+
+
+    let allEmSortedItems = [], 
+    allJudgeSortedItems = [], 
+    selectedEditingFestOldName = null, 
+    currentSchedFestItems = [];
+
 
     function getFestivalCategory(festName) {
         if (!festName) return "Kalothswom";
@@ -5493,6 +5661,12 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         const isRegVisibleSetting = dbSettings.Student_Reg_Visible !== "HIDE";
         const studentTabs = dbSettings.Student_Allowed_Tabs || ["RegTab", "RecTab", "EventChartTab", "ResultTab", "SubDistrictTab"];
         const canStudentSeeTab1 = isRegOpen && isRegVisibleSetting && hasEnabledFests && studentTabs.includes("RegTab");
+
+        // Exclusively show Result Action Buttons to Admin Login
+        const resAdminButtons = document.getElementById('resAdminButtons');
+        if (resAdminButtons) {
+            resAdminButtons.style.display = isAdmin ? 'inline-flex' : 'none';
+        }
 
         const adminReportControls = document.getElementById('adminReportControls');
         if (adminReportControls) {
@@ -6530,21 +6704,30 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         document.getElementById('reportModal').style.display = 'none';
     }
 
-    // Universal Modal Print Function
     function printModalDocument(modalId, orientation = 'portrait') {
         const modal = document.getElementById(modalId);
         if (!modal) return;
 
         const isCert = (modalId === 'certModal' || orientation === 'landscape');
+        
+        // If a group result is open, automatically route to the batch print engine
+        if (isCert && currentCertMembers && currentCertMembers.length > 1) {
+            printAllGroupCertificatesDirect(currentActiveCertResult ? currentActiveCertResult.id : null);
+            return;
+        }
+
         if (isCert && currentActiveCertResult) {
-        markCertificateAsPrinted(currentActiveCertResult.id); // <-- Record print if printed from modal preview
-    }
-        // Remove prior printing classes
-        document.body.classList.remove('printing-cert', 'printing-report-portrait', 'printing-ll-portrait');
+            markCertificateAsPrinted(currentActiveCertResult.id);
+        }
+
+        document.body.classList.remove('printing-cert', 'printing-report-portrait', 'printing-batch-cert');
+        document.documentElement.classList.remove('printing-cert', 'printing-report-portrait', 'printing-batch-cert');
 
         if (isCert) {
+            document.documentElement.classList.add('printing-cert');
             document.body.classList.add('printing-cert');
         } else {
+            document.documentElement.classList.add('printing-report-portrait');
             document.body.classList.add('printing-report-portrait');
         }
 
@@ -6552,11 +6735,8 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         window.print();
         modal.classList.remove('active-print');
 
-        if (isCert) {
-            document.body.classList.remove('printing-cert');
-        } else {
-            document.body.classList.remove('printing-report-portrait');
-        }
+        document.documentElement.classList.remove('printing-cert', 'printing-report-portrait');
+        document.body.classList.remove('printing-cert', 'printing-report-portrait');
     }
 
     // --- TAB 3: EVENT MANAGEMENT TAB ---
@@ -6854,36 +7034,62 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         return "INACTIVE";
     }
 
+    // ==========================================================================
+    // EVENT MANAGEMENT: LOT ALLOTMENT (GROUP: TEAM LEADER ONLY + EDIT/DELETE)
+    // ==========================================================================
     function loadEventMgmtItemDetails() {
-        const code = document.getElementById('emItemSelect').value;
+        const code = document.getElementById('emItemSelect')?.value;
         const statusInp = document.getElementById('emItemStatus');
         const tbody = document.getElementById('lotAllocationTbody');
+        if (!tbody) return;
         tbody.innerHTML = "";
 
         if (!code) {
-            statusInp.value = "";
+            if (statusInp) statusInp.value = "";
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999;">Select an item above to load participants.</td></tr>`;
             return;
         }
 
         const status = getItemLiveStatus(code);
-        if (status === "COMPLETED") {
-            statusInp.value = "COMPLETED (Judgement Finished)";
-            statusInp.style.color = "var(--purple)";
-        } else if (status === "ACTIVE") {
-            statusInp.value = "ACTIVE (Running Now)";
-            statusInp.style.color = "var(--success)";
-        } else {
-            statusInp.value = "INACTIVE";
-            statusInp.style.color = "var(--danger)";
+        if (statusInp) {
+            if (status === "COMPLETED") {
+                statusInp.value = "COMPLETED (Judgement Finished)";
+                statusInp.style.color = "var(--purple)";
+            } else if (status === "ACTIVE") {
+                statusInp.value = "ACTIVE (Running Now)";
+                statusInp.style.color = "var(--success)";
+            } else {
+                statusInp.value = "INACTIVE";
+                statusInp.style.color = "var(--danger)";
+            }
         }
 
         const participants = dbRegistrations.filter(r => (r["Item Code"] === code || r["Item"] === code));
         const distinctUnits = [];
+        const seenTeams = new Set();
+
         participants.forEach(p => {
-            if (parseInt(p["No of Participants"]) > 1) {
-                if (p["Role in Event"] === "Team Leader" || !distinctUnits.find(u => u.teamId === p["Item"] + "_" + p["Class"] + p["Division"])) {
-                    distinctUnits.push({ ...p, isGroup: true, teamId: p["Item"] + "_" + p["Class"] + p["Division"] });
+            const isGroup = parseInt(p["No of Participants"] || 1) > 1;
+            if (isGroup) {
+                // Team is uniquely grouped by Fest + Item + Class + Division
+                const teamKey = `${p["Name of Fest"]}_${p["Item"]}_${p["Class"]}_${p["Division"]}`;
+                if (!seenTeams.has(teamKey)) {
+                    seenTeams.add(teamKey);
+
+                    // Find all members in this team
+                    const allTeamMembers = participants.filter(m => 
+                        `${m["Name of Fest"]}_${m["Item"]}_${m["Class"]}_${m["Division"]}` === teamKey
+                    );
+                    
+                    // RULE: SHOW THE CONCERNED TEAM LEADER ONLY (DO NOT SHOW OTHER MEMBERS)
+                    const leader = allTeamMembers.find(m => m["Role in Event"] === "Team Leader") || allTeamMembers[0];
+
+                    distinctUnits.push({ 
+                        ...leader, 
+                        isGroup: true, 
+                        teamId: teamKey,
+                        memberCount: allTeamMembers.length 
+                    });
                 }
             } else {
                 distinctUnits.push({ ...p, isGroup: false });
@@ -6896,16 +7102,173 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
 
         distinctUnits.forEach(u => {
+            const groupBadge = u.isGroup 
+                ? `<span style="color:#d97706; font-size:11px; font-weight:800; display:block; margin-top:2px;">
+                     <i class="fas fa-users"></i> Team Leader (${u.memberCount} Members)
+                   </span>`
+                : '';
+
             tbody.innerHTML += `
                 <tr>
-                    <td>${u["Admission Number"]}</td>
-                    <td><b>${u["Name"]}</b> ${u.isGroup ? '<span style="color:var(--warning); font-size:11px;">(Team Leader)</span>' : ''}</td>
-                    <td>${u["Class"]} ${u["Division"]}</td>
-                    <td><input type="text" class="lot-input" data-regid="${u.id}" value="${u["Lot Number"] || ''}" placeholder="e.g. Lot 1" style="width:110px; padding:6px;"></td>
-                    <td><button class="action-btn" style="padding:4px 8px; font-size:12px;" onclick="saveSingleLot('${u.id}')">Save</button></td>
+                    <td><b>${u["Admission Number"] || '-'}</b></td>
+                    <td>
+                        <b style="color:var(--text-main); font-size:13.5px;">${u["Name"]}</b>
+                        ${groupBadge}
+                    </td>
+                    <td><span style="font-weight:700; color:var(--accent);">${u["Class"]} ${u["Division"] || ''}</span></td>
+                    <td style="text-align:center;">
+                        <input type="text" class="lot-input" data-regid="${u.id}" value="${u["Lot Number"] || ''}" placeholder="e.g. Lot 1" style="width:105px; padding:6px; text-align:center; font-weight:800;">
+                    </td>
+                    <td style="text-align:center;">
+                        <div style="display:inline-flex; gap:5px; align-items:center; justify-content:center;">
+                            <button type="button" class="action-btn success" style="padding:4px 8px; font-size:11.5px;" onclick="saveSingleLot('${u.id}')" title="Save Lot Number">
+                                <i class="fas fa-save"></i>
+                            </button>
+                            <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11.5px;" onclick="openEditRegistrationModal('${u.id}')" title="Modify Details">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11.5px;" onclick="deleteRegistrationUnit('${u.id}')" title="Delete Participant/Team">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
                 </tr>
             `;
         });
+    }
+
+    // Save lot number (Automatically synchronizes to all members if group item)
+    async function saveSingleLot(regId) {
+        const input = document.querySelector(`input[data-regid="${regId}"]`);
+        if (!input) return;
+        const val = input.value.trim();
+
+        const reg = dbRegistrations.find(r => r.id === regId);
+        if (!reg) return;
+
+        showLoader("Saving Lot...");
+        try {
+            const isGroup = parseInt(reg["No of Participants"] || 1) > 1;
+            const batch = db.batch();
+
+            if (isGroup) {
+                // Synchronize lot number to all members of this group item
+                const teamMembers = dbRegistrations.filter(r =>
+                    (r["Item Code"] === reg["Item Code"] || r["Item"] === reg["Item"]) &&
+                    r["Class"] === reg["Class"] &&
+                    r["Division"] === reg["Division"] &&
+                    r["Name of Fest"] === reg["Name of Fest"]
+                );
+                teamMembers.forEach(m => {
+                    batch.update(db.collection("registrations").doc(m.id), { "Lot Number": val });
+                    m["Lot Number"] = val;
+                });
+            } else {
+                batch.update(db.collection("registrations").doc(regId), { "Lot Number": val });
+                reg["Lot Number"] = val;
+            }
+
+            await batch.commit();
+            hideLoader();
+            showCustomDialog("Lot Saved", `Lot number <b>"${val || 'Cleared'}"</b> assigned successfully.`, "success");
+        } catch (e) {
+            hideLoader();
+            console.error("Lot save error:", e);
+            showCustomDialog("Error", "Could not save lot number.", "danger");
+        }
+    }
+
+    // Save all lots (Synchronizes group members automatically)
+    async function saveAllLots() {
+        const inputs = document.querySelectorAll('.lot-input');
+        if (inputs.length === 0) return;
+
+        showLoader("Saving all lots...");
+        try {
+            const batch = db.batch();
+            inputs.forEach(inp => {
+                const id = inp.dataset.regid;
+                const val = inp.value.trim();
+                const reg = dbRegistrations.find(r => r.id === id);
+                if (!reg) return;
+
+                const isGroup = parseInt(reg["No of Participants"] || 1) > 1;
+                if (isGroup) {
+                    const teamMembers = dbRegistrations.filter(r =>
+                        (r["Item Code"] === reg["Item Code"] || r["Item"] === reg["Item"]) &&
+                        r["Class"] === reg["Class"] &&
+                        r["Division"] === reg["Division"] &&
+                        r["Name of Fest"] === reg["Name of Fest"]
+                    );
+                    teamMembers.forEach(m => {
+                        batch.update(db.collection("registrations").doc(m.id), { "Lot Number": val });
+                        m["Lot Number"] = val;
+                    });
+                } else {
+                    batch.update(db.collection("registrations").doc(id), { "Lot Number": val });
+                    reg["Lot Number"] = val;
+                }
+            });
+
+            await batch.commit();
+            hideLoader();
+            showCustomDialog("Lots Saved", "All participant & team lot numbers updated.", "success");
+        } catch (e) {
+            hideLoader();
+            console.error("Batch lot save error:", e);
+            showCustomDialog("Error", "Could not save lot numbers.", "danger");
+        }
+    }
+
+    // Delete single participant or entire group team
+    async function deleteRegistrationUnit(regId) {
+        const reg = dbRegistrations.find(r => r.id === regId);
+        if (!reg) return;
+
+        const isGroup = parseInt(reg["No of Participants"] || 1) > 1;
+
+        const confirmMsg = isGroup 
+            ? `⚠️ Are you sure you want to delete this group team (Team Leader: <b>${reg["Name"]}</b>, Class: <b>${reg["Class"]} ${reg["Division"]}</b>) and <b>ALL its registered team members</b> from this item?`
+            : `Are you sure you want to delete registration for <b>${reg["Name"]}</b> (${reg["Admission Number"]})?`;
+
+        showCustomDialog(
+            isGroup ? "Delete Group Team?" : "Delete Registration?",
+            confirmMsg,
+            "danger",
+            async () => {
+                showLoader("Deleting Registration...");
+                try {
+                    const batch = db.batch();
+                    if (isGroup) {
+                        const teamMembers = dbRegistrations.filter(r =>
+                            (r["Item Code"] === reg["Item Code"] || r["Item"] === reg["Item"]) &&
+                            r["Class"] === reg["Class"] &&
+                            r["Division"] === reg["Division"] &&
+                            r["Name of Fest"] === reg["Name of Fest"]
+                        );
+                        teamMembers.forEach(m => {
+                            batch.delete(db.collection("registrations").doc(m.id));
+                        });
+                        const memberIds = new Set(teamMembers.map(m => m.id));
+                        dbRegistrations = dbRegistrations.filter(r => !memberIds.has(r.id));
+                    } else {
+                        batch.delete(db.collection("registrations").doc(regId));
+                        dbRegistrations = dbRegistrations.filter(r => r.id !== regId);
+                    }
+
+                    await batch.commit();
+                    hideLoader();
+                    loadEventMgmtItemDetails();
+                    if (typeof renderTables === "function") renderTables();
+                    showCustomDialog("Deleted", "Registration removed successfully.", "success");
+                } catch (e) {
+                    hideLoader();
+                    console.error("Deletion error:", e);
+                    showCustomDialog("Error", "Could not delete registration.", "danger");
+                }
+            },
+            true
+        );
     }
 
     async function toggleProgramStatus(targetState) {
@@ -7025,36 +7388,9 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
-    async function saveSingleLot(regId) {
-        const input = document.querySelector(`input[data-regid="${regId}"]`);
-        if (!input) return;
-        const val = input.value.trim();
+    
 
-        showLoader("Saving Lot...");
-        await db.collection("registrations").doc(regId).update({ "Lot Number": val });
-        const reg = dbRegistrations.find(r => r.id === regId);
-        if (reg) reg["Lot Number"] = val;
-        hideLoader();
-        showCustomDialog("Lot Saved", "Lot number assigned successfully.", "success");
-    }
-
-    async function saveAllLots() {
-        const inputs = document.querySelectorAll('.lot-input');
-        if (inputs.length === 0) return;
-
-        showLoader("Saving all lots...");
-        const batch = db.batch();
-        inputs.forEach(inp => {
-            const id = inp.dataset.regid;
-            const val = inp.value.trim();
-            batch.update(db.collection("registrations").doc(id), { "Lot Number": val });
-            const reg = dbRegistrations.find(r => r.id === id);
-            if (reg) reg["Lot Number"] = val;
-        });
-        await batch.commit();
-        hideLoader();
-        showCustomDialog("Lots Saved", "All participant lot numbers updated.", "success");
-    }
+    
 
     function autoGenerateContinuousLots(randomize = false) {
         const inputs = Array.from(document.querySelectorAll('#lotAllocationTbody .lot-input'));
@@ -8236,9 +8572,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
     
-    function updateMultiLotProgress() {
-        // ... (existing multi-lot progress code) ...
-    }
+    
 
 
     // ==========================================================================
@@ -8695,9 +9029,36 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         u.grade = calculateGrade(u.percentage).grade;
                     });
 
-                    unitList.sort((a, b) => b.finalScore - a.finalScore);
-                    unitList.forEach((u, idx) => {
-                        u.place = idx === 0 ? "FIRST Place" : (idx === 1 ? "SECOND Place" : (idx === 2 ? "THIRD Place" : "Grade Participant"));
+                    // RULE: Dense Ranking for Ties & Exclude Zero Scores
+                    unitList.sort((a, b) => (parseFloat(b.finalScore) || 0) - (parseFloat(a.finalScore) || 0));
+                    
+                    let currentRank = 0;
+                    let lastScore = null;
+
+                    unitList.forEach(u => {
+                        const score = parseFloat(u.finalScore) || 0;
+                        
+                        // IF FINAL AVERAGE IS 0 (OR ABSENT): DO NOT CONSIDER IN 1st, 2nd, 3rd OR Grade Participant
+                        if (score <= 0) {
+                            u.place = "-";
+                            u.grade = "-";
+                            return;
+                        }
+
+                        // Tie handling: If score matches previous, award same rank
+                        if (lastScore === null || Math.abs(score - lastScore) > 0.001) {
+                            currentRank++;
+                            lastScore = score;
+                        }
+
+                        if (currentRank === 1) u.place = "FIRST Place";
+                        else if (currentRank === 2) u.place = "SECOND Place";
+                        else if (currentRank === 3) u.place = "THIRD Place";
+                        else u.place = "Grade Participant";
+
+                        const maxMarks = (itemScores[0]?.maxMarks || 30);
+                        u.percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
+                        u.grade = calculateGrade(u.percentage).grade;
                     });
 
                     if (q) {
@@ -8825,13 +9186,43 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         u.grade = calculateGrade(u.percentage).grade;
                     });
 
-                    unitList.sort((a, b) => b.finalScore - a.finalScore);
+                    // RULE: Dense Ranking for Ties & Exclude Zero Scores
+                    unitList.sort((a, b) => (parseFloat(b.finalScore) || 0) - (parseFloat(a.finalScore) || 0));
+
+                    let currentRank = 0;
+                    let lastScore = null;
+
+                    unitList.forEach(u => {
+                        const score = parseFloat(u.finalScore) || 0;
+
+                        // IF FINAL AVERAGE IS 0: NEVER AWARD 1st, 2nd, 3rd OR Grade Participant
+                        if (score <= 0) {
+                            u.place = "-";
+                            u.grade = "-";
+                            return;
+                        }
+
+                        // Same final average score -> Same Place (e.g., both FIRST Place)
+                        if (lastScore === null || Math.abs(score - lastScore) > 0.001) {
+                            currentRank++;
+                            lastScore = score;
+                        }
+
+                        if (currentRank === 1) u.place = "FIRST Place";
+                        else if (currentRank === 2) u.place = "SECOND Place";
+                        else if (currentRank === 3) u.place = "THIRD Place";
+                        else u.place = "Grade Participant";
+
+                        const maxMarks = (itemScores[0]?.maxMarks || 30);
+                        u.percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
+                        u.grade = calculateGrade(u.percentage).grade;
+                    });
 
                     const batch = db.batch();
                     const timestamp = new Date().toLocaleString('en-IN');
 
-                    unitList.forEach((u, idx) => {
-                        const place = idx === 0 ? "FIRST Place" : (idx === 1 ? "SECOND Place" : (idx === 2 ? "THIRD Place" : "Grade Participant"));
+                    unitList.forEach(u => {
+                        const place = u.place;
                         
                         // Check if group item and collect all registered members for this specific team
                         const reg = dbRegistrations.find(r => r.id === u.regId);
@@ -8903,6 +9294,240 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         );
     }
 
+    // ==========================================================================
+    // CLEAR ALL PUBLISHED RESULTS & REPUBLISH DIRECTLY FROM TABULATION
+    // ==========================================================================
+
+    function confirmClearAndRepublishAll() {
+        const scoredCodes = [...new Set(dbJudgeScores.filter(s => s.locked === true).map(s => s.itemCode))];
+        
+        if (scoredCodes.length === 0) {
+            return showCustomDialog(
+                "No Submitted Tabulation Scores",
+                "There are no locked judge scores in tabulation to publish.",
+                "warning"
+            );
+        }
+
+        showCustomDialog(
+            "Clear & Republish All Results?",
+            `⚠️ This will:
+            <ul style="text-align:left; margin:10px 0 0 15px; padding:0; font-size:12.5px; line-height:1.6;">
+                <li><b>Wipe all existing published results</b> from database.</li>
+                <li>Recalculate ranks for <b>${scoredCodes.length} evaluated items</b> directly from judges' scores.</li>
+                <li>Apply tie-break ranks (tied scores get same place).</li>
+                <li>Exclude zero/absent scores from 1st, 2nd, and 3rd places.</li>
+                <li>Re-populate Class Championship & Individual Rank Sheets.</li>
+            </ul>
+            <br>Do you wish to proceed?`,
+            "danger",
+            () => executeClearAndRepublishAll(scoredCodes),
+            true
+        );
+    }
+
+    async function executeClearAndRepublishAll(scoredItemCodes) {
+        showLoader("Purging previous published results from database...");
+        try {
+            // 1. Fetch all existing published result documents
+            const existingPubSnap = await db.collection("published_results").get();
+
+            // 2. Delete all existing published results in chunks of 400 (Firestore 500 limit safety)
+            if (!existingPubSnap.empty) {
+                const docs = existingPubSnap.docs;
+                for (let i = 0; i < docs.length; i += 400) {
+                    const chunk = docs.slice(i, i + 400);
+                    const delBatch = db.batch();
+                    chunk.forEach(d => delBatch.delete(d.ref));
+                    await delBatch.commit();
+                }
+            }
+
+            // Reset local memory arrays
+            dbPublishedResults = [];
+            dbSettings.PublishedItems = [];
+
+            showLoader("Recalculating Tabulation & Publishing Results...");
+
+            const timestamp = new Date().toLocaleString('en-IN');
+            const newPublishedDocs = [];
+            const publishedCodes = [];
+
+            // 3. Process every scored item
+            for (const code of scoredItemCodes) {
+                const festObj = dbFests.find(f => f["Item Code"] === code);
+                const itemScores = dbJudgeScores.filter(s => s.itemCode === code && s.locked === true);
+                if (itemScores.length === 0) continue;
+
+                // Identify distinct judges
+                const judges = [];
+                itemScores.forEach(s => {
+                    if (!judges.find(j => j.phone === s.judgePhone)) {
+                        judges.push({ name: s.judgeName, phone: s.judgePhone });
+                    }
+                });
+
+                // Consolidate candidate scores
+                const unitMap = {};
+                itemScores.forEach(s => {
+                    if (!unitMap[s.registrationId]) {
+                        unitMap[s.registrationId] = {
+                            regId: s.registrationId,
+                            admnNo: s.admissionNumber,
+                            lotNumber: s.lotNumber,
+                            name: s.candidateName,
+                            studentClass: s.studentClass,
+                            studentDivision: s.studentDivision,
+                            judgeMarks: {}
+                        };
+                    }
+                    unitMap[s.registrationId].judgeMarks[s.judgePhone] = s.totalScore;
+                });
+
+                const unitList = Object.values(unitMap);
+                unitList.forEach(u => {
+                    let sum = 0, count = 0;
+                    judges.forEach(j => {
+                        if (u.judgeMarks[j.phone] !== undefined) {
+                            sum += (parseFloat(u.judgeMarks[j.phone]) || 0);
+                            count++;
+                        }
+                    });
+                    u.finalScore = count > 0 ? (sum / count) : 0;
+                });
+
+                // TIE-BREAKING & DENSE RANKING ENGINE
+                unitList.sort((a, b) => (parseFloat(b.finalScore) || 0) - (parseFloat(a.finalScore) || 0));
+
+                let currentRank = 0;
+                let lastScore = null;
+
+                unitList.forEach(u => {
+                    const score = parseFloat(u.finalScore) || 0;
+
+                    // ZERO / ABSENT SCORE RULE: Never place in 1st, 2nd, 3rd or Grade Participant
+                    if (score <= 0) {
+                        u.place = "-";
+                        u.grade = "-";
+                        return;
+                    }
+
+                    // Identical score -> Identical place (e.g. both FIRST Place)
+                    if (lastScore === null || Math.abs(score - lastScore) > 0.001) {
+                        currentRank++;
+                        lastScore = score;
+                    }
+
+                    if (currentRank === 1) u.place = "FIRST Place";
+                    else if (currentRank === 2) u.place = "SECOND Place";
+                    else if (currentRank === 3) u.place = "THIRD Place";
+                    else u.place = "Grade Participant";
+
+                    const maxMarks = (itemScores[0]?.maxMarks || 30);
+                    u.percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
+                    u.grade = calculateGrade(u.percentage).grade;
+                });
+
+                // Build publication documents
+                unitList.forEach(u => {
+                    const reg = dbRegistrations.find(r => r.id === u.regId);
+                    const isGroup = reg && parseInt(reg["No of Participants"] || 1) > 1;
+                    let teamMembers = [];
+
+                    if (isGroup) {
+                        teamMembers = dbRegistrations.filter(r => 
+                            (r["Item Code"] === code || r["Item"] === reg["Item"]) &&
+                            r["Class"] === reg["Class"] &&
+                            r["Division"] === reg["Division"] &&
+                            r["Name of Fest"] === reg["Name of Fest"]
+                        ).map(m => ({
+                            id: m.id,
+                            admissionNumber: m["Admission Number"],
+                            name: m["Name"],
+                            class: m["Class"],
+                            division: m["Division"],
+                            gender: m["Gender"] || "",
+                            role: m["Role in Event"] || "Participant"
+                        }));
+
+                        // Team leader always first
+                        teamMembers.sort((a, b) => {
+                            const aLead = (a.role === 'Team Leader' || a.name === u.name);
+                            const bLead = (b.role === 'Team Leader' || b.name === u.name);
+                            if (aLead && !bLead) return -1;
+                            if (!aLead && bLead) return 1;
+                            return a.name.localeCompare(b.name);
+                        });
+                    }
+
+                    const isFirst = (u.place === "FIRST Place");
+                    const pubDoc = {
+                        itemCode: code,
+                        itemName: festObj ? festObj["Item"] : code,
+                        festName: festObj ? festObj["Fest Name"] : "",
+                        festCategory: getFestivalCategory(festObj ? festObj["Fest Name"] : ""),
+                        registrationId: u.regId,
+                        admissionNumber: u.admnNo,
+                        lotNumber: u.lotNumber || "N/A",
+                        candidateName: u.name,
+                        studentClass: u.studentClass,
+                        studentDivision: u.studentDivision,
+                        score: u.finalScore.toFixed(2),
+                        grade: u.grade,
+                        place: u.place,
+                        isGroup: Boolean(isGroup),
+                        teamMembers: teamMembers,
+                        qualifiedSubDistrict: isFirst && u.grade === 'A',
+                        publishedAt: timestamp
+                    };
+
+                    newPublishedDocs.push(pubDoc);
+                });
+
+                publishedCodes.push(code);
+            }
+
+            // 4. Batch commit the newly created published results in chunks of 400
+            for (let i = 0; i < newPublishedDocs.length; i += 400) {
+                const chunk = newPublishedDocs.slice(i, i + 400);
+                const writeBatch = db.batch();
+                chunk.forEach(docData => {
+                    const docRef = db.collection("published_results").doc();
+                    writeBatch.set(docRef, docData);
+                    dbPublishedResults.push({ ...docData, id: docRef.id });
+                });
+                await writeBatch.commit();
+            }
+
+            // 5. Update settings with newly published items
+            dbSettings.PublishedItems = publishedCodes;
+            await db.collection("config").doc("settings").set({
+                PublishedItems: publishedCodes
+            }, { merge: true });
+
+            hideLoader();
+
+            // 6. Refresh all views
+            if (typeof renderTabulation === "function") renderTabulation();
+            if (typeof renderResults === "function") renderResults();
+            if (typeof renderSubDistrictTab === "function") renderSubDistrictTab();
+
+            showCustomDialog(
+                "Republish Complete",
+                `Successfully recalculated and published:
+                <br><br>
+                &bull; <b>${publishedCodes.length} Items</b> published.<br>
+                &bull; <b>${newPublishedDocs.length} Total Candidate Entries</b> processed.<br>
+                &bull; Results, Championship Table, and Individual Rank Sheets are updated.`,
+                "success"
+            );
+        } catch (err) {
+            hideLoader();
+            console.error("Clear and republish error:", err);
+            showCustomDialog("Republish Error", "Failed to clear and republish results. Details: " + (err.message || ""), "danger");
+        }
+    }
+
     // --- TAB 6: RESULT TAB ---
     // 2. Toggle for Results Tab (Category, Fest, and Item levels - Starts Open by default)
     function toggleResultSection(headerEl) {
@@ -8920,326 +9545,814 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
-    function renderResults() {
-        const container = document.getElementById('resultsContainer');
-        if (!container) return;
+    // ==========================================================================
+    // RESTRUCTURED RESULT TAB & CHAMPIONSHIP CONTROLLER
+    // ==========================================================================
+    let currentResultSubTab = "championship"; // 'championship' | 'individual' | festName
+    let indivSortState = { col: 'points', dir: 'desc' };
 
-        const catFilter = document.getElementById('resultFilterCategory')?.value || "ALL";
+    // Standard Points Metric
+    function getPointsForPlace(placeStr) {
+        if (!placeStr) return 0;
+        const p = String(placeStr).toLowerCase();
+        if (p.includes("first") || p.includes("1st") || p === "1") return 5;
+        if (p.includes("second") || p.includes("2nd") || p === "2") return 3;
+        if (p.includes("third") || p.includes("3rd") || p === "3") return 1;
+        return 0;
+    }
+
+    // Filter to ONLY Top 3 Places (1st, 2nd, 3rd, including ties)
+    function isTopThreePlace(placeStr) {
+        if (!placeStr) return false;
+        const p = String(placeStr).toLowerCase();
+        return p.includes("first") || p.includes("1st") ||
+               p.includes("second") || p.includes("2nd") ||
+               p.includes("third") || p.includes("3rd");
+    }
+
+    function normalizePlaceCategory(placeStr) {
+        if (!placeStr) return "";
+        const p = String(placeStr).toLowerCase();
+        if (p.includes("first") || p.includes("1st")) return "FIRST Place";
+        if (p.includes("second") || p.includes("2nd")) return "SECOND Place";
+        if (p.includes("third") || p.includes("3rd")) return "THIRD Place";
+        return "";
+    }
+
+    function switchResultSubTab(tabKey) {
+        currentResultSubTab = tabKey;
+
+        // Update sub-tab button active classes
+        document.querySelectorAll('#resSubNavBar .res-subtab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        const activeBtn = document.querySelector(`#resSubNavBar button[data-tab="${tabKey}"]`) ||
+                          document.querySelector(`#resSubNavBar button[onclick*="${tabKey}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
+
+        // Toggle sub-views
+        const viewChamp = document.getElementById('viewChampionship');
+        const viewIndiv = document.getElementById('viewIndividual');
+        const viewFest = document.getElementById('viewFestWinners');
+
+        if (viewChamp) viewChamp.style.display = (tabKey === 'championship') ? 'block' : 'none';
+        if (viewIndiv) viewIndiv.style.display = (tabKey === 'individual') ? 'block' : 'none';
+        if (viewFest) viewFest.style.display = (tabKey !== 'championship' && tabKey !== 'individual') ? 'block' : 'none';
+
+        renderActiveResultView();
+    }
+
+    function renderActiveResultView() {
+        if (currentResultSubTab === 'championship') {
+            renderChampionshipTable();
+        } else if (currentResultSubTab === 'individual') {
+            renderIndividualRankSheet();
+        } else {
+            renderFestWinnersView(currentResultSubTab);
+        }
+    }
+
+    // Main Invocation from Nav Tab
+    function renderResults() {
+        populateResultSubNavBar();
+        renderActiveResultView();
+    }
+
+    // Populate Dynamic Sub-Navbar with Festivals that have published results
+    function populateResultSubNavBar() {
+        const bar = document.getElementById('resSubNavBar');
+        if (!bar) return;
+
+        // Base tabs
+        let html = `
+            <button type="button" class="res-subtab-btn ${currentResultSubTab === 'championship' ? 'active' : ''}" data-tab="championship" onclick="switchResultSubTab('championship')">
+                <i class="fas fa-trophy" style="color:#d97706;"></i> <span>Class Championship</span>
+            </button>
+            <button type="button" class="res-subtab-btn ${currentResultSubTab === 'individual' ? 'active' : ''}" data-tab="individual" onclick="switchResultSubTab('individual')">
+                <i class="fas fa-medal" style="color:#7c3aed;"></i> <span>Individual Champions</span>
+            </button>
+        `;
+
+        // Gather all festivals with Top 3 Published Results
+        const topResults = dbPublishedResults.filter(r => isTopThreePlace(r.place));
+        const activeFests = [...new Set(topResults.map(r => r.festName).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+        activeFests.forEach(f => {
+            const cat = getFestivalCategory(f);
+            let icon = "fa-trophy";
+            let color = "#2563eb";
+            let displayName = f;
+
+            if (cat === "Kalothswom") {
+                icon = "fa-masks-theater";
+                color = "#7c3aed";
+                if (!displayName.toLowerCase().includes("meghamalhar")) {
+                    displayName += " (Meghamalhar)";
+                }
+            } else if (cat === "Sports") {
+                icon = "fa-running";
+                color = "#059669";
+            }
+
+            const isActive = (currentResultSubTab === f);
+            html += `
+                <button type="button" class="res-subtab-btn ${isActive ? 'active' : ''}" data-tab="${f}" onclick="switchResultSubTab('${f}')">
+                    <i class="fas ${icon}" style="color:${color};"></i> <span>${displayName}</span>
+                </button>
+            `;
+        });
+
+        bar.innerHTML = html;
+    }
+
+    // ==========================================================================
+    // 1. OVERALL CHAMPIONSHIP POINTS TABLE (FESTIVAL & CLASS BREAKDOWN)
+    // ==========================================================================
+    function renderChampionshipTable() {
+        const tbody = document.getElementById('championshipTbody');
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
         const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
 
-        container.innerHTML = "";
+        // Accumulate statistics per class
+        const classStats = {};
 
-        let results = [...dbPublishedResults];
+        dbPublishedResults.filter(r => isTopThreePlace(r.place)).forEach(r => {
+            const cls = String(r.studentClass || "").trim();
+            const div = String(r.studentDivision || "").trim();
+            const clsKey = `${cls} ${div}`.trim() || "General";
 
-        // 1. Declare User Roles (Fixes ReferenceError: isAdmin is not defined)
-        const isStudent = currentUser && currentUser.role === "Student";
-        const isJudge = currentUser && currentUser.role === "Judge";
-        const isAdmin = Boolean(currentUser && (currentUser.role === "Official" || (currentUser.access && String(currentUser.access).includes("3"))));
+            if (!classStats[clsKey]) {
+                classStats[clsKey] = {
+                    className: clsKey,
+                    first: 0,
+                    second: 0,
+                    third: 0,
+                    kaloPoints: 0,
+                    festPoints: 0,
+                    sportsPoints: 0,
+                    totalPoints: 0
+                };
+            }
 
-        // Filter based on Admin Scrutiny role permissions
-        if (isStudent || isJudge) {
-            const visibilityMap = dbSettings.ItemResultVisibility || {};
-            results = results.filter(r => {
-                const cfg = visibilityMap[r.itemCode];
-                if (!cfg) return true;
-                if (isStudent && cfg.student === false) return false;
-                if (isJudge && cfg.judge === false) return false;
-                return true;
-            });
-        }
+            const pts = getPointsForPlace(r.place);
+            const normPlace = normalizePlaceCategory(r.place);
 
-        if (catFilter !== "ALL") {
-            results = results.filter(r => (r.festCategory || getFestivalCategory(r.festName)) === catFilter);
-        }
+            if (normPlace === "FIRST Place") classStats[clsKey].first++;
+            else if (normPlace === "SECOND Place") classStats[clsKey].second++;
+            else if (normPlace === "THIRD Place") classStats[clsKey].third++;
+
+            const cat = r.festCategory || getFestivalCategory(r.festName);
+            if (cat === "Kalothswom") {
+                classStats[clsKey].kaloPoints += pts;
+            } else if (cat === "Sports") {
+                classStats[clsKey].sportsPoints += pts;
+            } else {
+                classStats[clsKey].festPoints += pts;
+            }
+
+            classStats[clsKey].totalPoints += pts;
+        });
+
+        let list = Object.values(classStats);
 
         if (q) {
-            results = results.filter(r => 
+            list = list.filter(c => c.className.toLowerCase().includes(q));
+        }
+
+        // Rank by Total Points descending, then 1st place count
+        list.sort((a, b) => b.totalPoints - a.totalPoints || b.first - a.first || b.second - a.second);
+
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:30px;">No championship points accumulated yet.</td></tr>`;
+            return;
+        }
+
+        list.forEach((c, idx) => {
+            const rankBadge = idx === 0 ? 'place-1' : (idx === 1 ? 'place-2' : (idx === 2 ? 'place-3' : 'place-other'));
+            tbody.innerHTML += `
+                <tr>
+                    <td style="text-align:center;"><span class="badge-place ${rankBadge}">${idx + 1}</span></td>
+                    <td><b style="font-size:14px; color:var(--text-main);">${c.className}</b></td>
+                    <td style="text-align:center; font-weight:800; background:#fefce8; color:#854d0e;">${c.first}</td>
+                    <td style="text-align:center; font-weight:800; background:#f8fafc; color:#334155;">${c.second}</td>
+                    <td style="text-align:center; font-weight:800; background:#fff7ed; color:#9a3412;">${c.third}</td>
+                    <td style="text-align:center; font-weight:700; color:#7c3aed;">${c.kaloPoints} pts</td>
+                    <td style="text-align:center; font-weight:700; color:#2563eb;">${c.festPoints} pts</td>
+                    <td style="text-align:center; font-weight:700; color:#059669;">${c.sportsPoints} pts</td>
+                    <td style="text-align:center; font-size:15px; font-weight:900; color:var(--primary);">${c.totalPoints} pts</td>
+                </tr>
+            `;
+        });
+    }
+
+    // ==========================================================================
+    // 2. INDIVIDUAL CHAMPIONSHIP RANK SHEET (ALL HEADERS SORTABLE)
+    // ==========================================================================
+    function setIndivSort(colKey) {
+        if (indivSortState.col === colKey) {
+            indivSortState.dir = indivSortState.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+            indivSortState.col = colKey;
+            indivSortState.dir = (colKey === 'name' || colKey === 'class' || colKey === 'admn') ? 'asc' : 'desc';
+        }
+        renderIndividualRankSheet();
+    }
+
+    function renderIndividualRankSheet() {
+        const thead = document.getElementById('indivThead');
+        const tbody = document.getElementById('indivTbody');
+        const countSpan = document.getElementById('indivChampCount');
+        if (!thead || !tbody) return;
+
+        const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
+
+        // Render sortable header with arrow icons
+        const getIcon = (col) => {
+            if (indivSortState.col !== col) return `<i class="fas fa-sort" style="color:#cbd5e1; margin-left:4px; font-size:10px;"></i>`;
+            return indivSortState.dir === 'asc'
+                ? `<i class="fas fa-sort-up" style="color:var(--accent); margin-left:4px;"></i>`
+                : `<i class="fas fa-sort-down" style="color:var(--accent); margin-left:4px;"></i>`;
+        };
+
+        thead.innerHTML = `
+            <tr style="background:#f1f5f9;">
+                <th style="width:45px; text-align:center;">#</th>
+                <th class="sortable-th" onclick="setIndivSort('admn')">Admn No ${getIcon('admn')}</th>
+                <th class="sortable-th" onclick="setIndivSort('name')">Student Name ${getIcon('name')}</th>
+                <th class="sortable-th" onclick="setIndivSort('class')">Class & Div ${getIcon('class')}</th>
+                <th class="sortable-th" style="text-align:center; color:#7c3aed;" onclick="setIndivSort('kalo')">Kalothswom (Meghamalhar) ${getIcon('kalo')}</th>
+                <th class="sortable-th" style="text-align:center; color:#2563eb;" onclick="setIndivSort('fest')">Fest ${getIcon('fest')}</th>
+                <th class="sortable-th" style="text-align:center; color:#059669;" onclick="setIndivSort('sports')">Sports ${getIcon('sports')}</th>
+                <th class="sortable-th" style="text-align:center; font-weight:800; color:var(--primary);" onclick="setIndivSort('points')">Total Points ${getIcon('points')}</th>
+                <th class="sortable-th" style="width:70px; text-align:center;" onclick="setIndivSort('rank')">Rank ${getIcon('rank')}</th>
+            </tr>
+        `;
+
+        // Collate individual points across all 1st, 2nd, 3rd results
+        const studentMap = {};
+
+        dbPublishedResults.filter(r => isTopThreePlace(r.place)).forEach(r => {
+            const admn = String(r.admissionNumber || "").trim();
+            const name = String(r.candidateName || "").trim();
+            const key = admn || name;
+            if (!key) return;
+
+            if (!studentMap[key]) {
+                studentMap[key] = {
+                    admn: admn,
+                    name: name,
+                    classInfo: `${r.studentClass} ${r.studentDivision || ''}`.trim(),
+                    kaloPoints: 0,
+                    festPoints: 0,
+                    sportsPoints: 0,
+                    totalPoints: 0,
+                    first: 0,
+                    second: 0,
+                    third: 0
+                };
+            }
+
+            const pts = getPointsForPlace(r.place);
+            const normPlace = normalizePlaceCategory(r.place);
+
+            if (normPlace === "FIRST Place") studentMap[key].first++;
+            else if (normPlace === "SECOND Place") studentMap[key].second++;
+            else if (normPlace === "THIRD Place") studentMap[key].third++;
+
+            const cat = r.festCategory || getFestivalCategory(r.festName);
+            if (cat === "Kalothswom") {
+                studentMap[key].kaloPoints += pts;
+            } else if (cat === "Sports") {
+                studentMap[key].sportsPoints += pts;
+            } else {
+                studentMap[key].festPoints += pts;
+            }
+
+            studentMap[key].totalPoints += pts;
+        });
+
+        let list = Object.values(studentMap);
+
+        // Assign Overall Ranks based on total points before search filtering
+        list.sort((a, b) => b.totalPoints - a.totalPoints || b.first - a.first || b.second - a.second);
+        list.forEach((s, idx) => { s.rank = idx + 1; });
+
+        if (countSpan) countSpan.innerText = `${list.length} Champions`;
+
+        if (q) {
+            list = list.filter(s =>
+                s.name.toLowerCase().includes(q) ||
+                s.admn.toLowerCase().includes(q) ||
+                s.classInfo.toLowerCase().includes(q)
+            );
+        }
+
+        // Apply dynamic sort
+        const col = indivSortState.col;
+        const dir = indivSortState.dir === 'asc' ? 1 : -1;
+
+        list.sort((a, b) => {
+            if (col === 'admn') return dir * a.admn.localeCompare(b.admn, undefined, { numeric: true });
+            if (col === 'name') return dir * a.name.localeCompare(b.name);
+            if (col === 'class') return dir * a.classInfo.localeCompare(b.classInfo, undefined, { numeric: true });
+            if (col === 'kalo') return dir * (a.kaloPoints - b.kaloPoints);
+            if (col === 'fest') return dir * (a.festPoints - b.festPoints);
+            if (col === 'sports') return dir * (a.sportsPoints - b.sportsPoints);
+            if (col === 'rank') return dir * (a.rank - b.rank);
+            return dir * (a.totalPoints - b.totalPoints || b.first - a.first);
+        });
+
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#94a3b8; padding:30px;">No individual rankings match the criteria.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = "";
+        list.forEach((s, idx) => {
+            const rankBadge = s.rank === 1 ? 'place-1' : (s.rank === 2 ? 'place-2' : (s.rank === 3 ? 'place-3' : 'place-other'));
+            tbody.innerHTML += `
+                <tr>
+                    <td style="text-align:center; color:#64748b; font-weight:700;">${idx + 1}</td>
+                    <td><b>${s.admn || '-'}</b></td>
+                    <td><b style="color:#0f172a; font-size:13.5px;">${s.name}</b></td>
+                    <td><span style="font-weight:700; color:var(--accent);">${s.classInfo}</span></td>
+                    <td style="text-align:center; font-weight:800; color:#7c3aed;">${s.kaloPoints}</td>
+                    <td style="text-align:center; font-weight:800; color:#2563eb;">${s.festPoints}</td>
+                    <td style="text-align:center; font-weight:800; color:#059669;">${s.sportsPoints}</td>
+                    <td style="text-align:center; font-size:15px; font-weight:900; color:var(--primary);">${s.totalPoints} pts</td>
+                    <td style="text-align:center;"><span class="badge-place ${rankBadge}">${s.rank}</span></td>
+                </tr>
+            `;
+        });
+    }
+
+    // ==========================================================================
+    // 3. FESTIVAL WINNERS VIEW (NON-COLLAPSIBLE, ONLY 1st, 2nd, 3rd)
+    // ==========================================================================
+    function renderFestWinnersView(festName) {
+        const container = document.getElementById('festWinnersContainer');
+        if (!container) return;
+        container.innerHTML = "";
+
+        const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
+        const isAdmin = Boolean(currentUser && (currentUser.role === "Official" || (currentUser.access && String(currentUser.access).includes("3"))));
+        const isStudent = currentUser && currentUser.role === "Student";
+
+        // Filter strictly to this festival and ONLY 1st, 2nd, 3rd places
+        let results = dbPublishedResults.filter(r => 
+            r.festName === festName && isTopThreePlace(r.place)
+        );
+
+        if (q) {
+            results = results.filter(r =>
                 String(r.candidateName || "").toLowerCase().includes(q) ||
                 String(r.itemName || "").toLowerCase().includes(q) ||
                 String(r.studentClass || "").toLowerCase().includes(q) ||
                 String(r.admissionNumber || "").toLowerCase().includes(q) ||
-                String(r.lotNumber || "").toLowerCase().includes(q) ||
+                String(r.lotNumber || "").toLowerCase().includes(q)
+            );
+        }
+
+        if (results.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:50px 20px; background:#ffffff; border:1.5px solid var(--border); border-radius:var(--radius-md);">
+                    <i class="fas fa-award" style="font-size:36px; color:#cbd5e1; margin-bottom:12px;"></i>
+                    <h3 style="margin:0 0 6px 0; color:var(--text-main);">No 1st, 2nd, or 3rd place results published yet</h3>
+                    <p style="color:#64748b; font-size:13px; margin:0;">Winners for ${festName} will appear here directly once officially published.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Group by item
+        const itemMap = {};
+        results.forEach(r => {
+            const key = `${r.itemName}__${r.itemCode || ''}`;
+            if (!itemMap[key]) itemMap[key] = [];
+            itemMap[key].push(r);
+        });
+
+        const sortedItemKeys = Object.keys(itemMap).sort((a, b) => a.localeCompare(b));
+
+        let html = "";
+        sortedItemKeys.forEach(itemKey => {
+            const itemResults = itemMap[itemKey];
+            const itemName = itemResults[0].itemName;
+            const itemCode = itemResults[0].itemCode || "-";
+
+            // Sort: 1st place -> 2nd place -> 3rd place -> Score
+            itemResults.sort((a, b) => {
+                const order = { "FIRST Place": 1, "SECOND Place": 2, "THIRD Place": 3 };
+                const normA = normalizePlaceCategory(a.place);
+                const normB = normalizePlaceCategory(b.place);
+                const diff = (order[normA] || 9) - (order[normB] || 9);
+                if (diff !== 0) return diff;
+                return parseFloat(b.score || 0) - parseFloat(a.score || 0);
+            });
+
+            // Tally summary pills for 1st, 2nd, 3rd
+            const firstCount = itemResults.filter(r => normalizePlaceCategory(r.place) === "FIRST Place").length;
+            const secondCount = itemResults.filter(r => normalizePlaceCategory(r.place) === "SECOND Place").length;
+            const thirdCount = itemResults.filter(r => normalizePlaceCategory(r.place) === "THIRD Place").length;
+
+            let rowsHTML = "";
+            itemResults.forEach((r, idx) => {
+                const norm = normalizePlaceCategory(r.place);
+                const pillClass = norm === "FIRST Place" ? "place-pill-1" : (norm === "SECOND Place" ? "place-pill-2" : "place-pill-3");
+                const isPrinted = isCertificatePrinted(r.id, r);
+
+                rowsHTML += `
+                <tr>
+                    <td style="text-align:center;"><span class="badge-place ${pillClass}">${r.place}</span></td>
+                    <td style="text-align:center; font-weight:800; color:var(--primary);">${r.lotNumber || 'N/A'}</td>
+                    <td><b>${r.admissionNumber || '-'}</b></td>
+
+                    <!-- 1. CLEAN WINNER NAME (SHOWS ONLY MEMBERS WITH ROLES) -->
+                    <td>
+                        ${(() => {
+                            const members = getTeamMembersForResult(r);
+                            if (members && members.length > 1) {
+                                // Sort team leader first
+                                const sorted = [...members].sort((a, b) => {
+                                    const aLead = (a.role === 'Team Leader' || a.name === r.candidateName);
+                                    const bLead = (b.role === 'Team Leader' || b.name === r.candidateName);
+                                    if (aLead && !bLead) return -1;
+                                    if (!aLead && bLead) return 1;
+                                    return a.name.localeCompare(b.name);
+                                });
+
+                                const formatted = sorted.map(m => {
+                                    const isLeader = (m.role === 'Team Leader' || m.name === r.candidateName);
+                                    return `<span style="display:inline-block; margin-right:6px;"><b>${m.name}</b> <span style="font-size:11px; font-weight:800; color:${isLeader ? '#d97706' : '#475569'};">(${isLeader ? 'Leader' : 'Participant'})</span></span>`;
+                                }).join(", ");
+
+                                return `<div style="font-size:13.5px; color:#0f172a; line-height:1.45;">${formatted}</div>`;
+                            }
+                            return `<b style="font-size:14px; color:#0f172a;">${r.candidateName}</b>`;
+                        })()}
+                    </td>
+
+                    <td><span style="font-weight:700; color:var(--accent);">${r.studentClass} ${r.studentDivision || ''}</span></td>
+                    <td style="text-align:center; font-weight:800;">${r.score}</td>
+                    <td style="text-align:center;"><span style="font-weight:900; color:#059669;">${r.grade}</span></td>
+
+                    <!-- 2. CERTIFICATE ACTIONS: VIEW, PRINT & DELETE FOR EVERY INDIVIDUAL CERTIFICATE -->
+                    <td style="text-align:center;">
+                        ${(() => {
+                            const members = getTeamMembersForResult(r);
+                            const isPrinted = isCertificatePrinted(r.id, r);
+
+                            // GROUP ITEM: Display individual buttons for each student + Print All
+                            if (members && members.length > 1) {
+                                return `
+                                    <div style="display:flex; flex-direction:column; gap:5px; align-items:stretch; min-width:210px;">
+                                        ${members.map((m, mIdx) => {
+                                            const isLead = (m.role === 'Team Leader' || m.name === r.candidateName);
+                                            return `
+                                                <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:3px 6px;">
+                                                    <span style="font-size:11.5px; font-weight:700; color:#0f172a; max-width:105px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${m.name}">
+                                                        ${m.name}
+                                                    </span>
+                                                    <div style="display:inline-flex; gap:3px;">
+                                                        <button type="button" class="action-btn" style="padding:2px 6px; font-size:10px;" title="View ${m.name}'s Certificate" onclick="openIndividualCertModal('${r.id}', ${mIdx}, false)">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button type="button" class="action-btn gold" style="padding:2px 6px; font-size:10px;" title="Print ${m.name}'s Certificate" onclick="openIndividualCertModal('${r.id}', ${mIdx}, true)">
+                                                            <i class="fas fa-print"></i>
+                                                        </button>
+                                                        ${!isStudent ? `
+                                                            <button type="button" class="action-btn danger" style="padding:2px 6px; font-size:10px;" title="Delete ${m.name}'s Certificate" onclick="deleteIndividualCertMember('${r.id}', '${m.admissionNumber || m.name}')">
+                                                                <i class="fas fa-trash-alt"></i>
+                                                            </button>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+
+                                        <!-- Master Batch Controls -->
+                                        <div style="display:flex; gap:4px; justify-content:center; margin-top:2px;">
+                                            <button type="button" class="action-btn gold" style="padding:3px 8px; font-size:11px; flex:1;" title="Print All Certificates for this Team" onclick="printAllGroupCertificatesDirect('${r.id}')">
+                                                <i class="fas fa-print"></i> Print All (${members.length})
+                                            </button>
+                                            <button type="button" class="action-btn" style="padding:3px 8px; font-size:11px;" title="View All Certificates" onclick="openCertificateModal('${r.id}', false)">
+                                                <i class="fas fa-layer-group"></i> View All
+                                            </button>
+                                            ${!isStudent ? `
+                                                <button type="button" class="action-btn danger" style="padding:3px 6px; font-size:11px;" title="Delete Entire Result" onclick="deleteResultEntry('${r.id}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+
+                            // INDIVIDUAL ITEM: Standard 3 Buttons
+                            return `
+                                <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
+                                    <button type="button" class="action-btn" style="padding:4px 8px; font-size:11.5px;" title="View Certificate" onclick="openCertificateModal('${r.id}', false)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="action-btn gold" id="print_btn_${r.id}" style="padding:4px 8px; font-size:11.5px;" title="${isPrinted ? 'Print taken (Click to print again)' : 'Print Certificate'}" onclick="openCertificateModal('${r.id}', true)">
+                                        <i class="fas fa-print" id="print_icon_${r.id}" style="${isPrinted ? 'opacity: 0.35;' : ''}"></i>
+                                    </button>
+                                    ${!isStudent ? `
+                                        <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11.5px;" title="Delete Result" onclick="deleteResultEntry('${r.id}')">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            `;
+                        })()}
+                    </td>
+                </tr>
+            `;
+                    
+            });
+
+            // Clean Non-Collapsible Card Layout
+            html += `
+                <div class="res-winner-card">
+                    <div class="res-winner-card-head">
+                        <div class="res-winner-card-title">
+                            <i class="fas fa-medal" style="color:var(--gold-pure);"></i>
+                            <span>${itemName}</span>
+                            <span style="font-family:monospace; color:#2563eb; font-size:12px; font-weight:700;">[${itemCode}]</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            ${firstCount > 0 ? `<span class="badge-place place-pill-1">1st: ${firstCount}</span>` : ''}
+                            ${secondCount > 0 ? `<span class="badge-place place-pill-2">2nd: ${secondCount}</span>` : ''}
+                            ${thirdCount > 0 ? `<span class="badge-place place-pill-3">3rd: ${thirdCount}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="margin:0; border:none;">
+                        <table>
+                            <thead>
+                                <tr style="background:#ffffff;">
+                                    <th style="width:130px; text-align:center;">Standing</th>
+                                    <th style="width:75px; text-align:center;">Lot</th>
+                                    <th style="width:90px;">Admn No</th>
+                                    <th>Winner Name</th>
+                                    <th>Class & Div</th>
+                                    <th style="width:75px; text-align:center;">Score</th>
+                                    <th style="width:65px; text-align:center;">Grade</th>
+                                    <th style="width:120px; text-align:center;">Certificate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHTML}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // ==========================================================================
+    // MULTI-PAGE BATCH PRINT CONTROLLER (ALL INDIVIDUAL CERTIFICATES)
+    // ==========================================================================
+
+    function printAllGroupCertificatesDirect(resId) {
+        let r = null;
+        if (resId) {
+            r = dbPublishedResults.find(x => x.id === resId);
+        }
+        if (!r && currentActiveCertResult) {
+            r = currentActiveCertResult;
+        }
+        if (!r) return;
+
+        const members = getTeamMembersForResult(r);
+        if (!members || members.length <= 1) {
+            printSingleCertDirect(r.id, 0);
+            return;
+        }
+
+        markCertificateAsPrinted(r.id);
+
+        const stage = document.getElementById('certScaleStage');
+        const modal = document.getElementById('certModal');
+        const prevHTML = stage.innerHTML;
+
+        showLoader("Preparing All Individual Certificates for Print...");
+
+        // 1. Build distinct, full-resolution HTML cards for every team member
+        let batchHTML = "";
+        members.forEach(m => {
+            batchHTML += generateSingleCertHTML(m, r);
+        });
+        stage.innerHTML = batchHTML;
+
+        // 2. Clear any preview scale so cards render at 100% full A4 resolution
+        stage.style.transform = 'none';
+        stage.style.width = '100%';
+        stage.style.height = 'auto';
+
+        // 3. Apply multi-page print classes to <html>, <body>, and modal
+        document.documentElement.classList.remove('printing-cert', 'printing-report-portrait');
+        document.documentElement.classList.add('printing-batch-cert');
+
+        document.body.classList.remove('printing-cert', 'printing-report-portrait');
+        document.body.classList.add('printing-batch-cert');
+
+        modal.classList.add('active-print');
+
+        // 4. Delay window.print() by 250ms to allow DOM layout reflow and image decoding
+        setTimeout(() => {
+            hideLoader();
+            window.print();
+
+            // 5. Cleanup classes and restore preview state after print dialog closes
+            modal.classList.remove('active-print');
+            document.documentElement.classList.remove('printing-batch-cert');
+            document.body.classList.remove('printing-batch-cert');
+            stage.innerHTML = prevHTML;
+
+            if (typeof autoFitCertificate === "function") {
+                autoFitCertificate();
+            }
+        }, 250);
+    }
+
+    // Alias so all buttons calling printAllGroupCertificates trigger the new engine
+    function printAllGroupCertificates() {
+        if (currentActiveCertResult) {
+            printAllGroupCertificatesDirect(currentActiveCertResult.id);
+        }
+    }
+
+    // Prints one specific member's individual certificate
+    function printSingleCertDirect(resId, memberIndex) {
+        let r = null;
+        if (resId) {
+            r = dbPublishedResults.find(x => x.id === resId);
+        }
+        if (!r && currentActiveCertResult) {
+            r = currentActiveCertResult;
+        }
+        if (!r) return;
+
+        const members = getTeamMembersForResult(r);
+        const member = (members && members[memberIndex]) ? members[memberIndex] : {
+            name: r.candidateName,
+            class: r.studentClass,
+            division: r.studentDivision,
+            admissionNumber: r.admissionNumber,
+            gender: ""
+        };
+
+        markCertificateAsPrinted(r.id);
+
+        const stage = document.getElementById('certScaleStage');
+        const modal = document.getElementById('certModal');
+        const prevHTML = stage.innerHTML;
+
+        showLoader("Preparing Certificate...");
+
+        stage.innerHTML = generateSingleCertHTML(member, r);
+        stage.style.transform = 'none';
+        stage.style.width = '100%';
+        stage.style.height = 'auto';
+
+        document.documentElement.classList.remove('printing-batch-cert', 'printing-report-portrait');
+        document.documentElement.classList.add('printing-cert');
+
+        document.body.classList.remove('printing-batch-cert', 'printing-report-portrait');
+        document.body.classList.add('printing-cert');
+
+        modal.classList.add('active-print');
+
+        setTimeout(() => {
+            hideLoader();
+            window.print();
+
+            modal.classList.remove('active-print');
+            document.documentElement.classList.remove('printing-cert');
+            document.body.classList.remove('printing-cert');
+            stage.innerHTML = prevHTML;
+
+            if (typeof autoFitCertificate === "function") {
+                autoFitCertificate();
+            }
+        }, 200);
+    }
+    
+    // ==========================================================================
+    // 4. FIXED RESULTS DIRECTORY REPORT MODAL
+    // ==========================================================================
+    function openResultsReport(autoPrint = false) {
+        const modal = document.getElementById('resultReportModal');
+        const container = document.getElementById('resReportContentContainer');
+        if (!modal || !container) return;
+
+        const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
+        container.innerHTML = "";
+
+        // Filter strictly to Top 3 places
+        let results = dbPublishedResults.filter(r => isTopThreePlace(r.place));
+
+        if (q) {
+            results = results.filter(r =>
+                String(r.candidateName || "").toLowerCase().includes(q) ||
+                String(r.itemName || "").toLowerCase().includes(q) ||
+                String(r.studentClass || "").toLowerCase().includes(q) ||
+                String(r.admissionNumber || "").toLowerCase().includes(q) ||
                 String(r.festName || "").toLowerCase().includes(q)
             );
         }
 
-        // Championship Points Table (Top Standings)
-        const classPoints = {};
-        dbPublishedResults.forEach(r => {
-            const clsKey = `${r.studentClass} ${r.studentDivision || ''}`.trim() || "General";
-            if (!classPoints[clsKey]) {
-                classPoints[clsKey] = { points: 0, first: 0, second: 0, third: 0 };
-            }
-            if (r.place === "FIRST Place") { classPoints[clsKey].points += 5; classPoints[clsKey].first += 1; }
-            else if (r.place === "SECOND Place") { classPoints[clsKey].points += 3; classPoints[clsKey].second += 1; }
-            else if (r.place === "THIRD Place") { classPoints[clsKey].points += 1; classPoints[clsKey].third += 1; }
+        document.getElementById('resReportMetaInfo').innerText = `Total Top 3 Winners: ${results.length} | Generated on: ${new Date().toLocaleString('en-IN')}`;
+
+        // Group by Festival -> Item
+        const festMap = {};
+        results.forEach(r => {
+            const fName = r.festName || "General Fest";
+            if (!festMap[fName]) festMap[fName] = {};
+            const itemKey = `${r.itemName} [${r.itemCode || '-'}]`;
+            if (!festMap[fName][itemKey]) festMap[fName][itemKey] = [];
+            festMap[fName][itemKey].push(r);
         });
 
-        const sortedStandings = Object.keys(classPoints).map(k => ({
-            className: k,
-            ...classPoints[k]
-        })).sort((a, b) => b.points - a.points);
+        let outputHTML = "";
+        Object.keys(festMap).sort().forEach(fName => {
+            outputHTML += `
+                <div style="margin-bottom:20px;">
+                    <div style="background:#0f172a; color:#ffffff; padding:8px 14px; font-weight:800; font-size:13px; border-radius:4px; margin-bottom:10px;">
+                        <i class="fas fa-trophy" style="color:var(--gold-pure); margin-right:6px;"></i> ${fName.toUpperCase()} - WINNERS DIRECTORY (1st, 2nd, 3rd)
+                    </div>
+            `;
 
-        if (sortedStandings.length > 0 && !q && catFilter === "ALL") {
-            let pointsHTML = `
-                <div class="section" style="margin-bottom:25px; border-top:4px solid var(--gold);">
-                    <h4 class="section-title">
-                        <span><i class="fas fa-trophy" style="color:var(--gold);"></i> Overall Championship Points Table</span>
-                        <span style="font-size:12px; color:#64748b; font-weight:normal;">(1st: 5 pts | 2nd: 3 pts | 3rd: 1 pt)</span>
-                    </h4>
-                    <div class="table-responsive">
-                        <table>
+            const itemKeys = Object.keys(festMap[fName]).sort();
+            itemKeys.forEach(itemKey => {
+                const rows = festMap[fName][itemKey];
+                rows.sort((a, b) => {
+                    const order = { "FIRST Place": 1, "SECOND Place": 2, "THIRD Place": 3 };
+                    return (order[normalizePlaceCategory(a.place)] || 9) - (order[normalizePlaceCategory(b.place)] || 9);
+                });
+
+                outputHTML += `
+                    <div style="margin-bottom:12px; border:1px solid #cbd5e1; border-radius:4px; overflow:hidden;">
+                        <div style="background:#f8fafc; padding:6px 12px; font-weight:800; font-size:12px; border-bottom:1px solid #cbd5e1;">
+                            ${itemKey}
+                        </div>
+                        <table style="width:100%; font-size:11px;">
                             <thead>
-                                <tr style="background:#f8fafc;">
-                                    <th style="width:60px; text-align:center;">Rank</th>
-                                    <th>Class & Division</th>
-                                    <th style="text-align:center;">1st Places</th>
-                                    <th style="text-align:center;">2nd Places</th>
-                                    <th style="text-align:center;">3rd Places</th>
-                                    <th style="text-align:center; font-weight:800; color:var(--primary);">Total Points</th>
+                                <tr style="background:#ffffff;">
+                                    <th style="width:110px; text-align:center;">Standing</th>
+                                    <th style="width:65px; text-align:center;">Lot</th>
+                                    <th style="width:80px;">Admn No</th>
+                                    <th>Candidate Name</th>
+                                    <th>Class & Div</th>
+                                    <th style="width:65px; text-align:center;">Score</th>
+                                    <th style="width:55px; text-align:center;">Grade</th>
                                 </tr>
                             </thead>
                             <tbody>
-            `;
-            sortedStandings.forEach((c, idx) => {
-                const posBadge = idx === 0 ? 'place-1' : (idx === 1 ? 'place-2' : (idx === 2 ? 'place-3' : 'place-other'));
-                pointsHTML += `
-                    <tr>
-                        <td style="text-align:center;"><span class="badge-place ${posBadge}">${idx + 1}</span></td>
-                        <td><b>${c.className}</b></td>
-                        <td style="text-align:center;">${c.first}</td>
-                        <td style="text-align:center;">${c.second}</td>
-                        <td style="text-align:center;">${c.third}</td>
-                        <td style="text-align:center; font-size:15px; font-weight:800; color:var(--primary);">${c.points} pts</td>
-                    </tr>
-                `;
-            });
-            pointsHTML += `</tbody></table></div></div>`;
-            container.innerHTML += pointsHTML;
-        }
-
-        if (results.length === 0) {
-            container.innerHTML += `<p style="text-align:center; color:#94a3b8; padding:40px; font-weight:600;">No published results found matching your criteria.</p>`;
-            return;
-        }
-
-        // 3-Tier Hierarchy: Classification (A-Z) -> Fest Name (A-Z) -> Item (A-Z)
-        const hierarchy = {};
-        results.forEach(r => {
-            const cat = r.festCategory || getFestivalCategory(r.festName) || "Other";
-            const fName = r.festName || "General Fest";
-            const itemKey = `${r.itemName} [${r.itemCode || 'N/A'}]`;
-
-            if (!hierarchy[cat]) hierarchy[cat] = {};
-            if (!hierarchy[cat][fName]) hierarchy[cat][fName] = {};
-            if (!hierarchy[cat][fName][itemKey]) hierarchy[cat][fName][itemKey] = [];
-
-            hierarchy[cat][fName][itemKey].push(r);
-        });
-
-        const top3Places = ["FIRST Place", "SECOND Place", "THIRD Place"];
-
-        // LEVEL 1: Category Headers (A-Z)
-        const sortedCategories = Object.keys(hierarchy).sort((a, b) => a.localeCompare(b));
-
-        sortedCategories.forEach(cat => {
-            let catTop3Total = 0;
-            let catTop3Printed = 0;
-            Object.keys(hierarchy[cat]).forEach(fn => {
-                Object.keys(hierarchy[cat][fn]).forEach(ik => {
-                    hierarchy[cat][fn][ik].forEach(r => {
-                        if (top3Places.includes(r.place)) {
-                            catTop3Total++;
-                            if (isCertificatePrinted(r.id, r)) catTop3Printed++;
-                        }
-                    });
-                });
-            });
-
-            const isCatAllPrinted = (catTop3Total > 0 && catTop3Printed === catTop3Total);
-            // Visible ONLY to Admin
-            const catPrintSummaryHTML = (isAdmin && catTop3Total > 0) ? `
-                <span class="cert-print-pill ${isCatAllPrinted ? 'printed' : 'pending'}" style="font-size:11px; margin-right:8px;" title="Category Print Tally: ${catTop3Printed} of ${catTop3Total} Certificates Printed (1st, 2nd, 3rd)">
-                    <i class="fas fa-print"></i> 1st-3rd: ${catTop3Printed}/${catTop3Total} <span class="print-text">Printed</span>
-                </span>
-            ` : '';
-
-            let catHTML = `
-                <div style="width:100%; margin-bottom:14px;">
-                    <div class="category-main-head collapsible-header" onclick="toggleResultSection(this)">
-                        <span><i class="fas fa-layer-group"></i> ${cat.toUpperCase()} RESULTS</span>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            ${catPrintSummaryHTML}
-                            <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
-                        </div>
-                    </div>
-                    <div class="category-collapsible-content" style="display: none; width: 100%;">
-            `;
-
-            // LEVEL 2: Fest Headers (A-Z)
-            const sortedFests = Object.keys(hierarchy[cat]).sort((a, b) => a.localeCompare(b));
-
-            sortedFests.forEach(festName => {
-                const festItemsObj = hierarchy[cat][festName];
-                const sortedItems = Object.keys(festItemsObj).sort((a, b) => a.localeCompare(b));
-
-                let festTop3Total = 0;
-                let festTop3Printed = 0;
-                sortedItems.forEach(ik => {
-                    festItemsObj[ik].forEach(r => {
-                        if (top3Places.includes(r.place)) {
-                            festTop3Total++;
-                            if (isCertificatePrinted(r.id, r)) festTop3Printed++;
-                        }
-                    });
-                });
-
-                const isFestAllPrinted = (festTop3Total > 0 && festTop3Printed === festTop3Total);
-                // Visible ONLY to Admin
-                const festPrintSummaryHTML = (isAdmin && festTop3Total > 0) ? `
-                    <span class="cert-print-pill ${isFestAllPrinted ? 'printed' : 'pending'}" style="font-size:11px;" title="Festival Print Tally: ${festTop3Printed} of ${festTop3Total} Certificates Printed (1st, 2nd, 3rd)">
-                        <i class="fas fa-print"></i> 1st-3rd: ${festTop3Printed}/${festTop3Total} <span class="print-text">Printed</span>
-                    </span>
-                ` : '';
-
-                catHTML += `
-                    <div style="width:100%; margin-bottom:10px;">
-                        <div class="rec-fest-head collapsible-header" onclick="toggleResultSection(this)" style="margin: 8px 0 6px 0;">
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
-                                <h5 style="margin:0; font-size:14.5px; color:var(--text-main); font-weight:800;">
-                                    <i class="fas fa-trophy" style="color:var(--warning);"></i> ${festName}
-                                </h5>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                ${festPrintSummaryHTML}
-                                <span style="font-size:11.5px; font-weight:700; color:#64748b;">
-                                    ${sortedItems.length} Item(s)
-                                </span>
-                            </div>
-                        </div>
-                        <div class="fest-collapsible-content" style="display: none; width: 100%; margin-bottom: 8px;">
                 `;
 
-                // LEVEL 3: Item Headers (A-Z)
-                sortedItems.forEach(itemKey => {
-                    const rows = festItemsObj[itemKey];
-                    rows.sort((a, b) => parseFloat(b.score || 0) - parseFloat(a.score || 0));
+                // IN openResultsReport():
+                rows.forEach(r => {
+                    const members = getTeamMembersForResult(r);
+                    const winnerText = (members && members.length > 1)
+                        ? members.map(m => {
+                            const isLeader = (m.role === 'Team Leader' || m.name === r.candidateName);
+                            return `${m.name} (${isLeader ? 'Leader' : 'Participant'})`;
+                        }).join(", ")
+                        : `<b>${r.candidateName}</b>`;
 
-                    // Visible ONLY to Admin
-                    const top3Rows = rows.filter(r => top3Places.includes(r.place));
-                    let itemPrintPillsHTML = "";
-
-                    if (isAdmin && top3Rows.length > 0) {
-                        let pills = "";
-                        top3Rows.forEach(r => {
-                            const isP = isCertificatePrinted(r.id, r);
-                            const rank = r.place === "FIRST Place" ? "1st" : (r.place === "SECOND Place" ? "2nd" : "3rd");
-                            const cName = typeof escapeHtml === "function" ? escapeHtml(r.candidateName || '') : (r.candidateName || '');
-                            pills += `
-                                <span class="cert-print-pill ${isP ? 'printed' : 'pending'}" 
-                                      id="hdr_pill_${r.id}" 
-                                      title="${rank} Place (${cName}): ${isP ? 'Certificate Printed' : 'Certificate Pending'}">
-                                    <b>${rank}</b>: ${isP ? '<i class="fas fa-check"></i> <span class="print-text">Printed</span>' : '<i class="fas fa-clock"></i> <span class="print-text">Pending</span>'}
-                                </span>
-                            `;
-                        });
-                        itemPrintPillsHTML = `<div class="item-print-summary-group">${pills}</div>`;
-                    }
-
-                    catHTML += `
-                        <div style="margin-bottom:8px; border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;">
-                            <div class="item-sub-head collapsible-header" onclick="toggleResultSection(this)" style="margin:0; padding:9px 13px; background:#f8fafc; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                    <i class="fas fa-chevron-down collapse-chevron collapsed"></i>
-                                    <span><i class="fas fa-star" style="color:var(--warning);"></i> ${itemKey}</span>
-                                    <span class="result-badge-new"><i class="fas fa-bolt"></i> NEW</span>
-                                </div>
-                                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                                    ${itemPrintPillsHTML}
-                                    <span style="font-size:11.5px; font-weight:normal; color:#64748b;">
-                                        <i class="far fa-clock"></i> ${rows[0].publishedAt ? rows[0].publishedAt.split(',')[0] : 'Official'}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="table-responsive" style="margin:0; border:none; display: none;">
-                                <table>
-                                    <thead>
-                                        <tr style="background:#ffffff;">
-                                            <th style="width:50px; text-align:center;">Sl No</th>
-                                            <th style="width:80px; text-align:center;">Lot No</th>
-                                            <th>Candidate Name</th>
-                                            <th>Class & Div</th>
-                                            <th style="width:90px; text-align:center;">Score</th>
-                                            <th style="width:70px; text-align:center;">Grade</th>
-                                            <th style="width:130px; text-align:center;">Place</th>
-                                            <th style="width:130px; text-align:center;">Certificate & Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                    outputHTML += `
+                        <tr>
+                            <td style="text-align:center; font-weight:800;">${r.place}</td>
+                            <td style="text-align:center;">${r.lotNumber || '-'}</td>
+                            <td>${r.admissionNumber || '-'}</td>
+                            <td>${winnerText}</td>
+                            <td>${r.studentClass} ${r.studentDivision || ''}</td>
+                            <td style="text-align:center; font-weight:800;">${r.score}</td>
+                            <td style="text-align:center;"><b>${r.grade}</b></td>
+                        </tr>
                     `;
-
-                    rows.forEach((row, sIdx) => {
-                        let placeBadge = 'place-other';
-                        if (row.place === "FIRST Place") placeBadge = 'place-1';
-                        else if (row.place === "SECOND Place") placeBadge = 'place-2';
-                        else if (row.place === "THIRD Place") placeBadge = 'place-3';
-
-                        const isPrinted = isCertificatePrinted(row.id, row);
-
-                        catHTML += `
-                            <tr>
-                                <td style="text-align:center; font-weight:600;">${sIdx + 1}</td>
-                                <td style="text-align:center; font-weight:700; color:#0c2340;">${row.lotNumber || 'N/A'}</td>
-                                <td>
-                                    ${(() => {
-                                        const members = getTeamMembersForResult(row);
-                                        if (members && members.length > 1) {
-                                            const memberNames = members.map(m => m.name === row.candidateName ? `<b>${m.name}</b> (Leader)` : m.name).join(", ");
-                                            return `
-                                                <div>
-                                                    <b>${row.candidateName}</b> <span style="color:#d97706; font-size:10.5px; font-weight:700;">(Team Leader)</span>
-                                                    <div style="font-size:11px; color:#64748b; margin-top:3px; line-height:1.3;">
-                                                        <i class="fas fa-users" style="color:var(--accent);"></i> <b>Group (${members.length}):</b> ${memberNames}
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }
-                                        return `<b>${row.candidateName}</b>`;
-                                    })()}
-                                </td>
-                                <td>${row.studentClass} ${row.studentDivision || ''}</td>
-                                <td style="text-align:center;"><b>${row.score}</b></td>
-                                <td style="text-align:center;"><span style="font-weight:bold; color:var(--primary);">${row.grade}</span></td>
-                                <td style="text-align:center;"><span class="badge-place ${placeBadge}">${row.place}</span></td>
-                                <td style="text-align:center;">
-                                    <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
-                                        <button type="button" class="action-btn" style="padding:5px 8px; font-size:12px;" title="View Certificate" onclick="openCertificateModal('${row.id}', false)">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button type="button" class="action-btn gold" id="print_btn_${row.id}" style="padding:5px 8px; font-size:12px;" title="${isPrinted ? 'Print already taken (Click to print again)' : 'Print Certificate'}" onclick="openCertificateModal('${row.id}', true)">
-                                            <i class="fas fa-print" id="print_icon_${row.id}" style="${isPrinted ? 'opacity: 0.35;' : ''}"></i>
-                                        </button>
-                                        ${!isStudent ? `
-                                            <button type="button" class="action-btn danger" style="padding:5px 8px; font-size:12px;" title="Delete Result Entry" onclick="deleteResultEntry('${row.id}')">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        ` : ''}
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    });
-
-                    catHTML += `</tbody></table></div></div>`;
                 });
 
-                catHTML += `</div></div>`;
+                outputHTML += `</tbody></table></div>`;
             });
 
-            catHTML += `</div></div>`;
-            container.innerHTML += catHTML;
+            outputHTML += `</div>`;
         });
+
+        container.innerHTML = outputHTML || `<p style="text-align:center; color:#94a3b8; padding:30px;">No published 1st, 2nd, or 3rd place winners found.</p>`;
+        modal.style.display = 'flex';
+
+        if (autoPrint) {
+            setTimeout(() => {
+                printModalDocument('resultReportModal', 'portrait');
+            }, 300);
+        }
     }
 
     // --- RESULTS DIRECTORY REPORT MODAL (VIEW & A4 PORTRAIT PRINT) ---
@@ -9413,12 +10526,11 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         modal.style.display = 'flex';
 
-        if (autoPrint) {
-        markCertificateAsPrinted(resId); // <-- Record print
-        setTimeout(() => {
-            printModalDocument('certModal', 'landscape');
-        }, 350);
-    }
+if (autoPrint) {
+    setTimeout(() => {
+        printModalDocument('resultReportModal', 'portrait');
+    }, 300);
+}
     }
 
     function closeResultsReport() {
@@ -9981,6 +11093,11 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         const btnAdmin = document.getElementById('btnAdminTab');
         if (btnAdmin) btnAdmin.style.display = isAdmin ? 'flex' : 'none';
 
+        const tabAdminActionBtns = document.getElementById('tabAdminActionBtns');
+        if (tabAdminActionBtns) {
+            tabAdminActionBtns.style.display = isAdmin ? 'inline-flex' : 'none';
+        }
+        
         // -------------------------------------------------------------
         // 2. SAFE TAB REDIRECT FOR STUDENTS IF REGISTRATION IS CLOSED
         // -------------------------------------------------------------
@@ -11823,8 +12940,108 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }));
     }
 
-    
-    // Unified Certificate Modal Opener
+    // Helper: Generates a complete, high-resolution certificate card for any student
+    function generateSingleCertHTML(student, resultData) {
+        const festName = resultData.festName || "UTHSAV";
+        const fallbackPublished = (resultData.publishedAt || "20/02/2026").split(',')[0].replace(/[:.-]/g, '/');
+        const festDateCitation = formatFestDatesForCert(festName) || fallbackPublished;
+        const issueDate = getCertIssueDate(festName, fallbackPublished);
+        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) 
+            ? dbSettings.FestConvenors[festName] 
+            : "THEJAS R";
+
+        const st = dbStudents.find(s => String(s["Admission Number"]).trim() === String(student.admissionNumber).trim());
+        const gRaw = String(student.gender || st?.Gender || st?.["Gender"] || "").trim().toUpperCase();
+        const isGirl = gRaw === 'F' || gRaw.startsWith('FEM') || gRaw === 'GIRL';
+        const salutation = isGirl ? 'Kumari.' : 'Master.';
+
+        let cleanName = String(student.name || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
+
+        return `
+            <div class="cert-container" style="margin-bottom: 24px;">
+                <div class="cert-outer-frame">
+                    <div class="cert-inner-frame">
+                        <div class="cert-corner corner-tl"></div>
+                        <div class="cert-corner corner-tr"></div>
+                        <div class="cert-corner corner-bl"></div>
+                        <div class="cert-corner corner-br"></div>
+                        <div class="cert-watermark"></div>
+
+                        <!-- HEADER ROW -->
+                        <div class="cert-header-row">
+                            <div class="cert-logo-box">
+                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="TDTTI Logo">
+                            </div>
+                            <div class="cert-inst-details">
+                                <h1>THIRUMALA DEVASWOM</h1>
+                                <h3>TEACHER TRAINING INSTITUTE</h3>
+                                <p>THURAVOOR, CHERTHALA, ALAPPUZHA, KERALA &bull; PIN: 688532</p>
+                                <p style="font-size:10px; color:#64748b; margin-top:2px;">PH: 0478-2564479 &bull; EMAIL: 34347alappuzha@gmail.com</p>
+                            </div>
+                            <div class="cert-badge-right">
+                                <i class="fas fa-trophy"></i>
+                                <div class="cert-badge-tag">${festName.toUpperCase()}</div>
+                            </div>
+                        </div>
+
+                        <!-- TITLE -->
+                        <div class="cert-title-area">
+                            <div class="cert-main-title">Certificate of Merit</div>
+                            <div class="cert-congrats-animated">Congratulations</div>
+                        </div>
+
+                        <!-- BODY STATEMENT -->
+                        <div class="cert-body-area">
+                            <div class="cert-awarded-intro">This is to proudly certify that</div>
+                            <div class="cert-candidate-name">${salutation} ${cleanName}</div>
+                            <div class="cert-candidate-meta">Standard: <b>${student.class} ${student.division || ''}</b> &bull; Admission No: <b>${student.admissionNumber || '-'}</b></div>
+                            <div class="cert-citation-p">
+                                has distinguished themselves by winning the <span class="cert-highlight-badge">${resultData.place}</span> with <span class="cert-highlight-badge">${resultData.grade} Grade</span><br> in the <b>${resultData.itemName}</b> competition <br>held as part of <b>${festName.toUpperCase()}</b> on <b>${festDateCitation}</b>.
+                            </div>
+                        </div>
+
+                        <!-- SIGNATURES & GOLD SEAL FOOTER -->
+                        <div class="cert-footer-row">
+                            <div class="cert-sig-block">
+                                <div class="cert-signature-space"></div>
+                                <b>${convenorName}</b>
+                                <span>General Convenor</span>
+                                <div class="cert-date-place">
+                                    <span>Date: ${issueDate}</span>
+                                    <span>Place: Thuravoor</span>
+                                </div>
+                            </div>
+
+                            <div class="cert-gold-seal-wrapper">
+                                <div class="cert-seal-ribbon ribbon-left"></div>
+                                <div class="cert-seal-ribbon ribbon-right"></div>
+                                <div class="cert-gold-seal">
+                                    <span>TDTTI</span>
+                                    <i class="fas fa-award"></i>
+                                    <span>Congrats</span>
+                                </div>
+                            </div>
+
+                            <div class="cert-sig-block">
+                                <div class="cert-signature-space"></div>
+                                <b>ASHA V</b>
+                                <span>Principal</span>
+                                <div class="cert-date-place" style="visibility:hidden;">
+                                    <span>Date: ${issueDate}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ==========================================================================
+    // CERTIFICATE CONTROLLER: MULTI-PAGE GROUP CERTIFICATES (VIEW, PRINT & DELETE)
+    // ==========================================================================
+
+    // Opens modal displaying ALL individual certificates for the team (or single student)
     function openCertificateModal(resId, autoPrint = false) {
         const r = dbPublishedResults.find(x => x.id === resId);
         if (!r) return;
@@ -11833,51 +13050,224 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         currentCertMembers = getTeamMembersForResult(r);
 
         const groupBar = document.getElementById('certGroupMemberBar');
-        const memberSelect = document.getElementById('certMemberSelect');
-        const countSpan = document.getElementById('certGroupCount');
+        const stage = document.getElementById('certScaleStage');
+        const mainPrintBtn = document.getElementById('btnMainCertPrint');
+        const mainPrintText = document.getElementById('btnMainCertPrintText');
+        const isGroup = Boolean(currentCertMembers && currentCertMembers.length > 1);
 
-        if (currentCertMembers && currentCertMembers.length > 1) {
-            // Group Event: Display member switcher bar and populate dropdown
-            if (groupBar) groupBar.style.display = 'flex';
-            if (countSpan) countSpan.innerText = currentCertMembers.length;
-            if (memberSelect) {
-                memberSelect.innerHTML = "";
-                currentCertMembers.forEach((m, idx) => {
-                    memberSelect.innerHTML += `<option value="${idx}">${idx + 1}. ${m.name} (${m.role || 'Participant'}) - Std: ${m.class}${m.division || ''}</option>`;
-                });
+        if (isGroup) {
+            if (groupBar) {
+                groupBar.style.display = 'flex';
+                groupBar.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:8px;">
+                        <span style="font-size:13px; font-weight:800; color:var(--text-main);">
+                            <i class="fas fa-users" style="color:var(--accent);"></i>
+                            All Individual Certificates (${currentCertMembers.length} Members): <b>${currentCertMembers.map(m => m.name).join(', ')}</b>
+                        </span>
+                        <button type="button" class="action-btn gold" style="padding:5px 14px; font-size:12px;" onclick="printAllGroupCertificatesDirect('${r.id}')">
+                            <i class="fas fa-print"></i> Print All (${currentCertMembers.length}) A4 Certificates
+                        </button>
+                    </div>
+                `;
             }
-            renderSingleStudentCertificate(currentCertMembers[0], r);
+
+            if (mainPrintBtn) {
+                mainPrintBtn.onclick = () => printAllGroupCertificatesDirect(r.id);
+            }
+            if (mainPrintText) {
+                mainPrintText.innerText = `Print All ${currentCertMembers.length} Certificates (A4)`;
+            }
+
+            // Render every member's certificate with individual action bars (NO NAME CHANGING HACKS)
+            let allCertsHTML = "";
+            currentCertMembers.forEach((member, mIdx) => {
+                const isLeader = (member.role === 'Team Leader' || member.name === r.candidateName);
+                allCertsHTML += `
+                    <div class="cert-individual-wrapper" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:28px;">
+                        <div class="no-print" style="width:1040px; max-width:100%; background:#ffffff; border:1px solid #cbd5e1; border-bottom:none; border-radius:6px 6px 0 0; padding:8px 14px; display:flex; justify-content:space-between; align-items:center; box-sizing:border-box;">
+                            <div>
+                                <span class="badge-place ${isLeader ? 'place-1' : 'place-2'}" style="font-size:11px; margin-right:6px;">${isLeader ? 'LEADER' : 'PARTICIPANT'}</span>
+                                <b style="color:#0f172a; font-size:14px;">${member.name}</b>
+                                <span style="color:#64748b; font-size:12px; margin-left:8px;">Std: <b>${member.class} ${member.division || ''}</b> &bull; Admn: <b>${member.admissionNumber || '-'}</b></span>
+                            </div>
+                            <div style="display:inline-flex; gap:6px;">
+                                <button type="button" class="action-btn gold" style="padding:4px 10px; font-size:11.5px;" title="Print only this certificate" onclick="printSingleCertDirect('${r.id}', ${mIdx})">
+                                    <i class="fas fa-print"></i> Print This Certificate
+                                </button>
+                                ${currentUser && currentUser.role !== 'Student' ? `
+                                    <button type="button" class="action-btn danger" style="padding:4px 10px; font-size:11.5px;" title="Delete this member's certificate" onclick="deleteIndividualCertMember('${r.id}', '${member.admissionNumber || member.name}')">
+                                        <i class="fas fa-trash-alt"></i> Delete
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ${generateSingleCertHTML(member, r)}
+                    </div>
+                `;
+            });
+
+            stage.innerHTML = allCertsHTML;
+
         } else {
-            // Individual Event: Hide switcher bar
+            // INDIVIDUAL ITEM: Standard Single Certificate
             if (groupBar) groupBar.style.display = 'none';
-            renderSingleStudentCertificate({
+
+            if (mainPrintBtn) {
+                mainPrintBtn.onclick = () => printSingleCertDirect(r.id, 0);
+            }
+            if (mainPrintText) {
+                mainPrintText.innerText = "Print Certificate (A4)";
+            }
+
+            stage.innerHTML = generateSingleCertHTML({
                 name: r.candidateName,
                 class: r.studentClass,
                 division: r.studentDivision,
-                admissionNumber: r.admissionNumber
+                admissionNumber: r.admissionNumber,
+                gender: ""
             }, r);
         }
 
         document.getElementById('certModal').style.display = 'flex';
         logStudentAction(`Viewed Certificate for ${r.itemName} (${r.place})`);
 
-        // Reset to 100% Viewable Fit mode and calculate scale
         isCertActualSize = false;
         const btnText = document.getElementById('certFitBtnText');
         const btnIcon = document.querySelector('#btnCertFitToggle i');
         if (btnText) btnText.innerText = "Actual Size";
         if (btnIcon) btnIcon.className = "fas fa-search-plus";
 
-        // Give DOM 50ms to paint modal dimensions, then auto-fit
         setTimeout(() => {
             autoFitCertificate();
         }, 50);
 
         if (autoPrint) {
             setTimeout(() => {
-                printModalDocument('certModal', 'landscape');
+                if (isGroup) {
+                    printAllGroupCertificatesDirect(r.id);
+                } else {
+                    printSingleCertDirect(r.id, 0);
+                }
             }, 350);
         }
+    }
+
+    // Opens modal for a specific member from the table row
+    function openIndividualCertModal(resId, memberIndex, autoPrint = false) {
+        const r = dbPublishedResults.find(x => x.id === resId);
+        if (!r) return;
+        const members = getTeamMembersForResult(r);
+        const member = (members && members[memberIndex]) ? members[memberIndex] : {
+            name: r.candidateName,
+            class: r.studentClass,
+            division: r.studentDivision,
+            admissionNumber: r.admissionNumber
+        };
+
+        currentActiveCertResult = r;
+        currentCertMembers = [member];
+
+        const groupBar = document.getElementById('certGroupMemberBar');
+        const stage = document.getElementById('certScaleStage');
+        const mainPrintBtn = document.getElementById('btnMainCertPrint');
+        const mainPrintText = document.getElementById('btnMainCertPrintText');
+
+        if (groupBar) {
+            groupBar.style.display = 'flex';
+            groupBar.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; width:100%; flex-wrap:wrap; gap:8px;">
+                    <span style="font-size:12.5px; font-weight:800; color:var(--text-main);">
+                        <i class="fas fa-user-graduate" style="color:var(--accent);"></i>
+                        Certificate: <b>${member.name}</b> (${member.role || 'Participant'}) &bull; Std: ${member.class} ${member.division || ''}
+                    </span>
+                    <button type="button" class="action-btn secondary" style="padding:4px 10px; font-size:11px;" onclick="openCertificateModal('${r.id}', false)">
+                        <i class="fas fa-users"></i> View All Team Certificates (${members ? members.length : 1})
+                    </button>
+                </div>
+            `;
+        }
+
+        if (mainPrintBtn) {
+            mainPrintBtn.onclick = () => printSingleCertDirect(resId, memberIndex);
+        }
+        if (mainPrintText) {
+            mainPrintText.innerText = `Print ${member.name}'s Certificate (A4)`;
+        }
+
+        stage.innerHTML = generateSingleCertHTML(member, r);
+        document.getElementById('certModal').style.display = 'flex';
+
+        isCertActualSize = false;
+        setTimeout(() => {
+            autoFitCertificate();
+        }, 50);
+
+        if (autoPrint) {
+            setTimeout(() => {
+                printSingleCertDirect(resId, memberIndex);
+            }, 350);
+        }
+    }
+
+    
+
+    
+
+    // Deletes an individual student's certificate from a group result entry
+    async function deleteIndividualCertMember(resId, identifier) {
+        const r = dbPublishedResults.find(x => x.id === resId);
+        if (!r) return;
+
+        const members = getTeamMembersForResult(r) || [];
+        const targetMember = members.find(m => String(m.admissionNumber) === String(identifier) || m.name === identifier);
+        const memberName = targetMember ? targetMember.name : identifier;
+
+        showCustomDialog(
+            "Delete Individual Certificate?",
+            `Are you sure you want to remove <b>${memberName}</b> from this result? Their certificate will be deleted.<br><br><small style="color:#64748b;">(The remaining team members' certificates will remain intact)</small>`,
+            "danger",
+            async () => {
+                showLoader(`Removing certificate for ${memberName}...`);
+                try {
+                    const updatedMembers = members.filter(m => String(m.admissionNumber) !== String(identifier) && m.name !== identifier);
+
+                    if (updatedMembers.length === 0) {
+                        await db.collection("published_results").doc(resId).delete();
+                        dbPublishedResults = dbPublishedResults.filter(x => x.id !== resId);
+                        closeCertModal();
+                    } else {
+                        const newCandidateName = (r.candidateName === memberName) ? updatedMembers[0].name : r.candidateName;
+                        const newAdmn = (r.candidateName === memberName) ? (updatedMembers[0].admissionNumber || "") : r.admissionNumber;
+
+                        await db.collection("published_results").doc(resId).update({
+                            teamMembers: updatedMembers,
+                            candidateName: newCandidateName,
+                            admissionNumber: newAdmn,
+                            isGroup: updatedMembers.length > 1
+                        });
+
+                        r.teamMembers = updatedMembers;
+                        r.candidateName = newCandidateName;
+                        r.admissionNumber = newAdmn;
+                        r.isGroup = updatedMembers.length > 1;
+
+                        const modal = document.getElementById('certModal');
+                        if (modal && modal.style.display === 'flex') {
+                            openCertificateModal(resId, false);
+                        }
+                    }
+
+                    hideLoader();
+                    renderActiveResultView();
+                    showCustomDialog("Deleted", `Certificate for <b>${memberName}</b> removed successfully.`, "success");
+                } catch (e) {
+                    hideLoader();
+                    console.error("Error removing individual member certificate:", e);
+                    showCustomDialog("Error", "Could not remove member certificate.", "danger");
+                }
+            },
+            true
+        );
     }
 
     // ==========================================================================
@@ -11885,40 +13275,41 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
     // ==========================================================================
     let isCertActualSize = false;
 
+    // Auto-fit function for multiple certificate cards
     function autoFitCertificate() {
         const modal = document.getElementById('certModal');
         const wrapper = document.querySelector('.cert-scroll-wrapper');
         const stage = document.getElementById('certScaleStage');
-        const cert = document.getElementById('printableCertificate');
-        
-        if (!modal || modal.style.display !== 'flex' || !wrapper || !stage || !cert) return;
+        if (!modal || modal.style.display !== 'flex' || !wrapper || !stage) return;
 
         const baseW = 1040;
         const baseH = 735;
 
-        // If user explicitly asked for 100% Actual Size
         if (isCertActualSize) {
-            cert.style.transform = 'none';
+            stage.querySelectorAll('.cert-container').forEach(c => c.style.transform = 'none');
+            stage.querySelectorAll('.cert-individual-wrapper > div.no-print').forEach(h => h.style.transform = 'none');
             stage.style.width = `${baseW}px`;
-            stage.style.height = `${baseH}px`;
             return;
         }
 
-        // Available area inside the scroll wrapper
-        const availW = wrapper.clientWidth - 20;
-        const availH = wrapper.clientHeight - 20;
-
+        const availW = wrapper.clientWidth - 30;
+        const availH = wrapper.clientHeight - 30;
         if (availW <= 0 || availH <= 0) return;
 
-        // Compute proportional scale factor to fit 100% width and 100% height
         const scale = Math.min(availW / baseW, availH / baseH, 1);
 
-        cert.style.transform = `scale(${scale})`;
-        cert.style.transformOrigin = 'center center';
+        stage.querySelectorAll('.cert-container').forEach(c => {
+            c.style.transform = `scale(${scale})`;
+            c.style.transformOrigin = 'top center';
+            c.style.marginBottom = `${24 * scale}px`;
+        });
 
-        // Constrain stage so scrolling/centering is calculated correctly
+        stage.querySelectorAll('.cert-individual-wrapper > div.no-print').forEach(h => {
+            h.style.transform = `scale(${scale})`;
+            h.style.transformOrigin = 'top center';
+        });
+
         stage.style.width = `${baseW * scale}px`;
-        stage.style.height = `${baseH * scale}px`;
     }
 
     // Toggle between "Fit to Screen" (100% visible) and "Actual Size" (1:1 zoom)
@@ -11990,126 +13381,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         `;
     }
 
-    // BATCH PRINT: Generates and prints each group member's certificate on its own A4 sheet
-    function printAllGroupCertificates() {
-        if (currentActiveCertResult) {
-        markCertificateAsPrinted(currentActiveCertResult.id); // <-- Record print for group certificates
-        }
-        if (!currentCertMembers || !currentActiveCertResult) return;
-
-        const wrapper = document.querySelector('.cert-scroll-wrapper');
-        const originalContent = wrapper.innerHTML;
-
-        showLoader("Preparing All Group Certificates for Print...");
-        
-        let batchHTML = "";
-        const festName = currentActiveCertResult.festName || "UTHSAV";
-        const fallbackPublished = (currentActiveCertResult.publishedAt || "20/02/2026").split(',')[0].replace(/[:.-]/g, '/');
-        const festDateCitation = formatFestDatesForCert(festName) || fallbackPublished;
-        const issueDate = getCertIssueDate(festName, fallbackPublished);
-        const convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) 
-            ? dbSettings.FestConvenors[festName] 
-            : "THEJAS R";
-
-        currentCertMembers.forEach((member) => {
-            const st = dbStudents.find(s => String(s["Admission Number"]).trim() === String(member.admissionNumber).trim());
-            const gRaw = String(member.gender || st?.Gender || st?.["Gender"] || "").trim().toUpperCase();
-            const isGirl = gRaw === 'F' || gRaw.startsWith('FEM') || gRaw === 'GIRL';
-            const salutation = isGirl ? 'Kumari.' : 'Master.';
-            const cleanName = String(member.name || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
-
-            batchHTML += `
-                <div class="cert-container" style="margin-bottom:20px;">
-                    <div class="cert-outer-frame">
-                        <div class="cert-inner-frame">
-                            <div class="cert-corner corner-tl"></div>
-                            <div class="cert-corner corner-tr"></div>
-                            <div class="cert-corner corner-bl"></div>
-                            <div class="cert-corner corner-br"></div>
-                            <div class="cert-watermark"></div>
-
-                            <div class="cert-header-row">
-                                <div class="cert-logo-box">
-                                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="Logo">
-                                </div>
-                                <div class="cert-inst-details">
-                                    <h1>Thirumala Devaswom</h1>
-                                    <h3>Teacher Training Institute</h3>
-                                    <p>THURAVOOR, ALAPPUZHA, KERALA &bull; PH: 0478-256 4479</p>
-                                </div>
-                                <div class="cert-badge-right">
-                                    <i class="fas fa-trophy"></i>
-                                    <div class="cert-badge-tag">${festName.toUpperCase()}</div>
-                                </div>
-                            </div>
-
-                            <div class="cert-title-area">
-                                <div class="cert-main-title">Certificate of Merit</div>
-                                <div class="cert-congrats-animated">Congratulation</div>
-                            </div>
-
-                            <div class="cert-body-area">
-                                <div class="cert-awarded-intro">This is to proudly certify that</div>
-                                <div class="cert-candidate-name">${salutation} ${cleanName}</div>
-                                <div class="cert-candidate-class">Standard: ${member.class} ${member.division || ''}</div>
-                                <div class="cert-citation-p">
-                                    has distinguished themselves by winning the <span class="cert-highlight-badge">${currentActiveCertResult.place}</span> with <span class="cert-highlight-badge">${currentActiveCertResult.grade} Grade</span> <br>in the <b>${currentActiveCertResult.itemName} (Group)</b> competition <br>held as part of <b>${festName.toUpperCase()}</b> on <b>${festDateCitation}</b>.
-                                </div>
-                            </div>
-
-                            <div class="cert-footer-row" style="display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 2; padding: 6px 16px 2px; border-top: 1.5px solid rgba(212, 175, 55, 0.4);">
-                                <div class="cert-sig-block" style="text-align: center; min-width: 220px;">
-                                    <div class="cert-signature-space" style="height: 54px; width: 100%;"></div>
-                                    <b style="display: block; font-size: 13px; color: var(--text-main); border-top: 1.5px solid #334155; padding-top: 4px; margin: 0;">
-                                        ${convenorName}
-                                    </b>
-                                    <span style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
-                                        ( General Convenor )
-                                    </span>
-                                    <div style="display: flex; justify-content: center; gap: 14px; font-size: 11px; font-weight: 600; color: #475569; border-top: 1px dashed #cbd5e1; padding-top: 3px;">
-                                        <span>Date: ${issueDate}</span>
-                                        <span>Place: Thuravoor</span>
-                                    </div>
-                                </div>
-
-                                <div class="cert-gold-seal" style="margin-bottom: 14px;">
-                                    <i class="fas fa-certificate"></i>
-                                    <span>Congrats</span>
-                                </div>
-
-                                <div class="cert-sig-block" style="text-align: center; min-width: 220px;">
-                                    <div class="cert-signature-space" style="height: 54px; width: 100%;"></div>
-                                    <b style="display: block; font-size: 13px; color: var(--text-main); border-top: 1.5px solid #334155; padding-top: 4px; margin: 0;">
-                                        ASHA V
-                                    </b>
-                                    <span style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
-                                        ( Principal )
-                                    </span>
-                                    <div style="height: 18px;"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        wrapper.innerHTML = batchHTML;
-        hideLoader();
-
-        const modal = document.getElementById('certModal');
-        document.body.classList.add('printing-batch-cert');
-        modal.classList.add('active-print');
-
-        window.print();
-
-        modal.classList.remove('active-print');
-        document.body.classList.remove('printing-batch-cert');
-        wrapper.innerHTML = originalContent;
-
-        const select = document.getElementById('certMemberSelect');
-        if (select) switchCertMember(select.value);
-    }
+    
 
     // --- EDIT REGISTRATION MODAL HANDLERS ---
     function openEditRegistrationModal(regId) {
