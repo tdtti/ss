@@ -9227,6 +9227,657 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
+
+    // ==========================================================================
+    // UNIFIED GROUP TEAM RESOLVER: COLLECTS ALL MEMBERS ACROSS ALL CLASSES
+    // ==========================================================================
+    // ==========================================================================
+    // COMPANION HELPER: RESOLVES FULL GROUP TEAMS ACROSS ALL CLASSES
+    // ==========================================================================
+    function getFullTeamListForUnit(unitOrRegId, itemCode, festName) {
+        let reg = dbRegistrations.find(r => r.id === unitOrRegId);
+        if (!reg) {
+            reg = dbRegistrations.find(r => (r["Item Code"] === itemCode || r["Item"] === itemCode));
+        }
+        if (!reg) return [];
+
+        const isGroup = parseInt(reg["No of Participants"] || 1) > 1;
+        if (!isGroup) return [reg];
+
+        // Fetch all registrations for this item in this festival
+        const allGroupRegs = dbRegistrations.filter(r => 
+            (r["Item Code"] === itemCode || r["Item"] === reg["Item"]) &&
+            (!festName || r["Name of Fest"] === festName || r["Name of Fest"] === reg["Name of Fest"]) &&
+            parseInt(r["No of Participants"] || 1) > 1
+        );
+
+        if (allGroupRegs.length <= 1) return [reg];
+
+        // 1. Match by registration submission Timestamp if available
+        let teamMembers = [];
+        if (reg.Timestamp) {
+            teamMembers = allGroupRegs.filter(r => r.Timestamp === reg.Timestamp);
+        }
+
+        // 2. Fallback: Match by Lot Number if assigned
+        if (teamMembers.length <= 1 && reg["Lot Number"]) {
+            teamMembers = allGroupRegs.filter(r => r["Lot Number"] && r["Lot Number"] === reg["Lot Number"]);
+        }
+
+        // 3. Fallback: If only 1 team exists for this item, all records belong to it
+        if (teamMembers.length <= 1) {
+            teamMembers = allGroupRegs;
+        }
+
+        // 4. SORTING: Designated Team Leader FIRST, all other participants ALPHABETICAL (A-Z)
+        const leader = teamMembers.find(m => m["Role in Event"] === "Team Leader") || teamMembers[0];
+        const others = teamMembers.filter(m => m.id !== leader.id);
+        others.sort((a, b) => String(a.Name || "").localeCompare(String(b.Name || "")));
+
+        return [leader, ...others];
+    }
+
+    // ==========================================================================
+    // 1. FULL UPDATED publishItemResult()
+    // ==========================================================================
+    async function publishItemResult(code) {
+        const festObj = dbFests.find(f => f["Item Code"] === code);
+        const itemScores = dbJudgeScores.filter(s => s.itemCode === code && s.locked === true);
+        if (itemScores.length === 0) {
+            return showCustomDialog("Empty Scores", "No locked marks found to publish.", "warning");
+        }
+
+        showCustomDialog(
+            "Publish Results?",
+            `Publish results for <b>${festObj ? festObj["Item"] : code}</b> to the official Results Tab? Students will immediately be notified with a NEW badge.`,
+            "warning",
+            async () => {
+                showLoader("Publishing Results...");
+                try {
+                    const judges = [];
+                    itemScores.forEach(s => {
+                        if (!judges.find(j => j.phone === s.judgePhone)) {
+                            judges.push({ name: s.judgeName, phone: s.judgePhone });
+                        }
+                    });
+
+                    const unitMap = {};
+                    itemScores.forEach(s => {
+                        if (!unitMap[s.registrationId]) {
+                            unitMap[s.registrationId] = {
+                                regId: s.registrationId,
+                                admnNo: s.admissionNumber,
+                                lotNumber: s.lotNumber,
+                                name: s.candidateName,
+                                studentClass: s.studentClass,
+                                studentDivision: s.studentDivision,
+                                judgeMarks: {}
+                            };
+                        }
+                        unitMap[s.registrationId].judgeMarks[s.judgePhone] = s.totalScore;
+                    });
+
+                    const unitList = Object.values(unitMap);
+                    unitList.forEach(u => {
+                        let sum = 0, count = 0;
+                        judges.forEach(j => {
+                            if (u.judgeMarks[j.phone] !== undefined) {
+                                sum += (parseFloat(u.judgeMarks[j.phone]) || 0);
+                                count++;
+                            }
+                        });
+                        u.finalScore = count > 0 ? (sum / count) : 0;
+                    });
+
+                    // Dense Ranking for Ties & Exclude Zero Scores
+                    unitList.sort((a, b) => (parseFloat(b.finalScore) || 0) - (parseFloat(a.finalScore) || 0));
+
+                    let currentRank = 0;
+                    let lastScore = null;
+
+                    unitList.forEach((u, idx) => {
+                        const score = parseFloat(u.finalScore) || 0;
+
+                        // ZERO / ABSENT SCORE RULE: Never place in 1st, 2nd, 3rd or Grade Participant
+                        if (score <= 0) {
+                            u.place = "-";
+                            u.grade = "-";
+                            return;
+                        }
+
+                        // Identical score -> Identical place (e.g. both FIRST Place)
+                        if (lastScore === null || Math.abs(score - lastScore) > 0.001) {
+                            currentRank++;
+                            lastScore = score;
+                        }
+
+                        if (currentRank === 1) u.place = "FIRST Place";
+                        else if (currentRank === 2) u.place = "SECOND Place";
+                        else if (currentRank === 3) u.place = "THIRD Place";
+                        else u.place = "Grade Participant";
+
+                        const maxMarks = (itemScores[0]?.maxMarks || 30);
+                        u.percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
+                        u.grade = calculateGrade(u.percentage).grade;
+                    });
+
+                    // Remove previous published entries for this item if any existed
+                    const oldPubSnap = await db.collection("published_results").where("itemCode", "==", code).get();
+                    const batch = db.batch();
+                    oldPubSnap.docs.forEach(d => batch.delete(d.ref));
+                    dbPublishedResults = dbPublishedResults.filter(p => p.itemCode !== code);
+
+                    const timestamp = new Date().toLocaleString('en-IN');
+
+                    unitList.forEach((u, idx) => {
+                        // Resolve full group team across all classes (Leader first, others alphabetical)
+                        const fullTeam = getFullTeamListForUnit(u.regId, code, festObj ? festObj["Fest Name"] : "");
+                        const isGroup = fullTeam.length > 1;
+
+                        let teamMembers = [];
+                        let leaderName = u.name;
+                        let leaderAdmn = u.admnNo;
+                        let leaderClass = u.studentClass;
+                        let leaderDiv = u.studentDivision;
+
+                        if (isGroup) {
+                            const leader = fullTeam[0];
+                            leaderName = leader.Name;
+                            leaderAdmn = leader["Admission Number"];
+                            leaderClass = leader.Class;
+                            leaderDiv = leader.Division;
+
+                            teamMembers = fullTeam.map((m, mIdx) => ({
+                                id: m.id,
+                                admissionNumber: m["Admission Number"],
+                                name: m.Name,
+                                class: m.Class,
+                                division: m.Division,
+                                gender: m.Gender || "",
+                                role: mIdx === 0 ? "Team Leader" : "Participant"
+                            }));
+                        }
+
+                        const isFirst = (u.place === "FIRST Place");
+                        const pubDoc = {
+                            itemCode: code,
+                            itemName: festObj ? festObj["Item"] : code,
+                            festName: festObj ? festObj["Fest Name"] : "",
+                            festCategory: getFestivalCategory(festObj ? festObj["Fest Name"] : ""),
+                            registrationId: u.regId,
+                            admissionNumber: leaderAdmn,
+                            lotNumber: u.lotNumber || "N/A",
+                            candidateName: leaderName,
+                            studentClass: leaderClass,
+                            studentDivision: leaderDiv,
+                            score: u.finalScore.toFixed(2),
+                            grade: u.grade,
+                            place: u.place,
+                            isGroup: Boolean(isGroup),
+                            teamMembers: teamMembers,
+                            qualifiedSubDistrict: isFirst && u.grade === 'A',
+                            publishedAt: timestamp
+                        };
+
+                        const ref = db.collection("published_results").doc();
+                        batch.set(ref, pubDoc);
+                        dbPublishedResults.push({ ...pubDoc, id: ref.id });
+                    });
+
+                    if (!dbSettings.PublishedItems) dbSettings.PublishedItems = [];
+                    if (!dbSettings.PublishedItems.includes(code)) dbSettings.PublishedItems.push(code);
+                    batch.set(db.collection("config").doc("settings"), {
+                        PublishedItems: dbSettings.PublishedItems
+                    }, { merge: true });
+
+                    await batch.commit();
+                    hideLoader();
+
+                    const tabBadge = document.getElementById('resultNewBadge');
+                    if (tabBadge) tabBadge.style.display = 'inline-block';
+
+                    showCustomDialog("Published", `Results for <b>${festObj ? festObj["Item"] : code}</b> published successfully!`, "success");
+                    renderTabulation();
+                    renderResults();
+                    renderSubDistrictTab();
+                } catch (err) {
+                    hideLoader();
+                    console.error("Publishing error:", err);
+                    showCustomDialog("Publish Failed", "Error while publishing results: " + (err.message || ""), "danger");
+                }
+            },
+            true
+        );
+    }
+
+    // ==========================================================================
+    // 2. FULL UPDATED executeClearAndRepublishAll()
+    // ==========================================================================
+    async function executeClearAndRepublishAll(scoredItemCodes) {
+        showLoader("Purging previous published results from database...");
+        try {
+            // 1. Fetch all existing published result documents
+            const existingPubSnap = await db.collection("published_results").get();
+
+            // 2. Delete all existing published results in chunks of 400 (safe for Firestore batch limit)
+            if (!existingPubSnap.empty) {
+                const docs = existingPubSnap.docs;
+                for (let i = 0; i < docs.length; i += 400) {
+                    const chunk = docs.slice(i, i + 400);
+                    const delBatch = db.batch();
+                    chunk.forEach(d => delBatch.delete(d.ref));
+                    await delBatch.commit();
+                }
+            }
+
+            // Reset local memory arrays
+            dbPublishedResults = [];
+            dbSettings.PublishedItems = [];
+
+            showLoader("Recalculating Tabulation & Publishing Results...");
+
+            const timestamp = new Date().toLocaleString('en-IN');
+            const newPublishedDocs = [];
+            const publishedCodes = [];
+
+            // 3. Process every scored item
+            for (const code of scoredItemCodes) {
+                const festObj = dbFests.find(f => f["Item Code"] === code);
+                const itemScores = dbJudgeScores.filter(s => s.itemCode === code && s.locked === true);
+                if (itemScores.length === 0) continue;
+
+                // Identify distinct judges
+                const judges = [];
+                itemScores.forEach(s => {
+                    if (!judges.find(j => j.phone === s.judgePhone)) {
+                        judges.push({ name: s.judgeName, phone: s.judgePhone });
+                    }
+                });
+
+                // Consolidate candidate scores
+                const unitMap = {};
+                itemScores.forEach(s => {
+                    if (!unitMap[s.registrationId]) {
+                        unitMap[s.registrationId] = {
+                            regId: s.registrationId,
+                            admnNo: s.admissionNumber,
+                            lotNumber: s.lotNumber,
+                            name: s.candidateName,
+                            studentClass: s.studentClass,
+                            studentDivision: s.studentDivision,
+                            judgeMarks: {}
+                        };
+                    }
+                    unitMap[s.registrationId].judgeMarks[s.judgePhone] = s.totalScore;
+                });
+
+                const unitList = Object.values(unitMap);
+                unitList.forEach(u => {
+                    let sum = 0, count = 0;
+                    judges.forEach(j => {
+                        if (u.judgeMarks[j.phone] !== undefined) {
+                            sum += (parseFloat(u.judgeMarks[j.phone]) || 0);
+                            count++;
+                        }
+                    });
+                    u.finalScore = count > 0 ? (sum / count) : 0;
+                });
+
+                // TIE-BREAKING & DENSE RANKING ENGINE
+                unitList.sort((a, b) => (parseFloat(b.finalScore) || 0) - (parseFloat(a.finalScore) || 0));
+
+                let currentRank = 0;
+                let lastScore = null;
+
+                unitList.forEach((u, idx) => {
+                    const score = parseFloat(u.finalScore) || 0;
+
+                    // ZERO / ABSENT SCORE RULE: Never place in 1st, 2nd, 3rd or Grade Participant
+                    if (score <= 0) {
+                        u.place = "-";
+                        u.grade = "-";
+                        return;
+                    }
+
+                    // Identical score -> Identical place (e.g. both FIRST Place)
+                    if (lastScore === null || Math.abs(score - lastScore) > 0.001) {
+                        currentRank++;
+                        lastScore = score;
+                    }
+
+                    if (currentRank === 1) u.place = "FIRST Place";
+                    else if (currentRank === 2) u.place = "SECOND Place";
+                    else if (currentRank === 3) u.place = "THIRD Place";
+                    else u.place = "Grade Participant";
+
+                    const maxMarks = (itemScores[0]?.maxMarks || 30);
+                    u.percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
+                    u.grade = calculateGrade(u.percentage).grade;
+                });
+
+                // Build publication documents with full team membership
+                unitList.forEach((u, idx) => {
+                    const fullTeam = getFullTeamListForUnit(u.regId, code, festObj ? festObj["Fest Name"] : "");
+                    const isGroup = fullTeam.length > 1;
+
+                    let teamMembers = [];
+                    let leaderName = u.name;
+                    let leaderAdmn = u.admnNo;
+                    let leaderClass = u.studentClass;
+                    let leaderDiv = u.studentDivision;
+
+                    if (isGroup) {
+                        const leader = fullTeam[0];
+                        leaderName = leader.Name;
+                        leaderAdmn = leader["Admission Number"];
+                        leaderClass = leader.Class;
+                        leaderDiv = leader.Division;
+
+                        teamMembers = fullTeam.map((m, mIdx) => ({
+                            id: m.id,
+                            admissionNumber: m["Admission Number"],
+                            name: m.Name,
+                            class: m.Class,
+                            division: m.Division,
+                            gender: m.Gender || "",
+                            role: mIdx === 0 ? "Team Leader" : "Participant"
+                        }));
+                    }
+
+                    const isFirst = (u.place === "FIRST Place");
+                    const pubDoc = {
+                        itemCode: code,
+                        itemName: festObj ? festObj["Item"] : code,
+                        festName: festObj ? festObj["Fest Name"] : "",
+                        festCategory: getFestivalCategory(festObj ? festObj["Fest Name"] : ""),
+                        registrationId: u.regId,
+                        admissionNumber: leaderAdmn,
+                        lotNumber: u.lotNumber || "N/A",
+                        candidateName: leaderName,
+                        studentClass: leaderClass,
+                        studentDivision: leaderDiv,
+                        score: u.finalScore.toFixed(2),
+                        grade: u.grade,
+                        place: u.place,
+                        isGroup: Boolean(isGroup),
+                        teamMembers: teamMembers,
+                        qualifiedSubDistrict: isFirst && u.grade === 'A',
+                        publishedAt: timestamp
+                    };
+
+                    newPublishedDocs.push(pubDoc);
+                });
+
+                publishedCodes.push(code);
+            }
+
+            // 4. Batch commit the newly created published results in chunks of 400
+            for (let i = 0; i < newPublishedDocs.length; i += 400) {
+                const chunk = newPublishedDocs.slice(i, i + 400);
+                const writeBatch = db.batch();
+                chunk.forEach(docData => {
+                    const docRef = db.collection("published_results").doc();
+                    writeBatch.set(docRef, docData);
+                    dbPublishedResults.push({ ...docData, id: docRef.id });
+                });
+                await writeBatch.commit();
+            }
+
+            // 5. Update settings with newly published items
+            dbSettings.PublishedItems = publishedCodes;
+            await db.collection("config").doc("settings").set({
+                PublishedItems: publishedCodes
+            }, { merge: true });
+
+            hideLoader();
+
+            // 6. Refresh all views
+            if (typeof renderTabulation === "function") renderTabulation();
+            if (typeof renderResults === "function") renderResults();
+            if (typeof renderSubDistrictTab === "function") renderSubDistrictTab();
+
+            showCustomDialog(
+                "Republish Complete",
+                `Successfully recalculated and published:
+                <br><br>
+                &bull; <b>${publishedCodes.length} Items</b> published.<br>
+                &bull; <b>${newPublishedDocs.length} Total Entries</b> processed.<br>
+                &bull; Results, Championship Table, and Individual Rank Sheets are updated.`,
+                "success"
+            );
+        } catch (err) {
+            hideLoader();
+            console.error("Clear and republish error:", err);
+            showCustomDialog("Republish Error", "Failed to clear and republish results. Details: " + (err.message || ""), "danger");
+        }
+    }
+
+    // ==========================================================================
+    // 3. FULL UPDATED renderFestWinnersView()
+    // ==========================================================================
+    function renderFestWinnersView(festName) {
+        const container = document.getElementById('festWinnersContainer');
+        if (!container) return;
+        container.innerHTML = "";
+
+        const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
+        const isAdmin = Boolean(currentUser && (currentUser.role === "Official" || (currentUser.access && String(currentUser.access).includes("3"))));
+        const isStudent = currentUser && currentUser.role === "Student";
+
+        // Filter strictly to this festival and ONLY 1st, 2nd, and 3rd places
+        let results = dbPublishedResults.filter(r => 
+            r.festName === festName && isTopThreePlace(r.place)
+        );
+
+        if (q) {
+            results = results.filter(r =>
+                String(r.candidateName || "").toLowerCase().includes(q) ||
+                String(r.itemName || "").toLowerCase().includes(q) ||
+                String(r.studentClass || "").toLowerCase().includes(q) ||
+                String(r.admissionNumber || "").toLowerCase().includes(q) ||
+                String(r.lotNumber || "").toLowerCase().includes(q) ||
+                (r.teamMembers && r.teamMembers.some(m => String(m.name || "").toLowerCase().includes(q)))
+            );
+        }
+
+        if (results.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:50px 20px; background:#ffffff; border:1.5px solid var(--border); border-radius:var(--radius-md);">
+                    <i class="fas fa-award" style="font-size:36px; color:#cbd5e1; margin-bottom:12px;"></i>
+                    <h3 style="margin:0 0 6px 0; color:var(--text-main);">No 1st, 2nd, or 3rd place results published yet</h3>
+                    <p style="color:#64748b; font-size:13px; margin:0;">Winners for ${festName} will appear here directly once officially published.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Group by item
+        const itemMap = {};
+        results.forEach(r => {
+            const key = `${r.itemName}__${r.itemCode || ''}`;
+            if (!itemMap[key]) itemMap[key] = [];
+            itemMap[key].push(r);
+        });
+
+        const sortedItemKeys = Object.keys(itemMap).sort((a, b) => a.localeCompare(b));
+
+        let html = "";
+        sortedItemKeys.forEach(itemKey => {
+            const itemResults = itemMap[itemKey];
+            const itemName = itemResults[0].itemName;
+            const itemCode = itemResults[0].itemCode || "-";
+
+            // Sort: 1st place -> 2nd place -> 3rd place -> Score
+            itemResults.sort((a, b) => {
+                const order = { "FIRST Place": 1, "SECOND Place": 2, "THIRD Place": 3 };
+                const normA = normalizePlaceCategory(a.place);
+                const normB = normalizePlaceCategory(b.place);
+                const diff = (order[normA] || 9) - (order[normB] || 9);
+                if (diff !== 0) return diff;
+                return parseFloat(b.score || 0) - parseFloat(a.score || 0);
+            });
+
+            // Tally summary pills for 1st, 2nd, 3rd
+            const firstCount = itemResults.filter(r => normalizePlaceCategory(r.place) === "FIRST Place").length;
+            const secondCount = itemResults.filter(r => normalizePlaceCategory(r.place) === "SECOND Place").length;
+            const thirdCount = itemResults.filter(r => normalizePlaceCategory(r.place) === "THIRD Place").length;
+
+            let rowsHTML = "";
+            itemResults.forEach((r, idx) => {
+                const norm = normalizePlaceCategory(r.place);
+                const pillClass = norm === "FIRST Place" ? "place-pill-1" : (norm === "SECOND Place" ? "place-pill-2" : "place-pill-3");
+                const isPrinted = isCertificatePrinted(r.id, r);
+
+                // Pull all team members (Team Leader first, others alphabetical)
+                const members = getTeamMembersForResult(r);
+                const isGroup = (members && members.length > 1);
+
+                let sortedMembers = [];
+                if (isGroup) {
+                    const leader = members.find(m => m.role === "Team Leader" || m.name === r.candidateName) || members[0];
+                    const others = members.filter(m => m.name !== leader.name);
+                    others.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+                    sortedMembers = [leader, ...others];
+                }
+
+                rowsHTML += `
+                    <tr>
+                        <td style="text-align:center;"><span class="badge-place ${pillClass}">${r.place}</span></td>
+                        <td style="text-align:center; font-weight:800; color:var(--primary);">${r.lotNumber || 'N/A'}</td>
+                        <td><b>${r.admissionNumber || '-'}</b></td>
+
+                        <!-- 1. WINNER NAME: LEADER FIRST, OTHER MEMBERS ALPHABETICAL (NO EXTRA HEADERS) -->
+                        <td>
+                            ${(() => {
+                                if (isGroup) {
+                                    const formatted = sortedMembers.map((m, mIdx) => {
+                                        const isLead = (mIdx === 0);
+                                        return `<span style="display:inline-block; margin-right:6px;">
+                                            <b>${m.name}</b> 
+                                            <span style="font-size:11px; font-weight:800; color:${isLead ? '#b45309' : '#475569'}; text-transform:uppercase;">
+                                                (${isLead ? 'Leader' : 'Participant'})
+                                            </span>
+                                        </span>`;
+                                    }).join(", ");
+
+                                    return `<div style="font-size:13.5px; color:#0f172a; line-height:1.5;">${formatted}</div>`;
+                                }
+                                return `<b style="font-size:14px; color:#0f172a;">${r.candidateName}</b>`;
+                            })()}
+                        </td>
+
+                        <td><span style="font-weight:700; color:var(--accent);">${r.studentClass} ${r.studentDivision || ''}</span></td>
+                        <td style="text-align:center; font-weight:800;">${r.score}</td>
+                        <td style="text-align:center;"><span style="font-weight:900; color:#059669;">${r.grade}</span></td>
+
+                        <!-- 2. CERTIFICATE & ACTIONS: INDIVIDUAL PER-MEMBER ACTIONS FOR GROUP RESULTS -->
+                        <td style="text-align:center;">
+                            ${(() => {
+                                if (isGroup) {
+                                    return `
+                                        <div style="display:flex; flex-direction:column; gap:5px; align-items:stretch; min-width:210px;">
+                                            ${sortedMembers.map((m, mIdx) => `
+                                                <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:3px 6px;">
+                                                    <span style="font-size:11.5px; font-weight:700; color:#0f172a; max-width:105px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${m.name}">
+                                                        ${m.name}
+                                                    </span>
+                                                    <div style="display:inline-flex; gap:3px;">
+                                                        <button type="button" class="action-btn" style="padding:2px 6px; font-size:10px;" title="View ${m.name}'s Certificate" onclick="openIndividualCertModal('${r.id}', ${mIdx}, false)">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button type="button" class="action-btn gold" style="padding:2px 6px; font-size:10px;" title="Print ${m.name}'s Certificate" onclick="openIndividualCertModal('${r.id}', ${mIdx}, true)">
+                                                            <i class="fas fa-print"></i>
+                                                        </button>
+                                                        ${!isStudent ? `
+                                                            <button type="button" class="action-btn danger" style="padding:2px 6px; font-size:10px;" title="Delete ${m.name}'s Certificate" onclick="deleteIndividualCertMember('${r.id}', '${m.admissionNumber || m.name}')">
+                                                                <i class="fas fa-trash-alt"></i>
+                                                            </button>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+
+                                            <!-- Master Batch Controls -->
+                                            <div style="display:flex; gap:4px; justify-content:center; margin-top:2px;">
+                                                <button type="button" class="action-btn gold" style="padding:3px 8px; font-size:11px; flex:1;" title="Print All Certificates for this Team" onclick="printAllGroupCertificatesDirect('${r.id}')">
+                                                    <i class="fas fa-print"></i> Print All (${sortedMembers.length})
+                                                </button>
+                                                <button type="button" class="action-btn" style="padding:3px 8px; font-size:11px;" title="View All Certificates" onclick="openCertificateModal('${r.id}', false)">
+                                                    <i class="fas fa-layer-group"></i> View All
+                                                </button>
+                                                ${!isStudent ? `
+                                                    <button type="button" class="action-btn danger" style="padding:3px 6px; font-size:11px;" title="Delete Entire Result" onclick="deleteResultEntry('${r.id}')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+
+                                // Individual item controls
+                                return `
+                                    <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
+                                        <button type="button" class="action-btn" style="padding:4px 8px; font-size:11.5px;" title="View Certificate" onclick="openCertificateModal('${r.id}', false)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="action-btn gold" id="print_btn_${r.id}" style="padding:4px 8px; font-size:11.5px;" title="${isPrinted ? 'Print taken (Click to print again)' : 'Print Certificate'}" onclick="openCertificateModal('${r.id}', true)">
+                                            <i class="fas fa-print" id="print_icon_${r.id}" style="${isPrinted ? 'opacity: 0.35;' : ''}"></i>
+                                        </button>
+                                        ${!isStudent ? `
+                                            <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11.5px;" title="Delete Result" onclick="deleteResultEntry('${r.id}')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            })()}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Clean Non-Collapsible Card Layout
+            html += `
+                <div class="res-winner-card">
+                    <div class="res-winner-card-head">
+                        <div class="res-winner-card-title">
+                            <i class="fas fa-medal" style="color:var(--gold-pure);"></i>
+                            <span>${itemName}</span>
+                            <span style="font-family:monospace; color:#2563eb; font-size:12px; font-weight:700;">[${itemCode}]</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            ${firstCount > 0 ? `<span class="badge-place place-pill-1">1st: ${firstCount}</span>` : ''}
+                            ${secondCount > 0 ? `<span class="badge-place place-pill-2">2nd: ${secondCount}</span>` : ''}
+                            ${thirdCount > 0 ? `<span class="badge-place place-pill-3">3rd: ${thirdCount}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="margin:0; border:none;">
+                        <table>
+                            <thead>
+                                <tr style="background:#ffffff;">
+                                    <th style="width:130px; text-align:center;">Standing</th>
+                                    <th style="width:75px; text-align:center;">Lot</th>
+                                    <th style="width:90px;">Admn No</th>
+                                    <th>Winner Name</th>
+                                    <th>Class & Div</th>
+                                    <th style="width:75px; text-align:center;">Score</th>
+                                    <th style="width:65px; text-align:center;">Grade</th>
+                                    <th style="width:120px; text-align:center;">Certificate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHTML}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
     // --- TAB 5: TABULATION TAB ---
     function renderTabulation() {
         const container = document.getElementById('tabulationContainer');
@@ -9389,11 +10040,50 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                     `;
 
                     unitList.forEach(u => {
+                        // Resolve all team members for group items (Leader first, others alphabetical)
+                        const allTeam = getFullTeamListForUnit(u.regId, code, festName);
+                        const isGroup = allTeam.length > 1;
+
+                        let candidateCellHTML = "";
+                        let classCellHTML = "";
+
+                        if (isGroup) {
+                            const leader = allTeam[0];
+                            const participants = allTeam.slice(1);
+
+                            // Team Leader displayed prominently, followed by all participants in A-Z order
+                            const participantNames = participants.map(m => 
+                                `${m.Name} <small style="color:#64748b;">(${m.Class}${m.Division || ''})</small>`
+                            ).join(", ");
+
+                            candidateCellHTML = `
+                                <div>
+                                    <div style="font-size:13.5px; font-weight:800; color:#0f172a;">
+                                        ${leader.Name} 
+                                        <span style="font-size:11px; font-weight:800; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:3px; margin-left:4px;">
+                                            TEAM LEADER
+                                        </span>
+                                    </div>
+                                    <div style="font-size:11.5px; color:#334155; margin-top:4px; line-height:1.45;">
+                                        <span style="font-weight:700; color:#475569;"><i class="fas fa-users" style="color:var(--accent);"></i> Participants (${participants.length}):</span> 
+                                        ${participantNames}
+                                    </div>
+                                </div>
+                            `;
+
+                            // Distinct classes participating in the team
+                            const classSet = [...new Set(allTeam.map(m => `${m.Class}${m.Division || ''}`.trim()))];
+                            classCellHTML = `<span style="font-weight:700; color:var(--accent); font-size:12px;">${classSet.join(", ")}</span>`;
+                        } else {
+                            candidateCellHTML = `<b>${u.name}</b>`;
+                            classCellHTML = `${u.studentClass} ${u.studentDivision || ''}`;
+                        }
+
                         catHTML += `
                             <tr>
-                                <td><b>${u.lotNumber}</b></td>
-                                <td><b>${u.name}</b></td>
-                                <td>${u.studentClass} ${u.studentDivision || ''}</td>
+                                <td style="text-align:center;"><b>${u.lotNumber}</b></td>
+                                <td>${candidateCellHTML}</td>
+                                <td>${classCellHTML}</td>
                         `;
                         judges.forEach(j => {
                             const sc = u.judgeMarks[j.phone] !== undefined ? u.judgeMarks[j.phone] : '-';
@@ -9419,172 +10109,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
-    async function publishItemResult(code) {
-        const festObj = dbFests.find(f => f["Item Code"] === code);
-        const itemScores = dbJudgeScores.filter(s => s.itemCode === code && s.locked === true);
-        if (itemScores.length === 0) return showCustomDialog("Empty Scores", "No locked marks found to publish.", "warning");
-
-        showCustomDialog(
-            "Publish Results?",
-            `Publish results for <b>${festObj ? festObj["Item"] : code}</b> to the official Results Tab? Students will immediately be notified with a NEW badge.`,
-            "warning",
-            async () => {
-                showLoader("Publishing Results...");
-                try {
-                    const judges = [];
-                    itemScores.forEach(s => {
-                        if (!judges.find(j => j.phone === s.judgePhone)) {
-                            judges.push({ name: s.judgeName, phone: s.judgePhone });
-                        }
-                    });
-
-                    const unitMap = {};
-                    itemScores.forEach(s => {
-                        if (!unitMap[s.registrationId]) {
-                            unitMap[s.registrationId] = {
-                                regId: s.registrationId,
-                                admnNo: s.admissionNumber,
-                                lotNumber: s.lotNumber,
-                                name: s.candidateName,
-                                studentClass: s.studentClass,
-                                studentDivision: s.studentDivision,
-                                judgeMarks: {}
-                            };
-                        }
-                        unitMap[s.registrationId].judgeMarks[s.judgePhone] = s.totalScore;
-                    });
-
-                    const unitList = Object.values(unitMap);
-                    unitList.forEach(u => {
-                        let sum = 0, count = 0;
-                        judges.forEach(j => {
-                            if (u.judgeMarks[j.phone] !== undefined) {
-                                sum += (parseFloat(u.judgeMarks[j.phone]) || 0);
-                                count++;
-                            }
-                        });
-                        u.finalScore = count > 0 ? (sum / count) : 0;
-                    });
-
-                    // Dense Ranking for Ties & Exclude Zero Scores
-                    unitList.sort((a, b) => (parseFloat(b.finalScore) || 0) - (parseFloat(a.finalScore) || 0));
-
-                    let currentRank = 0;
-                    let lastScore = null;
-
-                    unitList.forEach((u, idx) => {
-                        const score = parseFloat(u.finalScore) || 0;
-
-                        if (score <= 0) {
-                            u.place = "-";
-                            u.grade = "-";
-                            return;
-                        }
-
-                        if (lastScore === null || Math.abs(score - lastScore) > 0.001) {
-                            currentRank++;
-                            lastScore = score;
-                        }
-
-                        if (currentRank === 1) u.place = "FIRST Place";
-                        else if (currentRank === 2) u.place = "SECOND Place";
-                        else if (currentRank === 3) u.place = "THIRD Place";
-                        else u.place = "Grade Participant";
-
-                        const maxMarks = (itemScores[0]?.maxMarks || 30);
-                        u.percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
-                        u.grade = calculateGrade(u.percentage).grade;
-                    });
-
-                    // Remove previous published entries for this item if any existed
-                    const oldPubSnap = await db.collection("published_results").where("itemCode", "==", code).get();
-                    const batch = db.batch();
-                    oldPubSnap.docs.forEach(d => batch.delete(d.ref));
-                    dbPublishedResults = dbPublishedResults.filter(p => p.itemCode !== code);
-
-                    const timestamp = new Date().toLocaleString('en-IN');
-
-                    unitList.forEach((u, idx) => {
-                        const reg = dbRegistrations.find(r => r.id === u.regId);
-                        const isGroup = reg && parseInt(reg["No of Participants"] || 1) > 1;
-                        let teamMembers = [];
-
-                        if (isGroup) {
-                            teamMembers = dbRegistrations.filter(r => 
-                                (r["Item Code"] === code || r["Item"] === reg["Item"]) &&
-                                r["Class"] === reg["Class"] &&
-                                r["Division"] === reg["Division"] &&
-                                r["Name of Fest"] === reg["Name of Fest"]
-                            ).map(m => ({
-                                id: m.id,
-                                admissionNumber: m["Admission Number"],
-                                name: m["Name"],
-                                class: m["Class"],
-                                division: m["Division"],
-                                gender: m["Gender"] || "",
-                                role: m["Role in Event"] || "Participant"
-                            }));
-
-                            teamMembers.sort((a, b) => {
-                                const aLead = (a.role === 'Team Leader' || a.name === u.name);
-                                const bLead = (b.role === 'Team Leader' || b.name === u.name);
-                                if (aLead && !bLead) return -1;
-                                if (!aLead && bLead) return 1;
-                                return a.name.localeCompare(b.name);
-                            });
-                        }
-
-                        const isFirst = (u.place === "FIRST Place");
-                        const pubDoc = {
-                            itemCode: code,
-                            itemName: festObj ? festObj["Item"] : code,
-                            festName: festObj ? festObj["Fest Name"] : "",
-                            festCategory: getFestivalCategory(festObj ? festObj["Fest Name"] : ""),
-                            registrationId: u.regId,
-                            admissionNumber: u.admnNo,
-                            lotNumber: u.lotNumber || "N/A",
-                            candidateName: u.name,
-                            studentClass: u.studentClass,
-                            studentDivision: u.studentDivision,
-                            score: u.finalScore.toFixed(2),
-                            grade: u.grade,
-                            place: u.place,
-                            isGroup: Boolean(isGroup),
-                            teamMembers: teamMembers,
-                            qualifiedSubDistrict: isFirst && u.grade === 'A',
-                            publishedAt: timestamp
-                        };
-
-                        const ref = db.collection("published_results").doc();
-                        batch.set(ref, pubDoc);
-                        dbPublishedResults.push({ ...pubDoc, id: ref.id });
-                    });
-
-                    if (!dbSettings.PublishedItems) dbSettings.PublishedItems = [];
-                    if (!dbSettings.PublishedItems.includes(code)) dbSettings.PublishedItems.push(code);
-                    batch.set(db.collection("config").doc("settings"), {
-                        PublishedItems: dbSettings.PublishedItems
-                    }, { merge: true });
-
-                    await batch.commit();
-                    hideLoader();
-
-                    const tabBadge = document.getElementById('resultNewBadge');
-                    if (tabBadge) tabBadge.style.display = 'inline-block';
-
-                    showCustomDialog("Published", `Results for <b>${festObj ? festObj["Item"] : code}</b> published successfully!`, "success");
-                    renderTabulation();
-                    renderResults();
-                    renderSubDistrictTab();
-                } catch (err) {
-                    hideLoader();
-                    console.error(err);
-                    showCustomDialog("Publish Failed", "Error while publishing results.", "danger");
-                }
-            },
-            true
-        );
-    }
+    
 
     // ==========================================================================
     // CLEAR ALL PUBLISHED RESULTS & REPUBLISH DIRECTLY FROM TABULATION
@@ -9618,206 +10143,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         );
     }
 
-    async function executeClearAndRepublishAll(scoredItemCodes) {
-        showLoader("Purging previous published results from database...");
-        try {
-            // 1. Fetch all existing published result documents
-            const existingPubSnap = await db.collection("published_results").get();
-
-            // 2. Delete all existing published results in chunks of 400 (safe for Firestore batch limit)
-            if (!existingPubSnap.empty) {
-                const docs = existingPubSnap.docs;
-                for (let i = 0; i < docs.length; i += 400) {
-                    const chunk = docs.slice(i, i + 400);
-                    const delBatch = db.batch();
-                    chunk.forEach(d => delBatch.delete(d.ref));
-                    await delBatch.commit();
-                }
-            }
-
-            // Reset local memory arrays
-            dbPublishedResults = [];
-            dbSettings.PublishedItems = [];
-
-            showLoader("Recalculating Tabulation & Publishing Results...");
-
-            const timestamp = new Date().toLocaleString('en-IN');
-            const newPublishedDocs = [];
-            const publishedCodes = [];
-
-            // 3. Process every scored item
-            for (const code of scoredItemCodes) {
-                const festObj = dbFests.find(f => f["Item Code"] === code);
-                const itemScores = dbJudgeScores.filter(s => s.itemCode === code && s.locked === true);
-                if (itemScores.length === 0) continue;
-
-                // Identify distinct judges
-                const judges = [];
-                itemScores.forEach(s => {
-                    if (!judges.find(j => j.phone === s.judgePhone)) {
-                        judges.push({ name: s.judgeName, phone: s.judgePhone });
-                    }
-                });
-
-                // Consolidate candidate scores
-                const unitMap = {};
-                itemScores.forEach(s => {
-                    if (!unitMap[s.registrationId]) {
-                        unitMap[s.registrationId] = {
-                            regId: s.registrationId,
-                            admnNo: s.admissionNumber,
-                            lotNumber: s.lotNumber,
-                            name: s.candidateName,
-                            studentClass: s.studentClass,
-                            studentDivision: s.studentDivision,
-                            judgeMarks: {}
-                        };
-                    }
-                    unitMap[s.registrationId].judgeMarks[s.judgePhone] = s.totalScore;
-                });
-
-                const unitList = Object.values(unitMap);
-                unitList.forEach(u => {
-                    let sum = 0, count = 0;
-                    judges.forEach(j => {
-                        if (u.judgeMarks[j.phone] !== undefined) {
-                            sum += (parseFloat(u.judgeMarks[j.phone]) || 0);
-                            count++;
-                        }
-                    });
-                    u.finalScore = count > 0 ? (sum / count) : 0;
-                });
-
-                // TIE-BREAKING & DENSE RANKING ENGINE
-                unitList.sort((a, b) => (parseFloat(b.finalScore) || 0) - (parseFloat(a.finalScore) || 0));
-
-                let currentRank = 0;
-                let lastScore = null;
-
-                unitList.forEach((u, idx) => {
-                    const score = parseFloat(u.finalScore) || 0;
-
-                    // ZERO / ABSENT SCORE RULE: Never place in 1st, 2nd, 3rd or Grade Participant
-                    if (score <= 0) {
-                        u.place = "-";
-                        u.grade = "-";
-                        return;
-                    }
-
-                    // Identical score -> Identical place (e.g. both FIRST Place)
-                    if (lastScore === null || Math.abs(score - lastScore) > 0.001) {
-                        currentRank++;
-                        lastScore = score;
-                    }
-
-                    if (currentRank === 1) u.place = "FIRST Place";
-                    else if (currentRank === 2) u.place = "SECOND Place";
-                    else if (currentRank === 3) u.place = "THIRD Place";
-                    else u.place = "Grade Participant";
-
-                    const maxMarks = (itemScores[0]?.maxMarks || 30);
-                    u.percentage = maxMarks > 0 ? (score / maxMarks) * 100 : 0;
-                    u.grade = calculateGrade(u.percentage).grade;
-                });
-
-                // Build publication documents (Both u and idx are defined)
-                unitList.forEach((u, idx) => {
-                    const reg = dbRegistrations.find(r => r.id === u.regId);
-                    const isGroup = reg && parseInt(reg["No of Participants"] || 1) > 1;
-                    let teamMembers = [];
-
-                    if (isGroup) {
-                        teamMembers = dbRegistrations.filter(r => 
-                            (r["Item Code"] === code || r["Item"] === reg["Item"]) &&
-                            r["Class"] === reg["Class"] &&
-                            r["Division"] === reg["Division"] &&
-                            r["Name of Fest"] === reg["Name of Fest"]
-                        ).map(m => ({
-                            id: m.id,
-                            admissionNumber: m["Admission Number"],
-                            name: m["Name"],
-                            class: m["Class"],
-                            division: m["Division"],
-                            gender: m["Gender"] || "",
-                            role: m["Role in Event"] || "Participant"
-                        }));
-
-                        teamMembers.sort((a, b) => {
-                            const aLead = (a.role === 'Team Leader' || a.name === u.name);
-                            const bLead = (b.role === 'Team Leader' || b.name === u.name);
-                            if (aLead && !bLead) return -1;
-                            if (!aLead && bLead) return 1;
-                            return a.name.localeCompare(b.name);
-                        });
-                    }
-
-                    const isFirst = (u.place === "FIRST Place");
-                    const pubDoc = {
-                        itemCode: code,
-                        itemName: festObj ? festObj["Item"] : code,
-                        festName: festObj ? festObj["Fest Name"] : "",
-                        festCategory: getFestivalCategory(festObj ? festObj["Fest Name"] : ""),
-                        registrationId: u.regId,
-                        admissionNumber: u.admnNo,
-                        lotNumber: u.lotNumber || "N/A",
-                        candidateName: u.name,
-                        studentClass: u.studentClass,
-                        studentDivision: u.studentDivision,
-                        score: u.finalScore.toFixed(2),
-                        grade: u.grade,
-                        place: u.place,
-                        isGroup: Boolean(isGroup),
-                        teamMembers: teamMembers,
-                        qualifiedSubDistrict: isFirst && u.grade === 'A',
-                        publishedAt: timestamp
-                    };
-
-                    newPublishedDocs.push(pubDoc);
-                });
-
-                publishedCodes.push(code);
-            }
-
-            // 4. Batch commit the newly created published results in chunks of 400
-            for (let i = 0; i < newPublishedDocs.length; i += 400) {
-                const chunk = newPublishedDocs.slice(i, i + 400);
-                const writeBatch = db.batch();
-                chunk.forEach(docData => {
-                    const docRef = db.collection("published_results").doc();
-                    writeBatch.set(docRef, docData);
-                    dbPublishedResults.push({ ...docData, id: docRef.id });
-                });
-                await writeBatch.commit();
-            }
-
-            // 5. Update settings with newly published items
-            dbSettings.PublishedItems = publishedCodes;
-            await db.collection("config").doc("settings").set({
-                PublishedItems: publishedCodes
-            }, { merge: true });
-
-            hideLoader();
-
-            // 6. Refresh all views
-            if (typeof renderTabulation === "function") renderTabulation();
-            if (typeof renderResults === "function") renderResults();
-            if (typeof renderSubDistrictTab === "function") renderSubDistrictTab();
-
-            showCustomDialog(
-                "Republish Complete",
-                `Successfully recalculated and published:
-                <br><br>
-                &bull; <b>${publishedCodes.length} Items</b> published.<br>
-                &bull; <b>${newPublishedDocs.length} Total Entries</b> processed.<br>
-                &bull; Results, Championship Table, and Individual Rank Sheets are updated.`,
-                "success"
-            );
-        } catch (err) {
-            hideLoader();
-            console.error("Clear and republish error:", err);
-            showCustomDialog("Republish Error", "Failed to clear and republish results. Details: " + (err.message || ""), "danger");
-        }
-    }
+    
 
     // --- TAB 6: RESULT TAB ---
     // 2. Toggle for Results Tab (Category, Fest, and Item levels - Starts Open by default)
@@ -10452,232 +10778,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
-    // ==========================================================================
-    // 3. FESTIVAL WINNERS VIEW (NON-COLLAPSIBLE, ONLY 1st, 2nd, 3rd)
-    // ==========================================================================
-    function renderFestWinnersView(festName) {
-        const container = document.getElementById('festWinnersContainer');
-        if (!container) return;
-        container.innerHTML = "";
-
-        const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
-        const isAdmin = Boolean(currentUser && (currentUser.role === "Official" || (currentUser.access && String(currentUser.access).includes("3"))));
-        const isStudent = currentUser && currentUser.role === "Student";
-
-        // Filter strictly to this festival and ONLY 1st, 2nd, 3rd places
-        let results = dbPublishedResults.filter(r => 
-            r.festName === festName && isTopThreePlace(r.place)
-        );
-
-        if (q) {
-            results = results.filter(r =>
-                String(r.candidateName || "").toLowerCase().includes(q) ||
-                String(r.itemName || "").toLowerCase().includes(q) ||
-                String(r.studentClass || "").toLowerCase().includes(q) ||
-                String(r.admissionNumber || "").toLowerCase().includes(q) ||
-                String(r.lotNumber || "").toLowerCase().includes(q)
-            );
-        }
-
-        if (results.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center; padding:50px 20px; background:#ffffff; border:1.5px solid var(--border); border-radius:var(--radius-md);">
-                    <i class="fas fa-award" style="font-size:36px; color:#cbd5e1; margin-bottom:12px;"></i>
-                    <h3 style="margin:0 0 6px 0; color:var(--text-main);">No 1st, 2nd, or 3rd place results published yet</h3>
-                    <p style="color:#64748b; font-size:13px; margin:0;">Winners for ${festName} will appear here directly once officially published.</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Group by item
-        const itemMap = {};
-        results.forEach(r => {
-            const key = `${r.itemName}__${r.itemCode || ''}`;
-            if (!itemMap[key]) itemMap[key] = [];
-            itemMap[key].push(r);
-        });
-
-        const sortedItemKeys = Object.keys(itemMap).sort((a, b) => a.localeCompare(b));
-
-        let html = "";
-        sortedItemKeys.forEach(itemKey => {
-            const itemResults = itemMap[itemKey];
-            const itemName = itemResults[0].itemName;
-            const itemCode = itemResults[0].itemCode || "-";
-
-            // Sort: 1st place -> 2nd place -> 3rd place -> Score
-            itemResults.sort((a, b) => {
-                const order = { "FIRST Place": 1, "SECOND Place": 2, "THIRD Place": 3 };
-                const normA = normalizePlaceCategory(a.place);
-                const normB = normalizePlaceCategory(b.place);
-                const diff = (order[normA] || 9) - (order[normB] || 9);
-                if (diff !== 0) return diff;
-                return parseFloat(b.score || 0) - parseFloat(a.score || 0);
-            });
-
-            // Tally summary pills for 1st, 2nd, 3rd
-            const firstCount = itemResults.filter(r => normalizePlaceCategory(r.place) === "FIRST Place").length;
-            const secondCount = itemResults.filter(r => normalizePlaceCategory(r.place) === "SECOND Place").length;
-            const thirdCount = itemResults.filter(r => normalizePlaceCategory(r.place) === "THIRD Place").length;
-
-            let rowsHTML = "";
-            itemResults.forEach((r, idx) => {
-                const norm = normalizePlaceCategory(r.place);
-                const pillClass = norm === "FIRST Place" ? "place-pill-1" : (norm === "SECOND Place" ? "place-pill-2" : "place-pill-3");
-                const isPrinted = isCertificatePrinted(r.id, r);
-
-                rowsHTML += `
-                <tr>
-                    <td style="text-align:center;"><span class="badge-place ${pillClass}">${r.place}</span></td>
-                    <td style="text-align:center; font-weight:800; color:var(--primary);">${r.lotNumber || 'N/A'}</td>
-                    <td><b>${r.admissionNumber || '-'}</b></td>
-
-                    <!-- 1. CLEAN WINNER NAME (SHOWS ONLY MEMBERS WITH ROLES) -->
-                    <td>
-                        ${(() => {
-                            const members = getTeamMembersForResult(r);
-                            if (members && members.length > 1) {
-                                // Sort team leader first
-                                const sorted = [...members].sort((a, b) => {
-                                    const aLead = (a.role === 'Team Leader' || a.name === r.candidateName);
-                                    const bLead = (b.role === 'Team Leader' || b.name === r.candidateName);
-                                    if (aLead && !bLead) return -1;
-                                    if (!aLead && bLead) return 1;
-                                    return a.name.localeCompare(b.name);
-                                });
-
-                                const formatted = sorted.map(m => {
-                                    const isLeader = (m.role === 'Team Leader' || m.name === r.candidateName);
-                                    return `<span style="display:inline-block; margin-right:6px;"><b>${m.name}</b> <span style="font-size:11px; font-weight:800; color:${isLeader ? '#d97706' : '#475569'};">(${isLeader ? 'Leader' : 'Participant'})</span></span>`;
-                                }).join(", ");
-
-                                return `<div style="font-size:13.5px; color:#0f172a; line-height:1.45;">${formatted}</div>`;
-                            }
-                            return `<b style="font-size:14px; color:#0f172a;">${r.candidateName}</b>`;
-                        })()}
-                    </td>
-
-                    <td><span style="font-weight:700; color:var(--accent);">${r.studentClass} ${r.studentDivision || ''}</span></td>
-                    <td style="text-align:center; font-weight:800;">${r.score}</td>
-                    <td style="text-align:center;"><span style="font-weight:900; color:#059669;">${r.grade}</span></td>
-
-                    <!-- 2. CERTIFICATE ACTIONS: VIEW, PRINT & DELETE FOR EVERY INDIVIDUAL CERTIFICATE -->
-                    <td style="text-align:center;">
-                        ${(() => {
-                            const members = getTeamMembersForResult(r);
-                            const isPrinted = isCertificatePrinted(r.id, r);
-
-                            // GROUP ITEM: Display individual buttons for each student + Print All
-                            if (members && members.length > 1) {
-                                return `
-                                    <div style="display:flex; flex-direction:column; gap:5px; align-items:stretch; min-width:210px;">
-                                        ${members.map((m, mIdx) => {
-                                            const isLead = (m.role === 'Team Leader' || m.name === r.candidateName);
-                                            return `
-                                                <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:3px 6px;">
-                                                    <span style="font-size:11.5px; font-weight:700; color:#0f172a; max-width:105px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${m.name}">
-                                                        ${m.name}
-                                                    </span>
-                                                    <div style="display:inline-flex; gap:3px;">
-                                                        <button type="button" class="action-btn" style="padding:2px 6px; font-size:10px;" title="View ${m.name}'s Certificate" onclick="openIndividualCertModal('${r.id}', ${mIdx}, false)">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                        <button type="button" class="action-btn gold" style="padding:2px 6px; font-size:10px;" title="Print ${m.name}'s Certificate" onclick="openIndividualCertModal('${r.id}', ${mIdx}, true)">
-                                                            <i class="fas fa-print"></i>
-                                                        </button>
-                                                        ${!isStudent ? `
-                                                            <button type="button" class="action-btn danger" style="padding:2px 6px; font-size:10px;" title="Delete ${m.name}'s Certificate" onclick="deleteIndividualCertMember('${r.id}', '${m.admissionNumber || m.name}')">
-                                                                <i class="fas fa-trash-alt"></i>
-                                                            </button>
-                                                        ` : ''}
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }).join('')}
-
-                                        <!-- Master Batch Controls -->
-                                        <div style="display:flex; gap:4px; justify-content:center; margin-top:2px;">
-                                            <button type="button" class="action-btn gold" style="padding:3px 8px; font-size:11px; flex:1;" title="Print All Certificates for this Team" onclick="printAllGroupCertificatesDirect('${r.id}')">
-                                                <i class="fas fa-print"></i> Print All (${members.length})
-                                            </button>
-                                            <button type="button" class="action-btn" style="padding:3px 8px; font-size:11px;" title="View All Certificates" onclick="openCertificateModal('${r.id}', false)">
-                                                <i class="fas fa-layer-group"></i> View All
-                                            </button>
-                                            ${!isStudent ? `
-                                                <button type="button" class="action-btn danger" style="padding:3px 6px; font-size:11px;" title="Delete Entire Result" onclick="deleteResultEntry('${r.id}')">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                `;
-                            }
-
-                            // INDIVIDUAL ITEM: Standard 3 Buttons
-                            return `
-                                <div style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
-                                    <button type="button" class="action-btn" style="padding:4px 8px; font-size:11.5px;" title="View Certificate" onclick="openCertificateModal('${r.id}', false)">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button type="button" class="action-btn gold" id="print_btn_${r.id}" style="padding:4px 8px; font-size:11.5px;" title="${isPrinted ? 'Print taken (Click to print again)' : 'Print Certificate'}" onclick="openCertificateModal('${r.id}', true)">
-                                        <i class="fas fa-print" id="print_icon_${r.id}" style="${isPrinted ? 'opacity: 0.35;' : ''}"></i>
-                                    </button>
-                                    ${!isStudent ? `
-                                        <button type="button" class="action-btn danger" style="padding:4px 8px; font-size:11.5px;" title="Delete Result" onclick="deleteResultEntry('${r.id}')">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    ` : ''}
-                                </div>
-                            `;
-                        })()}
-                    </td>
-                </tr>
-            `;
-                    
-            });
-
-            // Clean Non-Collapsible Card Layout
-            html += `
-                <div class="res-winner-card">
-                    <div class="res-winner-card-head">
-                        <div class="res-winner-card-title">
-                            <i class="fas fa-medal" style="color:var(--gold-pure);"></i>
-                            <span>${itemName}</span>
-                            <span style="font-family:monospace; color:#2563eb; font-size:12px; font-weight:700;">[${itemCode}]</span>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            ${firstCount > 0 ? `<span class="badge-place place-pill-1">1st: ${firstCount}</span>` : ''}
-                            ${secondCount > 0 ? `<span class="badge-place place-pill-2">2nd: ${secondCount}</span>` : ''}
-                            ${thirdCount > 0 ? `<span class="badge-place place-pill-3">3rd: ${thirdCount}</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="table-responsive" style="margin:0; border:none;">
-                        <table>
-                            <thead>
-                                <tr style="background:#ffffff;">
-                                    <th style="width:130px; text-align:center;">Standing</th>
-                                    <th style="width:75px; text-align:center;">Lot</th>
-                                    <th style="width:90px;">Admn No</th>
-                                    <th>Winner Name</th>
-                                    <th>Class & Div</th>
-                                    <th style="width:75px; text-align:center;">Score</th>
-                                    <th style="width:65px; text-align:center;">Grade</th>
-                                    <th style="width:120px; text-align:center;">Certificate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rowsHTML}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-    }
-
+    
     // ==========================================================================
     // MULTI-PAGE BATCH PRINT CONTROLLER (ALL INDIVIDUAL CERTIFICATES)
     // ==========================================================================
