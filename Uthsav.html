@@ -7123,6 +7123,9 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
     // ==========================================================================
     // EVENT MANAGEMENT: LOT ALLOTMENT (GROUP: TEAM LEADER ONLY + EDIT/DELETE)
     // ==========================================================================
+    // ==========================================================================
+    // EVENT MANAGEMENT: LOT ALLOTMENT (SHOWS 1 TEAM LEADER PER GROUP TEAM)
+    // ==========================================================================
     function loadEventMgmtItemDetails() {
         const code = document.getElementById('emItemSelect')?.value;
         const statusInp = document.getElementById('emItemStatus');
@@ -7152,35 +7155,61 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         const participants = dbRegistrations.filter(r => (r["Item Code"] === code || r["Item"] === code));
         const distinctUnits = [];
-        const seenTeams = new Set();
 
-        participants.forEach(p => {
-            const isGroup = parseInt(p["No of Participants"] || 1) > 1;
-            if (isGroup) {
-                // Team is uniquely grouped by Fest + Item + Class + Division
-                const teamKey = `${p["Name of Fest"]}_${p["Item"]}_${p["Class"]}_${p["Division"]}`;
-                if (!seenTeams.has(teamKey)) {
-                    seenTeams.add(teamKey);
+        // Check if this item is a group item
+        const isGroupItem = participants.some(r => parseInt(r["No of Participants"] || 1) > 1);
 
-                    // Find all members in this team
-                    const allTeamMembers = participants.filter(m => 
-                        `${m["Name of Fest"]}_${m["Item"]}_${m["Class"]}_${m["Division"]}` === teamKey
-                    );
-                    
-                    // RULE: SHOW THE CONCERNED TEAM LEADER ONLY (DO NOT SHOW OTHER MEMBERS)
-                    const leader = allTeamMembers.find(m => m["Role in Event"] === "Team Leader") || allTeamMembers[0];
+        if (isGroupItem) {
+            // Group items into distinct teams
+            const groupParticipants = participants.filter(r => parseInt(r["No of Participants"] || 1) > 1);
+            const teamLeaders = groupParticipants.filter(r => r["Role in Event"] === "Team Leader");
 
-                    distinctUnits.push({ 
-                        ...leader, 
-                        isGroup: true, 
-                        teamId: teamKey,
-                        memberCount: allTeamMembers.length 
+            if (teamLeaders.length > 0) {
+                // One team per Team Leader
+                teamLeaders.forEach(leader => {
+                    // Find all members in this leader's team (by Timestamp or all participants if single team)
+                    let teamMembers = [];
+                    if (teamLeaders.length === 1) {
+                        teamMembers = groupParticipants;
+                    } else if (leader.Timestamp) {
+                        teamMembers = groupParticipants.filter(r => r.Timestamp === leader.Timestamp);
+                    } else {
+                        teamMembers = groupParticipants.filter(r => r["Lot Number"] && r["Lot Number"] === leader["Lot Number"]);
+                    }
+                    if (teamMembers.length === 0) teamMembers = [leader];
+
+                    distinctUnits.push({
+                        ...leader,
+                        isGroup: true,
+                        memberCount: teamMembers.length,
+                        allMembers: teamMembers
                     });
-                }
+                });
             } else {
-                distinctUnits.push({ ...p, isGroup: false });
+                // Fallback: If no one was marked "Team Leader", cluster by Timestamp or take first member as leader
+                const timestampGroups = {};
+                groupParticipants.forEach(p => {
+                    const tsKey = p.Timestamp || "BATCH_1";
+                    if (!timestampGroups[tsKey]) timestampGroups[tsKey] = [];
+                    timestampGroups[tsKey].push(p);
+                });
+
+                Object.values(timestampGroups).forEach(teamMembers => {
+                    const leader = teamMembers[0];
+                    distinctUnits.push({
+                        ...leader,
+                        isGroup: true,
+                        memberCount: teamMembers.length,
+                        allMembers: teamMembers
+                    });
+                });
             }
-        });
+        } else {
+            // Individual items: Every participant is their own unit
+            participants.forEach(p => {
+                distinctUnits.push({ ...p, isGroup: false, memberCount: 1, allMembers: [p] });
+            });
+        }
 
         if (distinctUnits.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999;">No student registrations for this item yet.</td></tr>`;
@@ -7281,7 +7310,41 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         );
     }
 
-    // Save single lot with duplicate prevention
+    // Helper: Finds all students belonging to the same group team (regardless of class/div)
+    function getAllTeamMembersForReg(reg) {
+        if (!reg) return [];
+        const isGroup = parseInt(reg["No of Participants"] || 1) > 1;
+        if (!isGroup) return [reg];
+
+        const allItemRegs = dbRegistrations.filter(r => 
+            (r["Item Code"] === reg["Item Code"] || r["Item"] === reg["Item"]) &&
+            r["Name of Fest"] === reg["Name of Fest"] &&
+            parseInt(r["No of Participants"] || 1) > 1
+        );
+
+        if (allItemRegs.length <= 1) return [reg];
+
+        // 1. Match by registration submission Timestamp
+        if (reg.Timestamp) {
+            const byTimestamp = allItemRegs.filter(r => r.Timestamp === reg.Timestamp);
+            if (byTimestamp.length > 1) return byTimestamp;
+        }
+
+        // 2. If single team leader exists for this item, all belong to this team
+        const leaders = allItemRegs.filter(r => r["Role in Event"] === "Team Leader");
+        if (leaders.length <= 1) {
+            return allItemRegs;
+        }
+
+        // 3. Fallback: match by current lot number if set
+        if (reg["Lot Number"]) {
+            const byLot = allItemRegs.filter(r => r["Lot Number"] && r["Lot Number"] === reg["Lot Number"]);
+            if (byLot.length > 1) return byLot;
+        }
+
+        return allItemRegs;
+    }
+
     async function saveSingleLot(regId) {
         const input = document.querySelector(`input[data-regid="${regId}"]`);
         if (!input) return;
@@ -7290,7 +7353,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         const reg = dbRegistrations.find(r => r.id === regId);
         if (!reg) return;
 
-        // DUPLICATE LOT PREVENTION: Never allow duplicate lot numbers for the same item
+        // Duplicate lot prevention
         if (val) {
             const cleanVal = val.toLowerCase().replace(/^lot\s*/i, '').trim();
             const allInputs = document.querySelectorAll('#lotAllocationTbody .lot-input');
@@ -7299,16 +7362,14 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             allInputs.forEach(inp => {
                 if (inp.dataset.regid !== regId) {
                     const otherVal = inp.value.trim().toLowerCase().replace(/^lot\s*/i, '').trim();
-                    if (otherVal && otherVal === cleanVal) {
-                        isDuplicate = true;
-                    }
+                    if (otherVal && otherVal === cleanVal) isDuplicate = true;
                 }
             });
 
             if (isDuplicate) {
                 return showCustomDialog(
                     "Duplicate Lot Number", 
-                    `⚠️ Lot number <b>"${val}"</b> is already assigned to another candidate/team in this item.<br><br>Each candidate or team must have a unique lot number.`, 
+                    `⚠️ Lot number <b>"${val}"</b> is already assigned to another candidate/team in this item.`, 
                     "warning"
                 );
             }
@@ -7320,12 +7381,8 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             const batch = db.batch();
 
             if (isGroup) {
-                const teamMembers = dbRegistrations.filter(r =>
-                    (r["Item Code"] === reg["Item Code"] || r["Item"] === reg["Item"]) &&
-                    r["Class"] === reg["Class"] &&
-                    r["Division"] === reg["Division"] &&
-                    r["Name of Fest"] === reg["Name of Fest"]
-                );
+                // Update ALL members of this team across all classes and divisions
+                const teamMembers = getAllTeamMembersForReg(reg);
                 teamMembers.forEach(m => {
                     batch.update(db.collection("registrations").doc(m.id), { "Lot Number": val });
                     m["Lot Number"] = val;
@@ -7345,21 +7402,18 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
-    // Save all lots with duplicate validation
     async function saveAllLots() {
         const inputs = document.querySelectorAll('#lotAllocationTbody .lot-input');
         if (inputs.length === 0) return;
 
-        // DUPLICATE LOT PREVENTION: Check before saving all lots
+        // Check for duplicates
         const seen = new Set();
         let duplicateLot = null;
         inputs.forEach(inp => {
             const val = inp.value.trim();
             if (val) {
                 const clean = val.toLowerCase().replace(/^lot\s*/i, '').trim();
-                if (seen.has(clean)) {
-                    duplicateLot = val;
-                }
+                if (seen.has(clean)) duplicateLot = val;
                 seen.add(clean);
             }
         });
@@ -7367,7 +7421,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         if (duplicateLot) {
             return showCustomDialog(
                 "Duplicate Lot Numbers Found",
-                `⚠️ Lot number <b>"${duplicateLot}"</b> is assigned to multiple candidates/teams in this item.<br><br>Please make sure each candidate or team has a unique lot number.`,
+                `⚠️ Lot number <b>"${duplicateLot}"</b> is assigned multiple times. Each team must have a unique lot number.`,
                 "warning"
             );
         }
@@ -7383,12 +7437,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
                 const isGroup = parseInt(reg["No of Participants"] || 1) > 1;
                 if (isGroup) {
-                    const teamMembers = dbRegistrations.filter(r =>
-                        (r["Item Code"] === reg["Item Code"] || r["Item"] === reg["Item"]) &&
-                        r["Class"] === reg["Class"] &&
-                        r["Division"] === reg["Division"] &&
-                        r["Name of Fest"] === reg["Name of Fest"]
-                    );
+                    const teamMembers = getAllTeamMembersForReg(reg);
                     teamMembers.forEach(m => {
                         batch.update(db.collection("registrations").doc(m.id), { "Lot Number": val });
                         m["Lot Number"] = val;
@@ -7409,18 +7458,16 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
-    
-
-    // Delete single participant or entire group team
     async function deleteRegistrationUnit(regId) {
         const reg = dbRegistrations.find(r => r.id === regId);
         if (!reg) return;
 
         const isGroup = parseInt(reg["No of Participants"] || 1) > 1;
+        const teamMembers = isGroup ? getAllTeamMembersForReg(reg) : [reg];
 
         const confirmMsg = isGroup 
-            ? `⚠️ Are you sure you want to delete this group team (Team Leader: <b>${reg["Name"]}</b>, Class: <b>${reg["Class"]} ${reg["Division"]}</b>) and <b>ALL its registered team members</b> from this item?`
-            : `Are you sure you want to delete registration for <b>${reg["Name"]}</b> (${reg["Admission Number"]})?`;
+            ? `⚠️ Delete the group team <b>"${reg.Name}"</b> (${teamMembers.length} Members) and remove all its members?`
+            : `Delete registration for <b>"${reg.Name}"</b>?`;
 
         showCustomDialog(
             isGroup ? "Delete Group Team?" : "Delete Registration?",
@@ -7430,22 +7477,12 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                 showLoader("Deleting Registration...");
                 try {
                     const batch = db.batch();
-                    if (isGroup) {
-                        const teamMembers = dbRegistrations.filter(r =>
-                            (r["Item Code"] === reg["Item Code"] || r["Item"] === reg["Item"]) &&
-                            r["Class"] === reg["Class"] &&
-                            r["Division"] === reg["Division"] &&
-                            r["Name of Fest"] === reg["Name of Fest"]
-                        );
-                        teamMembers.forEach(m => {
-                            batch.delete(db.collection("registrations").doc(m.id));
-                        });
-                        const memberIds = new Set(teamMembers.map(m => m.id));
-                        dbRegistrations = dbRegistrations.filter(r => !memberIds.has(r.id));
-                    } else {
-                        batch.delete(db.collection("registrations").doc(regId));
-                        dbRegistrations = dbRegistrations.filter(r => r.id !== regId);
-                    }
+                    teamMembers.forEach(m => {
+                        batch.delete(db.collection("registrations").doc(m.id));
+                    });
+
+                    const memberIds = new Set(teamMembers.map(m => m.id));
+                    dbRegistrations = dbRegistrations.filter(r => !memberIds.has(r.id));
 
                     await batch.commit();
                     hideLoader();
@@ -7461,6 +7498,11 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             true
         );
     }
+
+    
+    
+
+    
 
     async function toggleProgramStatus(targetState) {
         const rawCode = document.getElementById('emItemSelect')?.value;
@@ -13435,23 +13477,23 @@ if (autoPrint) {
     }, 3000);
 
 
-// Helper: Finds all team members for a result document (with fallback to dbRegistrations)
-    function getTeamMembersForResult(resultDoc) {
+function getTeamMembersForResult(resultDoc) {
         if (!resultDoc) return null;
         if (resultDoc.teamMembers && Array.isArray(resultDoc.teamMembers) && resultDoc.teamMembers.length > 1) {
             return resultDoc.teamMembers;
         }
-        // Fallback for results published earlier
-        const reg = dbRegistrations.find(r => r.id === resultDoc.registrationId || (r["Admission Number"] === resultDoc.admissionNumber && r["Item Code"] === resultDoc.itemCode));
+
+        const reg = dbRegistrations.find(r => 
+            r.id === resultDoc.registrationId || 
+            (r["Admission Number"] === resultDoc.admissionNumber && r["Item Code"] === resultDoc.itemCode)
+        );
         if (!reg || parseInt(reg["No of Participants"] || 1) <= 1) {
             return null;
         }
-        return dbRegistrations.filter(r => 
-            (r["Item Code"] === resultDoc.itemCode || r["Item"] === resultDoc.itemName) &&
-            r["Class"] === reg["Class"] &&
-            r["Division"] === reg["Division"] &&
-            r["Name of Fest"] === reg["Name of Fest"]
-        ).map(m => ({
+
+        // Pull all team members without restricting by class or division
+        const allTeam = getAllTeamMembersForReg(reg);
+        return allTeam.map(m => ({
             id: m.id,
             admissionNumber: m["Admission Number"],
             name: m["Name"],
