@@ -4225,6 +4225,10 @@
                     <button type="button" id="btnToggleQuickCert" class="action-btn gold" onclick="toggleQuickCertSection()" title="Quick Certificate Generator">
                         <i class="fas fa-certificate"></i> <span>Quick Certificate</span>
                     </button>
+
+                    <button type="button" id="btnToggleDutyCert" class="action-btn purple" onclick="toggleDutyCertSection()" title="Duty Certificate Generator (D.El.Ed)">
+                        <i class="fas fa-award"></i> <span>Duty Certificate</span>
+                    </button>
                 </div>
             </div>
 
@@ -4315,6 +4319,102 @@
                     <div style="display:flex; gap:8px;">
                         <button type="button" class="action-btn" onclick="generateQuickCertificate(false)"><i class="fas fa-eye"></i> Preview</button>
                         <button type="button" class="action-btn gold" onclick="generateQuickCertificate(true)"><i class="fas fa-print"></i> Print (A4)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================================================
+                 DUTY CERTIFICATE GENERATOR (CERTIFICATE OF APPRECIATION FOR D.El.Ed STUDENTS)
+                 ========================================================================== -->
+            <div class="section no-print" id="dutyCertSection" style="display:none; border-left: 5px solid var(--purple); background:#ffffff; margin-bottom: 20px;">
+                <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <span style="color:var(--purple); font-size:16px; font-weight:800; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-award" style="color:var(--purple); font-size:18px;"></i> Duty Certificate Generator (Certificate of Appreciation for D.El.Ed)
+                    </span>
+                    <button type="button" class="action-btn secondary" style="padding:4px 8px; font-size:11px;" onclick="toggleDutyCertSection()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+                <p style="font-size:12.5px; color:#64748b; margin:-6px 0 14px 0;">
+                    Generate and print official <b>Certificates of Appreciation</b> for D.El.Ed teacher trainees who provided technical support or festival duty assistance.
+                </p>
+
+                <!-- ROW 1: Candidate Details (Instant Search / Autocomplete) -->
+                <div class="row" style="grid-template-columns: 2fr 1fr 1.2fr 1.5fr; gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group" style="margin:0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <label style="margin:0;">Student Name (with prefix)</label>
+                            <span style="font-size:11px; font-weight:700; color:var(--purple);"><i class="fas fa-search"></i> Search / Custom</span>
+                        </div>
+                        <div class="autocomplete-container">
+                            <input type="text" id="dcName" 
+                                   placeholder="🔍 Search D.El.Ed student or type name..." 
+                                   oninput="searchDutyCertStudent(this.value)" 
+                                   autocomplete="off" value="Kumari. ANJANA PRASAD">
+                            <div id="dcStudentResults" class="autocomplete-items"></div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Admission No</label>
+                        <input type="text" id="dcAdmn" placeholder="e.g. 5042" value="5042">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>D.El.Ed Year</label>
+                        <select id="dcYear" style="font-weight:700;">
+                            <option value="FIRST YEAR" selected>FIRST YEAR</option>
+                            <option value="SECOND YEAR">SECOND YEAR</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Institution</label>
+                        <input type="text" id="dcInstitution" value="TDTTI THURAVOOR" style="font-weight:700;">
+                    </div>
+                </div>
+
+                <!-- ROW 2: Duty Role, Occasion & Event Dates -->
+                <div class="row" style="grid-template-columns: 1.5fr 1.5fr 2fr; gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group" style="margin:0;">
+                        <label>Duty / Role Contribution</label>
+                        <input type="text" id="dcDutyRole" value="Technical Support and exemplary contribution" style="font-weight:600;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Festivals / Occasion</label>
+                        <input type="text" id="dcEvents" value="SASTHROTHSWOM, MEGHAMALHAR and SPORTS 2026" style="font-weight:700;">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Event Held On (Citation Dates)</label>
+                        <input type="text" id="dcDates" value="11/09/2026, 24/09/2026, 25/09/2026 and 26/09/2026" style="font-weight:600;">
+                    </div>
+                </div>
+
+                <!-- ROW 3: Issue Meta & Signatories -->
+                <div class="row" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                    <div class="form-group" style="margin:0;">
+                        <label>Certificate Issue Date</label>
+                        <input type="text" id="dcIssueDate" value="26/09/2026">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>General Convenor Name</label>
+                        <input type="text" id="dcConvenor" value="THEJAS R">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Place of Issue</label>
+                        <input type="text" id="dcPlaceName" value="Thuravoor">
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-top:1px solid #edf2f7; padding-top:12px;">
+                    <button type="button" class="action-btn secondary" style="padding:7px 14px; font-size:12px;" onclick="resetDutyCertForm()">
+                        <i class="fas fa-rotate-left"></i> Reset Form
+                    </button>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="action-btn purple" style="padding:8px 18px; font-size:13px;" onclick="generateDutyCertificate(false)">
+                            <i class="fas fa-eye"></i> Preview Certificate
+                        </button>
+                        <button type="button" class="action-btn gold" style="padding:8px 18px; font-size:13px;" onclick="generateDutyCertificate(true)">
+                            <i class="fas fa-print"></i> Print Certificate (A4)
+                        </button>
                     </div>
                 </div>
             </div>
@@ -16268,5 +16368,246 @@ function getTeamMembersForResult(resultDoc) {
 
         document.getElementById('qcItemResults').innerHTML = "";
     }
+
+    // ==========================================================================
+    // DUTY CERTIFICATE GENERATOR CONTROLLER (CERTIFICATE OF APPRECIATION)
+    // ==========================================================================
+
+    function toggleDutyCertSection() {
+        const sec = document.getElementById('dutyCertSection');
+        if (!sec) return;
+        sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+        if (sec.style.display === 'block') {
+            sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    // Instant Autocomplete Search for D.El.Ed Students
+    function searchDutyCertStudent(query) {
+        const q = String(query || "").trim().toLowerCase();
+        const resultsBox = document.getElementById('dcStudentResults');
+        if (!resultsBox) return;
+        resultsBox.innerHTML = "";
+        if (!q) return;
+
+        // Matches by Name, Admission Number, or Class
+        const matches = dbStudents.filter(s => 
+            String(s["Admission Number"] || "").toLowerCase().includes(q) ||
+            String(s["Name"] || "").toLowerCase().includes(q) ||
+            String(s["Class"] || "").toLowerCase().includes(q)
+        ).slice(0, 8);
+
+        // "Use Custom Name" Option
+        const customDiv = document.createElement('div');
+        customDiv.style.background = '#f5f3ff';
+        customDiv.style.color = '#6d28d9';
+        customDiv.style.fontWeight = '700';
+        customDiv.style.borderBottom = '1px solid #ddd6fe';
+        customDiv.innerHTML = `<i class="fas fa-pen" style="color:var(--purple); margin-right:6px;"></i> Use Name: "<b>${escapeHtml(query.trim())}</b>"`;
+        customDiv.onclick = () => {
+            document.getElementById('dcName').value = query.trim().toUpperCase();
+            resultsBox.innerHTML = "";
+            document.getElementById('dcAdmn').focus();
+        };
+        resultsBox.appendChild(customDiv);
+
+        matches.forEach(st => {
+            const isGirl = String(st["Gender"] || "").toUpperCase() === 'F';
+            const prefix = isGirl ? 'Kumari.' : 'Master.';
+            const cleanName = String(st["Name"] || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
+            const fullNameWithPrefix = `${prefix} ${cleanName}`;
+
+            const div = document.createElement('div');
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><b>${fullNameWithPrefix}</b> <small style="color:#64748b;">(Std: ${st["Class"] || ''} ${st["Division"] || ''})</small></span>
+                    <span class="badge-place place-2" style="font-size:10px;">Admn: ${st["Admission Number"] || '-'}</span>
+                </div>
+            `;
+            div.onclick = () => selectDutyCertStudent(st);
+            resultsBox.appendChild(div);
+        });
+    }
+
+    function selectDutyCertStudent(st) {
+        const isGirl = String(st["Gender"] || "").toUpperCase() === 'F';
+        const salutation = isGirl ? 'Kumari.' : 'Master.';
+        let cleanName = String(st["Name"] || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
+
+        document.getElementById('dcName').value = `${salutation} ${cleanName}`.toUpperCase();
+        document.getElementById('dcAdmn').value = st["Admission Number"] || "";
+
+        // Auto-detect D.El.Ed year from Class if available
+        const clsStr = String(st["Class"] || "").toLowerCase();
+        if (clsStr.includes("2") || clsStr.includes("second") || clsStr.includes("ii")) {
+            document.getElementById('dcYear').value = "SECOND YEAR";
+        } else {
+            document.getElementById('dcYear').value = "FIRST YEAR";
+        }
+
+        const resultsBox = document.getElementById('dcStudentResults');
+        if (resultsBox) resultsBox.innerHTML = "";
+    }
+
+    function resetDutyCertForm() {
+        document.getElementById('dcName').value = "Kumari. ANJANA PRASAD";
+        document.getElementById('dcAdmn').value = "5042";
+        document.getElementById('dcYear').value = "FIRST YEAR";
+        document.getElementById('dcInstitution').value = "TDTTI THURAVOOR";
+        document.getElementById('dcDutyRole').value = "Technical Support and exemplary contribution";
+        document.getElementById('dcEvents').value = "SASTHROTHSWOM, MEGHAMALHAR and SPORTS 2026";
+        document.getElementById('dcDates').value = "11/09/2026, 24/09/2026, 25/09/2026 and 26/09/2026";
+        document.getElementById('dcIssueDate').value = "26/09/2026";
+        document.getElementById('dcConvenor').value = "THEJAS R";
+        document.getElementById('dcPlaceName').value = "Thuravoor";
+
+        const resBox = document.getElementById('dcStudentResults');
+        if (resBox) resBox.innerHTML = "";
+    }
+
+    // Generates the single Duty Certificate HTML
+    function generateSingleDutyCertHTML(d) {
+        return `
+            <div class="cert-container" style="margin-bottom: 24px;">
+                <div class="cert-outer-frame">
+                    <div class="cert-inner-frame">
+                        <div class="cert-corner corner-tl"></div>
+                        <div class="cert-corner corner-tr"></div>
+                        <div class="cert-corner corner-bl"></div>
+                        <div class="cert-corner corner-br"></div>
+                        <div class="cert-watermark"></div>
+
+                        <!-- HEADER ROW -->
+                        <div class="cert-header-row">
+                            <div class="cert-logo-box">
+                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="TDTTI Logo">
+                            </div>
+                            <div class="cert-inst-details">
+                                <h1>THIRUMALA DEVASWOM</h1>
+                                <h3>TEACHER TRAINING INSTITUTE</h3>
+                                <p>THURAVOOR, CHERTHALA, ALAPPUZHA, KERALA &bull; PIN: 688532</p>
+                                <p style="font-size:10px; color:#64748b; margin-top:2px;">PH: 0478-2564479 &bull; EMAIL: 34347alappuzha@gmail.com</p>
+                            </div>
+                            <div class="cert-badge-right">
+                                <i class="fas fa-award" style="color:var(--gold-pure);"></i>
+                                <div class="cert-badge-tag" style="background:#7c3aed;">DUTY CERTIFICATE</div>
+                            </div>
+                        </div>
+
+                        <!-- TITLE AREA -->
+                        <div class="cert-title-area">
+                            <div class="cert-main-title" style="letter-spacing:3px;">Certificate of Appreciation</div>
+                            <div class="cert-congrats-animated" style="color:#7c3aed; font-size:74px;">Appreciation</div>
+                        </div>
+
+                        <!-- BODY STATEMENT -->
+                        <div class="cert-body-area">
+                            <div class="cert-awarded-intro">This is to proudly certify that</div>
+                            <div class="cert-candidate-name" style="font-size:32px; border-bottom-color:#7c3aed;">${d.name}</div>
+                            <div class="cert-candidate-meta" style="font-size:18px; margin-bottom:12px;">
+                                D.El.Ed <b>${d.year}</b> &bull; <b>${d.institution}</b> ${d.admn ? '&bull; Admission No: <b>' + d.admn + '</b>' : ''}
+                            </div>
+                            <div class="cert-citation-p" style="font-size:20.5px; line-height:1.65; max-width:890px;">
+                                is awarded this certificate of appreciation for their outstanding <span class="cert-highlight-badge" style="background:#f5f3ff; color:#6d28d9; border-color:#ddd6fe;">${d.dutyRole}</span> towards the smooth conduct of <b>${d.events}</b>, held on <b>${d.dates}</b>.
+                            </div>
+                        </div>
+
+                        <!-- FOOTER ROW -->
+                        <div class="cert-footer-row">
+                            <div class="cert-sig-block">
+                                <div class="cert-signature-space"></div>
+                                <b>${d.convenor}</b>
+                                <span>General Convenor</span>
+                                <div class="cert-date-place">
+                                    <span>Date: ${d.issueDate}</span>
+                                    <span>Place: ${d.placeName}</span>
+                                </div>
+                            </div>
+
+                            <div class="cert-gold-seal-wrapper">
+                                <div class="cert-seal-ribbon ribbon-left" style="background:#7c3aed;"></div>
+                                <div class="cert-seal-ribbon ribbon-right" style="background:#7c3aed;"></div>
+                                <div class="cert-gold-seal">
+                                    <span>TDTTI</span>
+                                    <i class="fas fa-award"></i>
+                                    <span>Congrats</span>
+                                </div>
+                            </div>
+
+                            <div class="cert-sig-block">
+                                <div class="cert-signature-space"></div>
+                                <b>ASHA V</b>
+                                <span>Principal</span>
+                                <div class="cert-date-place" style="visibility:hidden;">
+                                    <span>Date: ${d.issueDate}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Previews or Prints the Duty Certificate
+    function generateDutyCertificate(autoPrint = false) {
+        const name = (document.getElementById('dcName')?.value || "").trim();
+        const admn = (document.getElementById('dcAdmn')?.value || "").trim();
+        const year = document.getElementById('dcYear')?.value || "FIRST YEAR";
+        const institution = (document.getElementById('dcInstitution')?.value || "TDTTI THURAVOOR").trim();
+        const dutyRole = (document.getElementById('dcDutyRole')?.value || "Technical Support and exemplary contribution").trim();
+        const events = (document.getElementById('dcEvents')?.value || "SASTHROTHSWOM, MEGHAMALHAR and SPORTS 2026").trim();
+        const dates = (document.getElementById('dcDates')?.value || "11/09/2026, 24/09/2026, 25/09/2026 and 26/09/2026").trim();
+        const issueDate = (document.getElementById('dcIssueDate')?.value || "26/09/2026").trim();
+        const convenor = (document.getElementById('dcConvenor')?.value || "THEJAS R").trim();
+        const placeName = (document.getElementById('dcPlaceName')?.value || "Thuravoor").trim();
+
+        if (!name) {
+            return showCustomDialog("Name Required", "Please enter the candidate's name.", "warning");
+        }
+
+        const data = {
+            name: name.toUpperCase(),
+            admn,
+            year,
+            institution,
+            dutyRole,
+            events,
+            dates,
+            issueDate,
+            convenor,
+            placeName
+        };
+
+        const stage = document.getElementById('certScaleStage');
+        const groupBar = document.getElementById('certGroupMemberBar');
+        const mainPrintBtn = document.getElementById('btnMainCertPrint');
+        const mainPrintText = document.getElementById('btnMainCertPrintText');
+
+        if (groupBar) groupBar.style.display = 'none';
+        if (mainPrintBtn) {
+            mainPrintBtn.onclick = () => printModalDocument('certModal', 'landscape');
+        }
+        if (mainPrintText) {
+            mainPrintText.innerText = "Print Duty Certificate (A4)";
+        }
+
+        stage.innerHTML = generateSingleDutyCertHTML(data);
+
+        const certModal = document.getElementById('certModal');
+        certModal.style.display = 'flex';
+
+        isCertActualSize = false;
+        setTimeout(() => {
+            if (typeof autoFitCertificate === "function") autoFitCertificate();
+        }, 50);
+
+        if (autoPrint) {
+            setTimeout(() => {
+                printModalDocument('certModal', 'landscape');
+            }, 350);
+        }
+    }
+    
 </script>
 </html>
