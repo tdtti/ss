@@ -3185,6 +3185,32 @@
     margin: 2px 4px 2px 0;
 }
 
+/* ALL ROUNDER KALOTHSWOM & FEST THEME ACCENTS */
+.allrounder-head.kalo {
+    background: #5b21b6 !important;
+}
+
+.allrounder-head.fest {
+    background: #1e3a8a !important;
+}
+
+.allrounder-item-pill.kalo {
+    background: #f5f3ff !important;
+    border-color: #ddd6fe !important;
+    color: #6d28d9 !important;
+}
+
+.allrounder-item-pill.fest {
+    background: #eff6ff !important;
+    border-color: #bfdbfe !important;
+    color: #1d4ed8 !important;
+}
+
+.res-subtab-btn.active.fest {
+    background: #2563eb !important;
+    border-color: #2563eb !important;
+}
+
 
 
 
@@ -4520,8 +4546,29 @@
                 </div>
             </div>
 
-            <!-- ADD THIS DIRECTLY AFTER #viewIndividual: -->
-            <!-- VIEW 4: SPORTS ALL ROUNDER (KIDDIES, SUB JUNIOR, D.EL.ED) -->
+            <!-- VIEW: ALL ROUNDER KALOTHSWOM (MEGHAMALHAR) -->
+            <div id="viewAllRounderKalo" class="res-subtab-view" style="display:none;">
+                <div class="section" style="border-top: 4px solid #7c3aed; margin-bottom: 20px;">
+                    <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <span><i class="fas fa-masks-theater" style="color:#7c3aed;"></i> Kalothswom (Meghamalhar) All Rounder Championship (Top 3)</span>
+                        <small style="color:var(--text-muted); font-size:12px; font-weight:600;">(General, Arabic &bull; Sanskrit Kalothswom)</small>
+                    </div>
+                    <div id="allRounderKaloContainer"></div>
+                </div>
+            </div>
+
+            <!-- VIEW: ALL ROUNDER FEST (IT, MATHS, SCIENCE, SOCIAL & WORK EXPERIENCE) -->
+            <div id="viewAllRounderFest" class="res-subtab-view" style="display:none;">
+                <div class="section" style="border-top: 4px solid #2563eb; margin-bottom: 20px;">
+                    <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                        <span><i class="fas fa-flask-vial" style="color:#2563eb;"></i> Fest (Sasthrothswom) All Rounder Championship (Top 3)</span>
+                        <small style="color:var(--text-muted); font-size:12px; font-weight:600;">(IT &bull; Maths &bull; Science &bull; Social Science &bull; Work Experience)</small>
+                    </div>
+                    <div id="allRounderFestContainer"></div>
+                </div>
+            </div>
+
+            <!-- VIEW: SPORTS ALL ROUNDER (KIDDIES, SUB JUNIOR, D.EL.ED) -->
             <div id="viewAllRounder" class="res-subtab-view" style="display:none;">
                 <div class="section" style="border-top: 4px solid #059669; margin-bottom: 20px;">
                     <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
@@ -10365,20 +10412,26 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
     }
 
     // ==========================================================================
-    // RESULT SUB-NAVBAR & SPORTS ALL ROUNDER CONTROLLER
+    // RESTRUCTURED RESULTS SUB-NAVBAR WITH KALOTHSWOM & FEST ALL-ROUNDERS
     // ==========================================================================
 
     function populateResultSubNavBar() {
         const bar = document.getElementById('resSubNavBar');
         if (!bar) return;
 
-        // Base Tabs: Class Championship -> Individual Champions -> All Rounder (Sports)
+        // Base Tabs: Championship -> Individual -> All Rounder Kalo -> All Rounder Fest -> All Rounder Sports
         let html = `
             <button type="button" class="res-subtab-btn ${currentResultSubTab === 'championship' ? 'active' : ''}" data-tab="championship" onclick="switchResultSubTab('championship')">
                 <i class="fas fa-trophy" style="color:#d97706;"></i> <span>Class Championship</span>
             </button>
             <button type="button" class="res-subtab-btn ${currentResultSubTab === 'individual' ? 'active' : ''}" data-tab="individual" onclick="switchResultSubTab('individual')">
                 <i class="fas fa-medal" style="color:#7c3aed;"></i> <span>Individual Champions</span>
+            </button>
+            <button type="button" class="res-subtab-btn ${currentResultSubTab === 'allrounderkalo' ? 'active kalo' : ''}" data-tab="allrounderkalo" onclick="switchResultSubTab('allrounderkalo')">
+                <i class="fas fa-masks-theater" style="color:#7c3aed;"></i> <span>All Rounder (Kalothswom)</span>
+            </button>
+            <button type="button" class="res-subtab-btn ${currentResultSubTab === 'allrounderfest' ? 'active fest' : ''}" data-tab="allrounderfest" onclick="switchResultSubTab('allrounderfest')">
+                <i class="fas fa-flask-vial" style="color:#2563eb;"></i> <span>All Rounder (Fest)</span>
             </button>
             <button type="button" class="res-subtab-btn ${currentResultSubTab === 'allrounder' ? 'active sports' : ''}" data-tab="allrounder" onclick="switchResultSubTab('allrounder')">
                 <i class="fas fa-person-running" style="color:#059669;"></i> <span>All Rounder (Sports)</span>
@@ -10427,16 +10480,22 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                           document.querySelector(`#resSubNavBar button[onclick*="${tabKey}"]`);
         if (activeBtn) activeBtn.classList.add('active');
 
-        // Toggle Views
+        // Toggle sub-views
         const viewChamp = document.getElementById('viewChampionship');
         const viewIndiv = document.getElementById('viewIndividual');
+        const viewAllRounderKalo = document.getElementById('viewAllRounderKalo');
+        const viewAllRounderFest = document.getElementById('viewAllRounderFest');
         const viewAllRounder = document.getElementById('viewAllRounder');
         const viewFest = document.getElementById('viewFestWinners');
 
         if (viewChamp) viewChamp.style.display = (tabKey === 'championship') ? 'block' : 'none';
         if (viewIndiv) viewIndiv.style.display = (tabKey === 'individual') ? 'block' : 'none';
+        if (viewAllRounderKalo) viewAllRounderKalo.style.display = (tabKey === 'allrounderkalo') ? 'block' : 'none';
+        if (viewAllRounderFest) viewAllRounderFest.style.display = (tabKey === 'allrounderfest') ? 'block' : 'none';
         if (viewAllRounder) viewAllRounder.style.display = (tabKey === 'allrounder') ? 'block' : 'none';
-        if (viewFest) viewFest.style.display = (tabKey !== 'championship' && tabKey !== 'individual' && tabKey !== 'allrounder') ? 'block' : 'none';
+        
+        const isSpecialTab = ['championship', 'individual', 'allrounderkalo', 'allrounderfest', 'allrounder'].includes(tabKey);
+        if (viewFest) viewFest.style.display = (!isSpecialTab) ? 'block' : 'none';
 
         renderActiveResultView();
     }
@@ -10446,6 +10505,10 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             renderChampionshipTable();
         } else if (currentResultSubTab === 'individual') {
             renderIndividualRankSheet();
+        } else if (currentResultSubTab === 'allrounderkalo') {
+            renderAllRounderKalothswom();
+        } else if (currentResultSubTab === 'allrounderfest') {
+            renderAllRounderFest();
         } else if (currentResultSubTab === 'allrounder') {
             renderAllRounderSports();
         } else {
@@ -10453,59 +10516,373 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }
     }
 
-    // Helper: Resolves age category for Sports (Kiddies / Sub Junior / DElEd)
-    function getStudentSportsAgeCategory(studentOrReg, item) {
-        if (studentOrReg && (studentOrReg["Age Category"] || studentOrReg.ageCategory)) {
-            const cat = (studentOrReg["Age Category"] || studentOrReg.ageCategory).toLowerCase();
-            if (cat.includes("kid")) return "Kiddies";
-            if (cat.includes("sub") || cat.includes("junior")) return "Sub Junior";
-            if (cat.includes("del") || cat.includes("ttc")) return "DElEd";
+    
+    
+    // ==========================================================================
+    // RENDER ALL ROUNDER: KALOTHSWOM (MEGHAMALHAR) — NO KIDDIES / SUB-JUNIOR DIVISIONS
+    // ==========================================================================
+    function renderAllRounderKalothswom() {
+        const container = document.getElementById('allRounderKaloContainer');
+        if (!container) return;
+        container.innerHTML = "";
+
+        const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
+
+        // Filter strictly to Kalothswom items
+        const results = dbPublishedResults.filter(r => 
+            isTopThreePlace(r.place) && 
+            (r.festCategory === "Kalothswom" || getFestivalCategory(r.festName) === "Kalothswom")
+        );
+
+        if (results.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:40px 20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+                    <i class="fas fa-masks-theater" style="font-size:36px; color:#cbd5e1; margin-bottom:10px;"></i>
+                    <h3 style="margin:0 0 6px 0; color:var(--text-main);">No Kalothswom Results Published Yet</h3>
+                    <p style="color:#64748b; font-size:13px; margin:0;">Publish Kalothswom events in Tabulation to generate the All Rounder standings.</p>
+                </div>
+            `;
+            return;
         }
 
-        if (item && typeof getItemSportsAgeCategory === "function") {
-            const itemCat = getItemSportsAgeCategory(typeof item === 'string' ? { Item: item } : item);
-            if (itemCat && itemCat !== "General") {
-                if (itemCat === "Sub Juniors") return "Sub Junior";
-                return itemCat;
-            }
-        }
+        const studentMap = {};
 
-        const admn = studentOrReg ? (studentOrReg.admissionNumber || studentOrReg["Admission Number"]) : null;
-        const st = admn ? dbStudents.find(s => String(s["Admission Number"]).trim() === String(admn).trim()) : null;
-        if (st) {
-            const dob = st["DOB"] || st["Date of Birth"];
-            if (dob && typeof calculateSportsAgeCategory === "function") {
-                const ageObj = calculateSportsAgeCategory(dob);
-                if (ageObj && ageObj.category) {
-                    if (ageObj.category === "Sub Juniors") return "Sub Junior";
-                    return ageObj.category;
+        results.forEach(r => {
+            const members = getTeamMembersForResult(r);
+            const candidates = (members && members.length > 1) ? members : [{
+                admissionNumber: r.admissionNumber,
+                name: r.candidateName,
+                class: r.studentClass,
+                division: r.studentDivision
+            }];
+
+            candidates.forEach(cand => {
+                const admn = String(cand.admissionNumber || "").trim();
+                const name = String(cand.name || "").trim();
+                const key = admn || name;
+                if (!key) return;
+
+                if (!studentMap[key]) {
+                    studentMap[key] = {
+                        key: key,
+                        admn: admn,
+                        name: name,
+                        classInfo: `${cand.class || r.studentClass} ${cand.division || r.studentDivision || ''}`.trim(),
+                        classification: "Kalothswom",
+                        festName: "Kalothswom (Meghamalhar)",
+                        totalScore: 0,
+                        first: 0,
+                        second: 0,
+                        third: 0,
+                        items: []
+                    };
                 }
-            }
 
-            const clsStr = String(st["Class"] || "").toLowerCase();
-            if (clsStr.includes("del") || clsStr.includes("ttc") || clsStr.includes("year")) return "DElEd";
-            const clsNum = parseInt(clsStr, 10);
-            if (!isNaN(clsNum)) {
-                if (clsNum <= 4) return "Kiddies";
-                if (clsNum <= 7) return "Sub Junior";
-                return "DElEd";
+                const pts = getPointsForPlace(r.place);
+                const normPlace = normalizePlaceCategory(r.place);
+
+                if (normPlace === "FIRST Place") studentMap[key].first++;
+                else if (normPlace === "SECOND Place") studentMap[key].second++;
+                else if (normPlace === "THIRD Place") studentMap[key].third++;
+
+                studentMap[key].totalScore += pts;
+                studentMap[key].items.push({
+                    itemName: r.itemName,
+                    place: r.place,
+                    normPlace: normPlace,
+                    points: pts,
+                    score: r.score
+                });
+            });
+        });
+
+        let list = Object.values(studentMap);
+        list.sort((a, b) => b.totalScore - a.totalScore || b.first - a.first || b.second - a.second);
+
+        // Dense Ranking to determine Top 3
+        let currentRank = 0;
+        let lastScore = null;
+        list.forEach(cand => {
+            if (lastScore === null || cand.totalScore !== lastScore) {
+                currentRank++;
+                lastScore = cand.totalScore;
             }
+            cand.rank = currentRank;
+        });
+
+        // Filter strictly to Top 3 (including ties)
+        let topThreeList = list.filter(cand => cand.rank <= 3);
+
+        topThreeList.forEach(cand => {
+            cachedAllRounderWinners[cand.key] = cand;
+        });
+
+        if (q) {
+            topThreeList = topThreeList.filter(cand =>
+                cand.name.toLowerCase().includes(q) ||
+                cand.admn.toLowerCase().includes(q) ||
+                cand.classInfo.toLowerCase().includes(q)
+            );
         }
 
-        const clsRaw = String(studentOrReg?.studentClass || studentOrReg?.Class || "").toLowerCase();
-        if (clsRaw.includes("del") || clsRaw.includes("ttc")) return "DElEd";
-        const num = parseInt(clsRaw, 10);
-        if (!isNaN(num)) {
-            if (num <= 4) return "Kiddies";
-            if (num <= 7) return "Sub Junior";
+        let rowsHTML = "";
+        if (topThreeList.length === 0) {
+            rowsHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:20px;">No winners matching search.</td></tr>`;
+        } else {
+            topThreeList.forEach(cand => {
+                const rankPill = cand.rank === 1 ? "place-pill-1" : (cand.rank === 2 ? "place-pill-2" : "place-pill-3");
+                const rankLabel = cand.rank === 1 ? "🥇 1st Place" : (cand.rank === 2 ? "🥈 2nd Place" : "🥉 3rd Place");
+
+                const itemsDisplay = cand.items.map(it => {
+                    const placeShort = it.normPlace.replace(' Place','');
+                    return `<span class="allrounder-item-pill kalo">
+                        <b>${it.itemName}</b> (${placeShort}: <b>${it.points} pts</b>)
+                    </span>`;
+                }).join(" ");
+
+                const safeKey = cand.key.replace(/'/g, "\\'");
+
+                rowsHTML += `
+                    <tr>
+                        <td style="text-align:center;"><span class="badge-place ${rankPill}" style="font-size:12px; padding:4px 9px;">${rankLabel}</span></td>
+                        <td><b>${cand.admn || '-'}</b></td>
+                        <td><b style="font-size:14px; color:#0f172a;">${cand.name}</b></td>
+                        <td><span style="font-weight:700; color:var(--accent);">${cand.classInfo}</span></td>
+                        <td><div style="line-height:1.6;">${itemsDisplay}</div></td>
+                        <td style="text-align:center; font-size:16px; font-weight:900; color:#7c3aed;">${cand.totalScore} pts</td>
+                        <td style="text-align:center;">
+                            <div style="display:flex; flex-direction:column; gap:4px; align-items:center; min-width:130px;">
+                                <button type="button" class="action-btn" style="padding:3px 8px; font-size:11px; width:100%;" onclick="openStudentPointsModal('${safeKey}')" title="View Points Breakdown">
+                                    <i class="fas fa-file-invoice"></i> View Breakdown
+                                </button>
+                                <div style="display:inline-flex; gap:4px; width:100%;">
+                                    <button type="button" class="action-btn purple" style="padding:3px 6px; font-size:10.5px; flex:1;" onclick="openAllRounderCertModal('${safeKey}', false)" title="View Kalothswom Certificate">
+                                        <i class="fas fa-award"></i> View Cert
+                                    </button>
+                                    <button type="button" class="action-btn gold" style="padding:3px 6px; font-size:10.5px; flex:1;" onclick="openAllRounderCertModal('${safeKey}', true)" title="Print Kalothswom Certificate">
+                                        <i class="fas fa-print"></i> Print
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
         }
 
-        return "Sub Junior";
+        container.innerHTML = `
+            <div class="allrounder-card">
+                <div class="allrounder-head kalo">
+                    <h4><i class="fas fa-masks-theater" style="color:#fde047;"></i> KALOTHSWOM ALL ROUNDER (MEGHAMALHAR)</h4>
+                    <span style="font-size:12px; background:rgba(255,255,255,0.2); padding:3px 9px; border-radius:4px; font-weight:700;">Top 3 Champions</span>
+                </div>
+                <div class="table-responsive" style="margin:0; border:none;">
+                    <table>
+                        <thead>
+                            <tr style="background:#f8fafc;">
+                                <th style="width:125px; text-align:center;">Standing</th>
+                                <th style="width:85px;">Admn No</th>
+                                <th>Student Name</th>
+                                <th style="width:140px;">Class & Div</th>
+                                <th>Kalothswom Items & Scores</th>
+                                <th style="width:110px; text-align:center; color:#7c3aed;">Total Score</th>
+                                <th style="width:140px; text-align:center;">Actions & Certificate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
     }
 
     // ==========================================================================
-    // RENDER ALL ROUNDER: TOP 3 FOR KIDDIES, SUB JUNIOR & DElEd
+    // RENDER ALL ROUNDER: FEST (IT, MATHS, SCIENCE, SOCIAL, WORK) — NO AGE DIVISIONS
     // ==========================================================================
+    function renderAllRounderFest() {
+        const container = document.getElementById('allRounderFestContainer');
+        if (!container) return;
+        container.innerHTML = "";
+
+        const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
+
+        // Filter strictly to Fest items (IT, Maths, Science, Social, Work Experience)
+        const results = dbPublishedResults.filter(r => 
+            isTopThreePlace(r.place) && 
+            (r.festCategory === "Fest" || getFestivalCategory(r.festName) === "Fest")
+        );
+
+        if (results.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:40px 20px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+                    <i class="fas fa-flask-vial" style="font-size:36px; color:#cbd5e1; margin-bottom:10px;"></i>
+                    <h3 style="margin:0 0 6px 0; color:var(--text-main);">No Fest Results Published Yet</h3>
+                    <p style="color:#64748b; font-size:13px; margin:0;">Publish Fest events (IT, Science, Maths, Social, Work) in Tabulation to view All Rounder standings.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const studentMap = {};
+
+        results.forEach(r => {
+            const members = getTeamMembersForResult(r);
+            const candidates = (members && members.length > 1) ? members : [{
+                admissionNumber: r.admissionNumber,
+                name: r.candidateName,
+                class: r.studentClass,
+                division: r.studentDivision
+            }];
+
+            candidates.forEach(cand => {
+                const admn = String(cand.admissionNumber || "").trim();
+                const name = String(cand.name || "").trim();
+                const key = admn || name;
+                if (!key) return;
+
+                if (!studentMap[key]) {
+                    studentMap[key] = {
+                        key: key,
+                        admn: admn,
+                        name: name,
+                        classInfo: `${cand.class || r.studentClass} ${cand.division || r.studentDivision || ''}`.trim(),
+                        classification: "Fest",
+                        festName: "Fest (Sasthrothswom)",
+                        totalScore: 0,
+                        first: 0,
+                        second: 0,
+                        third: 0,
+                        items: []
+                    };
+                }
+
+                const pts = getPointsForPlace(r.place);
+                const normPlace = normalizePlaceCategory(r.place);
+
+                if (normPlace === "FIRST Place") studentMap[key].first++;
+                else if (normPlace === "SECOND Place") studentMap[key].second++;
+                else if (normPlace === "THIRD Place") studentMap[key].third++;
+
+                studentMap[key].totalScore += pts;
+                studentMap[key].items.push({
+                    itemName: r.itemName,
+                    festName: r.festName,
+                    place: r.place,
+                    normPlace: normPlace,
+                    points: pts,
+                    score: r.score
+                });
+            });
+        });
+
+        let list = Object.values(studentMap);
+        list.sort((a, b) => b.totalScore - a.totalScore || b.first - a.first || b.second - a.second);
+
+        // Dense Ranking
+        let currentRank = 0;
+        let lastScore = null;
+        list.forEach(cand => {
+            if (lastScore === null || cand.totalScore !== lastScore) {
+                currentRank++;
+                lastScore = cand.totalScore;
+            }
+            cand.rank = currentRank;
+        });
+
+        let topThreeList = list.filter(cand => cand.rank <= 3);
+
+        topThreeList.forEach(cand => {
+            cachedAllRounderWinners[cand.key] = cand;
+        });
+
+        if (q) {
+            topThreeList = topThreeList.filter(cand =>
+                cand.name.toLowerCase().includes(q) ||
+                cand.admn.toLowerCase().includes(q) ||
+                cand.classInfo.toLowerCase().includes(q)
+            );
+        }
+
+        let rowsHTML = "";
+        if (topThreeList.length === 0) {
+            rowsHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:20px;">No winners matching search.</td></tr>`;
+        } else {
+            topThreeList.forEach(cand => {
+                const rankPill = cand.rank === 1 ? "place-pill-1" : (cand.rank === 2 ? "place-pill-2" : "place-pill-3");
+                const rankLabel = cand.rank === 1 ? "🥇 1st Place" : (cand.rank === 2 ? "🥈 2nd Place" : "🥉 3rd Place");
+
+                const itemsDisplay = cand.items.map(it => {
+                    const placeShort = it.normPlace.replace(' Place','');
+                    return `<span class="allrounder-item-pill fest">
+                        <b>${it.itemName}</b> <small>(${it.festName})</small> (${placeShort}: <b>${it.points} pts</b>)
+                    </span>`;
+                }).join(" ");
+
+                const safeKey = cand.key.replace(/'/g, "\\'");
+
+                rowsHTML += `
+                    <tr>
+                        <td style="text-align:center;"><span class="badge-place ${rankPill}" style="font-size:12px; padding:4px 9px;">${rankLabel}</span></td>
+                        <td><b>${cand.admn || '-'}</b></td>
+                        <td><b style="font-size:14px; color:#0f172a;">${cand.name}</b></td>
+                        <td><span style="font-weight:700; color:var(--accent);">${cand.classInfo}</span></td>
+                        <td><div style="line-height:1.6;">${itemsDisplay}</div></td>
+                        <td style="text-align:center; font-size:16px; font-weight:900; color:#2563eb;">${cand.totalScore} pts</td>
+                        <td style="text-align:center;">
+                            <div style="display:flex; flex-direction:column; gap:4px; align-items:center; min-width:130px;">
+                                <button type="button" class="action-btn" style="padding:3px 8px; font-size:11px; width:100%;" onclick="openStudentPointsModal('${safeKey}')" title="View Points Breakdown">
+                                    <i class="fas fa-file-invoice"></i> View Breakdown
+                                </button>
+                                <div style="display:inline-flex; gap:4px; width:100%;">
+                                    <button type="button" class="action-btn purple" style="padding:3px 6px; font-size:10.5px; flex:1;" onclick="openAllRounderCertModal('${safeKey}', false)" title="View Fest Certificate">
+                                        <i class="fas fa-award"></i> View Cert
+                                    </button>
+                                    <button type="button" class="action-btn gold" style="padding:3px 6px; font-size:10.5px; flex:1;" onclick="openAllRounderCertModal('${safeKey}', true)" title="Print Fest Certificate">
+                                        <i class="fas fa-print"></i> Print
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        container.innerHTML = `
+            <div class="allrounder-card">
+                <div class="allrounder-head fest">
+                    <h4><i class="fas fa-flask-vial" style="color:#fde047;"></i> FEST ALL ROUNDER (SASTHROTHSWOM)</h4>
+                    <span style="font-size:12px; background:rgba(255,255,255,0.2); padding:3px 9px; border-radius:4px; font-weight:700;">Top 3 Champions</span>
+                </div>
+                <div class="table-responsive" style="margin:0; border:none;">
+                    <table>
+                        <thead>
+                            <tr style="background:#f8fafc;">
+                                <th style="width:125px; text-align:center;">Standing</th>
+                                <th style="width:85px;">Admn No</th>
+                                <th>Student Name</th>
+                                <th style="width:140px;">Class & Div</th>
+                                <th>Fest Items & Scores</th>
+                                <th style="width:110px; text-align:center; color:#2563eb;">Total Score</th>
+                                <th style="width:140px; text-align:center;">Actions & Certificate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHTML}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    // ==========================================================================
+    // RENDER ALL ROUNDER: TOP 3 WITH CERTIFICATE (VIEW & PRINT) BELOW BREAKDOWN
+    // ==========================================================================
+    let cachedAllRounderWinners = {}; // Global cache for instant certificate generation
+
     function renderAllRounderSports() {
         const container = document.getElementById('allRounderContainer');
         if (!container) return;
@@ -10513,7 +10890,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
 
         const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
 
-        // 1. Filter results STRICTLY to Sports only
+        // 1. Filter results strictly to Sports events only
         const sportsResults = dbPublishedResults.filter(r => 
             isTopThreePlace(r.place) && 
             (r.festCategory === "Sports" || getFestivalCategory(r.festName) === "Sports")
@@ -10530,7 +10907,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             return;
         }
 
-        // 2. Collate points per student grouped into Kiddies, Sub Junior, and DElEd
+        // 2. Exact standard category keys
         const categories = ["Kiddies", "Sub Junior", "DElEd"];
         const categoryData = {
             "Kiddies": {},
@@ -10553,8 +10930,9 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                 const key = admn || name;
                 if (!key) return;
 
-                const ageCat = getStudentSportsAgeCategory(cand, r);
-                const targetCat = categoryData[ageCat] ? ageCat : "Sub Junior";
+                const rawAgeCat = getStudentSportsAgeCategory(cand, r);
+                const normAgeCat = normalizeSportsAgeCategory(rawAgeCat);
+                const targetCat = categoryData[normAgeCat] ? normAgeCat : "Sub Junior";
 
                 if (!categoryData[targetCat][key]) {
                     categoryData[targetCat][key] = {
@@ -10563,6 +10941,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                         name: name,
                         classInfo: `${cand.class || r.studentClass} ${cand.division || r.studentDivision || ''}`.trim(),
                         category: targetCat,
+                        festName: r.festName || "Sports Day",
                         totalScore: 0,
                         first: 0,
                         second: 0,
@@ -10589,7 +10968,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             });
         });
 
-        // 3. Render Top 3 for Each Category
+        cachedAllRounderWinners = {};
         let fullHTML = "";
 
         categories.forEach(catKey => {
@@ -10612,6 +10991,11 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             // Extract ONLY the Top 3 ranks (1st, 2nd, 3rd including ties)
             let topThreeList = list.filter(cand => cand.rank <= 3);
 
+            // Cache for modal lookup
+            topThreeList.forEach(cand => {
+                cachedAllRounderWinners[cand.key] = cand;
+            });
+
             if (q) {
                 topThreeList = topThreeList.filter(cand =>
                     cand.name.toLowerCase().includes(q) ||
@@ -10628,14 +11012,14 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             if (topThreeList.length === 0) {
                 rowsHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:20px;">No winners placed for ${catKey}.</td></tr>`;
             } else {
-                topThreeList.forEach((cand, idx) => {
+                topThreeList.forEach((cand) => {
                     const rankPill = cand.rank === 1 ? "place-pill-1" : (cand.rank === 2 ? "place-pill-2" : "place-pill-3");
                     const rankLabel = cand.rank === 1 ? "🥇 1st Place" : (cand.rank === 2 ? "🥈 2nd Place" : "🥉 3rd Place");
 
-                    // Items display with individual scores & standings
                     const itemsDisplay = cand.items.map(it => {
+                        const placeShort = it.normPlace.replace(' Place','');
                         return `<span class="allrounder-item-pill">
-                            <b>${it.itemName}</b> (${it.normPlace.replace(' Place','')}: <b>${it.points} pts</b>)
+                            <b>${it.itemName}</b> (${placeShort}: <b>${it.points} pts</b>)
                         </span>`;
                     }).join(" ");
 
@@ -10649,10 +11033,22 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                             <td><span style="font-weight:700; color:var(--accent);">${cand.classInfo}</span></td>
                             <td><div style="line-height:1.6;">${itemsDisplay}</div></td>
                             <td style="text-align:center; font-size:16px; font-weight:900; color:#059669;">${cand.totalScore} pts</td>
+                            
+                            <!-- ACTIONS & CERTIFICATE (CERTIFICATE ADDED BELOW VIEW) -->
                             <td style="text-align:center;">
-                                <button type="button" class="action-btn" style="padding:4px 9px; font-size:11.5px;" onclick="openStudentPointsModal('${safeKey}')" title="View Full Breakdown">
-                                    <i class="fas fa-file-invoice"></i> View
-                                </button>
+                                <div style="display:flex; flex-direction:column; gap:4px; align-items:center; min-width:130px;">
+                                    <button type="button" class="action-btn" style="padding:3px 8px; font-size:11px; width:100%;" onclick="openStudentPointsModal('${safeKey}')" title="View Points Breakdown">
+                                        <i class="fas fa-file-invoice"></i> View Breakdown
+                                    </button>
+                                    <div style="display:inline-flex; gap:4px; width:100%;">
+                                        <button type="button" class="action-btn purple" style="padding:3px 6px; font-size:10.5px; flex:1;" onclick="openAllRounderCertModal('${safeKey}', false)" title="View All Rounder Certificate">
+                                            <i class="fas fa-award"></i> View Cert
+                                        </button>
+                                        <button type="button" class="action-btn gold" style="padding:3px 6px; font-size:10.5px; flex:1;" onclick="openAllRounderCertModal('${safeKey}', true)" title="Print All Rounder Certificate">
+                                            <i class="fas fa-print"></i> Print
+                                        </button>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -10672,10 +11068,10 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
                                     <th style="width:125px; text-align:center;">Standing</th>
                                     <th style="width:85px;">Admn No</th>
                                     <th>Student Name</th>
-                                    <th style="width:105px;">Class & Div</th>
+                                    <th style="width:140px;">Class & Div</th>
                                     <th>Sports Items & Scores</th>
                                     <th style="width:110px; text-align:center; color:#059669;">Total Score</th>
-                                    <th style="width:85px; text-align:center;">Breakdown</th>
+                                    <th style="width:140px; text-align:center;">Actions & Certificate</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -10688,6 +11084,209 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         });
 
         container.innerHTML = fullHTML;
+    }
+
+    // ==========================================================================
+    // ALL ROUNDER CERTIFICATE GENERATOR (WITH ALL CONCERN DETAILS)
+    // ==========================================================================
+
+    function generateSingleAllRounderCertHTML(cand) {
+        const isKalo = cand.classification === "Kalothswom";
+        const isFest = cand.classification === "Fest";
+        const isSports = !isKalo && !isFest;
+
+        let festName = cand.festName || (isKalo ? "GENERAL KALOTHSWOM" : (isFest ? "IT FEST" : "SPORTS DAY"));
+        let festDateCitation = formatFestDatesForCert(festName) || "20/02/2026";
+        let issueDate = getCertIssueDate(festName, "20/02/2026");
+        let convenorName = (dbSettings.FestConvenors && dbSettings.FestConvenors[festName]) 
+            ? dbSettings.FestConvenors[festName] 
+            : "THEJAS R";
+
+        // Gender Salutation
+        const st = dbStudents.find(s => 
+            (cand.admn && String(s["Admission Number"]).trim() === String(cand.admn).trim()) ||
+            (cand.name && String(s["Name"]).trim().toLowerCase() === String(cand.name).trim().toLowerCase())
+        );
+        const gRaw = String(st?.Gender || st?.["Gender"] || "").trim().toUpperCase();
+        const isGirl = gRaw === 'F' || gRaw.startsWith('FEM') || gRaw === 'GIRL';
+        const salutation = isGirl ? 'Kumari.' : 'Master.';
+        const cleanName = String(cand.name || "").replace(/^(master|kumari|kum\.)\s+/i, '').trim();
+
+        // Standing & Category Labels
+        const rankTitles = {
+            1: "FIRST Place (ALL ROUNDER CHAMPION)",
+            2: "SECOND Place (RUNNER UP)",
+            3: "THIRD Place"
+        };
+        const standingTitle = rankTitles[cand.rank] || `${cand.rank} Place`;
+
+        let categoryBadge = "ALL ROUNDER";
+        let categoryTitle = "";
+        let ribbonColor = "#059669";
+        let festCitationLabel = "";
+
+        if (isKalo) {
+            categoryBadge = "KALOTHSWOM ALL ROUNDER";
+            categoryTitle = "KALOTHSWOM (MEGHAMALHAR)";
+            ribbonColor = "#7c3aed";
+            festCitationLabel = "KALOTHSWOM (MEGHAMALHAR) 2026";
+        } else if (isFest) {
+            categoryBadge = "FEST ALL ROUNDER";
+            categoryTitle = "FEST (SASTHROTHSWOM)";
+            ribbonColor = "#2563eb";
+            festCitationLabel = "SASTHROTHSWOM (IT, MATHS, SCIENCE, SOCIAL & WORK EXPERIENCE) 2026";
+        } else {
+            const sportsTitles = {
+                "Kiddies": "KIDDIES (UNDER 12)",
+                "Sub Junior": "SUB JUNIOR (UNDER 14)",
+                "DElEd": "D.El.Ed (SENIOR)"
+            };
+            categoryBadge = "SPORTS ALL ROUNDER";
+            categoryTitle = sportsTitles[cand.category] || "SPORTS";
+            ribbonColor = "#059669";
+            festCitationLabel = "SPORTS DAY 2026";
+        }
+
+        // Candidate Class / Meta Line
+        let candidateMetaLine = "";
+        const isDElEd = cand.category === "DElEd" || String(cand.classInfo).toLowerCase().includes("del") || String(cand.classInfo).toLowerCase().includes("ttc");
+        if (isDElEd) {
+            const yr = String(cand.classInfo).toLowerCase().includes("2") ? "SECOND YEAR" : "FIRST YEAR";
+            candidateMetaLine = `D.El.Ed <b>${yr}</b> &bull; <b>TDTTI THURAVOOR</b> ${cand.admn ? '&bull; Admission No: <b>' + cand.admn + '</b>' : ''}`;
+        } else {
+            candidateMetaLine = `Standard: <b>${cand.classInfo}</b> &bull; Admission No: <b>${cand.admn || '-'}</b>`;
+        }
+
+        // Format winning events
+        const eventsList = cand.items.map(it => {
+            const shortPlace = it.normPlace.replace(' Place', '');
+            return `<b>${it.itemName}</b> (${shortPlace})`;
+        }).join(", ");
+
+        return `
+            <div class="cert-container" style="margin-bottom: 24px;">
+                <div class="cert-outer-frame">
+                    <div class="cert-inner-frame">
+                        <div class="cert-corner corner-tl"></div>
+                        <div class="cert-corner corner-tr"></div>
+                        <div class="cert-corner corner-bl"></div>
+                        <div class="cert-corner corner-br"></div>
+                        <div class="cert-watermark"></div>
+
+                        <!-- HEADER ROW -->
+                        <div class="cert-header-row">
+                            <div class="cert-logo-box">
+                                <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2HmTkhP64w7LZ-QM-8pKCHZlTVF-KqbMxXQ1h58-M40ZIu7kzPhoFX6FXk8eTCNlTu790kueQvpQCmzWcG-rtMkAL-_8z1MsXMT8a0RzAlWC4hfk3u2Dg-PXD8MKrw3ZYAl-PtcgCalvOVihtu9RSS2oP25dUrNyjtgLDdgz9wYyAr_A/s1600/Logo2.png" alt="TDTTI Logo">
+                            </div>
+                            <div class="cert-inst-details">
+                                <h1>THIRUMALA DEVASWOM</h1>
+                                <h3>TEACHER TRAINING INSTITUTE</h3>
+                                <p>THURAVOOR, CHERTHALA, ALAPPUZHA, KERALA &bull; PIN: 688532</p>
+                                <p style="font-size:10px; color:#64748b; margin-top:2px;">PH: 0478-2564479 &bull; EMAIL: 34347alappuzha@gmail.com</p>
+                            </div>
+                            <div class="cert-badge-right">
+                                <i class="fas fa-trophy" style="color:#d4af37;"></i>
+                                <div class="cert-badge-tag" style="background:${ribbonColor};">${categoryBadge}</div>
+                            </div>
+                        </div>
+
+                        <!-- TITLE AREA -->
+                        <div class="cert-title-area">
+                            <div class="cert-main-title">Certificate of Merit</div>
+                            <div class="cert-congrats-animated" style="color:${ribbonColor};">Congratulations</div>
+                        </div>
+
+                        <!-- BODY STATEMENT WITH SPECIFIC CONCERN DETAILS -->
+                        <div class="cert-body-area">
+                            <div class="cert-awarded-intro">This is to proudly certify that</div>
+                            <div class="cert-candidate-name">${salutation} ${cleanName}</div>
+                            <div class="cert-candidate-meta">${candidateMetaLine}</div>
+                            <div class="cert-citation-p" style="font-size:20.5px; line-height:1.65; max-width:890px;">
+                                has distinguished themselves as the <span class="cert-highlight-badge" style="background:#ecfdf5; color:#065f46; border-color:#a7f3d0;">${standingTitle}</span><br>in the <b>${categoryTitle}</b> section with an aggregate of <span class="cert-highlight-badge" style="background:#fefce8; color:#854d0e; border-color:#fde047;">${cand.totalScore} Points</span><br>in the events of <b>${eventsList}</b><br>held as part of <b>${festCitationLabel}</b> on <b>${festDateCitation}</b>.
+                            </div>
+                        </div>
+
+                        <!-- FOOTER ROW -->
+                        <div class="cert-footer-row">
+                            <div class="cert-sig-block">
+                                <div class="cert-signature-space"></div>
+                                <b>${convenorName}</b>
+                                <span>General Convenor</span>
+                                <div class="cert-date-place">
+                                    <span>Date: ${issueDate}</span>
+                                    <span>Place: Thuravoor</span>
+                                </div>
+                            </div>
+
+                            <div class="cert-gold-seal-wrapper">
+                                <div class="cert-seal-ribbon ribbon-left" style="background:${ribbonColor};"></div>
+                                <div class="cert-seal-ribbon ribbon-right" style="background:${ribbonColor};"></div>
+                                <div class="cert-gold-seal">
+                                    <span>TDTTI</span>
+                                    <i class="fas fa-trophy"></i>
+                                    <span>Champion</span>
+                                </div>
+                            </div>
+
+                            <div class="cert-sig-block">
+                                <div class="cert-signature-space"></div>
+                                <b>ASHA V</b>
+                                <span>Principal</span>
+                                <div class="cert-date-place" style="visibility:hidden;">
+                                    <span>Date: ${issueDate}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Opens or prints the All Rounder Certificate
+    function openAllRounderCertModal(candKey, autoPrint = false) {
+        currentCertMembers = null;
+        currentActiveCertResult = null;
+        const cand = cachedAllRounderWinners[candKey];
+        if (!cand) return;
+
+        const stage = document.getElementById('certScaleStage');
+        const groupBar = document.getElementById('certGroupMemberBar');
+        const mainPrintBtn = document.getElementById('btnMainCertPrint');
+        const mainPrintText = document.getElementById('btnMainCertPrintText');
+
+        if (groupBar) {
+            groupBar.style.display = 'flex';
+            groupBar.innerHTML = `
+                <div style="font-size:12.5px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-person-running" style="color:#059669;"></i>
+                    <span>Sports All Rounder Certificate: <b>${cand.name}</b> (${cand.category}) &bull; Total: <b>${cand.totalScore} Points</b></span>
+                </div>
+            `;
+        }
+
+        if (mainPrintBtn) {
+            mainPrintBtn.onclick = () => printModalDocument('certModal', 'landscape');
+        }
+        if (mainPrintText) {
+            mainPrintText.innerText = "Print All Rounder Certificate (A4)";
+        }
+
+        stage.innerHTML = generateSingleAllRounderCertHTML(cand);
+
+        const certModal = document.getElementById('certModal');
+        certModal.style.display = 'flex';
+
+        isCertActualSize = false;
+        setTimeout(() => {
+            if (typeof autoFitCertificate === "function") autoFitCertificate();
+        }, 50);
+
+        if (autoPrint) {
+            setTimeout(() => {
+                printModalDocument('certModal', 'landscape');
+            }, 350);
+        }
     }
 
     // ==========================================================================
@@ -11316,117 +11915,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         }, 200);
     }
     
-    // ==========================================================================
-    // 4. FIXED RESULTS DIRECTORY REPORT MODAL
-    // ==========================================================================
-    function openResultsReport(autoPrint = false) {
-        const modal = document.getElementById('resultReportModal');
-        const container = document.getElementById('resReportContentContainer');
-        if (!modal || !container) return;
-
-        const q = String(document.getElementById('resultSearch')?.value || "").toLowerCase().trim();
-        container.innerHTML = "";
-
-        // Filter strictly to Top 3 places
-        let results = dbPublishedResults.filter(r => isTopThreePlace(r.place));
-
-        if (q) {
-            results = results.filter(r =>
-                String(r.candidateName || "").toLowerCase().includes(q) ||
-                String(r.itemName || "").toLowerCase().includes(q) ||
-                String(r.studentClass || "").toLowerCase().includes(q) ||
-                String(r.admissionNumber || "").toLowerCase().includes(q) ||
-                String(r.festName || "").toLowerCase().includes(q)
-            );
-        }
-
-        document.getElementById('resReportMetaInfo').innerText = `Total Top 3 Winners: ${results.length} | Generated on: ${new Date().toLocaleString('en-IN')}`;
-
-        // Group by Festival -> Item
-        const festMap = {};
-        results.forEach(r => {
-            const fName = r.festName || "General Fest";
-            if (!festMap[fName]) festMap[fName] = {};
-            const itemKey = `${r.itemName} [${r.itemCode || '-'}]`;
-            if (!festMap[fName][itemKey]) festMap[fName][itemKey] = [];
-            festMap[fName][itemKey].push(r);
-        });
-
-        let outputHTML = "";
-        Object.keys(festMap).sort().forEach(fName => {
-            outputHTML += `
-                <div style="margin-bottom:20px;">
-                    <div style="background:#0f172a; color:#ffffff; padding:8px 14px; font-weight:800; font-size:13px; border-radius:4px; margin-bottom:10px;">
-                        <i class="fas fa-trophy" style="color:var(--gold-pure); margin-right:6px;"></i> ${fName.toUpperCase()} - WINNERS DIRECTORY (1st, 2nd, 3rd)
-                    </div>
-            `;
-
-            const itemKeys = Object.keys(festMap[fName]).sort();
-            itemKeys.forEach(itemKey => {
-                const rows = festMap[fName][itemKey];
-                rows.sort((a, b) => {
-                    const order = { "FIRST Place": 1, "SECOND Place": 2, "THIRD Place": 3 };
-                    return (order[normalizePlaceCategory(a.place)] || 9) - (order[normalizePlaceCategory(b.place)] || 9);
-                });
-
-                outputHTML += `
-                    <div style="margin-bottom:12px; border:1px solid #cbd5e1; border-radius:4px; overflow:hidden;">
-                        <div style="background:#f8fafc; padding:6px 12px; font-weight:800; font-size:12px; border-bottom:1px solid #cbd5e1;">
-                            ${itemKey}
-                        </div>
-                        <table style="width:100%; font-size:11px;">
-                            <thead>
-                                <tr style="background:#ffffff;">
-                                    <th style="width:110px; text-align:center;">Standing</th>
-                                    <th style="width:65px; text-align:center;">Lot</th>
-                                    <th style="width:80px;">Admn No</th>
-                                    <th>Candidate Name</th>
-                                    <th>Class & Div</th>
-                                    <th style="width:65px; text-align:center;">Score</th>
-                                    <th style="width:55px; text-align:center;">Grade</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                // IN openResultsReport():
-                rows.forEach(r => {
-                    const members = getTeamMembersForResult(r);
-                    const winnerText = (members && members.length > 1)
-                        ? members.map(m => {
-                            const isLeader = (m.role === 'Team Leader' || m.name === r.candidateName);
-                            return `${m.name} (${isLeader ? 'Leader' : 'Participant'})`;
-                        }).join(", ")
-                        : `<b>${r.candidateName}</b>`;
-
-                    outputHTML += `
-                        <tr>
-                            <td style="text-align:center; font-weight:800;">${r.place}</td>
-                            <td style="text-align:center;">${r.lotNumber || '-'}</td>
-                            <td>${r.admissionNumber || '-'}</td>
-                            <td>${winnerText}</td>
-                            <td>${r.studentClass} ${r.studentDivision || ''}</td>
-                            <td style="text-align:center; font-weight:800;">${r.score}</td>
-                            <td style="text-align:center;"><b>${r.grade}</b></td>
-                        </tr>
-                    `;
-                });
-
-                outputHTML += `</tbody></table></div>`;
-            });
-
-            outputHTML += `</div>`;
-        });
-
-        container.innerHTML = outputHTML || `<p style="text-align:center; color:#94a3b8; padding:30px;">No published 1st, 2nd, or 3rd place winners found.</p>`;
-        modal.style.display = 'flex';
-
-        if (autoPrint) {
-            setTimeout(() => {
-                printModalDocument('resultReportModal', 'portrait');
-            }, 300);
-        }
-    }
+    
 
     // --- RESULTS DIRECTORY REPORT MODAL (VIEW & A4 PORTRAIT PRINT) ---
     function openResultsReport(autoPrint = false) {
@@ -15940,26 +16429,24 @@ function getTeamMembersForResult(resultDoc) {
     function calculateSportsAgeCategory(dobStr) {
         if (!dobStr) return null;
         
-        // Normalize date to YYYY-MM-DD
         let isoDate = "";
         if (dobStr.includes("-")) {
             const parts = dobStr.split("-");
             if (parts[0].length === 4) {
-                isoDate = dobStr; // YYYY-MM-DD
+                isoDate = dobStr;
             } else if (parts[2].length === 4) {
-                isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`; // DD-MM-YYYY
+                isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
             }
         } else if (dobStr.includes(":") || dobStr.includes("/")) {
-            const separator = dobStr.includes(":") ? ":" : "/";
-            const parts = dobStr.split(separator);
-            if (parts[2].length === 4) {
+            const sep = dobStr.includes(":") ? ":" : "/";
+            const parts = dobStr.split(sep);
+            if (parts[2]?.length === 4) {
                 isoDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
             }
         }
 
         if (!isoDate) isoDate = dobStr;
 
-        // Criteria Evaluation
         if (isoDate >= "2015-01-01") {
             return {
                 category: "Kiddies",
@@ -15972,8 +16459,8 @@ function getTeamMembersForResult(resultDoc) {
             };
         } else if (isoDate >= "2013-01-01") {
             return {
-                category: "Sub Juniors",
-                title: "Sub Juniors (Under 14)",
+                category: "Sub Junior",
+                title: "Sub Junior (Under 14)",
                 rule: "Born on or after 01-01-2013",
                 badgeBg: "#dbeafe",
                 badgeColor: "#1e40af",
@@ -15982,8 +16469,8 @@ function getTeamMembersForResult(resultDoc) {
             };
         } else {
             return {
-                category: "DElED",
-                title: "DElED (Above 14)",
+                category: "DElEd",
+                title: "D.El.Ed (Senior / Above 14)",
                 rule: "Born Before 01-01-2013",
                 badgeBg: "#d1fae5",
                 badgeColor: "#065f46",
@@ -15993,21 +16480,120 @@ function getTeamMembersForResult(resultDoc) {
         }
     }
 
-    // Helper: Detects which age category a sports item belongs to
-    function getItemSportsAgeCategory(item) {
-        const text = `${item["Item"] || ""} ${item["Category"] || ""} ${item["Item Code"] || ""}`.toLowerCase();
-        
-        if (text.includes("kiddies") || text.includes("kiddy") || text.includes("under 12") || text.includes("u-12") || text.includes("u12") || text.includes("lp")) {
+    // ==========================================================================
+    // BULLETPROOF SPORTS AGE CATEGORY NORMALIZATION & RESOLUTION
+    // ==========================================================================
+
+    // Normalizes any casing ("DElED", "DElEd", "d.el.ed", "ttc") into exact standard keys
+    function normalizeSportsAgeCategory(catStr) {
+        if (!catStr) return "";
+        const clean = String(catStr).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        // D.El.Ed trainees (Teacher trainees, adult seniors)
+        if (clean.includes("del") || clean.includes("ttc") || clean.includes("above14") || clean.includes("senior") || clean.includes("firstyear") || clean.includes("secondyear")) {
+            return "DElEd";
+        }
+        // Kiddies (LP / Under 12)
+        if (clean.includes("kid") || clean.includes("under12") || clean.includes("u12") || clean.includes("lp")) {
             return "Kiddies";
         }
-        if (text.includes("sub junior") || text.includes("sub-junior") || text.includes("subjuniors") || text.includes("sub-juniors") || text.includes("under 14") || text.includes("u-14") || text.includes("u14") || text.includes("up")) {
-            return "Sub Juniors";
+        // Sub Junior (UP / Under 14)
+        if (clean.includes("sub") || clean.includes("junior") || clean.includes("under14") || clean.includes("u14") || clean.includes("up")) {
+            return "Sub Junior";
         }
-        if (text.includes("deled") || text.includes("d.el.ed") || text.includes("dled") || text.includes("ttc") || text.includes("above 14") || text.includes("senior")) {
-            return "DElED";
+        return "";
+    }
+
+    // Resolves age category directly from event item name, item code or category tag
+    function getItemSportsAgeCategory(item) {
+        if (!item) return "General";
+        const name = typeof item === 'string' ? item : (item.itemName || item.Item || item["Item"] || "");
+        const code = typeof item === 'object' ? (item.itemCode || item["Item Code"] || "") : "";
+        const cat = typeof item === 'object' ? (item.Category || item.category || "") : "";
+        const clean = `${name} ${code} ${cat}`.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        if (clean.includes("del") || clean.includes("ttc") || clean.includes("above14") || clean.includes("senior")) {
+            return "DElEd";
         }
-        
-        return "General"; // Unrestricted or open sports items
+        if (clean.includes("kid") || clean.includes("under12") || clean.includes("u12") || clean.includes("lp")) {
+            return "Kiddies";
+        }
+        if (clean.includes("sub") || clean.includes("junior") || clean.includes("under14") || clean.includes("u14") || clean.includes("up")) {
+            return "Sub Junior";
+        }
+        return "General";
+    }
+
+    // Main student sports category resolver (D.El.Ed Class & Events take highest priority)
+    function getStudentSportsAgeCategory(studentOrReg, item) {
+        // 1. Check Class first: D.El.Ed trainees are adult teacher trainees, ALWAYS DElEd!
+        const clsRaw = String(
+            studentOrReg?.classInfo || 
+            studentOrReg?.studentClass || 
+            studentOrReg?.Class || 
+            studentOrReg?.class || 
+            ""
+        ).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        if (clsRaw.includes("del") || clsRaw.includes("ttc") || clsRaw.includes("firstyear") || clsRaw.includes("secondyear")) {
+            return "DElEd";
+        }
+
+        // 2. Check Event Name & Code (e.g., "DElEd - 100M RUN (GIRLS)" -> ALWAYS DElEd!)
+        const itemCat = getItemSportsAgeCategory(item);
+        if (itemCat && itemCat !== "General") {
+            const norm = normalizeSportsAgeCategory(itemCat);
+            if (norm) return norm;
+        }
+
+        // 3. Check direct Age Category tag if saved
+        const directTag = studentOrReg ? (studentOrReg["Age Category"] || studentOrReg.ageCategory) : null;
+        if (directTag) {
+            const normTag = normalizeSportsAgeCategory(directTag);
+            if (normTag) return normTag;
+        }
+
+        // 4. Lookup in dbStudents (by admission number or name)
+        const admn = studentOrReg ? (studentOrReg.admissionNumber || studentOrReg["Admission Number"]) : null;
+        const name = studentOrReg ? (studentOrReg.name || studentOrReg.candidateName) : null;
+        const st = dbStudents.find(s => 
+            (admn && String(s["Admission Number"]).trim() === String(admn).trim()) ||
+            (name && String(s["Name"]).trim().toLowerCase() === String(name).trim().toLowerCase())
+        );
+
+        if (st) {
+            const stCls = String(st["Class"] || "").toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (stCls.includes("del") || stCls.includes("ttc") || stCls.includes("firstyear") || stCls.includes("secondyear")) {
+                return "DElEd";
+            }
+
+            // Check DOB in Student Master
+            const dob = st["DOB"] || st["Date of Birth"];
+            if (dob && typeof calculateSportsAgeCategory === "function") {
+                const ageObj = calculateSportsAgeCategory(dob);
+                if (ageObj && ageObj.category) {
+                    const normDobCat = normalizeSportsAgeCategory(ageObj.category);
+                    if (normDobCat) return normDobCat;
+                }
+            }
+
+            // Check numeric class in Student Master
+            const clsNum = parseInt(st["Class"], 10);
+            if (!isNaN(clsNum)) {
+                if (clsNum <= 4) return "Kiddies";
+                if (clsNum <= 7) return "Sub Junior";
+                return "DElEd";
+            }
+        }
+
+        // 5. Check numeric class from candidate data
+        const num = parseInt(clsRaw, 10);
+        if (!isNaN(num)) {
+            if (num <= 4) return "Kiddies";
+            if (num <= 7) return "Sub Junior";
+        }
+
+        return "Sub Junior";
     }
 
     function initQuickSportsSection() {
@@ -16859,6 +17445,8 @@ function getTeamMembersForResult(resultDoc) {
 
     // Previews or Prints the Duty Certificate
     function generateDutyCertificate(autoPrint = false) {
+        currentCertMembers = null; 
+        currentActiveCertResult = null;
         const name = (document.getElementById('dcName')?.value || "").trim();
         const admn = (document.getElementById('dcAdmn')?.value || "").trim();
         const year = document.getElementById('dcYear')?.value || "FIRST YEAR";
