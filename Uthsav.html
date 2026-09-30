@@ -4352,9 +4352,10 @@
                     <div class="form-group" style="margin:0;">
                         <label>Place / Standing</label>
                         <select id="qcPlace" style="font-weight:700;">
-                            <option value="FIRST Place" selected>FIRST Place</option>
-                            <option value="SECOND Place">SECOND Place</option>
-                            <option value="THIRD Place">THIRD Place</option>
+                            <option value="FIRST PRIZE" selected>FIRST PRIZE</option>
+                            <option value="SECOND PRIZE">SECOND PRIZE</option>
+                            <option value="THIRD PRIZE">THIRD PRIZE</option>
+                            <option value="CONSOLATION PRIZE">CONSOLATION PRIZE</option>
                         </select>
                     </div>
                     <div class="form-group" style="margin:0;">
@@ -4451,7 +4452,7 @@
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label>Festivals / Occasion</label>
-                        <input type="text" id="dcEvents" value="SASTHROTHSWOM, MEGHAMALHAR and SPORTS 2026" style="font-weight:700;">
+                        <input type="text" id="dcEvents" value="SASTHROLSAVAM, MEGHAMALHAR and SPORTS 2026" style="font-weight:700;">
                     </div>
                     <div class="form-group" style="margin:0;">
                         <label>Event Held On (Citation Dates)</label>
@@ -4561,7 +4562,7 @@
             <div id="viewAllRounderFest" class="res-subtab-view" style="display:none;">
                 <div class="section" style="border-top: 4px solid #2563eb; margin-bottom: 20px;">
                     <div class="section-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                        <span><i class="fas fa-flask-vial" style="color:#2563eb;"></i> Fest (Sasthrothswom) All Rounder Championship (Top 3)</span>
+                        <span><i class="fas fa-flask-vial" style="color:#2563eb;"></i> Fest (SASTHROLSAVAM) All Rounder Championship (Top 3)</span>
                         <small style="color:var(--text-muted); font-size:12px; font-weight:600;">(IT &bull; Maths &bull; Science &bull; Social Science &bull; Work Experience)</small>
                     </div>
                     <div id="allRounderFestContainer"></div>
@@ -4826,7 +4827,7 @@
                         <label>Festival Classification</label>
                         <select id="convenorFestCategorySelect">
                             <option value="Kalothswom">KALOTHSWOM</option>
-                            <option value="Fest">SASTHROTHSWOM</option>
+                            <option value="Fest">SASTHROLSAVAM</option>
                             <option value="Sports">SPORTS</option>
                         </select>
                     </div>
@@ -10853,7 +10854,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
         container.innerHTML = `
             <div class="allrounder-card">
                 <div class="allrounder-head fest">
-                    <h4><i class="fas fa-flask-vial" style="color:#fde047;"></i> FEST ALL ROUNDER (SASTHROTHSWOM)</h4>
+                    <h4><i class="fas fa-flask-vial" style="color:#fde047;"></i> FEST ALL ROUNDER (SASTHROLSAVAM)</h4>
                     <span style="font-size:12px; background:rgba(255,255,255,0.2); padding:3px 9px; border-radius:4px; font-weight:700;">Top 3 Champions</span>
                 </div>
                 <div class="table-responsive" style="margin:0; border:none;">
@@ -11134,7 +11135,7 @@ if (!dbSettings.Judge_Allowed_Tabs) dbSettings.Judge_Allowed_Tabs = ["JudgementT
             categoryBadge = "FEST ALL ROUNDER";
             categoryTitle = "FEST (SASTHROTHSWOM)";
             ribbonColor = "#2563eb";
-            festCitationLabel = "SASTHROTHSWOM (IT, MATHS, SCIENCE, SOCIAL & WORK EXPERIENCE) 2026";
+            festCitationLabel = "SASTHROLSAVAM (IT, MATHS, SCIENCE, SOCIAL & WORK EXPERIENCE) 2026";
         } else {
             const sportsTitles = {
                 "Kiddies": "KIDDIES (UNDER 12)",
@@ -17349,7 +17350,7 @@ function getTeamMembersForResult(resultDoc) {
         document.getElementById('dcYear').value = "FIRST YEAR";
         document.getElementById('dcInstitution').value = "TDTTI THURAVOOR";
         document.getElementById('dcDutyRole').value = "Technical Support and exemplary contribution";
-        document.getElementById('dcEvents').value = "SASTHROTHSWOM, MEGHAMALHAR and SPORTS 2026";
+        document.getElementById('dcEvents').value = "SASTHROLSAVAM, MEGHAMALHAR and SPORTS 2026";
         document.getElementById('dcDates').value = "11/09/2026, 24/09/2026, 25/09/2026 and 26/09/2026";
         document.getElementById('dcIssueDate').value = "26/09/2026";
         document.getElementById('dcConvenor').value = "THEJAS R";
@@ -17452,7 +17453,7 @@ function getTeamMembersForResult(resultDoc) {
         const year = document.getElementById('dcYear')?.value || "FIRST YEAR";
         const institution = (document.getElementById('dcInstitution')?.value || "TDTTI THURAVOOR").trim();
         const dutyRole = (document.getElementById('dcDutyRole')?.value || "Technical Support and exemplary contribution").trim();
-        const events = (document.getElementById('dcEvents')?.value || "SASTHROTHSWOM, MEGHAMALHAR and SPORTS 2026").trim();
+        const events = (document.getElementById('dcEvents')?.value || "SASTHROLSAVAM, MEGHAMALHAR and SPORTS 2026").trim();
         const dates = (document.getElementById('dcDates')?.value || "11/09/2026, 24/09/2026, 25/09/2026 and 26/09/2026").trim();
         const issueDate = (document.getElementById('dcIssueDate')?.value || "26/09/2026").trim();
         const convenor = (document.getElementById('dcConvenor')?.value || "THEJAS R").trim();
