@@ -289,6 +289,78 @@
     </div>
   </div>
 
+  <!-- INSTANT EDIT QUESTION POPUP MODAL -->
+  <div id="edit-question-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 650px; width: 95%;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="margin:0; color:var(--primary); font-weight:800;">✏️ Edit Question</h3>
+        <button class="icon-action-btn" onclick="closeEditQuestionModal()" title="Close">✕</button>
+      </div>
+
+      <form id="modal-edit-question-form">
+        <input type="hidden" id="modal-q-id">
+
+        <div class="form-group">
+          <label>Subject</label>
+          <select id="modal-q-subject" required>
+            <option value="MI">Malayalam I (MI)</option>
+            <option value="AR">Arabic - العربية (AR)</option>
+            <option value="SK">Sanskrit - संस्कृतम् (SK)</option>
+            <option value="MII">Malayalam II (MII)</option>
+            <option value="EN">English (EN)</option>
+            <option value="MM">Mathematics (MM)</option>
+            <option value="BS">Basic Science (BS)</option>
+            <option value="SS">Social Science (SS)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label style="margin:0;">Question Text</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <label class="btn btn-outline" title="Capture Camera Diagram" style="padding:4px 8px; cursor:pointer; font-size:12px;">
+                <input type="file" accept="image/*" capture="environment" onchange="uploadToSupabaseStorageModal(this)" hidden> 📷 Camera
+              </label>
+              <label class="btn btn-outline" title="Upload Image File" style="padding:4px 8px; cursor:pointer; font-size:12px;">
+                <input type="file" accept="image/*" onchange="uploadToSupabaseStorageModal(this)" hidden> 🖼️ Upload
+              </label>
+              <button id="modal-q-img-delete-btn" type="button" class="btn btn-outline" onclick="deleteUploadedDiagramModal()" style="display:none; padding:4px 8px; color:var(--danger); border-color:#fca5a5; background:#fee2e2; font-size:12px;" title="Delete Diagram">
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+          <textarea id="modal-q-text" required rows="3" placeholder="Type Question Here..."></textarea>
+          <input type="hidden" id="modal-q-img-url">
+          <div style="text-align:right;">
+            <img id="modal-q-img-preview" src="" style="display:none; max-height:120px; border-radius:8px; margin-top:10px; border:1px solid var(--border-color);">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div><input type="text" placeholder="Option A" id="modal-q-optA" required></div>
+          <div><input type="text" placeholder="Option B" id="modal-q-optB" required></div>
+          <div><input type="text" placeholder="Option C" id="modal-q-optC" required></div>
+          <div><input type="text" placeholder="Option D" id="modal-q-optD" required></div>
+        </div>
+
+        <div class="form-group" style="margin-top:12px;">
+          <label>Correct Choice</label>
+          <select id="modal-q-correct" required>
+            <option value="A">Option A</option>
+            <option value="B">Option B</option>
+            <option value="C">Option C</option>
+            <option value="D">Option D</option>
+          </select>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+          <button type="button" class="btn btn-outline" onclick="closeEditQuestionModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Question</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- PROFILE & SETTINGS MODAL -->
   <div id="settings-modal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
@@ -772,7 +844,9 @@
         </label>
       </div>
 
+      <!-- ADD QUESTION CARD -->
       <form id="question-form" class="card">
+        <h3 style="margin-top:0; color:var(--primary); font-size:16px;">➕ Add New Question</h3>
         <input type="hidden" id="q-id">
         <div class="form-group">
           <label>Subject</label>
@@ -830,11 +904,41 @@
         <button type="submit" class="btn btn-primary">Save Question</button>
       </form>
 
-      <h2 style="margin-top:35px; color: #1B257D;">Question Bank</h2>
+      <!-- SUBJECT-WISE QUESTION COUNT SUMMARY TABLE -->
+      <h3 style="margin-top:35px; color: #1B257D;">Subject-Wise Question Counts</h3>
       <div class="table-responsive">
         <table class="data-table">
           <thead>
-            <tr><th>Subject</th><th>Question</th><th>Answer</th><th>Actions</th></tr>
+            <tr>
+              <th>S.No</th>
+              <th>Subject Code</th>
+              <th>Subject Name</th>
+              <th>Total Available Questions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-questions-summary-body"></tbody>
+        </table>
+      </div>
+
+      <!-- QUESTION BANK WITH BULK DELETE & SUBJECT-WISE SORTING -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:35px; flex-wrap:wrap; gap:10px;">
+        <h2 style="margin:0; color: #1B257D;">Question Bank</h2>
+        <button id="admin-bulk-delete-qs-btn" class="btn btn-danger" onclick="deleteSelectedQuestions()" style="display:none; padding:8px 16px;">
+          🗑️ Delete Selected (<span id="selected-qs-count">0</span>)
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:40px; text-align:center;"><input type="checkbox" id="select-all-qs" onclick="toggleSelectAllQuestions(this)"></th>
+              <th style="width:60px;">S.No</th>
+              <th>Subject</th>
+              <th>Question</th>
+              <th>Answer</th>
+              <th>Actions</th>
+            </tr>
           </thead>
           <tbody id="admin-questions-body"></tbody>
         </table>
@@ -896,7 +1000,15 @@
           </div>
           <div><input type="text" placeholder="Phone No" id="u-phone" required></div>
           <div><input type="text" placeholder="Username" id="u-username" required></div>
-          <div><input type="password" placeholder="Password" id="u-password" required></div>
+          
+          <!-- PASSWORD INPUT WITH SHOW/HIDE TOGGLE -->
+          <div style="position:relative;">
+            <input type="password" placeholder="Password" id="u-password" required style="padding-right:45px;">
+            <button type="button" onclick="toggleUserPasswordVisibility()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; cursor:pointer; font-size:16px;" title="Show/Hide Password">
+              👁️
+            </button>
+          </div>
+
           <div>
             <select id="u-role">
               <option value="Student">Student</option>
@@ -924,16 +1036,16 @@
       </div>
     </section>
 
-    <!-- 8. ADMIN TAB: Audit Access Logs (100% WIDTH CARD LAYOUT) -->
+    <!-- 8. ADMIN TAB: Audit Access Logs -->
     <section id="admin-logs-sec" class="section" style="display:none;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <h2 style="margin:0; color: #1B257D;">Audit Access Logs</h2>
-    <button class="btn btn-outline" style="color:var(--danger); border-color:#fca5a5; padding:6px 14px;" onclick="clearAllLogs()">
-      🗑️ Clear All Logs
-    </button>
-  </div>
-  <div id="admin-logs-cards-container" style="width: 100%;"></div>
-</section>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin:0; color: #1B257D;">Audit Access Logs</h2>
+        <button class="btn btn-outline" style="color:var(--danger); border-color:#fca5a5; padding:6px 14px;" onclick="clearAllLogs()">
+          🗑️ Clear All Logs
+        </button>
+      </div>
+      <div id="admin-logs-cards-container" style="width: 100%;"></div>
+    </section>
 
   </div>
 
@@ -961,7 +1073,7 @@
 
   <script>
     // =========================================================================
-    // SUPABASE CONFIGURATION - PASTE YOUR CREDENTIALS HERE
+    // SUPABASE CONFIGURATION
     // =========================================================================
     const SUPABASE_URL = "https://xwnfjogvnncrfzdzqlmo.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3bmZqb2d2bm5jcmZ6ZHpxbG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MjgyMDksImV4cCI6MjEwMTAwNDIwOX0.aLlZqnZ-pVXyd2thZ6xNDLBTir8dChsCaTyw5wtPJbk";
@@ -980,6 +1092,8 @@
       'SS': 'Social Science'
     };
 
+    const SUBJECT_ORDER = ['MI', 'AR', 'SK', 'MII', 'EN', 'MM', 'BS', 'SS'];
+
     let currentUser = JSON.parse(localStorage.getItem('USS_USER')) || JSON.parse(sessionStorage.getItem('USS_USER')) || null;
     let currentQuestions = [];
     let qIndex = 0;
@@ -997,6 +1111,7 @@
     let consolidatedStudentsList = [];
     let selectedStudentPhones = new Set();
     let selectedNotifIds = new Set();
+    let selectedQuestionIds = new Set();
     
     let securityProtectionActive = true;
     let showStudentTabsForAdmin = false;
@@ -1006,6 +1121,7 @@
 
       document.getElementById('login-form').addEventListener('submit', handleLogin);
       document.getElementById('question-form').addEventListener('submit', handleSaveQuestion);
+      document.getElementById('modal-edit-question-form').addEventListener('submit', handleSaveEditedQuestionModal);
       document.getElementById('user-form').addEventListener('submit', handleSaveUser);
       document.getElementById('change-pass-form').addEventListener('submit', handleChangePassword);
       document.getElementById('send-notif-form').addEventListener('submit', handleSendNotification);
@@ -1024,6 +1140,13 @@
 
       updateNetworkStatus();
     });
+
+    // SHOW / HIDE PASSWORD FUNCTIONALITY
+    function toggleUserPasswordVisibility() {
+      const passInput = document.getElementById('u-password');
+      if (!passInput) return;
+      passInput.type = (passInput.type === 'password') ? 'text' : 'password';
+    }
 
     // RELATIVE TIME HELPER (e.g. "1 min ago", "2 hrs ago")
     function getRelativeTime(dateStr) {
@@ -1263,11 +1386,6 @@
     async function handleLogin(e) {
       e.preventDefault();
       
-      if (SUPABASE_URL.includes("YOUR_SUPABASE") || SUPABASE_ANON_KEY.includes("YOUR_SUPABASE")) {
-        showToast('⚠️ Error: Please paste your Supabase URL & Anon Key on lines 465 & 466!', 'danger');
-        return;
-      }
-
       const usernameInput = document.getElementById('login-username').value.trim();
       const passwordInput = document.getElementById('login-password').value.trim();
       setProgress(50);
@@ -1454,7 +1572,7 @@
     }
 
     // =========================================================================
-    // SUPABASE PRACTICE & TRIAL EXAM MODULE
+    // PRACTICE & TRIAL EXAM MODULE
     // =========================================================================
 
     function switchPracticeMode(mode) {
@@ -1796,7 +1914,7 @@
     }
 
     // =========================================================================
-    // SUPABASE DASHBOARD & PORTFOLIO CALCULATIONS
+    // DASHBOARD & PORTFOLIO CALCULATIONS
     // =========================================================================
 
     async function loadPortfolio() {
@@ -2003,7 +2121,7 @@
         }
       }
 
-      // RENDER DEDUPLICATED PRACTICE AUDIT LOG
+      // RENDER AUDIT LOG
       if (document.getElementById(auditTbodyId) && resData.detailedAnswers) {
         const auditBody = document.getElementById(auditTbodyId);
         const uniqueAuditLogs = [];
@@ -2031,7 +2149,7 @@
     }
 
     // =========================================================================
-    // SUPABASE NOTIFICATIONS
+    // NOTIFICATIONS
     // =========================================================================
 
     async function loadNotifications() {
@@ -2223,7 +2341,7 @@
     }
 
     // =========================================================================
-    // SUPABASE ADMIN DATA & REPORTS
+    // ADMIN DATA, USERS, QUESTIONS & SUMMARIES
     // =========================================================================
 
     async function loadAdminData() {
@@ -2402,21 +2520,74 @@
         </tr>
       `).join('');
 
-      // QUESTION BANK
-      const qBody = document.getElementById('admin-questions-body');
-      qBody.innerHTML = (questions || []).map(q => `
-        <tr>
-          <td><span class="badge">${q.subject}</span></td>
-          <td>${q.question} ${q.image_url ? '📷' : ''}</td>
-          <td><b>${q.correct_answer}</b></td>
-          <td style="display:flex; gap:8px;">
-            <button onclick="editQuestion('${q.id}','${encodeURIComponent(q.subject)}','${encodeURIComponent(q.question)}','${encodeURIComponent(q.option_a || '')}','${encodeURIComponent(q.option_b || '')}','${encodeURIComponent(q.option_c || '')}','${encodeURIComponent(q.option_d || '')}','${q.correct_answer}','${encodeURIComponent(q.image_url || '')}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
-            <button onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger);" title="Delete">🗑️ Delete</button>
-          </td>
-        </tr>
-      `).join('');
+      // -------------------------------------------------------------
+      // SUBJECT-WISE QUESTION COUNTS SUMMARY TABLE
+      // -------------------------------------------------------------
+      const qsList = questions || [];
+      const summaryBody = document.getElementById('admin-questions-summary-body');
+      let grandTotalQs = 0;
 
-      // USERS LIST
+      const summaryRows = SUBJECT_ORDER.map((code, idx) => {
+        const count = qsList.filter(q => String(q.subject).trim().toUpperCase() === code).length;
+        grandTotalQs += count;
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td><span class="badge">${code}</span></td>
+            <td><b>${SUBJECT_MAP[code]}</b></td>
+            <td><b>${count}</b> Questions</td>
+          </tr>
+        `;
+      }).join('');
+
+      summaryBody.innerHTML = summaryRows + `
+        <tr style="background:#eff6ff; font-weight:800; border-top:2px solid var(--primary) !important;">
+          <td colspan="3">GRAND TOTAL (ALL SUBJECTS)</td>
+          <td><span class="badge badge-success" style="font-size:13px;">${grandTotalQs} Total Questions</span></td>
+        </tr>
+      `;
+
+      // -------------------------------------------------------------
+      // QUESTION BANK (SORTED SUBJECT-WISE WITH SERIAL NUMBERS & BULK DELETE)
+      // -------------------------------------------------------------
+      selectedQuestionIds.clear();
+      updateBulkDeleteQsButton();
+      const selectAllCheckbox = document.getElementById('select-all-qs');
+      if (selectAllCheckbox) selectAllCheckbox.checked = false;
+
+      const sortedQuestions = [...qsList].sort((a, b) => {
+        const orderA = SUBJECT_ORDER.indexOf(String(a.subject).toUpperCase());
+        const orderB = SUBJECT_ORDER.indexOf(String(b.subject).toUpperCase());
+        const posA = orderA === -1 ? 99 : orderA;
+        const posB = orderB === -1 ? 99 : orderB;
+        if (posA !== posB) return posA - posB;
+        return String(a.question || '').localeCompare(String(b.question || ''));
+      });
+
+      const qBody = document.getElementById('admin-questions-body');
+      if (sortedQuestions.length === 0) {
+        qBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No questions found in the Question Bank.</td></tr>';
+      } else {
+        qBody.innerHTML = sortedQuestions.map((q, idx) => `
+          <tr>
+            <td style="text-align:center;">
+              <input type="checkbox" class="q-checkbox" data-id="${q.id}" onchange="toggleSelectQuestion('${q.id}', this.checked)">
+            </td>
+            <td>${idx + 1}</td>
+            <td><span class="badge">${q.subject}</span></td>
+            <td>${q.question} ${q.image_url ? '📷' : ''}</td>
+            <td><b>${q.correct_answer}</b></td>
+            <td style="display:flex; gap:8px;">
+              <button onclick="openInstantEditModal('${q.id}','${encodeURIComponent(q.subject)}','${encodeURIComponent(q.question)}','${encodeURIComponent(q.option_a || '')}','${encodeURIComponent(q.option_b || '')}','${encodeURIComponent(q.option_c || '')}','${encodeURIComponent(q.option_d || '')}','${q.correct_answer}','${encodeURIComponent(q.image_url || '')}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
+              <button onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Delete">🗑️ Delete</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // -------------------------------------------------------------
+      // ENROLLED USERS LIST WITH COMPLETE CASCADING DELETION
+      // -------------------------------------------------------------
       const uBody = document.getElementById('admin-users-body');
       uBody.innerHTML = (users || []).map(u => `
         <tr>
@@ -2429,13 +2600,14 @@
           <td>${u.username}</td>
           <td>${u.role}</td>
           <td><span class="badge ${u.status === 'Active' ? 'badge-success' : ''}">${u.status}</span></td>
-          <td>
+          <td style="display:flex; gap:6px;">
             <button onclick="editUser('${u.name}','${u.gender || 'Male'}','${u.phone}','${u.username}','${u.password}','${u.role}','${u.status}','${u.class || '10'}','${u.division || 'A'}','${u.first_language || 'MI'}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
+            <button onclick="confirmDeleteEntireUser('${u.username}', '${u.phone}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Permanently Delete User & All Data">🗑️ Delete</button>
           </td>
         </tr>
       `).join('');
 
-      // AUDIT ACCESS LOGS: 100% WIDTH CARD TYPE VIEW
+      // AUDIT ACCESS LOGS
       const lContainer = document.getElementById('admin-logs-cards-container');
       if (lContainer && logs) {
         if (logs.length === 0) {
@@ -2448,7 +2620,6 @@
             return `
               <div class="card" style="margin-bottom:12px; padding:16px; width:100%; box-shadow:var(--shadow-sm); border:1px solid var(--border-color);">
                 <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:10px;">
-                  <!-- LED + Identifier (Clickable to reveal details) -->
                   <div style="display:flex; align-items:center; gap:12px; cursor:pointer; flex:1;" onclick="toggleAccordion('log-detail-${idx}')">
                     <span class="led-dot ${isActive ? 'led-green' : 'led-red'}" title="${isActive ? 'Active' : 'Inactive'}"></span>
                     <div>
@@ -2457,19 +2628,16 @@
                     </div>
                   </div>
 
-                  <!-- WhatsApp Alert Icon Button -->
-                  <!-- Action Buttons (WhatsApp + Delete) -->
-<div style="display:flex; gap:8px;">
-  <button onclick="event.stopPropagation(); sendWhatsappAlert('${l.identifier}')" class="btn btn-outline" style="padding:8px 12px; background:#dcfce7; color:#15803d; border-color:#86efac; font-size:16px;" title="WhatsApp Alert to Join">
-    💬
-  </button>
-  <button onclick="event.stopPropagation(); deleteSingleLog('${l.log_id || l.id}')" class="btn btn-outline" style="padding:8px 12px; color:var(--danger); border-color:#fca5a5; font-size:16px;" title="Delete Log Entry">
-    🗑️
-  </button>
-</div>
+                  <div style="display:flex; gap:8px;">
+                    <button onclick="event.stopPropagation(); sendWhatsappAlert('${l.identifier}')" class="btn btn-outline" style="padding:8px 12px; background:#dcfce7; color:#15803d; border-color:#86efac; font-size:16px;" title="WhatsApp Alert to Join">
+                      💬
+                    </button>
+                    <button onclick="event.stopPropagation(); deleteSingleLog('${l.log_id || l.id}')" class="btn btn-outline" style="padding:8px 12px; color:var(--danger); border-color:#fca5a5; font-size:16px;" title="Delete Log Entry">
+                      🗑️
+                    </button>
+                  </div>
                 </div>
 
-                <!-- Hidden Collapsible Detail View (Shown when Name/Identifier is clicked) -->
                 <div id="log-detail-${idx}" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-color);">
                   <div style="font-size:13px; line-height:1.6;">
                     <div><strong>Role:</strong> <span class="badge">${l.role}</span></div>
@@ -2484,6 +2652,204 @@
           }).join('');
         }
       }
+    }
+
+    // =========================================================================
+    // BULK QUESTION SELECTION & DELETION
+    // =========================================================================
+    function toggleSelectQuestion(id, isChecked) {
+      if (isChecked) selectedQuestionIds.add(id);
+      else selectedQuestionIds.delete(id);
+      updateBulkDeleteQsButton();
+    }
+
+    function toggleSelectAllQuestions(masterCheckbox) {
+      const checkboxes = document.querySelectorAll('.q-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = masterCheckbox.checked;
+        const qId = cb.getAttribute('data-id');
+        if (masterCheckbox.checked) selectedQuestionIds.add(qId);
+        else selectedQuestionIds.delete(qId);
+      });
+      updateBulkDeleteQsButton();
+    }
+
+    function updateBulkDeleteQsButton() {
+      const btn = document.getElementById('admin-bulk-delete-qs-btn');
+      const countEl = document.getElementById('selected-qs-count');
+      if (selectedQuestionIds.size > 0) {
+        btn.style.display = 'inline-flex';
+        countEl.innerText = selectedQuestionIds.size;
+      } else {
+        btn.style.display = 'none';
+        countEl.innerText = '0';
+      }
+    }
+
+    async function deleteSelectedQuestions() {
+      const ids = Array.from(selectedQuestionIds);
+      if (ids.length === 0) return;
+
+      showConfirmModal('Bulk Delete Questions', `Are you sure you want to permanently delete ${ids.length} selected question(s)?`, async () => {
+        setProgress(30);
+        const { error } = await supabaseClient.from('questions').delete().in('id', ids);
+        setProgress(100);
+
+        if (!error) {
+          showToast(`Successfully deleted ${ids.length} question(s)!`, 'success');
+          selectedQuestionIds.clear();
+          loadAdminData();
+        } else {
+          showToast('Failed to delete questions: ' + error.message, 'danger');
+        }
+      });
+    }
+
+    // =========================================================================
+    // INSTANT QUESTION EDIT POPUP MODAL LOGIC
+    // =========================================================================
+    function openInstantEditModal(id, subject, text, optA, optB, optC, optD, correct, imgUrl) {
+      document.getElementById('modal-q-id').value = id;
+      document.getElementById('modal-q-subject').value = decodeURIComponent(subject);
+      document.getElementById('modal-q-text').value = decodeURIComponent(text);
+      document.getElementById('modal-q-optA').value = decodeURIComponent(optA);
+      document.getElementById('modal-q-optB').value = decodeURIComponent(optB);
+      document.getElementById('modal-q-optC').value = decodeURIComponent(optC);
+      document.getElementById('modal-q-optD').value = decodeURIComponent(optD);
+      document.getElementById('modal-q-correct').value = correct;
+
+      const img = decodeURIComponent(imgUrl);
+      document.getElementById('modal-q-img-url').value = img;
+      const preview = document.getElementById('modal-q-img-preview');
+      const deleteBtn = document.getElementById('modal-q-img-delete-btn');
+
+      if (img && img !== 'null' && img !== 'undefined' && img.trim() !== '') {
+        preview.src = img;
+        preview.style.display = 'block';
+        deleteBtn.style.display = 'inline-flex';
+      } else {
+        preview.src = '';
+        preview.style.display = 'none';
+        deleteBtn.style.display = 'none';
+      }
+
+      document.getElementById('edit-question-modal').style.display = 'flex';
+    }
+
+    function closeEditQuestionModal() {
+      document.getElementById('edit-question-modal').style.display = 'none';
+    }
+
+    async function handleSaveEditedQuestionModal(e) {
+      e.preventDefault();
+      const qId = document.getElementById('modal-q-id').value;
+
+      const questionData = {
+        id: qId,
+        subject: document.getElementById('modal-q-subject').value,
+        question: document.getElementById('modal-q-text').value,
+        image_url: document.getElementById('modal-q-img-url').value,
+        option_a: document.getElementById('modal-q-optA').value,
+        option_b: document.getElementById('modal-q-optB').value,
+        option_c: document.getElementById('modal-q-optC').value,
+        option_d: document.getElementById('modal-q-optD').value,
+        correct_answer: document.getElementById('modal-q-correct').value,
+      };
+
+      setProgress(50);
+      const { error } = await supabaseClient.from('questions').upsert([questionData]);
+      setProgress(100);
+
+      if (!error) {
+        showToast('Question updated successfully!', 'success');
+        closeEditQuestionModal();
+        loadAdminData();
+      } else {
+        showToast('Failed to update question: ' + error.message, 'danger');
+      }
+    }
+
+    async function uploadToSupabaseStorageModal(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      showToast('Uploading diagram to Supabase Storage...', 'info');
+
+      const fileExt = file.name.split('.').pop() || 'png';
+      const fileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
+      const filePath = `diagrams/${fileName}`;
+
+      const { data, error } = await supabaseClient.storage.from('question-images').upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+      if (error) {
+        showToast('Upload Failed: ' + error.message, 'danger');
+        return;
+      }
+
+      const { data: publicUrlData } = supabaseClient.storage.from('question-images').getPublicUrl(filePath);
+      const publicUrl = publicUrlData.publicUrl;
+
+      document.getElementById('modal-q-img-url').value = publicUrl;
+      const preview = document.getElementById('modal-q-img-preview');
+      preview.src = publicUrl;
+      preview.style.display = 'block';
+      document.getElementById('modal-q-img-delete-btn').style.display = 'inline-flex';
+
+      showToast('Diagram uploaded successfully!', 'success');
+    }
+
+    async function deleteUploadedDiagramModal() {
+      const imgUrl = document.getElementById('modal-q-img-url').value;
+      if (!imgUrl) return;
+
+      showToast('Deleting diagram...', 'info');
+      try {
+        if (imgUrl.includes('/question-images/')) {
+          const filePath = imgUrl.split('/question-images/')[1];
+          if (filePath) await supabaseClient.storage.from('question-images').remove([filePath]);
+        }
+      } catch (err) {
+        console.error("Delete diagram error:", err);
+      }
+
+      document.getElementById('modal-q-img-url').value = '';
+      const preview = document.getElementById('modal-q-img-preview');
+      preview.src = '';
+      preview.style.display = 'none';
+      document.getElementById('modal-q-img-delete-btn').style.display = 'none';
+      showToast('Diagram deleted!', 'success');
+    }
+
+    // =========================================================================
+    // ENROLLED USERS CASCADING PURGE DELETION
+    // =========================================================================
+    function confirmDeleteEntireUser(username, phone) {
+      showConfirmModal(
+        '⚠️ Delete User & All Data',
+        `Are you sure you want to permanently delete "${username}" (${phone})? This will completely ERASE this user and ALL their related practice logs, answers, trial exam records, reset requests, and logs from the database!`,
+        async () => {
+          setProgress(25);
+          showToast(`Deleting user ${username} and all records...`, 'info');
+
+          try {
+            await Promise.all([
+              supabaseClient.from('student_answers').delete().eq('phone', phone),
+              supabaseClient.from('trial_exams').delete().eq('phone', phone),
+              supabaseClient.from('reset_requests').delete().eq('phone', phone),
+              supabaseClient.from('notifications').delete().eq('recipient_phone', phone),
+              supabaseClient.from('logs').delete().eq('identifier', username),
+              supabaseClient.from('users').delete().eq('username', username)
+            ]);
+
+            setProgress(100);
+            showToast(`User ${username} and all associated data permanently deleted.`, 'success');
+            loadAdminData();
+          } catch (err) {
+            setProgress(100);
+            console.error("Purge Error:", err);
+            showToast('Failed to completely delete user: ' + err.message, 'danger');
+          }
+        }
+      );
     }
 
     function sortConsolidatedTable(key) {
@@ -2559,7 +2925,7 @@
     }
 
     // =========================================================================
-    // DIRECT SUPABASE STORAGE UPLOADER FOR DIAGRAMS
+    // DIRECT STORAGE UPLOADER & QUESTION BANK MANAGEMENT
     // =========================================================================
     async function uploadToSupabaseStorage(input) {
       if (!input.files || !input.files[0]) return;
@@ -2576,7 +2942,6 @@
         .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
       if (error) {
-        console.error("Supabase Storage Upload Error:", error);
         showToast('Storage Upload Failed: ' + error.message, 'danger');
         return;
       }
@@ -2592,7 +2957,6 @@
       const preview = document.getElementById('q-img-preview');
       preview.src = publicUrl;
       preview.style.display = 'block';
-
       document.getElementById('q-img-delete-btn').style.display = 'inline-flex';
 
       showToast('Diagram uploaded successfully!', 'success');
@@ -2602,14 +2966,12 @@
       const imgUrl = document.getElementById('q-img-url').value;
       if (!imgUrl) return;
 
-      showToast('Deleting diagram from Supabase Storage...', 'info');
+      showToast('Deleting diagram...', 'info');
 
       try {
         if (imgUrl.includes('/question-images/')) {
           const filePath = imgUrl.split('/question-images/')[1];
-          if (filePath) {
-            await supabaseClient.storage.from('question-images').remove([filePath]);
-          }
+          if (filePath) await supabaseClient.storage.from('question-images').remove([filePath]);
         }
       } catch (err) {
         console.error("Delete diagram error:", err);
@@ -2691,7 +3053,7 @@
 
       const { error } = await supabaseClient.from('questions').upsert([questionData]);
       if (!error) {
-        showToast('Question saved!', 'success');
+        showToast('Question saved successfully!', 'success');
         document.getElementById('question-form').reset();
         document.getElementById('q-id').value = '';
         document.getElementById('q-img-url').value = '';
@@ -2699,33 +3061,7 @@
         document.getElementById('q-img-delete-btn').style.display = 'none';
         loadAdminData();
       } else {
-        showToast('Failed to save question.', 'danger');
-      }
-    }
-
-    function editQuestion(id, subject, text, optA, optB, optC, optD, correct, imgUrl) {
-      showSection('manage-qs-sec');
-      document.getElementById('q-id').value = id;
-      document.getElementById('q-subject').value = decodeURIComponent(subject);
-      document.getElementById('q-text').value = decodeURIComponent(text);
-      document.getElementById('q-optA').value = decodeURIComponent(optA);
-      document.getElementById('q-optB').value = decodeURIComponent(optB);
-      document.getElementById('q-optC').value = decodeURIComponent(optC);
-      document.getElementById('q-optD').value = decodeURIComponent(optD);
-      document.getElementById('q-correct').value = correct;
-
-      const img = decodeURIComponent(imgUrl);
-      document.getElementById('q-img-url').value = img;
-      const preview = document.getElementById('q-img-preview');
-      const deleteBtn = document.getElementById('q-img-delete-btn');
-
-      if (img && img !== 'null' && img !== 'undefined') {
-        preview.src = img;
-        preview.style.display = 'block';
-        deleteBtn.style.display = 'inline-flex';
-      } else {
-        preview.style.display = 'none';
-        deleteBtn.style.display = 'none';
+        showToast('Failed to save question: ' + error.message, 'danger');
       }
     }
 
@@ -2810,47 +3146,46 @@
     }
 
     // =========================================================================
-// DELETE SINGLE LOG & CLEAR ALL LOGS
-// =========================================================================
-async function deleteSingleLog(logId) {
-  showConfirmModal('Delete Access Log', 'Permanently delete this access log record?', async () => {
-    let query = supabaseClient.from('logs').delete();
+    // LOG DELETION
+    // =========================================================================
+    async function deleteSingleLog(logId) {
+      showConfirmModal('Delete Access Log', 'Permanently delete this access log record?', async () => {
+        let query = supabaseClient.from('logs').delete();
 
-    // TARGET log_id COLUMN FOR TEXT IDS (e.g. 'LOG-1786368738727')
-    if (typeof logId === 'string' && logId.startsWith('LOG-')) {
-      query = query.eq('log_id', logId);
-    } else if (!isNaN(logId)) {
-      query = query.eq('id', Number(logId));
-    } else {
-      query = query.eq('log_id', String(logId));
+        if (typeof logId === 'string' && logId.startsWith('LOG-')) {
+          query = query.eq('log_id', logId);
+        } else if (!isNaN(logId)) {
+          query = query.eq('id', Number(logId));
+        } else {
+          query = query.eq('log_id', String(logId));
+        }
+
+        const { error } = await query;
+
+        if (!error) {
+          showToast('Log deleted successfully!', 'success');
+          loadAdminData();
+        } else {
+          showToast('Failed to delete log: ' + error.message, 'danger');
+        }
+      });
     }
 
-    const { error } = await query;
+    async function clearAllLogs() {
+      showConfirmModal('Clear All Access Logs', 'Are you sure you want to permanently delete ALL access logs?', async () => {
+        const { error } = await supabaseClient
+          .from('logs')
+          .delete()
+          .neq('id', 0);
 
-    if (!error) {
-      showToast('Log deleted successfully!', 'success');
-      loadAdminData();
-    } else {
-      showToast('Failed to delete log: ' + error.message, 'danger');
+        if (!error) {
+          showToast('All access logs cleared!', 'success');
+          loadAdminData();
+        } else {
+          showToast('Failed to clear logs: ' + error.message, 'danger');
+        }
+      });
     }
-  });
-}
-
-async function clearAllLogs() {
-  showConfirmModal('Clear All Access Logs', 'Are you sure you want to permanently delete ALL access logs?', async () => {
-    const { error } = await supabaseClient
-      .from('logs')
-      .delete()
-      .neq('id', 0); // Deletes all rows
-
-    if (!error) {
-      showToast('All access logs cleared!', 'success');
-      loadAdminData();
-    } else {
-      showToast('Failed to clear logs: ' + error.message, 'danger');
-    }
-  });
-}
   </script>
 </body>
 </html>
