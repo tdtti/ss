@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>School Assessment & Notes Tracker</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .tap-badge {
+      transition: all 0.15s ease-in-out;
+      user-select: none;
+      cursor: pointer;
+    }
+    .tap-badge:active { transform: scale(0.92); }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+  <!-- Top Navbar -->
+  <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center space-x-2">
+        <span class="text-2xl font-black tracking-tight">🎓 EduTrack</span>
+        <span class="text-xs bg-indigo-900 text-indigo-200 px-2 py-0.5 rounded-full font-mono">GitHub + Supabase</span>
+      </div>
+
+      <!-- Supabase Connection Config Button -->
+      <button onclick="toggleConfigModal()" class="text-xs bg-indigo-800 hover:bg-indigo-900 border border-indigo-400 px-3 py-1.5 rounded-md flex items-center gap-1.5">
+        <span id="conn-dot" class="w-2 h-2 rounded-full bg-red-400"></span>
+        <span id="conn-status">Supabase API Keys</span>
+      </button>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 flex space-x-1 overflow-x-auto border-t border-indigo-600">
+      <button onclick="switchTab('tab-students')" id="btn-tab-students" class="tab-btn px-4 py-2.5 text-sm font-semibold border-b-4 border-white text-white">1. Students</button>
+      <button onclick="switchTab('tab-scores')" id="btn-tab-scores" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-4 border-transparent text-indigo-200 hover:text-white">2. Terms & Auto-Scores</button>
+      <button onclick="switchTab('tab-notes')" id="btn-tab-notes" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-4 border-transparent text-indigo-200 hover:text-white">3. Notes Checking (Tap)</button>
+      <button onclick="switchTab('tab-master')" id="btn-tab-master" class="tab-btn px-4 py-2.5 text-sm font-medium border-b-4 border-transparent text-indigo-200 hover:text-white">4. Student Full View</button>
+    </div>
+  </header>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-sm px-4 py-2.5 rounded-lg shadow-xl transition-all"></div>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto p-4 md:p-6 w-full flex-1">
+
+    <!-- ================= TAB 1: STUDENT UPLOAD ================= -->
+    <section id="tab-students" class="tab-panel space-y-6">
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm max-w-2xl mx-auto">
+        <div class="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">➕ Single Student Entry</h2>
+            <p class="text-xs text-slate-500">Add individual student records with Gender & Mobile</p>
+          </div>
+          <button onclick="toggleModal('bulk-student-modal')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 shadow-sm">
+            📑 Bulk Upload (CSV)
+          </button>
+        </div>
+
+        <form id="single-student-form" onsubmit="handleSingleStudent(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Admission Number</label>
+              <input type="text" id="adm_no" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. 1042">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Full Name</label>
+              <input type="text" id="name" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Rahul Sharma">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Class</label>
+              <input type="text" id="class" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. 10">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Division</label>
+              <input type="text" id="div" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. A">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Gender</label>
+              <select id="gender" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                <option value="M">M (Male)</option>
+                <option value="F">F (Female)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">10-Digit Mobile</label>
+              <input type="tel" id="mobile" required pattern="[0-9]{10}" maxlength="10" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="9876543210">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-lg shadow mt-2">Save Student</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= TAB 2: TERMS & SCORES ================= -->
+    <section id="tab-scores" class="tab-panel hidden space-y-6">
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <input type="text" id="new-term-name" placeholder="New Term Name (e.g. Term 1)" class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-64">
+          <button onclick="createTerm()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 text-sm font-semibold rounded-lg shadow">Add Term</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-bold uppercase text-slate-500">Active Term:</label>
+          <select id="active-term-select" onchange="loadScoresData()" class="border rounded-lg px-3 py-2 text-sm font-semibold bg-slate-50 text-slate-800 focus:ring-2 focus:ring-indigo-500"></select>
+        </div>
+      </div>
+
+      <!-- Grading Legend -->
+      <div class="flex flex-wrap gap-2 text-xs font-semibold items-center bg-slate-200 p-2.5 rounded-lg">
+        <span class="text-slate-600 uppercase tracking-wider">Auto-Grading Rule:</span>
+        <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">>= 80: A</span>
+        <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">60 - 79: B</span>
+        <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">41 - 59: C</span>
+        <span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded">30 - 40: D</span>
+        <span class="bg-red-100 text-red-800 px-2 py-0.5 rounded">&lt; 30: E</span>
+      </div>
+
+      <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm max-w-2xl mx-auto">
+        <div class="flex justify-between items-center mb-6 pb-3 border-b border-slate-100">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">⚡ Quick Single Entry</h2>
+            <p class="text-xs text-slate-500">Auto-calculated letter grades based on marks</p>
+          </div>
+          <button onclick="toggleModal('bulk-score-modal')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 shadow-sm">
+            📑 Bulk Score Import
+          </button>
+        </div>
+
+        <form id="single-score-form" onsubmit="handleSingleScore(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Student Adm No</label>
+            <input type="text" id="score_adm_no" required class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 1042">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Subject</label>
+            <input type="text" id="score_subject" required class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. Social Science">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Score (0 - 100)</label>
+            <div class="flex gap-2">
+              <input type="number" id="score_val" oninput="updateLiveGradePreview()" required min="0" max="100" class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 85">
+              <div id="live-grade" class="w-14 flex items-center justify-center font-bold text-lg rounded-lg bg-slate-100 border text-slate-600">-</div>
+            </div>
+          </div>
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-2.5 rounded-lg shadow">Submit Score</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= TAB 3: NOTES CHECKING (TAP NOT TICK) ================= -->
+    <section id="tab-notes" class="tab-panel hidden space-y-6">
+      <!-- Unit & Activity Setup -->
+      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <h2 class="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">🛠️ Configure Unit & Activities</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <input type="text" id="unit-name" placeholder="Unit Name (e.g. Unit 1: Our Earth)" class="border rounded-lg px-3 py-2 text-sm outline-none">
+          <input type="text" id="unit-class" placeholder="Class (e.g. 10)" class="border rounded-lg px-3 py-2 text-sm outline-none">
+          <input type="number" id="unit-act-count" placeholder="No. of Activities (e.g. 4)" min="1" max="20" class="border rounded-lg px-3 py-2 text-sm outline-none">
+          <button onclick="createUnitAndActivities()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 text-sm rounded-lg shadow">Add Unit & Activities</button>
+        </div>
+      </div>
+
+      <!-- Instant Search & Filters Bar -->
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Search -->
+            <div class="relative">
+              <input type="text" id="notes-search" oninput="loadNotesTracker()" placeholder="🔍 Instant search student..." class="border rounded-lg pl-3 pr-7 py-1.5 text-xs w-48 sm:w-56 outline-none focus:ring-2 focus:ring-indigo-500">
+              <button onclick="document.getElementById('notes-search').value=''; loadNotesTracker();" class="absolute right-2 top-2 text-xs text-slate-400">✕</button>
+            </div>
+
+            <!-- Class Filter -->
+            <div class="flex items-center gap-1">
+              <label class="text-[11px] font-bold text-slate-500 uppercase">Class:</label>
+              <input type="text" id="notes-class-filter" value="10" class="border rounded-lg px-2 py-1 text-xs w-14 text-center font-semibold" onchange="onClassFilterChange()">
+            </div>
+
+            <!-- Unit Filter -->
+            <div class="flex items-center gap-1">
+              <label class="text-[11px] font-bold text-slate-500 uppercase">Unit:</label>
+              <select id="notes-unit-filter" onchange="onUnitFilterChange()" class="border rounded-lg px-2 py-1 text-xs bg-white font-medium max-w-[150px]">
+                <option value="">All Units</option>
+              </select>
+            </div>
+
+            <!-- Activity Filter -->
+            <div class="flex items-center gap-1">
+              <label class="text-[11px] font-bold text-slate-500 uppercase">Activity:</label>
+              <select id="notes-activity-filter" onchange="loadNotesTracker()" class="border rounded-lg px-2 py-1 text-xs bg-white font-medium">
+                <option value="">All Activities</option>
+              </select>
+            </div>
+
+            <button onclick="loadNotesTracker()" class="bg-slate-100 hover:bg-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg border">Filter</button>
+          </div>
+
+          <!-- Tap Legend -->
+          <div class="text-[11px] text-slate-500 flex items-center gap-1.5">
+            <span>Tap cycle:</span>
+            <span class="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">TAP</span> ➔ 
+            <span class="bg-emerald-500 text-white px-1.5 py-0.5 rounded font-bold">DONE</span> ➔ 
+            <span class="bg-blue-600 text-white px-1.5 py-0.5 rounded font-bold">VERIFIED</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= CATEGORY I: PENDING / NON-COMPLETED STUDENTS ================= -->
+      <div class="bg-amber-50/50 rounded-xl border border-amber-200 p-5 shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">⚠️</span>
+            <h3 class="font-bold text-amber-900 text-sm uppercase tracking-wide">Category I: Pending / Non-Completed Students (Alphabetical Order)</h3>
+          </div>
+          <span id="incomplete-count-badge" class="text-xs bg-amber-200 text-amber-800 font-bold px-2.5 py-0.5 rounded-full">0 Pending</span>
+        </div>
+        <p class="text-xs text-amber-700">Students with even a single activity not verified. Click to expand units and tap activities. Includes delete icon (🗑️) towards each unit.</p>
+        
+        <div id="incomplete-students-list" class="space-y-2"></div>
+      </div>
+
+      <!-- ================= CATEGORY II: ALL COMPLETED STUDENTS ================= -->
+      <div class="bg-emerald-50/50 rounded-xl border border-emerald-200 p-5 shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">✅</span>
+            <h3 class="font-bold text-emerald-900 text-sm uppercase tracking-wide">Category II: ALL Completed Students (Alphabetical Order)</h3>
+          </div>
+          <span id="completed-count-badge" class="text-xs bg-emerald-200 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full">0 Completed</span>
+        </div>
+        <p class="text-xs text-emerald-700">Students where ALL activities in ALL units are verified (not just marked as done). Click to inspect details or manage units.</p>
+        
+        <div id="completed-students-list" class="space-y-2"></div>
+      </div>
+
+      <!-- ================= SECTION B: COMPLETE MATRIX TRACKER ================= -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-5">
+        <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+          <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wide">Full Class Matrix</h3>
+          <div id="unit-visibility-toggles" class="flex flex-wrap gap-2 text-xs"></div>
+        </div>
+        <div class="overflow-x-auto">
+          <div id="notes-matrix-container" class="min-w-full"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 4: COLLAPSED STUDENT MASTER LIST ================= -->
+    <section id="tab-master" class="tab-panel hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Comprehensive Student Master List</h2>
+          <p class="text-xs text-slate-500">Showing full details with Gender, WhatsApp dispatch, Scores, and Unit Activities</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="master-search" oninput="renderMasterView()" placeholder="🔍 Search name or Adm No..." class="border rounded-lg px-3 py-1.5 text-sm outline-none w-64 focus:ring-2 focus:ring-indigo-500">
+          <button onclick="loadInitialData()" class="bg-slate-100 border text-slate-600 px-3 py-1.5 rounded-lg text-sm hover:bg-slate-200">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div id="master-records-container" class="space-y-3"></div>
+    </section>
+
+  </main>
+
+  <!-- ================= MODAL: BULK STUDENT UPLOAD ================= -->
+  <div id="bulk-student-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl flex flex-col justify-between">
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="text-lg font-bold text-slate-900">📑 Bulk Student Import (CSV/Excel)</h2>
+          <button onclick="toggleModal('bulk-student-modal')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-3">Format: <strong>AdmNo, Name, Class, Div, Gender (M/F), 10-Digit Mobile</strong></p>
+        <textarea id="bulk-student-input" rows="8" placeholder="1001, Rahul Sharma, 10, A, M, 9876543210&#10;1002, Sarah Jenkins, 10, B, F, 9845612340&#10;1003, Amit Kumar, 10, A, M, 9123456780" class="w-full border rounded-lg p-3 text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"></textarea>
+      </div>
+      <div class="flex gap-2 mt-4">
+        <button onclick="handleBulkStudents()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 text-sm rounded-lg shadow">Import Students</button>
+        <button onclick="toggleModal('bulk-student-modal')" class="px-4 py-2.5 border text-slate-600 rounded-lg text-sm hover:bg-slate-50">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: BULK SCORE UPLOAD ================= -->
+  <div id="bulk-score-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl flex flex-col justify-between">
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="text-lg font-bold text-slate-900">📑 Bulk Score Import</h2>
+          <button onclick="toggleModal('bulk-score-modal')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+        </div>
+        <p class="text-xs text-slate-500 mb-3">Format: <strong>AdmNo, Subject, Score</strong></p>
+        <textarea id="bulk-score-input" rows="8" placeholder="1001, Social Science, 85&#10;1001, Science, 62&#10;1002, Social Science, 35&#10;1003, English, 28" class="w-full border rounded-lg p-3 text-sm font-mono focus:ring-2 focus:ring-indigo-500 outline-none bg-slate-50"></textarea>
+      </div>
+      <div class="flex gap-2 mt-4">
+        <button onclick="handleBulkScores()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 text-sm rounded-lg shadow">Import & Grade Scores</button>
+        <button onclick="toggleModal('bulk-score-modal')" class="px-4 py-2.5 border text-slate-600 rounded-lg text-sm hover:bg-slate-50">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: EDIT STUDENT ================= -->
+  <div id="edit-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-4">Modify Student Information</h3>
+      <form id="edit-student-form" onsubmit="saveEditedStudent(event)" class="space-y-3">
+        <input type="hidden" id="edit-id">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Admission No</label>
+          <input type="text" id="edit-adm-no" required class="w-full border rounded-lg px-3 py-2 text-sm outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Student Name</label>
+          <input type="text" id="edit-name" required class="w-full border rounded-lg px-3 py-2 text-sm outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Class</label>
+            <input type="text" id="edit-class" required class="w-full border rounded-lg px-3 py-2 text-sm outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Division</label>
+            <input type="text" id="edit-div" required class="w-full border rounded-lg px-3 py-2 text-sm outline-none">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Gender</label>
+            <select id="edit-gender" required class="w-full border rounded-lg px-3 py-2 text-sm outline-none bg-white">
+              <option value="M">M (Male)</option>
+              <option value="F">F (Female)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">10-Digit Mobile</label>
+            <input type="tel" id="edit-mobile" required pattern="[0-9]{10}" maxlength="10" class="w-full border rounded-lg px-3 py-2 text-sm outline-none">
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-3">
+          <button type="button" onclick="closeEditModal()" class="px-4 py-2 border rounded-lg text-sm text-slate-600">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: SUPABASE CONFIG ================= -->
+  <div id="config-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-2">Supabase Settings</h3>
+      <p class="text-xs text-slate-500 mb-4">Saved in browser local storage.</p>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">SUPABASE URL</label>
+          <input type="text" id="cfg-url" placeholder="https://xyz.supabase.co" class="w-full border rounded-lg px-3 py-2 text-xs font-mono outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">SUPABASE ANON KEY</label>
+          <input type="password" id="cfg-key" placeholder="eyJhbGciOi..." class="w-full border rounded-lg px-3 py-2 text-xs font-mono outline-none">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button onclick="toggleConfigModal()" class="px-4 py-2 border rounded-lg text-xs font-semibold">Close</button>
+        <button onclick="saveSupabaseConfig()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold">Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION LOGIC JAVASCRIPT -->
+  <script>
+    const HARDCODED_SUPABASE_URL = "";
+    const HARDCODED_SUPABASE_ANON_KEY = "";
+
+    let db = null; 
+    let students = [];
+    let terms = [];
+    let scores = [];
+    let units = [];
+    let activities = [];
+    let notesStatuses = {}; 
+    let hiddenUnitIds = new Set();
+    
+    let openMasterCardIds = new Set();
+    let openNotesStudentCardIds = new Set();
+
+    // 1. AUTO-GRADING RULE: <30 E, 30-40 D, 41-59 C, 60-79 B, >=80 A
+    function calculateGrade(val) {
+      if (val === null || val === undefined || val === '') return '-';
+      const num = Number(val);
+      if (num >= 80) return 'A';
+      if (num >= 60) return 'B';
+      if (num >= 41) return 'C';
+      if (num >= 30) return 'D';
+      return 'E';
+    }
+
+    function updateLiveGradePreview() {
+      const score = document.getElementById('score_val').value;
+      const preview = document.getElementById('live-grade');
+      if (score === '') { preview.innerText = '-'; return; }
+      const grade = calculateGrade(score);
+      preview.innerText = grade;
+      preview.className = `w-14 flex items-center justify-center font-bold text-lg rounded-lg border ${getGradeBadgeClass(grade)}`;
+    }
+
+    function getGradeBadgeClass(grade) {
+      switch(grade) {
+        case 'A': return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        case 'B': return 'bg-blue-100 text-blue-800 border-blue-300';
+        case 'C': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+        case 'D': return 'bg-orange-100 text-orange-800 border-orange-300';
+        case 'E': return 'bg-red-100 text-red-800 border-red-300';
+        default: return 'bg-slate-100 text-slate-600 border-slate-300';
+      }
+    }
+
+    // 2. SUPABASE INITIALIZATION
+    function initSupabase() {
+      const url = 'https://lqglyumbavvlcjhclgzv.supabase.co'; 
+      const key = 'sb_publishable_-B8npvZmgC-DmTZTnLJQXQ_BR7iV8sN';
+
+      document.getElementById('cfg-url').value = url;
+      document.getElementById('cfg-key').value = key;
+
+      if (url && key) {
+        try {
+          db = window.supabase.createClient(url, key);
+          document.getElementById('conn-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+          document.getElementById('conn-status').innerText = 'Connected';
+          loadInitialData();
+        } catch (e) {
+          console.error(e);
+          showToast('Invalid Supabase Configuration');
+        }
+      } else {
+        document.getElementById('conn-dot').className = 'w-2 h-2 rounded-full bg-amber-400';
+        document.getElementById('conn-status').innerText = 'Setup Supabase Keys';
+      }
+    }
+
+    function saveSupabaseConfig() {
+      const url = document.getElementById('cfg-url').value.trim();
+      const key = document.getElementById('cfg-key').value.trim();
+      localStorage.setItem('sb_url', url);
+      localStorage.setItem('sb_key', key);
+      toggleConfigModal();
+      initSupabase();
+      showToast('Config Saved!');
+    }
+
+    function toggleConfigModal() {
+      document.getElementById('config-modal').classList.toggle('hidden');
+    }
+
+    function toggleModal(id) {
+      document.getElementById(id).classList.toggle('hidden');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 3500);
+    }
+
+    // 3. TAB CONTROLLER
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-panel').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-white', 'text-white');
+        btn.classList.add('border-transparent', 'text-indigo-200');
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('btn-' + tabId);
+      if (activeBtn) {
+        activeBtn.classList.add('border-white', 'text-white');
+        activeBtn.classList.remove('border-transparent', 'text-indigo-200');
+      }
+
+      if (tabId === 'tab-master') renderMasterView();
+      if (tabId === 'tab-notes') loadNotesTracker();
+    }
+
+    // 4. DATA FETCHING
+    async function loadInitialData() {
+      if (!db) return;
+      try {
+        const { data: stdData } = await db.from('students').select('*');
+        students = stdData || [];
+
+        const { data: trmData } = await db.from('terms').select('*').order('id', { ascending: true });
+        terms = trmData || [];
+        populateTermsDropdown();
+
+        await loadScoresData();
+        await loadUnitsAndActivities();
+        renderMasterView();
+      } catch (err) {
+        console.error(err);
+        showToast('Error syncing with Supabase');
+      }
+    }
+
+    function populateTermsDropdown() {
+      const select = document.getElementById('active-term-select');
+      select.innerHTML = terms.map(t => `<option value="${t.id}">${t.term_name}</option>`).join('');
+    }
+
+    // 5. STUDENT ACTIONS (SINGLE & BULK WITH GENDER & 10-DIGIT MOBILE)
+    async function handleSingleStudent(e) {
+      e.preventDefault();
+      if (!db) return showToast('Connect Supabase first!');
+
+      const adm_no = document.getElementById('adm_no').value.trim();
+      const name = document.getElementById('name').value.trim();
+      const cls = document.getElementById('class').value.trim();
+      const div = document.getElementById('div').value.trim();
+      const gender = document.getElementById('gender').value.trim();
+      const mobile = document.getElementById('mobile').value.trim().replace(/\D/g, '');
+
+      if (mobile.length !== 10) return showToast('Mobile number must be exactly 10 digits!');
+
+      const { data, error } = await db.from('students').insert([{ 
+        adm_no, 
+        name, 
+        class: cls, 
+        div, 
+        gender, 
+        mobile 
+      }]).select();
+
+      if (error) return showToast(error.message);
+
+      showToast(`Student ${name} added!`);
+      document.getElementById('single-student-form').reset();
+      loadInitialData();
+    }
+
+    async function handleBulkStudents() {
+      if (!db) return showToast('Connect Supabase first!');
+      const raw = document.getElementById('bulk-student-input').value.trim();
+      if (!raw) return showToast('Please enter CSV data');
+
+      const lines = raw.split('\n');
+      const payload = [];
+
+      for (let line of lines) {
+        const parts = line.split(/[,\t]+/).map(s => s.trim());
+        if (parts.length >= 4) {
+          const adm = parts[0];
+          const nm = parts[1];
+          const cl = parts[2];
+          const dv = parts[3];
+          const gndr = (parts[4] && parts[4].toUpperCase().startsWith('F')) ? 'F' : 'M';
+          const mob = parts[5] ? parts[5].replace(/\D/g, '').slice(-10) : '';
+
+          payload.push({ 
+            adm_no: adm, 
+            name: nm, 
+            class: cl, 
+            div: dv, 
+            gender: gndr, 
+            mobile: mob 
+          });
+        }
+      }
+
+      if (payload.length === 0) return showToast('No valid rows found. Format: AdmNo, Name, Class, Div, Gender, Mobile');
+
+      const { error } = await db.from('students').upsert(payload, { onConflict: 'adm_no' });
+      if (error) return showToast(error.message);
+
+      showToast(`Imported ${payload.length} students!`);
+      document.getElementById('bulk-student-input').value = '';
+      toggleModal('bulk-student-modal');
+      loadInitialData();
+    }
+
+    // 6. TERM & SCORES ACTIONS
+    async function createTerm() {
+      if (!db) return showToast('Connect Supabase first!');
+      const nameInput = document.getElementById('new-term-name');
+      const term_name = nameInput.value.trim();
+      if (!term_name) return;
+      const { error } = await db.from('terms').insert([{ term_name }]);
+      if (error) return showToast(error.message);
+      nameInput.value = '';
+      showToast('Term created');
+      loadInitialData();
+    }
+
+    async function loadScoresData() {
+      if (!db) return;
+      const termId = document.getElementById('active-term-select').value;
+      if (!termId) return;
+      const { data } = await db.from('scores').select('*').eq('term_id', termId);
+      scores = data || [];
+    }
+
+    async function handleSingleScore(e) {
+      e.preventDefault();
+      if (!db) return showToast('Connect Supabase first!');
+      const termId = document.getElementById('active-term-select').value;
+      if (!termId) return showToast('Select or create a term first');
+
+      const adm_no = document.getElementById('score_adm_no').value.trim();
+      const subject = document.getElementById('score_subject').value.trim();
+      const score = Number(document.getElementById('score_val').value);
+      const grade = calculateGrade(score);
+
+      const st = students.find(s => s.adm_no.toLowerCase() === adm_no.toLowerCase());
+      if (!st) return showToast(`Adm No ${adm_no} not found!`);
+
+      const { error } = await db.from('scores').upsert([{
+        student_id: st.id,
+        term_id: termId,
+        subject,
+        score,
+        grade
+      }], { onConflict: 'student_id,term_id,subject' });
+
+      if (error) return showToast(error.message);
+      showToast(`Score saved for ${st.name}!`);
+      document.getElementById('single-score-form').reset();
+      document.getElementById('live-grade').innerText = '-';
+      loadScoresData();
+    }
+
+    async function handleBulkScores() {
+      if (!db) return showToast('Connect Supabase first!');
+      const termId = document.getElementById('active-term-select').value;
+      if (!termId) return showToast('Select or create a term first');
+
+      const raw = document.getElementById('bulk-score-input').value.trim();
+      if (!raw) return showToast('Provide score entries');
+
+      const lines = raw.split('\n');
+      const payload = [];
+
+      for (let line of lines) {
+        const parts = line.split(/[,\t]+/).map(s => s.trim());
+        if (parts.length >= 3) {
+          const adm = parts[0];
+          const subj = parts[1];
+          const sc = Number(parts[2]);
+          const st = students.find(s => s.adm_no.toLowerCase() === adm.toLowerCase());
+          if (st) {
+            payload.push({
+              student_id: st.id,
+              term_id: termId,
+              subject: subj,
+              score: sc,
+              grade: calculateGrade(sc)
+            });
+          }
+        }
+      }
+
+      if (payload.length === 0) return showToast('No matching records found.');
+
+      const { error } = await db.from('scores').upsert(payload, { onConflict: 'student_id,term_id,subject' });
+      if (error) return showToast(error.message);
+
+      showToast(`Imported ${payload.length} score entries!`);
+      document.getElementById('bulk-score-input').value = '';
+      toggleModal('bulk-score-modal');
+      loadScoresData();
+    }
+
+    // 7. UNITS & ACTIVITIES SETUP & DELETE
+    async function createUnitAndActivities() {
+      if (!db) return showToast('Connect Supabase first!');
+      const name = document.getElementById('unit-name').value.trim();
+      const cls = document.getElementById('unit-class').value.trim();
+      const actCount = parseInt(document.getElementById('unit-act-count').value);
+
+      if (!name || !cls || !actCount) return showToast('Fill all unit fields');
+
+      const { data: unit, error } = await db.from('units').insert([{ unit_name: name, class: cls }]).select().single();
+      if (error) return showToast(error.message);
+
+      const actPayload = [];
+      for (let i = 1; i <= actCount; i++) {
+        actPayload.push({ unit_id: unit.id, activity_no: i, title: `Activity ${i}` });
+      }
+
+      await db.from('activities').insert(actPayload);
+      showToast('Unit and activities created successfully!');
+      document.getElementById('unit-name').value = '';
+      document.getElementById('unit-act-count').value = '';
+      loadUnitsAndActivities();
+    }
+
+    // DELETE ENTIRE UNIT AND ITS ACTIVITIES
+    async function deleteUnit(unitId, unitName) {
+      if (!confirm(`Are you sure you want to delete "${unitName}" and all its activities? This action cannot be undone.`)) return;
+      if (!db) return showToast('Connect Supabase first!');
+
+      const { error } = await db.from('units').delete().eq('id', unitId);
+      if (error) return showToast(error.message);
+
+      showToast(`Unit "${unitName}" deleted!`);
+      loadUnitsAndActivities();
+    }
+
+    async function loadUnitsAndActivities() {
+      if (!db) return;
+      const { data: u } = await db.from('units').select('*');
+      units = u || [];
+      const { data: a } = await db.from('activities').select('*').order('activity_no');
+      activities = a || [];
+      const { data: s } = await db.from('notes_status').select('*');
+      notesStatuses = {};
+      (s || []).forEach(item => {
+        notesStatuses[`${item.student_id}_${item.activity_id}`] = item.status;
+      });
+
+      updateUnitFilterDropdown();
+      loadNotesTracker();
+    }
+
+    function onClassFilterChange() {
+      updateUnitFilterDropdown();
+      loadNotesTracker();
+    }
+
+    function updateUnitFilterDropdown() {
+      const classFilter = document.getElementById('notes-class-filter').value.trim();
+      const unitSelect = document.getElementById('notes-unit-filter');
+      const filteredUnits = units.filter(u => u.class.toLowerCase() === classFilter.toLowerCase());
+
+      unitSelect.innerHTML = `<option value="">All Units</option>` + 
+        filteredUnits.map(u => `<option value="${u.id}">${u.unit_name}</option>`).join('');
+
+      onUnitFilterChange();
+    }
+
+    function onUnitFilterChange() {
+      const unitSelect = document.getElementById('notes-unit-filter');
+      const actSelect = document.getElementById('notes-activity-filter');
+      const selectedUnitId = unitSelect.value;
+
+      if (!selectedUnitId) {
+        actSelect.innerHTML = `<option value="">All Activities</option>`;
+      } else {
+        const uActs = activities.filter(a => a.unit_id == selectedUnitId);
+        actSelect.innerHTML = `<option value="">All Activities</option>` + 
+          uActs.map(a => `<option value="${a.activity_no}">Activity ${a.activity_no}</option>`).join('');
+      }
+      loadNotesTracker();
+    }
+
+    function toggleUnitVisibility(unitId) {
+      if (hiddenUnitIds.has(unitId)) hiddenUnitIds.delete(unitId);
+      else hiddenUnitIds.add(unitId);
+      loadNotesTracker();
+    }
+
+    async function cycleTapStatus(studentId, activityId) {
+      const current = notesStatuses[`${studentId}_${activityId}`] || 'PENDING';
+      const cycleMap = { 'PENDING': 'COMPLETED', 'COMPLETED': 'REVIEWED', 'REVIEWED': 'PENDING' };
+      const nextStatus = cycleMap[current];
+
+      notesStatuses[`${studentId}_${activityId}`] = nextStatus;
+      renderNotesMatrixOnly();
+      renderCategoryLists();
+
+      if (db) {
+        await db.from('notes_status').upsert([{
+          student_id: studentId,
+          activity_id: activityId,
+          status: nextStatus,
+          updated_at: new Date()
+        }], { onConflict: 'student_id,activity_id' });
+      }
+    }
+
+    // SINGLE BUTTON: CONFIRM ALL (DONE) ➔ VERIFY ALL
+    async function singleButtonConfirmAndVerify(studentId, unitId) {
+      const uActs = activities.filter(a => a.unit_id === unitId);
+      if (uActs.length === 0) return;
+
+      const hasPending = uActs.some(a => (notesStatuses[`${studentId}_${a.id}`] || 'PENDING') === 'PENDING');
+      const allCompleted = uActs.every(a => (notesStatuses[`${studentId}_${a.id}`] || 'PENDING') === 'COMPLETED');
+
+      let targetStatus = 'COMPLETED'; // 1st Step: Confirmed (Done)
+      if (!hasPending && allCompleted) {
+        targetStatus = 'REVIEWED';   // 2nd Step: Verified
+      } else if (!hasPending && !allCompleted) {
+        targetStatus = 'PENDING';
+      }
+
+      const updates = [];
+      uActs.forEach(a => {
+        notesStatuses[`${studentId}_${a.id}`] = targetStatus;
+        updates.push({
+          student_id: studentId,
+          activity_id: a.id,
+          status: targetStatus,
+          updated_at: new Date()
+        });
+      });
+
+      renderNotesMatrixOnly();
+      renderCategoryLists();
+
+      if (db) {
+        await db.from('notes_status').upsert(updates, { onConflict: 'student_id,activity_id' });
+      }
+    }
+
+    function toggleNotesStudentCard(studentId) {
+      if (openNotesStudentCardIds.has(studentId)) {
+        openNotesStudentCardIds.delete(studentId);
+      } else {
+        openNotesStudentCardIds.add(studentId);
+      }
+      renderCategoryLists();
+    }
+
+    // WHATSAPP DISPATCHER
+    function sendWhatsAppUpdate(studentId) {
+      const st = students.find(s => s.id === studentId);
+      if (!st) return;
+
+      const cleanMobile = (st.mobile || '').replace(/\D/g, '');
+      if (cleanMobile.length !== 10) {
+        showToast(`Please update a valid 10-digit mobile number for ${st.name}`);
+        return;
+      }
+
+      const stUnits = units.filter(u => u.class.toLowerCase() === st.class.toLowerCase());
+      
+      let unitReport = '';
+      stUnits.forEach(u => {
+        const uActs = activities.filter(a => a.unit_id === u.id);
+        const actSummary = uActs.map(a => {
+          const status = notesStatuses[`${st.id}_${a.id}`] || 'PENDING';
+          const icon = status === 'REVIEWED' ? '✅' : (status === 'COMPLETED' ? '✔️' : '❌');
+          const statusText = status === 'REVIEWED' ? 'Verified' : (status === 'COMPLETED' ? 'Done' : 'Pending');
+          return `  • Act ${a.activity_no}: ${statusText} ${icon}`;
+        }).join('\n');
+        unitReport += `\n*${u.unit_name}*\n${actSummary || '  No activities'}\n`;
+      });
+
+      const stScores = scores.filter(sc => sc.student_id === st.id);
+      let scoreReport = '';
+      if (stScores.length > 0) {
+        scoreReport = `\n📊 *Subject Scores & Grades:*\n` + 
+          stScores.map(sc => `• ${sc.subject}: ${sc.score} (Grade ${sc.grade})`).join('\n') + `\n`;
+      }
+
+      const genderText = st.gender === 'F' ? 'Female' : 'Male';
+
+      const message = 
+`📘 *STUDENT PROGRESS UPDATE*
+━━━━━━━━━━━━━━━━━━
+👤 *Student:* ${st.name}
+🔢 *Adm No:* ${st.adm_no}
+🏫 *Class:* ${st.class} | *Div:* ${st.div}
+⚧ *Gender:* ${genderText}
+${scoreReport}
+📝 *Unit & Activity Status:*
+${unitReport || 'No units recorded.'}
+━━━━━━━━━━━━━━━━━━
+AJITH V SS TEACHER TDTTI THURAVOOR`;
+
+      const whatsappUrl = `https://wa.me/91${cleanMobile}?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
+    }
+
+    function loadNotesTracker() {
+      const classFilter = document.getElementById('notes-class-filter').value.trim();
+      const filteredUnits = units.filter(u => u.class.toLowerCase() === classFilter.toLowerCase());
+
+      const toggleContainer = document.getElementById('unit-visibility-toggles');
+      toggleContainer.innerHTML = filteredUnits.map(u => {
+        const isHidden = hiddenUnitIds.has(u.id);
+        return `<button onclick="toggleUnitVisibility(${u.id})" class="px-2 py-0.5 rounded-full text-[11px] font-semibold border ${isHidden ? 'bg-slate-100 text-slate-400 border-slate-300' : 'bg-indigo-50 text-indigo-700 border-indigo-300'}">
+          ${isHidden ? '👁️‍🗨️ Show' : '👁️ Hide'} ${u.unit_name}
+        </button>`;
+      }).join('');
+
+      renderCategoryLists();
+      renderNotesMatrixOnly();
+    }
+
+    // HELPER: RENDER UNITS INSIDE STUDENT COLLAPSIBLE CARD (INCLUDES DELETE ICON FOR EVERY UNIT)
+    function renderStudentUnitsCardHtml(st, activeUnits, actFilter, isCompletedCategory) {
+      return `
+      <div class="mt-3 pt-3 border-t ${isCompletedCategory ? 'border-emerald-200/60' : 'border-amber-200/60'} space-y-3">
+        ${activeUnits.map(u => {
+          let uActs = activities.filter(a => a.unit_id === u.id);
+          if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
+          if (uActs.length === 0) return '';
+
+          const hasPending = uActs.some(a => (notesStatuses[`${st.id}_${a.id}`] || 'PENDING') === 'PENDING');
+          const allCompleted = uActs.every(a => (notesStatuses[`${st.id}_${a.id}`] || 'PENDING') === 'COMPLETED');
+          const allVerified = uActs.every(a => (notesStatuses[`${st.id}_${a.id}`] || 'PENDING') === 'REVIEWED');
+
+          let actionBtnText = "1️⃣ Confirm All";
+          let actionBtnClass = "bg-amber-600 hover:bg-amber-700 text-white";
+
+          if (!hasPending && allCompleted) {
+            actionBtnText = "2️⃣ Verify All";
+            actionBtnClass = "bg-blue-600 hover:bg-blue-700 text-white";
+          } else if (allVerified) {
+            actionBtnText = "✓ All Verified";
+            actionBtnClass = "bg-emerald-600 text-white";
+          }
+
+          const escapedUnitName = u.unit_name.replace(/'/g, "\\'");
+
+          return `
+          <div class="bg-white p-3 rounded-lg border ${isCompletedCategory ? 'border-emerald-200' : 'border-amber-200/80'} flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <span class="text-xs font-bold text-slate-800">${u.unit_name}</span>
+              <div class="flex flex-wrap gap-1.5 mt-1.5">
+                ${uActs.map(act => {
+                  const stCode = notesStatuses[`${st.id}_${act.id}`] || 'PENDING';
+                  let badgeStyle = "bg-slate-200 text-slate-600 border border-slate-300";
+                  let label = `Act ${act.activity_no}: TAP`;
+
+                  if (stCode === 'COMPLETED') {
+                    badgeStyle = "bg-emerald-500 text-white font-bold";
+                    label = `Act ${act.activity_no}: DONE`;
+                  } else if (stCode === 'REVIEWED') {
+                    badgeStyle = "bg-blue-600 text-white font-bold";
+                    label = `Act ${act.activity_no}: VERIFIED`;
+                  }
+
+                  return `
+                    <span onclick="cycleTapStatus(${st.id}, ${act.id})" class="tap-badge inline-block text-[11px] px-2 py-0.5 rounded shadow-sm ${badgeStyle}">
+                      ${label}
+                    </span>`;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- UNIT ACTIONS: CONFIRM/VERIFY + DELETE UNIT ICON -->
+            <div class="flex items-center gap-2">
+              <button onclick="singleButtonConfirmAndVerify(${st.id}, ${u.id})" class="px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all ${actionBtnClass}">
+                ${actionBtnText}
+              </button>
+              
+              <!-- DELETE ICON TOWARDS EVERY UNIT -->
+              <button onclick="deleteUnit(${u.id}, '${escapedUnitName}')" title="Delete this Unit completely" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs flex items-center transition-all">
+                🗑️
+              </button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
+
+    // ================= CATEGORY I AND CATEGORY II LISTS (STRICT PARTITION) =================
+    function renderCategoryLists() {
+      const classFilter = document.getElementById('notes-class-filter').value.trim();
+      const searchQuery = (document.getElementById('notes-search').value || '').trim().toLowerCase();
+      const unitFilter = document.getElementById('notes-unit-filter').value;
+      const actFilter = document.getElementById('notes-activity-filter').value;
+
+      // 1. All students filtered by class & sorted ALPHABETICALLY
+      let filteredStudents = students
+        .filter(s => s.class.toLowerCase() === classFilter.toLowerCase())
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      if (searchQuery) {
+        filteredStudents = filteredStudents.filter(s => 
+          s.name.toLowerCase().includes(searchQuery) || s.adm_no.toLowerCase().includes(searchQuery)
+        );
+      }
+
+      let activeUnits = units.filter(u => u.class.toLowerCase() === classFilter.toLowerCase());
+      if (unitFilter) {
+        activeUnits = activeUnits.filter(u => u.id == unitFilter);
+      }
+
+      // 2. Strict Partitioning Function
+      // Category II (Completed): Every single activity across ALL active units is strictly 'REVIEWED'
+      // Category I (Pending): Even a single activity is NOT 'REVIEWED' (PENDING, COMPLETED, or missing)
+      const category1Students = []; // Pending / Non-Completed
+      const category2Students = []; // ALL Completed & Verified
+
+      filteredStudents.forEach(st => {
+        let isFullyVerified = false;
+
+        if (activeUnits.length > 0) {
+          isFullyVerified = activeUnits.every(u => {
+            let uActs = activities.filter(a => a.unit_id === u.id);
+            if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
+            if (uActs.length === 0) return true;
+            return uActs.every(a => (notesStatuses[`${st.id}_${a.id}`] || 'PENDING') === 'REVIEWED');
+          });
+        }
+
+        if (isFullyVerified) {
+          category2Students.push(st);
+        } else {
+          category1Students.push(st);
+        }
+      });
+
+      // Update Count Badges
+      document.getElementById('incomplete-count-badge').innerText = `${category1Students.length} Pending`;
+      document.getElementById('completed-count-badge').innerText = `${category2Students.length} Completed`;
+
+      // 3. RENDER CATEGORY I (Pending / Non-Completed)
+      const cat1Container = document.getElementById('incomplete-students-list');
+      if (category1Students.length === 0) {
+        cat1Container.innerHTML = `<div class="p-4 text-center text-xs text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200 font-semibold">🎉 All students have completely verified their notes!</div>`;
+      } else {
+        cat1Container.innerHTML = category1Students.map(st => {
+          const isOpen = openNotesStudentCardIds.has(st.id);
+          const unitsHtml = isOpen ? renderStudentUnitsCardHtml(st, activeUnits, actFilter, false) : '';
+
+          return `
+          <div class="bg-amber-100/60 hover:bg-amber-100 rounded-lg border border-amber-300 p-3 transition-all">
+            <div class="flex justify-between items-center cursor-pointer" onclick="toggleNotesStudentCard(${st.id})">
+              <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <span class="font-bold text-xs bg-amber-200 text-amber-900 px-2 py-0.5 rounded font-mono">${st.adm_no}</span>
+                <span class="font-bold text-sm text-slate-900">${st.name}</span>
+                <span class="text-xs font-semibold px-1.5 py-0.2 rounded ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">${st.gender || 'M'}</span>
+                <span class="text-xs text-slate-500">(Class ${st.class}-${st.div})</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="event.stopPropagation(); sendWhatsAppUpdate(${st.id});" title="Send WhatsApp Update" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
+                  💬 WhatsApp
+                </button>
+                <span class="text-xs text-amber-800 font-semibold">${isOpen ? '▲ Collapse' : '▼ Tap Activities'}</span>
+              </div>
+            </div>
+            ${unitsHtml}
+          </div>`;
+        }).join('');
+      }
+
+      // 4. RENDER CATEGORY II (ALL Completed Students)
+      const cat2Container = document.getElementById('completed-students-list');
+      if (category2Students.length === 0) {
+        cat2Container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500 bg-slate-50 rounded-lg border border-slate-200 font-medium">No students with all activities fully verified yet.</div>`;
+      } else {
+        cat2Container.innerHTML = category2Students.map(st => {
+          const isOpen = openNotesStudentCardIds.has(st.id);
+          const unitsHtml = isOpen ? renderStudentUnitsCardHtml(st, activeUnits, actFilter, true) : '';
+
+          return `
+          <div class="bg-emerald-100/60 hover:bg-emerald-100 rounded-lg border border-emerald-300 p-3 transition-all">
+            <div class="flex justify-between items-center cursor-pointer" onclick="toggleNotesStudentCard(${st.id})">
+              <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <span class="font-bold text-xs bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-mono">${st.adm_no}</span>
+                <span class="font-bold text-sm text-slate-900">${st.name}</span>
+                <span class="text-xs font-semibold px-1.5 py-0.2 rounded ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">${st.gender || 'M'}</span>
+                <span class="text-xs text-slate-500">(Class ${st.class}-${st.div})</span>
+                <span class="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">✓ 100% VERIFIED</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="event.stopPropagation(); sendWhatsAppUpdate(${st.id});" title="Send WhatsApp Update" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
+                  💬 WhatsApp
+                </button>
+                <span class="text-xs text-emerald-800 font-semibold">${isOpen ? '▲ Collapse' : '▼ View Activities'}</span>
+              </div>
+            </div>
+            ${unitsHtml}
+          </div>`;
+        }).join('');
+      }
+    }
+
+    // MAIN MATRIX VIEW
+    function renderNotesMatrixOnly() {
+      const classFilter = document.getElementById('notes-class-filter').value.trim();
+      const searchQuery = (document.getElementById('notes-search').value || '').trim().toLowerCase();
+      const unitFilter = document.getElementById('notes-unit-filter').value;
+      const actFilter = document.getElementById('notes-activity-filter').value;
+
+      let filteredStudents = students
+        .filter(s => s.class.toLowerCase() === classFilter.toLowerCase())
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      if (searchQuery) {
+        filteredStudents = filteredStudents.filter(s => 
+          s.name.toLowerCase().includes(searchQuery) || s.adm_no.toLowerCase().includes(searchQuery)
+        );
+      }
+
+      let filteredUnits = units.filter(u => u.class.toLowerCase() === classFilter.toLowerCase() && !hiddenUnitIds.has(u.id));
+      if (unitFilter) {
+        filteredUnits = filteredUnits.filter(u => u.id == unitFilter);
+      }
+
+      const container = document.getElementById('notes-matrix-container');
+
+      if (filteredUnits.length === 0 || filteredStudents.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">No matching records found.</div>`;
+        return;
+      }
+
+      let html = `<table class="w-full border-collapse border border-slate-200 text-sm">
+        <thead class="bg-slate-100">
+          <tr>
+            <th class="border p-2 text-left w-16">Adm</th>
+            <th class="border p-2 text-left w-40">Student Name</th>
+            <th class="border p-1 text-center w-12 text-xs">Gen</th>`;
+
+      filteredUnits.forEach(u => {
+        let uActs = activities.filter(a => a.unit_id === u.id);
+        if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
+        if (uActs.length > 0) {
+          html += `<th colspan="${uActs.length}" class="border p-2 text-center bg-indigo-50 text-indigo-900 border-b-2 border-b-indigo-300 font-bold">
+            ${u.unit_name}
+          </th>`;
+        }
+      });
+
+      html += `</tr><tr><th class="border p-1" colspan="3"></th>`;
+
+      filteredUnits.forEach(u => {
+        let uActs = activities.filter(a => a.unit_id === u.id);
+        if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
+        uActs.forEach(act => {
+          html += `<th class="border p-1 text-xs text-center font-mono font-medium text-slate-600 bg-slate-50">Act ${act.activity_no}</th>`;
+        });
+      });
+
+      html += `</tr></thead><tbody>`;
+
+      filteredStudents.forEach(st => {
+        html += `<tr class="hover:bg-slate-50">
+          <td class="border p-2 font-mono text-xs">${st.adm_no}</td>
+          <td class="border p-2 font-semibold text-slate-800">${st.name}</td>
+          <td class="border p-1 text-center font-bold text-xs ${st.gender === 'F' ? 'text-pink-600' : 'text-blue-600'}">${st.gender || 'M'}</td>`;
+
+        filteredUnits.forEach(u => {
+          let uActs = activities.filter(a => a.unit_id === u.id);
+          if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
+          uActs.forEach(act => {
+            const stCode = notesStatuses[`${st.id}_${act.id}`] || 'PENDING';
+            let badgeStyle = "bg-slate-200 text-slate-600 border border-slate-300";
+            let label = "TAP";
+
+            if (stCode === 'COMPLETED') {
+              badgeStyle = "bg-emerald-500 text-white font-bold shadow-sm";
+              label = "DONE";
+            } else if (stCode === 'REVIEWED') {
+              badgeStyle = "bg-blue-600 text-white font-bold shadow-sm";
+              label = "VERIFIED";
+            }
+
+            html += `<td class="border p-1.5 text-center">
+              <span onclick="cycleTapStatus(${st.id}, ${act.id})" class="tap-badge inline-block text-[10px] px-2 py-1 rounded ${badgeStyle}">
+                ${label}
+              </span>
+            </td>`;
+          });
+        });
+
+        html += `</tr>`;
+      });
+
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+    }
+
+    // 8. COLLAPSED MASTER LIST
+    function toggleMasterCard(studentId) {
+      if (openMasterCardIds.has(studentId)) {
+        openMasterCardIds.delete(studentId);
+      } else {
+        openMasterCardIds.add(studentId);
+      }
+      renderMasterView();
+    }
+
+    function renderMasterView() {
+      const container = document.getElementById('master-records-container');
+      const search = (document.getElementById('master-search').value || '').toLowerCase();
+      
+      const filtered = students
+        .filter(s => s.name.toLowerCase().includes(search) || s.adm_no.toLowerCase().includes(search))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="bg-white p-8 text-center text-slate-400 rounded-xl border">No student records found.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(st => {
+        const isOpen = openMasterCardIds.has(st.id);
+        const stScores = scores.filter(sc => sc.student_id === st.id);
+        const studentUnits = units.filter(u => u.class.toLowerCase() === st.class.toLowerCase());
+
+        let detailsHtml = '';
+        if (isOpen) {
+          detailsHtml = `
+          <div class="p-5 border-t border-slate-100 bg-slate-50 space-y-5 rounded-b-xl">
+            <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200">
+              <span>⚧ Gender: <strong class="text-slate-900">${st.gender === 'F' ? 'Female (F)' : 'Male (M)'}</strong></span>
+              <span>📱 Registered Mobile: <strong class="text-slate-900 font-mono">${st.mobile || 'Not set'}</strong></span>
+            </div>
+
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Subject Performance & Grades</h4>
+              ${stScores.length > 0 ? `
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                  ${stScores.map(sc => `
+                    <div class="p-2.5 rounded-lg border border-slate-200 bg-white flex flex-col justify-between shadow-xs">
+                      <span class="text-xs text-slate-500 font-semibold truncate">${sc.subject}</span>
+                      <div class="flex items-baseline justify-between mt-1">
+                        <span class="text-base font-bold text-slate-800">${sc.score}</span>
+                        <span class="text-xs font-black px-1.5 py-0.5 rounded ${getGradeBadgeClass(sc.grade)}">${sc.grade}</span>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `<p class="text-xs text-slate-400 italic">No scores recorded for this active term.</p>`}
+            </div>
+
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Unit Activity Status</h4>
+              ${studentUnits.length > 0 ? `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  ${studentUnits.map(u => {
+                    const uActs = activities.filter(a => a.unit_id === u.id);
+                    const verifiedCount = uActs.filter(a => (notesStatuses[`${st.id}_${a.id}`] || 'PENDING') === 'REVIEWED').length;
+                    const isAllComplete = uActs.length > 0 && verifiedCount === uActs.length;
+
+                    return `
+                    <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
+                      <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-slate-800">${u.unit_name}</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isAllComplete ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                          ${verifiedCount}/${uActs.length} Verified
+                        </span>
+                      </div>
+                      <div class="flex flex-wrap gap-1.5">
+                        ${uActs.map(act => {
+                          const stCode = notesStatuses[`${st.id}_${act.id}`] || 'PENDING';
+                          let pillColor = 'bg-slate-100 text-slate-600 border border-slate-300';
+                          if (stCode === 'COMPLETED') pillColor = 'bg-emerald-500 text-white font-bold';
+                          if (stCode === 'REVIEWED') pillColor = 'bg-blue-600 text-white font-bold';
+                          return `<span class="text-[10px] px-2 py-0.5 rounded ${pillColor}">Act ${act.activity_no}: ${stCode}</span>`;
+                        }).join('')}
+                      </div>
+                    </div>`;
+                  }).join('')}
+                </div>
+              ` : `<p class="text-xs text-slate-400 italic">No units registered for Class ${st.class}.</p>`}
+            </div>
+          </div>`;
+        }
+
+        return `
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm transition-all overflow-hidden">
+          <div class="p-4 flex flex-wrap justify-between items-center gap-3 cursor-pointer hover:bg-slate-50" onclick="toggleMasterCard(${st.id})">
+            <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <span class="text-xs font-mono font-bold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-md border border-indigo-200">${st.adm_no}</span>
+              <h3 class="text-base font-bold text-slate-900">${st.name}</h3>
+              <span class="text-xs font-bold px-2 py-0.5 rounded ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">
+                ${st.gender === 'F' ? 'Female' : 'Male'}
+              </span>
+              <span class="text-xs bg-slate-100 font-semibold text-slate-600 px-2 py-0.5 rounded">Class ${st.class} - Div ${st.div}</span>
+            </div>
+            
+            <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+              <button onclick="sendWhatsAppUpdate(${st.id})" title="Send Report to WhatsApp" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
+                <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                </svg>
+                WhatsApp
+              </button>
+
+              <button onclick="openEditStudent(${st.id})" class="text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1.5 rounded-lg border border-indigo-200">
+                ✏️ Edit
+              </button>
+              <button onclick="removeStudent(${st.id})" class="text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200">
+                🗑️ Delete
+              </button>
+              <span class="text-xs text-slate-400 font-bold ml-1">${isOpen ? '▲' : '▼'}</span>
+            </div>
+          </div>
+          ${detailsHtml}
+        </div>`;
+      }).join('');
+    }
+
+    // 9. MODIFY & REMOVE ACTIONS
+    function openEditStudent(id) {
+      const st = students.find(s => s.id === id);
+      if (!st) return;
+      document.getElementById('edit-id').value = st.id;
+      document.getElementById('edit-adm-no').value = st.adm_no;
+      document.getElementById('edit-name').value = st.name;
+      document.getElementById('edit-class').value = st.class;
+      document.getElementById('edit-div').value = st.div;
+      document.getElementById('edit-gender').value = st.gender || 'M';
+      document.getElementById('edit-mobile').value = st.mobile || '';
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+    }
+
+    async function saveEditedStudent(e) {
+      e.preventDefault();
+      if (!db) return;
+      const id = document.getElementById('edit-id').value;
+      const adm_no = document.getElementById('edit-adm-no').value.trim();
+      const name = document.getElementById('edit-name').value.trim();
+      const cls = document.getElementById('edit-class').value.trim();
+      const div = document.getElementById('edit-div').value.trim();
+      const gender = document.getElementById('edit-gender').value.trim();
+      const mobile = document.getElementById('edit-mobile').value.trim().replace(/\D/g, '');
+
+      if (mobile.length !== 10) return showToast('Mobile number must be 10 digits!');
+
+      const { error } = await db.from('students').update({ 
+        adm_no, 
+        name, 
+        class: cls, 
+        div, 
+        gender, 
+        mobile 
+      }).eq('id', id);
+
+      if (error) return showToast(error.message);
+
+      showToast('Student updated successfully!');
+      closeEditModal();
+      loadInitialData();
+    }
+
+    async function removeStudent(id) {
+      if (!confirm('Are you sure you want to remove this student? All scores and notes records will be deleted.')) return;
+      if (!db) return;
+
+      const { error } = await db.from('students').delete().eq('id', id);
+      if (error) return showToast(error.message);
+
+      showToast('Student removed');
+      loadInitialData();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initSupabase();
+    });
+  </script>
+</body>
+</html>
