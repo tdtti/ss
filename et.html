@@ -156,7 +156,7 @@
         <!-- Active Term Selector with Working Edit & Delete Buttons -->
         <div class="flex items-center gap-2 flex-wrap">
           <label class="text-xs font-bold text-slate-500 uppercase">Active Term:</label>
-          <select id="active-term-select" onchange="loadScoresData()" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></select>
+          <select id="active-term-select" onchange="renderTab2Scores()" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></select>
           <button onclick="openEditActiveTermModal()" title="Edit Active Term Name" class="p-1.5 hover:bg-indigo-100 text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold flex items-center gap-1">
             ✏️ <span class="hidden sm:inline">Edit Term</span>
           </button>
@@ -323,7 +323,7 @@
         </div>
       </div>
 
-      <!-- ================= CATEGORY I: PENDING (CLEAN CARDS, NO EDIT/DELETE) ================= -->
+      <!-- ================= CATEGORY I: PENDING ================= -->
       <div class="bg-amber-50/60 rounded-xl border border-amber-200 p-4 sm:p-5 shadow-sm w-full space-y-3">
         <div class="flex justify-between items-center flex-wrap gap-2">
           <div class="flex items-center gap-2">
@@ -374,38 +374,44 @@
         </div>
       </div>
 
-      <!-- Consolidated Summary Table -->
-      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm w-full space-y-3">
-        <div class="flex justify-between items-center border-b pb-2">
-          <div>
+      <!-- ================= COLLAPSIBLE CONSOLIDATED SUMMARY (BY DEFAULT COLLAPSED) ================= -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm w-full overflow-hidden transition-all">
+        <div class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-all select-none" onclick="toggleConsolidatedSummary()">
+          <div class="flex items-center gap-2 flex-wrap">
             <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
               <span>🏛️ Consolidated Student Enrollment Summary</span>
             </h3>
-            <p class="text-xs text-slate-500">Class & Division demographic breakdown</p>
+            <span class="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full" id="summary-toggle-badge">Click to Expand</span>
           </div>
-          <span class="text-xs font-mono bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-md border border-indigo-200">TDTTI Thuravoor</span>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-md border border-indigo-200 hidden sm:inline">TDTTI Thuravoor</span>
+            <span id="summary-chevron" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">▼ Expand</span>
+          </div>
         </div>
 
-        <div class="w-full overflow-x-auto">
-          <table class="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
-            <thead class="bg-slate-100 text-slate-700 uppercase font-semibold text-xs">
-              <tr>
-                <th class="border p-2">Class</th>
-                <th class="border p-2">Division</th>
-                <th class="border p-2 text-center text-blue-700">No. of Male (M)</th>
-                <th class="border p-2 text-center text-pink-700">No. of Female (F)</th>
-                <th class="border p-2 text-center font-bold text-slate-900">Total</th>
-              </tr>
-            </thead>
-            <tbody id="consolidated-summary-tbody"></tbody>
-            <tfoot id="consolidated-summary-tfoot" class="bg-slate-200 font-bold text-slate-900 text-xs sm:text-sm"></tfoot>
-          </table>
+        <!-- Collapsible Table Content -->
+        <div id="consolidated-summary-content" class="hidden p-4 pt-0 border-t border-slate-100">
+          <div class="w-full overflow-x-auto mt-3">
+            <table class="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
+              <thead class="bg-slate-100 text-slate-700 uppercase font-semibold text-xs">
+                <tr>
+                  <th class="border p-2">Class</th>
+                  <th class="border p-2">Division</th>
+                  <th class="border p-2 text-center text-blue-700">No. of Male (M)</th>
+                  <th class="border p-2 text-center text-pink-700">No. of Female (F)</th>
+                  <th class="border p-2 text-center font-bold text-slate-900">Total</th>
+                </tr>
+              </thead>
+              <tbody id="consolidated-summary-tbody"></tbody>
+              <tfoot id="consolidated-summary-tfoot" class="bg-slate-200 font-bold text-slate-900 text-xs sm:text-sm"></tfoot>
+            </table>
+          </div>
         </div>
       </div>
 
-      <!-- Collapsed Master Cards Container with Working Delete & Sl No -->
+      <!-- Collapsed Master Cards Container with Serial Numbers -->
       <div class="space-y-3 w-full">
-        <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wide px-1">Comprehensive Student Master List (With Progressive Graphs)</h3>
+        <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wide px-1">Comprehensive Student Master List (With Progressive Bar Charts)</h3>
         <div id="master-records-container" class="space-y-3 w-full"></div>
       </div>
     </section>
@@ -634,13 +640,13 @@
 
   <!-- ================= APPLICATION LOGIC ================= -->
   <script>
-    const HARDCODED_SUPABASE_URL = "";
-    const HARDCODED_SUPABASE_ANON_KEY = "";
+    const HARDCODED_SUPABASE_URL = "https://lqglyumbavvlcjhclgzv.supabase.co";
+    const HARDCODED_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxZ2x5dW1iYXZ2bGNqaGNsZ3p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNzQyNDAsImV4cCI6MjEwNjg1MDI0MH0.WqHb60TW68_xuMW2mzzC50N3y15B7cHvAmNh6vrXlYQ";
 
     let db = null; 
     let students = [];
     let terms = [];
-    let scores = [];
+    let scores = []; // Holds all scores across all terms
     let units = [];
     let activities = [];
     let notesStatuses = {}; 
@@ -649,6 +655,7 @@
     let openMasterCardIds = new Set();
     let openNotesStudentCardIds = new Set();
     let chartInstances = {};
+    let isConsolidatedSummaryOpen = false; // BY DEFAULT COLLAPSED
 
     // ================= LOADER FUNCTIONS =================
     function startLoader() {
@@ -669,7 +676,7 @@
       }, 250);
     }
 
-    // ================= PROMISE-BASED CONFIRMATION DIALOG (BULLETPROOF) =================
+    // ================= PROMISE-BASED CONFIRMATION DIALOG =================
     let confirmResolver = null;
 
     function confirmDialog(title, message, confirmText = 'Delete') {
@@ -747,8 +754,8 @@
 
     // SUPABASE INITIALIZATION
     function initSupabase() {
-  const url = 'https://lqglyumbavvlcjhclgzv.supabase.co'; 
-  const key = 'sb_publishable_-B8npvZmgC-DmTZTnLJQXQ_BR7iV8sN';
+      let url = HARDCODED_SUPABASE_URL || localStorage.getItem('sb_url') || '';
+      let key = HARDCODED_SUPABASE_ANON_KEY || localStorage.getItem('sb_key') || '';
 
       const dot = document.getElementById('conn-dot');
       const status = document.getElementById('conn-status');
@@ -817,7 +824,7 @@
         populateTermsDropdown();
 
         updateStudentAutocompleteList();
-        await loadScoresData();
+        await loadScoresData(); // Loads all terms' scores
         await loadUnitsAndActivities();
         
         renderTab1Students();
@@ -854,7 +861,24 @@
       }
     }
 
-    // ================= CONSOLIDATED SUMMARY ENROLLMENT TABLE (TAB 4) =================
+    // ================= COLLAPSIBLE CONSOLIDATED SUMMARY TABLE (BY DEFAULT COLLAPSED) =================
+    function toggleConsolidatedSummary() {
+      isConsolidatedSummaryOpen = !isConsolidatedSummaryOpen;
+      const content = document.getElementById('consolidated-summary-content');
+      const chevron = document.getElementById('summary-chevron');
+      const badge = document.getElementById('summary-toggle-badge');
+      if (isConsolidatedSummaryOpen) {
+        content.classList.remove('hidden');
+        chevron.innerText = '▲ Collapse';
+        badge.innerText = 'Click to Hide';
+        renderConsolidatedSummaryTable();
+      } else {
+        content.classList.add('hidden');
+        chevron.innerText = '▼ Expand';
+        badge.innerText = 'Click to Expand';
+      }
+    }
+
     function renderConsolidatedSummaryTable() {
       const tbody = document.getElementById('consolidated-summary-tbody');
       const tfoot = document.getElementById('consolidated-summary-tfoot');
@@ -992,7 +1016,6 @@
       loadInitialData();
     }
 
-    // RENDER TAB 1 STUDENTS WITH SL NO
     function renderTab1Students() {
       const tbody = document.getElementById('tab1-students-tbody');
       const search = (document.getElementById('tab1-search').value || '').toLowerCase();
@@ -1064,7 +1087,6 @@
       loadInitialData();
     }
 
-    // ================= ROBUST STUDENT DELETION (WORKS EVERYWHERE) =================
     async function deleteStudent(studentId) {
       const st = students.find(s => s.id == studentId);
       if (!st) return;
@@ -1078,14 +1100,12 @@
       startLoader();
       try {
         if (db) {
-          // Pre-delete dependent records to satisfy foreign key constraints
           await db.from('notes_status').delete().eq('student_id', studentId);
           await db.from('scores').delete().eq('student_id', studentId);
           const { error } = await db.from('students').delete().eq('id', studentId);
           if (error) throw error;
         }
 
-        // Clean local state immediately with loose equality
         students = students.filter(s => s.id != studentId);
         scores = scores.filter(s => s.student_id != studentId);
         Object.keys(notesStatuses).forEach(k => {
@@ -1197,11 +1217,10 @@
       }
     }
 
+    // LOADS ALL SCORES ACROSS ALL TERMS FOR COMPLETE ANALYTICS
     async function loadScoresData() {
       if (!db) return;
-      const termId = document.getElementById('active-term-select').value;
-      if (!termId) return;
-      const { data } = await db.from('scores').select('*').eq('term_id', termId);
+      const { data } = await db.from('scores').select('*');
       scores = data || [];
       renderTab2Scores();
     }
@@ -1252,7 +1271,8 @@
       document.getElementById('score_student_id').value = '';
       document.getElementById('score_val').value = '';
       document.getElementById('live-grade').innerText = '-';
-      loadScoresData();
+      await loadScoresData();
+      renderMasterView();
     }
 
     async function handleBulkScores() {
@@ -1302,14 +1322,17 @@
       showToast(`Imported ${payload.length} score entries!`);
       document.getElementById('bulk-score-input').value = '';
       toggleModal('bulk-score-modal');
-      loadScoresData();
+      await loadScoresData();
+      renderMasterView();
     }
 
     function renderTab2Scores() {
       const tbody = document.getElementById('tab2-scores-tbody');
       const search = (document.getElementById('tab2-search').value || '').toLowerCase();
+      const activeTermId = document.getElementById('active-term-select').value;
       
       const filtered = scores.filter(sc => {
+        if (activeTermId && sc.term_id != activeTermId) return false;
         const st = students.find(s => s.id == sc.student_id);
         if (!st) return false;
         return st.name.toLowerCase().includes(search) || st.adm_no.toLowerCase().includes(search) || sc.subject.toLowerCase().includes(search);
@@ -1318,7 +1341,7 @@
       document.getElementById('tab2-count-badge').innerText = filtered.length;
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No assessments for active term.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No assessments recorded for this term.</td></tr>`;
         return;
       }
 
@@ -1375,7 +1398,7 @@
 
       showToast('Score updated!');
       toggleModal('edit-score-modal');
-      loadScoresData();
+      await loadScoresData();
       renderMasterView();
     }
 
@@ -1403,7 +1426,7 @@
       }
     }
 
-    // ================= TAB 3: UNITS & ACTIVITIES (ROBUST CASCADE DELETE) =================
+    // ================= TAB 3: UNITS & ACTIVITIES =================
     async function createUnitAndActivities() {
       if (!db) return showToast('Connect Supabase first!');
       const name = document.getElementById('unit-name').value.trim();
@@ -1437,7 +1460,6 @@
       loadUnitsAndActivities();
     }
 
-    // ROBUST UNIT DELETE (CLEANS CHILD ROWS IN SUPABASE & LOCAL MEMORY)
     async function deleteUnit(unitId) {
       const u = units.find(item => item.id == unitId);
       if (!u) return;
@@ -1462,7 +1484,6 @@
           if (error) throw error;
         }
 
-        // Clean local state immediately
         units = units.filter(item => item.id != unitId);
         activities = activities.filter(a => a.unit_id != unitId);
         actIds.forEach(aid => {
@@ -1599,7 +1620,6 @@
       toggleModal('manage-units-modal');
     }
 
-    // CURRICULUM MANAGER (SORTED CLASS-WISE AND UNIT-WISE)
     function renderManageUnitsModal() {
       const container = document.getElementById('manage-units-content');
       if (!container) return;
@@ -1609,7 +1629,6 @@
         return;
       }
 
-      // STRICTLY SORT CLASS-WISE & UNIT-WISE
       const sortedUnits = [...units].sort((a, b) => {
         const classComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
         if (classComp !== 0) return classComp;
@@ -1639,7 +1658,6 @@
               </div>
             </div>
 
-            <!-- Activities inside this Unit -->
             <div class="flex flex-wrap gap-1.5 pt-1">
               ${uActs.length > 0 ? uActs.map(act => `
                 <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-2xs">
@@ -1778,7 +1796,6 @@
       renderNotesMatrixOnly();
     }
 
-    // CATEGORY I & CATEGORY II WITH SERIAL NUMBERS (#) AND CLEAN DISPLAY (NO EDIT/DELETE ON STUDENTS)
     function renderCategoryLists() {
       const classFilter = document.getElementById('notes-class-filter').value.trim().toLowerCase();
       const divFilter = document.getElementById('notes-div-filter').value.trim().toLowerCase();
@@ -1834,7 +1851,6 @@
       }
     }
 
-    // CLEAN STUDENT CARDS: EDIT & DELETE BUTTONS REMOVED FROM ALL STUDENTS IN CATEGORY I & II
     function renderNotesCategoryCard(st, activeUnits, actFilter, isCompleted, serialNo) {
       const isOpen = openNotesStudentCardIds.has(st.id);
       let unitsHtml = '';
@@ -1872,7 +1888,6 @@
                       }).join('')}
                     </div>
                   </div>
-                  <!-- ONLY CONFIRM/VERIFY BUTTON (NO EDIT/DELETE ON STUDENTS) -->
                   <div>
                     <button onclick="singleButtonConfirmAndVerify(${st.id}, ${u.id})" class="px-2.5 py-1 rounded text-xs font-bold ${btnClass}">${btnText}</button>
                   </div>
@@ -1987,7 +2002,7 @@
       container.innerHTML = html;
     }
 
-    // ================= TAB 4: COMPREHENSIVE MASTER VIEW WITH RELIABLE DELETE =================
+    // ================= TAB 4: COMPREHENSIVE MASTER VIEW (SHOWS ALL TERMS & BAR CHART) =================
     function toggleMasterCard(studentId) {
       if (openMasterCardIds.has(studentId)) {
         openMasterCardIds.delete(studentId);
@@ -2001,7 +2016,7 @@
       renderMasterView();
 
       if (openMasterCardIds.has(studentId)) {
-        setTimeout(() => renderStudentProgressChart(studentId), 50);
+        setTimeout(() => renderStudentProgressBarChart(studentId), 50);
       }
     }
 
@@ -2026,6 +2041,7 @@
 
         let detailsHtml = '';
         if (isOpen) {
+          // GROUP SCORES BY ALL CREATED TERMS
           const termGroups = {};
           terms.forEach(t => { termGroups[t.id] = { name: t.term_name, list: [] }; });
           studentScores.forEach(sc => {
@@ -2036,20 +2052,21 @@
           detailsHtml = `
           <div class="p-4 border-t border-slate-100 bg-slate-50 space-y-4">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Left Column: Term-Wise Academic Performance (Shows ALL Terms) -->
               <div class="space-y-3">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center justify-between">
-                  <span>📊 Term-Wise Performance</span>
-                  <span class="text-[10px] text-slate-400 font-normal">Scores & Skills</span>
+                  <span>📊 Term-Wise Performance (All Terms)</span>
+                  <span class="text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-bold">${terms.length} Terms Registered</span>
                 </h4>
 
-                <div class="space-y-2.5">
-                  ${terms.map(t => {
+                <div class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                  ${terms.length > 0 ? terms.map(t => {
                     const tScores = (termGroups[t.id] && termGroups[t.id].list) || [];
                     return `
                       <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-2">
                         <div class="flex justify-between items-center border-b pb-1.5">
                           <span class="text-xs font-bold text-indigo-700 font-mono">${t.term_name}</span>
-                          <span class="text-[10px] text-slate-400">${tScores.length} recorded</span>
+                          <span class="text-[10px] font-semibold text-slate-400">${tScores.length} Subject(s) Recorded</span>
                         </div>
                         ${tScores.length > 0 ? `
                           <div class="space-y-1.5">
@@ -2057,7 +2074,7 @@
                               <div class="flex items-center justify-between text-xs bg-slate-50 p-2 rounded border">
                                 <div>
                                   <div class="font-bold text-slate-800">${sc.subject}</div>
-                                  <div class="text-[10px] text-slate-500 mt-0.5 flex gap-1.5">
+                                  <div class="text-[10px] text-slate-500 mt-0.5 flex gap-1.5 flex-wrap">
                                     <span>Writing: <strong class="text-slate-700">${sc.writing_skill || 'AVG'}</strong></span>
                                     <span>Reading: <strong class="text-slate-700">${sc.reading_skill || 'AVG'}</strong></span>
                                   </div>
@@ -2072,20 +2089,28 @@
                           </div>
                         ` : `<p class="text-[11px] text-slate-400 italic">No score recorded for ${t.term_name}.</p>`}
                       </div>`;
-                  }).join('')}
+                  }).join('') : `<p class="text-xs text-slate-400 italic">No terms created yet. Add terms in Tab 2.</p>`}
                 </div>
               </div>
 
-              <!-- Right Column: Progressive Graph -->
+              <!-- Right Column: Restructured Grouped BAR Chart With Specific Per-Term Indications -->
               <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-                <div class="flex justify-between items-center mb-2">
-                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600">📈 Progressive Term & Skills Graph</h4>
-                  <span class="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-bold">Interactive</span>
+                <div class="flex justify-between items-center mb-2 flex-wrap gap-1">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">📈 Progressive Term & Skills Bar Chart</h4>
+                  <span class="text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-bold">All Terms</span>
                 </div>
+                
                 <div class="relative h-64 w-full">
                   <canvas id="chart-${st.id}"></canvas>
                 </div>
-                <p class="text-[10px] text-slate-400 text-center mt-2">Plots Subject Scores, Writing & Reading Skills, and Notes Completion %</p>
+
+                <!-- Custom Bar Chart Legend with Metric Indications -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] mt-2 pt-2 border-t border-slate-100 text-slate-600">
+                  <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-indigo-600"></span> <strong>Subject Score</strong></div>
+                  <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-cyan-500"></span> <strong>Writing Skill</strong></div>
+                  <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-purple-500"></span> <strong>Reading Skill</strong></div>
+                  <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-emerald-500"></span> <strong>Notes Verified %</strong></div>
+                </div>
               </div>
             </div>
 
@@ -2136,7 +2161,6 @@
               <button onclick="openEditStudentModal(${st.id})" title="Edit" class="text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded border border-indigo-200">
                 ✏️ Edit
               </button>
-              <!-- RELIABLE WORKING DELETE IN MASTER VIEW -->
               <button onclick="deleteStudent(${st.id})" title="Delete" class="text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1 rounded border border-red-200">
                 🗑️ Delete
               </button>
@@ -2148,31 +2172,40 @@
       }).join('');
     }
 
-    // PROGRESSIVE GRAPH RENDERER
-    function renderStudentProgressChart(studentId) {
+    // ================= RESTRUCTURED BAR CHART (ALL TERMS WITH SPECIFIC INDICATIONS) =================
+    function renderStudentProgressBarChart(studentId) {
       const canvas = document.getElementById(`chart-${studentId}`);
       if (!canvas) return;
 
-      const skillMap = { 'POOR': 20, 'AVG': 40, 'GOOD': 60, 'VG': 80, 'EXLNT': 100 };
+      const skillScale = { 'POOR': 20, 'AVG': 40, 'GOOD': 60, 'VG': 80, 'EXLNT': 100 };
       const labels = terms.map(t => t.term_name);
       
       const scoreData = [];
       const writingData = [];
       const readingData = [];
+      const termSpecifics = {};
 
       terms.forEach(t => {
         const sc = scores.find(s => s.student_id == studentId && s.term_id == t.id);
         if (sc) {
           scoreData.push(sc.score);
-          writingData.push(skillMap[sc.writing_skill] || 40);
-          readingData.push(skillMap[sc.reading_skill] || 40);
+          writingData.push(skillScale[sc.writing_skill] || 40);
+          readingData.push(skillScale[sc.reading_skill] || 40);
+          termSpecifics[t.id] = {
+            grade: sc.grade,
+            writingRaw: sc.writing_skill || 'AVG',
+            readingRaw: sc.reading_skill || 'AVG',
+            score: sc.score
+          };
         } else {
-          scoreData.push(null);
-          writingData.push(null);
-          readingData.push(null);
+          scoreData.push(0);
+          writingData.push(0);
+          readingData.push(0);
+          termSpecifics[t.id] = null;
         }
       });
 
+      // Calculate student's verified notes %
       const st = students.find(s => s.id == studentId);
       const studentUnits = units.filter(u => u.class.toLowerCase() === (st ? st.class.toLowerCase() : ''));
       let totalActs = 0;
@@ -2190,52 +2223,88 @@
       }
 
       chartInstances[studentId] = new Chart(canvas, {
-        type: 'line',
+        type: 'bar',
         data: {
           labels: labels,
           datasets: [
             {
               label: 'Subject Score',
               data: scoreData,
-              borderColor: '#4f46e5',
-              backgroundColor: 'rgba(79, 70, 229, 0.1)',
-              borderWidth: 2.5,
-              tension: 0.3,
-              fill: true
+              backgroundColor: '#4f46e5',
+              borderRadius: 4,
+              borderSkipped: false
             },
             {
               label: 'Writing Skill',
               data: writingData,
-              borderColor: '#06b6d4',
-              borderDash: [4, 4],
-              borderWidth: 2,
-              tension: 0.2
+              backgroundColor: '#06b6d4',
+              borderRadius: 4,
+              borderSkipped: false
             },
             {
               label: 'Reading Skill',
               data: readingData,
-              borderColor: '#8b5cf6',
-              borderDash: [2, 2],
-              borderWidth: 2,
-              tension: 0.2
+              backgroundColor: '#8b5cf6',
+              borderRadius: 4,
+              borderSkipped: false
             },
             {
-              label: 'Notes Done %',
+              label: 'Notes Verified %',
               data: notesData,
-              borderColor: '#10b981',
-              borderWidth: 1.5,
-              tension: 0
+              backgroundColor: '#10b981',
+              borderRadius: 4,
+              borderSkipped: false
             }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          categoryPercentage: 0.75,
+          barPercentage: 0.85,
           scales: {
-            y: { min: 0, max: 100, ticks: { stepSize: 20 } }
+            y: {
+              min: 0,
+              max: 100,
+              ticks: { stepSize: 20 },
+              grid: { color: '#f1f5f9' }
+            },
+            x: {
+              grid: { display: false }
+            }
           },
           plugins: {
-            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+            legend: {
+              display: false // Displayed in the clean custom legend below
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              titleFont: { weight: 'bold', size: 12 },
+              bodyFont: { size: 11 },
+              padding: 10,
+              callbacks: {
+                label: function(context) {
+                  const val = context.parsed.y;
+                  const dsLabel = context.dataset.label;
+                  const termObj = terms[context.dataIndex];
+                  const specifics = termSpecifics[termObj ? termObj.id : null];
+
+                  if (dsLabel === 'Subject Score') {
+                    return ` Score: ${val} (Grade: ${specifics ? specifics.grade : 'N/A'})`;
+                  }
+                  if (dsLabel === 'Writing Skill') {
+                    return ` Writing Skill: ${specifics ? specifics.writingRaw : 'N/A'} (Score: ${val}%)`;
+                  }
+                  if (dsLabel === 'Reading Skill') {
+                    return ` Reading Skill: ${specifics ? specifics.readingRaw : 'N/A'} (Score: ${val}%)`;
+                  }
+                  if (dsLabel === 'Notes Verified %') {
+                    return ` Notes Verified: ${val}%`;
+                  }
+                  return ` ${dsLabel}: ${val}`;
+                }
+              }
+            }
           }
         }
       });
