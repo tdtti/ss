@@ -25,7 +25,7 @@
   <div id="yt-loader" class="fixed top-0 left-0 h-[10px] bg-red-600 shadow-[0_0_14px_#ef4444] transition-all duration-300 z-[999999] w-0 opacity-0 pointer-events-none"></div>
 
   <!-- Top Navbar -->
-  <header class="bg-indigo-700 text-white shadow-md sticky top-0 z-40 w-full">
+  <header id="main-header" class="bg-indigo-700 text-white shadow-md sticky top-0 z-40 w-full transition-all">
     <div class="w-full px-4 py-2.5 flex justify-between items-center gap-2">
       <div class="flex items-center space-x-2">
         <span class="text-xl sm:text-2xl font-black tracking-tight">🎓 EduTrack</span>
@@ -43,7 +43,7 @@
     </div>
 
     <!-- Mobile-First Tab Bar -->
-    <div class="w-full px-2 flex space-x-1 overflow-x-auto border-t border-indigo-600 scrollbar-none">
+    <div id="main-tab-bar" class="w-full px-2 flex space-x-1 overflow-x-auto border-t border-indigo-600 scrollbar-none transition-all">
       <button onclick="switchTab('tab-students')" id="btn-tab-students" class="tab-btn whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-4 border-white text-white flex items-center gap-1.5">
         👥 <span>Students</span>
       </button>
@@ -153,7 +153,6 @@
           <button onclick="createTerm()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg shadow-xs">➕ Add Term</button>
         </div>
         
-        <!-- Active Term Selector with Working Edit & Delete Buttons -->
         <div class="flex items-center gap-2 flex-wrap">
           <label class="text-xs font-bold text-slate-500 uppercase">Active Term:</label>
           <select id="active-term-select" onchange="renderTab2Scores()" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></select>
@@ -266,18 +265,22 @@
         <div class="flex justify-between items-center flex-wrap gap-2 border-b pb-2">
           <div>
             <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider">🛠️ Configure Units & Activities</h2>
-            <p class="text-[11px] text-slate-500">Add or manage curriculum units and their activities</p>
+            <p class="text-[11px] text-slate-500">Assign units term-wise and manage curriculum activities</p>
           </div>
           <button onclick="openManageUnitsModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 shadow-xs">
-            📋 Manage Units & Activities
+            📋 Curriculum Units & Activities Manager
           </button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+        <!-- Unit Creation Form with Term Selector -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
           <input type="text" id="unit-name" placeholder="Unit Name (e.g. Unit 1: Our Earth)" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm outline-none">
           <input type="text" id="unit-class" value="7" placeholder="Class (e.g. 7)" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm outline-none">
+          <select id="unit-term-select" class="border rounded-lg px-2 py-1.5 text-xs sm:text-sm bg-white font-semibold outline-none">
+            <option value="">Assign Term (Optional)</option>
+          </select>
           <input type="number" id="unit-act-count" placeholder="No. of Activities (e.g. 4)" min="1" max="20" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm outline-none">
-          <button onclick="createUnitAndActivities()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1.5 text-xs sm:text-sm rounded-lg shadow-xs">Add Unit & Activities</button>
+          <button onclick="createUnitAndActivities()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1.5 text-xs sm:text-sm rounded-lg shadow-xs">Add Unit</button>
         </div>
       </div>
 
@@ -363,7 +366,8 @@
 
     <!-- ================= TAB 4: STUDENT MASTER VIEW ================= -->
     <section id="tab-master" class="tab-panel hidden w-full space-y-5">
-      <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm w-full">
+      <!-- Search & Controls Header -->
+      <div id="master-search-bar" class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm w-full transition-all">
         <div>
           <h2 class="text-base sm:text-lg font-bold text-slate-900">Student Directory & Comprehensive Analytics</h2>
           <p class="text-xs text-slate-500">TDTTI THURAVOOR Master Record System</p>
@@ -374,8 +378,8 @@
         </div>
       </div>
 
-      <!-- ================= COLLAPSIBLE CONSOLIDATED SUMMARY (BY DEFAULT COLLAPSED) ================= -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm w-full overflow-hidden transition-all">
+      <!-- Collapsible Consolidated Summary -->
+      <div id="consolidated-summary-container" class="bg-white rounded-xl border border-slate-200 shadow-sm w-full overflow-hidden transition-all">
         <div class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-all select-none" onclick="toggleConsolidatedSummary()">
           <div class="flex items-center gap-2 flex-wrap">
             <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
@@ -389,7 +393,6 @@
           </div>
         </div>
 
-        <!-- Collapsible Table Content -->
         <div id="consolidated-summary-content" class="hidden p-4 pt-0 border-t border-slate-100">
           <div class="w-full overflow-x-auto mt-3">
             <table class="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
@@ -409,16 +412,15 @@
         </div>
       </div>
 
-      <!-- Collapsed Master Cards Container with Serial Numbers -->
+      <!-- Master Cards Container (Supports Focused View Mode) -->
       <div class="space-y-3 w-full">
-        <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wide px-1">Comprehensive Student Master List (With Progressive Bar Charts)</h3>
         <div id="master-records-container" class="space-y-3 w-full"></div>
       </div>
     </section>
 
   </main>
 
-  <!-- ================= PROMISE-BASED CONFIRMATION MODAL (Z-[100000]) ================= -->
+  <!-- ================= PROMISE-BASED CONFIRMATION MODAL ================= -->
   <div id="custom-confirm-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[100000] flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
       <div class="flex items-start gap-3">
@@ -458,12 +460,22 @@
   <!-- ================= MANAGE UNITS & ACTIVITIES MODAL ================= -->
   <div id="manage-units-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-[85000] flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl flex flex-col max-h-[85vh]">
-      <div class="flex justify-between items-center border-b pb-3 mb-3">
+      <div class="flex justify-between items-center border-b pb-3 mb-3 flex-wrap gap-2">
         <div>
           <h3 class="text-base font-bold text-slate-900">📋 Curriculum Units & Activities Manager</h3>
-          <p class="text-xs text-slate-500">Class-wise and Unit-wise arrangement with full Edit & Delete controls</p>
+          <p class="text-xs text-slate-500">Organized Class-wise & Term-wise</p>
         </div>
         <button onclick="toggleModal('manage-units-modal')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+      </div>
+
+      <div class="flex items-center gap-2 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex-wrap">
+        <span class="text-xs font-bold text-slate-600">Filter View:</span>
+        <select id="mgr-class-filter" onchange="renderManageUnitsModal()" class="border rounded px-2 py-1 text-xs bg-white font-semibold">
+          <option value="">All Classes</option>
+        </select>
+        <select id="mgr-term-filter" onchange="renderManageUnitsModal()" class="border rounded px-2 py-1 text-xs bg-white font-semibold">
+          <option value="">All Terms</option>
+        </select>
       </div>
 
       <div id="manage-units-content" class="overflow-y-auto flex-1 space-y-3 pr-1"></div>
@@ -483,6 +495,12 @@
         <div>
           <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Class</label>
           <input type="text" id="edit-unit-class-input" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Assigned Term</label>
+          <select id="edit-unit-term-select" class="w-full border rounded-lg px-2 py-1.5 text-sm outline-none bg-white font-semibold">
+            <option value="">No Term Assigned</option>
+          </select>
         </div>
         <div class="flex justify-end gap-2 pt-2">
           <button type="button" onclick="toggleModal('edit-unit-modal')" class="px-4 py-1.5 border rounded-lg text-xs text-slate-600">Cancel</button>
@@ -646,7 +664,7 @@
     let db = null; 
     let students = [];
     let terms = [];
-    let scores = []; // Holds all scores across all terms
+    let scores = [];
     let units = [];
     let activities = [];
     let notesStatuses = {}; 
@@ -655,9 +673,10 @@
     let openMasterCardIds = new Set();
     let openNotesStudentCardIds = new Set();
     let chartInstances = {};
-    let isConsolidatedSummaryOpen = false; // BY DEFAULT COLLAPSED
+    let isConsolidatedSummaryOpen = false;
+    let focusedStudentId = null;
 
-    // ================= LOADER FUNCTIONS =================
+    // LOADER FUNCTIONS
     function startLoader() {
       const loader = document.getElementById('yt-loader');
       loader.style.opacity = '1';
@@ -676,7 +695,7 @@
       }, 250);
     }
 
-    // ================= PROMISE-BASED CONFIRMATION DIALOG =================
+    // PROMISE CONFIRMATION DIALOG
     let confirmResolver = null;
 
     function confirmDialog(title, message, confirmText = 'Delete') {
@@ -699,7 +718,7 @@
       }
     }
 
-    // ================= AUTO-GRADING FORMULA =================
+    // AUTO-GRADING FORMULA
     function calculateGrade(val) {
       if (val === null || val === undefined || val === '') return '-';
       const num = Number(val);
@@ -789,6 +808,10 @@
     }
 
     function switchTab(tabId) {
+      if (focusedStudentId !== null) {
+        closeFocusedStudentView();
+      }
+
       document.querySelectorAll('.tab-panel').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('border-white', 'text-white');
@@ -824,7 +847,7 @@
         populateTermsDropdown();
 
         updateStudentAutocompleteList();
-        await loadScoresData(); // Loads all terms' scores
+        await loadScoresData();
         await loadUnitsAndActivities();
         
         renderTab1Students();
@@ -841,10 +864,28 @@
 
     function populateTermsDropdown() {
       const select = document.getElementById('active-term-select');
-      const currentVal = select.value;
-      select.innerHTML = terms.map(t => `<option value="${t.id}">${t.term_name}</option>`).join('');
-      if (currentVal && terms.some(t => t.id == currentVal)) {
-        select.value = currentVal;
+      const unitTermSelect = document.getElementById('unit-term-select');
+      const editUnitTermSelect = document.getElementById('edit-unit-term-select');
+      const mgrTermFilter = document.getElementById('mgr-term-filter');
+
+      const currentVal = select ? select.value : '';
+      const termOptions = terms.map(t => `<option value="${t.id}">${t.term_name}</option>`).join('');
+
+      if (select) {
+        select.innerHTML = termOptions;
+        if (currentVal && terms.some(t => t.id == currentVal)) {
+          select.value = currentVal;
+        }
+      }
+
+      if (unitTermSelect) {
+        unitTermSelect.innerHTML = `<option value="">Assign Term (Optional)</option>` + termOptions;
+      }
+      if (editUnitTermSelect) {
+        editUnitTermSelect.innerHTML = `<option value="">No Term Assigned</option>` + termOptions;
+      }
+      if (mgrTermFilter) {
+        mgrTermFilter.innerHTML = `<option value="">All Terms</option>` + termOptions;
       }
     }
 
@@ -861,7 +902,7 @@
       }
     }
 
-    // ================= COLLAPSIBLE CONSOLIDATED SUMMARY TABLE (BY DEFAULT COLLAPSED) =================
+    // CONSOLIDATED SUMMARY ENROLLMENT TABLE
     function toggleConsolidatedSummary() {
       isConsolidatedSummaryOpen = !isConsolidatedSummaryOpen;
       const content = document.getElementById('consolidated-summary-content');
@@ -947,7 +988,7 @@
       `;
     }
 
-    // ================= TAB 1: ACTIONS & ROBUST DELETE =================
+    // TAB 1 ACTIONS
     async function handleSingleStudent(e) {
       e.preventDefault();
       if (!db) return showToast('Connect Supabase first!');
@@ -1087,6 +1128,7 @@
       loadInitialData();
     }
 
+    // ================= ROBUST STUDENT DELETION =================
     async function deleteStudent(studentId) {
       const st = students.find(s => s.id == studentId);
       if (!st) return;
@@ -1113,6 +1155,10 @@
         });
         openMasterCardIds.delete(studentId);
         openNotesStudentCardIds.delete(studentId);
+
+        if (focusedStudentId == studentId) {
+          closeFocusedStudentView();
+        }
 
         showToast(`Student ${st.name} deleted successfully!`);
         renderTab1Students();
@@ -1426,20 +1472,31 @@
       }
     }
 
-    // ================= TAB 3: UNITS & ACTIVITIES =================
+    // ================= TAB 3: UNITS & ACTIVITIES (INSTANT REAL-TIME UPDATES EVERYWHERE) =================
     async function createUnitAndActivities() {
       if (!db) return showToast('Connect Supabase first!');
       const name = document.getElementById('unit-name').value.trim();
       const cls = document.getElementById('unit-class').value.trim();
+      const term_id = document.getElementById('unit-term-select').value || null;
       const actCount = parseInt(document.getElementById('unit-act-count').value);
 
       if (!name || !cls || !actCount) {
-        showToast('Please fill all unit configuration fields.');
+        showToast('Please fill Unit Name, Class, and No. of Activities.');
         return;
       }
 
       startLoader();
-      const { data: unit, error } = await db.from('units').insert([{ unit_name: name, class: cls }]).select().single();
+      let insertPayload = { unit_name: name, class: cls };
+      if (term_id) insertPayload.term_id = term_id;
+
+      let { data: unit, error } = await db.from('units').insert([insertPayload]).select().single();
+
+      if (error && error.message && error.message.includes('term_id')) {
+        const retry = await db.from('units').insert([{ unit_name: name, class: cls }]).select().single();
+        unit = retry.data;
+        error = retry.error;
+      }
+
       if (error) {
         finishLoader();
         showToast(`Unit Error: ${error.message}`);
@@ -1451,13 +1508,24 @@
         actPayload.push({ unit_id: unit.id, activity_no: i, title: `Activity ${i}` });
       }
 
-      await db.from('activities').insert(actPayload);
+      const actResult = await db.from('activities').insert(actPayload).select();
       finishLoader();
 
-      showToast('Unit and activities created!');
+      units.push(unit);
+      if (actResult.data) {
+        activities.push(...actResult.data);
+      } else {
+        activities.push(...actPayload.map((a, i) => ({ id: Date.now() + i, ...a })));
+      }
+
+      showToast('Unit and activities created successfully!');
       document.getElementById('unit-name').value = '';
       document.getElementById('unit-act-count').value = '';
-      loadUnitsAndActivities();
+
+      updateUnitFilterDropdown();
+      loadNotesTracker();
+      renderManageUnitsModal();
+      renderMasterView();
     }
 
     async function deleteUnit(unitId) {
@@ -1510,28 +1578,49 @@
       document.getElementById('edit-unit-id').value = u.id;
       document.getElementById('edit-unit-name-input').value = u.unit_name;
       document.getElementById('edit-unit-class-input').value = u.class;
+      document.getElementById('edit-unit-term-select').value = u.term_id || '';
       toggleModal('edit-unit-modal');
     }
 
+    // INSTANTLY SAVES IN CURRICULUM MANAGER AND ALL CONCERNED VIEWS
     async function saveEditedUnit(e) {
       e.preventDefault();
-      if (!db) return;
       const unitId = document.getElementById('edit-unit-id').value;
       const unit_name = document.getElementById('edit-unit-name-input').value.trim();
       const cls = document.getElementById('edit-unit-class-input').value.trim();
+      const term_id = document.getElementById('edit-unit-term-select').value || null;
 
-      startLoader();
-      const { error } = await db.from('units').update({ unit_name, class: cls }).eq('id', unitId);
-      finishLoader();
-
-      if (error) {
-        showToast(`Update Error: ${error.message}`);
-        return;
+      // 1. INSTANT LOCAL OPTIMISTIC UPDATE
+      const uIdx = units.findIndex(u => u.id == unitId);
+      if (uIdx !== -1) {
+        units[uIdx].unit_name = unit_name;
+        units[uIdx].class = cls;
+        units[uIdx].term_id = term_id;
       }
 
-      showToast('Unit updated!');
+      renderManageUnitsModal();
+      updateUnitFilterDropdown();
+      loadNotesTracker();
+      renderMasterView();
       toggleModal('edit-unit-modal');
-      loadUnitsAndActivities();
+      showToast('Unit updated successfully!');
+
+      // 2. BACKGROUND DATABASE SYNC
+      if (db) {
+        startLoader();
+        let updatePayload = { unit_name, class: cls, term_id: term_id };
+        let { error } = await db.from('units').update(updatePayload).eq('id', unitId);
+
+        if (error && error.message && error.message.includes('term_id')) {
+          const retry = await db.from('units').update({ unit_name, class: cls }).eq('id', unitId);
+          error = retry.error;
+        }
+        finishLoader();
+
+        if (error) {
+          showToast(`Database Error: ${error.message}`);
+        }
+      }
     }
 
     function openEditActivityModal(actId) {
@@ -1543,25 +1632,36 @@
       toggleModal('edit-act-modal');
     }
 
+    // INSTANTLY SAVES IN CURRICULUM MANAGER AND ALL CONCERNED VIEWS
     async function saveEditedActivity(e) {
       e.preventDefault();
-      if (!db) return;
       const actId = document.getElementById('edit-act-id').value;
       const activity_no = parseInt(document.getElementById('edit-act-no-input').value);
       const title = document.getElementById('edit-act-title-input').value.trim();
 
-      startLoader();
-      const { error } = await db.from('activities').update({ activity_no, title }).eq('id', actId);
-      finishLoader();
-
-      if (error) {
-        showToast(`Activity Error: ${error.message}`);
-        return;
+      // 1. INSTANT LOCAL OPTIMISTIC UPDATE
+      const aIdx = activities.findIndex(a => a.id == actId);
+      if (aIdx !== -1) {
+        activities[aIdx].activity_no = activity_no;
+        activities[aIdx].title = title;
       }
 
-      showToast('Activity updated!');
+      renderManageUnitsModal();
+      loadNotesTracker();
+      renderMasterView();
       toggleModal('edit-act-modal');
-      loadUnitsAndActivities();
+      showToast('Activity updated successfully!');
+
+      // 2. BACKGROUND DATABASE SYNC
+      if (db) {
+        startLoader();
+        const { error } = await db.from('activities').update({ activity_no, title }).eq('id', actId);
+        finishLoader();
+
+        if (error) {
+          showToast(`Database Error: ${error.message}`);
+        }
+      }
     }
 
     async function deleteActivity(actId) {
@@ -1603,46 +1703,84 @@
       const nextNo = uActs.length > 0 ? Math.max(...uActs.map(a => a.activity_no)) + 1 : 1;
 
       startLoader();
-      const { error } = await db.from('activities').insert([{ unit_id: unitId, activity_no: nextNo, title: `Activity ${nextNo}` }]);
+      let newAct = { unit_id: unitId, activity_no: nextNo, title: `Activity ${nextNo}` };
+
+      if (db) {
+        const { data, error } = await db.from('activities').insert([newAct]).select().single();
+        if (error) {
+          finishLoader();
+          showToast(`Add Activity Failed: ${error.message}`);
+          return;
+        }
+        if (data) newAct = data;
+      } else {
+        newAct.id = Date.now();
+      }
       finishLoader();
 
-      if (error) {
-        showToast(`Add Activity Failed: ${error.message}`);
-        return;
-      }
-
+      activities.push(newAct);
       showToast(`Activity ${nextNo} added!`);
-      loadUnitsAndActivities();
+      renderManageUnitsModal();
+      loadNotesTracker();
+      renderMasterView();
     }
 
     function openManageUnitsModal() {
+      const mgrClassFilter = document.getElementById('mgr-class-filter');
+      const uniqueClasses = [...new Set(units.map(u => u.class))].sort();
+      mgrClassFilter.innerHTML = `<option value="">All Classes</option>` + uniqueClasses.map(c => `<option value="${c}">Class ${c}</option>`).join('');
+
       renderManageUnitsModal();
       toggleModal('manage-units-modal');
     }
 
+    // CURRICULUM MANAGER WITH TYPO FIXED & NATURAL ALPHANUMERIC SORTING
     function renderManageUnitsModal() {
       const container = document.getElementById('manage-units-content');
       if (!container) return;
 
       if (units.length === 0) {
-        container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No units available. Add a unit in Tab 3.</div>`;
+        container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No units configured yet. Add a unit in Tab 3.</div>`;
         return;
       }
 
-      const sortedUnits = [...units].sort((a, b) => {
+      const selectedClass = document.getElementById('mgr-class-filter').value;
+      const selectedTerm = document.getElementById('mgr-term-filter').value;
+
+      let filteredUnits = [...units];
+      if (selectedClass) filteredUnits = filteredUnits.filter(u => u.class == selectedClass);
+      if (selectedTerm) filteredUnits = filteredUnits.filter(u => u.term_id == selectedTerm);
+
+      // TYPO FIXED: classComp used correctly with natural alphanumeric sorting
+      filteredUnits.sort((a, b) => {
         const classComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
         if (classComp !== 0) return classComp;
+
+        const termA = terms.find(t => t.id == a.term_id)?.term_name || 'ZZZ';
+        const termB = terms.find(t => t.id == b.term_id)?.term_name || 'ZZZ';
+        const termComp = termA.localeCompare(termB);
+        if (termComp !== 0) return termComp;
+
         return (a.unit_name || '').localeCompare(b.unit_name || '', undefined, { numeric: true });
       });
 
-      container.innerHTML = sortedUnits.map(u => {
+      if (filteredUnits.length === 0) {
+        container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No units match the filter criteria.</div>`;
+        return;
+      }
+
+      container.innerHTML = filteredUnits.map(u => {
         const uActs = activities.filter(a => a.unit_id == u.id).sort((a,b) => a.activity_no - b.activity_no);
+        const assignedTerm = terms.find(t => t.id == u.term_id);
 
         return `
           <div class="bg-slate-50 rounded-xl border border-slate-200 p-3.5 space-y-2.5">
             <div class="flex justify-between items-center flex-wrap gap-2 border-b pb-2">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded">Class ${u.class}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded ${assignedTerm ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-200 text-slate-600'}">
+                  ${assignedTerm ? assignedTerm.term_name : 'No Term Assigned'}
+                </span>
                 <span class="font-bold text-xs sm:text-sm text-slate-800">${u.unit_name}</span>
               </div>
               <div class="flex items-center gap-1.5">
@@ -1706,9 +1844,20 @@
     function updateUnitFilterDropdown() {
       const classFilter = document.getElementById('notes-class-filter').value.trim().toLowerCase();
       const unitSelect = document.getElementById('notes-unit-filter');
-      const filteredUnits = (classFilter === 'all' || !classFilter) ? units : units.filter(u => u.class.toLowerCase() === classFilter);
+      let filteredUnits = (classFilter === 'all' || !classFilter) ? [...units] : units.filter(u => u.class.toLowerCase() === classFilter);
 
-      unitSelect.innerHTML = `<option value="">All</option>` + filteredUnits.map(u => `<option value="${u.id}">${u.unit_name} (${u.class})</option>`).join('');
+      // ALPHANUMERIC SORTING FOR UNIT DROPDOWN
+      filteredUnits.sort((a, b) => {
+        const clsComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
+        if (clsComp !== 0) return clsComp;
+        return (a.unit_name || '').localeCompare(b.unit_name || '', undefined, { numeric: true });
+      });
+
+      unitSelect.innerHTML = `<option value="">All</option>` + filteredUnits.map(u => {
+        const assignedTerm = terms.find(t => t.id == u.term_id);
+        const termLabel = assignedTerm ? ` [${assignedTerm.term_name}]` : '';
+        return `<option value="${u.id}">${u.unit_name}${termLabel} (Cls ${u.class})</option>`;
+      }).join('');
       onUnitFilterChange();
     }
 
@@ -1721,14 +1870,30 @@
         actSelect.innerHTML = `<option value="">All</option>`;
       } else {
         const uActs = activities.filter(a => a.unit_id == selectedUnitId);
+        uActs.sort((a, b) => a.activity_no - b.activity_no);
         actSelect.innerHTML = `<option value="">All</option>` + uActs.map(a => `<option value="${a.activity_no}">Act ${a.activity_no}</option>`).join('');
       }
       loadNotesTracker();
     }
 
+    // CHECK HELPER FOR UNIT VISIBILITY
+    function isUnitHidden(unitId) {
+      return hiddenUnitIds.has(unitId) || hiddenUnitIds.has(String(unitId)) || hiddenUnitIds.has(Number(unitId));
+    }
+
+    // TOGGLE UNIT VISIBILITY AND RE-RENDER MATRIX INSTANTLY
     function toggleUnitVisibility(unitId) {
-      if (hiddenUnitIds.has(unitId)) hiddenUnitIds.delete(unitId);
-      else hiddenUnitIds.add(unitId);
+      const idNum = Number(unitId);
+      const idStr = String(unitId);
+      if (isUnitHidden(unitId)) {
+        hiddenUnitIds.delete(unitId);
+        hiddenUnitIds.delete(idNum);
+        hiddenUnitIds.delete(idStr);
+      } else {
+        hiddenUnitIds.add(unitId);
+        hiddenUnitIds.add(idNum);
+        hiddenUnitIds.add(idStr);
+      }
       loadNotesTracker();
     }
 
@@ -1780,15 +1945,25 @@
       renderCategoryLists();
     }
 
+    // NOTES TRACKER UNIT BUTTONS & ALPHANUMERIC ORDER
     function loadNotesTracker() {
       const classFilter = document.getElementById('notes-class-filter').value.trim().toLowerCase();
-      const filteredUnits = (classFilter === 'all' || !classFilter) ? units : units.filter(u => u.class.toLowerCase() === classFilter);
+      let filteredUnits = (classFilter === 'all' || !classFilter) ? [...units] : units.filter(u => (u.class || '').toLowerCase() === classFilter);
+
+      // ALPHANUMERIC SORTING FOR UNIT BUTTONS
+      filteredUnits.sort((a, b) => {
+        const clsComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
+        if (clsComp !== 0) return clsComp;
+        return (a.unit_name || '').localeCompare(b.unit_name || '', undefined, { numeric: true });
+      });
 
       const toggleContainer = document.getElementById('unit-visibility-toggles');
       toggleContainer.innerHTML = filteredUnits.map(u => {
-        const isHidden = hiddenUnitIds.has(u.id);
-        return `<button onclick="toggleUnitVisibility(${u.id})" class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ${isHidden ? 'bg-slate-100 text-slate-400 border-slate-300' : 'bg-indigo-50 text-indigo-700 border-indigo-300'}">
-          ${isHidden ? '👁️‍🗨️' : '👁️'} ${u.unit_name}
+        const isHidden = isUnitHidden(u.id);
+        const assignedTerm = terms.find(t => t.id == u.term_id);
+        const termTag = assignedTerm ? ` (${assignedTerm.term_name})` : '';
+        return `<button type="button" onclick="toggleUnitVisibility(${u.id})" class="px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all cursor-pointer ${isHidden ? 'bg-slate-200 text-slate-500 border-slate-300 line-through opacity-60' : 'bg-indigo-50 text-indigo-700 border-indigo-300 hover:bg-indigo-100 shadow-2xs'}">
+          ${isHidden ? '👁️‍🗨️ Show' : '👁️ Hide'} ${u.unit_name}${termTag}
         </button>`;
       }).join('');
 
@@ -1810,8 +1985,15 @@
         return true;
       });
 
-      let activeUnits = (classFilter === 'all' || !classFilter) ? units : units.filter(u => u.class.toLowerCase() === classFilter);
+      let activeUnits = (classFilter === 'all' || !classFilter) ? [...units] : units.filter(u => u.class.toLowerCase() === classFilter);
       if (unitFilter) activeUnits = activeUnits.filter(u => u.id == unitFilter);
+
+      // ALPHANUMERIC SORTING FOR ACTIVE UNITS IN CATEGORY CARDS
+      activeUnits.sort((a, b) => {
+        const clsComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
+        if (clsComp !== 0) return clsComp;
+        return (a.unit_name || '').localeCompare(b.unit_name || '', undefined, { numeric: true });
+      });
 
       const category1Students = [];
       const category2Students = [];
@@ -1873,10 +2055,15 @@
               if (!hasPending && allCompleted) { btnText = "2️⃣ Verify All"; btnClass = "bg-blue-600 text-white"; }
               else if (allVerified) { btnText = "✓ Verified"; btnClass = "bg-emerald-600 text-white"; }
 
+              const assignedTerm = terms.find(t => t.id == u.term_id);
+
               return `
                 <div class="bg-white p-2.5 rounded-lg border flex flex-wrap items-center justify-between gap-2 shadow-2xs">
                   <div>
-                    <span class="text-xs font-bold text-slate-800">${u.unit_name}</span>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-xs font-bold text-slate-800">${u.unit_name}</span>
+                      ${assignedTerm ? `<span class="text-[9px] bg-amber-50 text-amber-800 border border-amber-200 font-semibold px-1.5 py-0.2 rounded">${assignedTerm.term_name}</span>` : ''}
+                    </div>
                     <div class="flex flex-wrap gap-1 mt-1">
                       ${uActs.map(act => {
                         const code = notesStatuses[`${st.id}_${act.id}`] || 'PENDING';
@@ -1915,6 +2102,7 @@
         </div>`;
     }
 
+    // FULL CLASS NOTES MATRIX: HIDES TOGGLED UNITS AND SORTS ALPHANUMERICALLY
     function renderNotesMatrixOnly() {
       const classFilter = document.getElementById('notes-class-filter').value.trim().toLowerCase();
       const divFilter = document.getElementById('notes-div-filter').value.trim().toLowerCase();
@@ -1923,18 +2111,30 @@
       const actFilter = document.getElementById('notes-activity-filter').value;
 
       let filteredStudents = sortStudentsHierarchy(students).filter(s => {
-        if (classFilter !== 'all' && classFilter !== '' && s.class.toLowerCase() !== classFilter) return false;
-        if (divFilter && s.div.toLowerCase() !== divFilter) return false;
+        if (classFilter !== 'all' && classFilter !== '' && (s.class || '').toLowerCase() !== classFilter) return false;
+        if (divFilter && (s.div || '').toLowerCase() !== divFilter) return false;
         if (searchQuery && !s.name.toLowerCase().includes(searchQuery) && !s.adm_no.toLowerCase().includes(searchQuery)) return false;
         return true;
       });
 
-      let filteredUnits = (classFilter === 'all' || !classFilter) ? units : units.filter(u => u.class.toLowerCase() === classFilter && !hiddenUnitIds.has(u.id));
-      if (unitFilter) filteredUnits = filteredUnits.filter(u => u.id == unitFilter);
+      // FILTER OUT HIDDEN UNITS (RESPECTS HIDE TOGGLE)
+      let filteredUnits = units.filter(u => {
+        if (classFilter !== 'all' && classFilter !== '' && (u.class || '').toLowerCase() !== classFilter) return false;
+        if (unitFilter && u.id != unitFilter) return false;
+        if (isUnitHidden(u.id)) return false; // HIDES UNIT INSTANTLY
+        return true;
+      });
+
+      // NATURAL ALPHANUMERIC SORTING (Unit 1, Unit 2, Unit 10...)
+      filteredUnits.sort((a, b) => {
+        const clsComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
+        if (clsComp !== 0) return clsComp;
+        return (a.unit_name || '').localeCompare(b.unit_name || '', undefined, { numeric: true });
+      });
 
       const container = document.getElementById('notes-matrix-container');
       if (filteredUnits.length === 0 || filteredStudents.length === 0) {
-        container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No records available.</div>`;
+        container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No records available. (Units may be hidden using the toggles above)</div>`;
         return;
       }
 
@@ -1950,8 +2150,12 @@
       filteredUnits.forEach(u => {
         let uActs = activities.filter(a => a.unit_id == u.id);
         if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
+        uActs.sort((a, b) => a.activity_no - b.activity_no);
+
         if (uActs.length > 0) {
-          html += `<th colspan="${uActs.length}" class="border p-1 text-center bg-indigo-50 font-bold">${u.unit_name} (${u.class})</th>`;
+          const assignedTerm = terms.find(t => t.id == u.term_id);
+          const tName = assignedTerm ? ` - ${assignedTerm.term_name}` : '';
+          html += `<th colspan="${uActs.length}" class="border p-1 text-center bg-indigo-50 font-bold">${u.unit_name}${tName} (${u.class})</th>`;
         }
       });
 
@@ -1960,6 +2164,8 @@
       filteredUnits.forEach(u => {
         let uActs = activities.filter(a => a.unit_id == u.id);
         if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
+        uActs.sort((a, b) => a.activity_no - b.activity_no);
+
         uActs.forEach(act => {
           html += `<th class="border p-1 text-[10px] text-center font-mono bg-slate-50">Act ${act.activity_no}</th>`;
         });
@@ -1978,6 +2184,8 @@
         filteredUnits.forEach(u => {
           let uActs = activities.filter(a => a.unit_id == u.id);
           if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
+          uActs.sort((a, b) => a.activity_no - b.activity_no);
+
           uActs.forEach(act => {
             if (u.class.toLowerCase() !== st.class.toLowerCase()) {
               html += `<td class="border p-1 text-center text-slate-300">-</td>`;
@@ -2002,21 +2210,32 @@
       container.innerHTML = html;
     }
 
-    // ================= TAB 4: COMPREHENSIVE MASTER VIEW (SHOWS ALL TERMS & BAR CHART) =================
-    function toggleMasterCard(studentId) {
-      if (openMasterCardIds.has(studentId)) {
-        openMasterCardIds.delete(studentId);
-        if (chartInstances[studentId]) {
-          chartInstances[studentId].destroy();
-          delete chartInstances[studentId];
-        }
-      } else {
-        openMasterCardIds.add(studentId);
-      }
-      renderMasterView();
+    // ================= TAB 4: COMPREHENSIVE MASTER VIEW =================
+    function openFocusedStudentView(studentId) {
+      focusedStudentId = studentId;
+      openMasterCardIds.add(studentId);
 
-      if (openMasterCardIds.has(studentId)) {
-        setTimeout(() => renderStudentProgressBarChart(studentId), 50);
+      document.getElementById('main-tab-bar').classList.add('hidden');
+      document.getElementById('master-search-bar').classList.add('hidden');
+      document.getElementById('consolidated-summary-container').classList.add('hidden');
+
+      renderMasterView();
+      setTimeout(() => renderStudentProgressBarChart(studentId), 50);
+    }
+
+    function closeFocusedStudentView() {
+      focusedStudentId = null;
+
+      document.getElementById('main-tab-bar').classList.remove('hidden');
+      document.getElementById('master-search-bar').classList.remove('hidden');
+      document.getElementById('consolidated-summary-container').classList.remove('hidden');
+
+      renderMasterView();
+    }
+
+    function toggleMasterCard(studentId) {
+      if (focusedStudentId === null) {
+        openFocusedStudentView(studentId);
       }
     }
 
@@ -2024,6 +2243,169 @@
       const container = document.getElementById('master-records-container');
       const search = (document.getElementById('master-search').value || '').toLowerCase();
 
+      // FOCUSED SINGLE-STUDENT VIEW:
+      if (focusedStudentId !== null) {
+        const st = students.find(s => s.id == focusedStudentId);
+        if (!st) {
+          closeFocusedStudentView();
+          return;
+        }
+
+        const studentScores = scores.filter(sc => sc.student_id == st.id);
+        const studentUnits = units.filter(u => u.class.toLowerCase() === st.class.toLowerCase());
+
+        // SORT UNITS IN MASTER VIEW ALPHANUMERICALLY
+        studentUnits.sort((a, b) => (a.unit_name || '').localeCompare(b.unit_name || '', undefined, { numeric: true }));
+
+        const termGroups = {};
+        terms.forEach(t => { termGroups[t.id] = { name: t.term_name, list: [] }; });
+        studentScores.forEach(sc => {
+          if (!termGroups[sc.term_id]) termGroups[sc.term_id] = { name: 'Term', list: [] };
+          termGroups[sc.term_id].list.push(sc);
+        });
+
+        container.innerHTML = `
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3 bg-indigo-50 border border-indigo-200 p-4 rounded-xl shadow-xs">
+            <button onclick="closeFocusedStudentView()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition-all cursor-pointer">
+              ⬅️ Back to Student List
+            </button>
+            <div class="text-right">
+              <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider">Detailed Student Analytics</span>
+              <p class="text-[11px] text-slate-500 font-medium">Viewing complete profile for ${st.name}</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-indigo-300 shadow-md w-full transition-all overflow-hidden">
+            <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap justify-between items-center gap-2">
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <span class="text-xs font-mono font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded border border-indigo-200">Adm: ${st.adm_no}</span>
+                <h3 class="text-base sm:text-lg font-black text-slate-900">${st.name}</h3>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">${st.gender === 'F' ? 'Female' : 'Male'}</span>
+                <span class="text-xs bg-slate-200 font-bold text-slate-700 px-2.5 py-0.5 rounded">Class ${st.class} - Div ${st.div}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="sendWhatsAppUpdate(${st.id})" title="WhatsApp" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-xs">
+                  💬 WhatsApp
+                </button>
+                <button onclick="openEditStudentModal(${st.id})" title="Edit" class="text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-200">
+                  ✏️ Edit
+                </button>
+                <button onclick="deleteStudent(${st.id})" title="Delete" class="text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg border border-red-200">
+                  🗑️ Delete
+                </button>
+              </div>
+            </div>
+
+            <div class="p-4 sm:p-5 space-y-5">
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <div class="space-y-3">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center justify-between border-b pb-1.5">
+                    <span>📊 Term-Wise Performance (All Terms)</span>
+                    <span class="text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-bold">${terms.length} Terms</span>
+                  </h4>
+
+                  <div class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                    ${terms.length > 0 ? terms.map(t => {
+                      const tScores = (termGroups[t.id] && termGroups[t.id].list) || [];
+                      return `
+                        <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-2">
+                          <div class="flex justify-between items-center border-b pb-1.5">
+                            <span class="text-xs font-bold text-indigo-700 font-mono">${t.term_name}</span>
+                            <span class="text-[10px] font-semibold text-slate-400">${tScores.length} Subject(s)</span>
+                          </div>
+                          ${tScores.length > 0 ? `
+                            <div class="space-y-1.5">
+                              ${tScores.map(sc => `
+                                <div class="flex items-center justify-between text-xs bg-slate-50 p-2 rounded border">
+                                  <div>
+                                    <div class="font-bold text-slate-800">${sc.subject}</div>
+                                    <div class="text-[10px] text-slate-500 mt-0.5 flex gap-1.5 flex-wrap">
+                                      <span>Writing: <strong class="text-slate-700">${sc.writing_skill || 'AVG'}</strong></span>
+                                      <span>Reading: <strong class="text-slate-700">${sc.reading_skill || 'AVG'}</strong></span>
+                                    </div>
+                                  </div>
+                                  <div class="flex items-center gap-2">
+                                    <span class="font-bold text-sm">${sc.score}</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-black ${getGradeBadgeClass(sc.grade)}">${sc.grade}</span>
+                                    <button onclick="openEditScoreModal(${sc.id})" title="Edit" class="text-slate-400 hover:text-indigo-600 text-xs">✏️</button>
+                                  </div>
+                                </div>
+                              `).join('')}
+                            </div>
+                          ` : `<p class="text-[11px] text-slate-400 italic">No score recorded for ${t.term_name}.</p>`}
+                        </div>`;
+                    }).join('') : `<p class="text-xs text-slate-400 italic">No terms created yet. Add terms in Tab 2.</p>`}
+                  </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                  <div class="flex justify-between items-center mb-1 flex-wrap gap-1">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">📈 Progressive Term & Skills Bar Chart</h4>
+                    <span class="text-[10px] text-slate-400 font-medium">Click buttons below to show/hide</span>
+                  </div>
+                  
+                  <div class="relative h-64 w-full">
+                    <canvas id="chart-${st.id}"></canvas>
+                  </div>
+
+                  <div class="flex flex-wrap items-center justify-center gap-1.5 text-[11px] mt-2 pt-2 border-t border-slate-100 select-none">
+                    <button type="button" onclick="toggleChartDataset(${st.id}, 0)" id="legend-btn-${st.id}-0" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
+                      <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #F54927;"></span>
+                      <span>Subject Score</span>
+                    </button>
+                    <button type="button" onclick="toggleChartDataset(${st.id}, 1)" id="legend-btn-${st.id}-1" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
+                      <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #20C809;"></span>
+                      <span>Writing Skill</span>
+                    </button>
+                    <button type="button" onclick="toggleChartDataset(${st.id}, 2)" id="legend-btn-${st.id}-2" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
+                      <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #1C09C8;"></span>
+                      <span>Reading Skill</span>
+                    </button>
+                    <button type="button" onclick="toggleChartDataset(${st.id}, 3)" id="legend-btn-${st.id}-3" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
+                      <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #C8095C;"></span>
+                      <span>Notes Verified</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-2 border-t border-slate-100">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">📖 Curriculum Units & Notes Completion</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  ${studentUnits.map(u => {
+                    const uActs = activities.filter(a => a.unit_id == u.id);
+                    uActs.sort((a, b) => a.activity_no - b.activity_no);
+                    const verCount = uActs.filter(a => (notesStatuses[`${st.id}_${a.id}`] || 'PENDING') === 'REVIEWED').length;
+                    const assignedTerm = terms.find(t => t.id == u.term_id);
+                    return `
+                      <div class="bg-slate-50 p-2.5 rounded-lg border text-xs shadow-2xs">
+                        <div class="flex justify-between items-center mb-1 flex-wrap gap-1">
+                          <div class="flex items-center gap-1">
+                            <span class="font-bold text-slate-800 truncate">${u.unit_name}</span>
+                            ${assignedTerm ? `<span class="text-[9px] bg-amber-50 text-amber-800 font-semibold px-1 rounded">${assignedTerm.term_name}</span>` : ''}
+                          </div>
+                          <span class="text-[10px] font-bold ${verCount === uActs.length && uActs.length > 0 ? 'text-emerald-700' : 'text-amber-700'}">${verCount}/${uActs.length} Verified</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1">
+                          ${uActs.map(act => {
+                            const code = notesStatuses[`${st.id}_${act.id}`] || 'PENDING';
+                            let pill = 'bg-white text-slate-500 border';
+                            if (code === 'COMPLETED') pill = 'bg-emerald-500 text-white font-bold';
+                            if (code === 'REVIEWED') pill = 'bg-blue-600 text-white font-bold';
+                            return `<span class="text-[9px] px-1 py-0.5 rounded ${pill}">Act ${act.activity_no}</span>`;
+                          }).join('')}
+                        </div>
+                      </div>`;
+                  }).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // NORMAL MASTER LIST VIEW:
       const list = sortStudentsHierarchy(students).filter(s => 
         s.name.toLowerCase().includes(search) || s.adm_no.toLowerCase().includes(search)
       );
@@ -2035,117 +2417,10 @@
 
       container.innerHTML = list.map((st, index) => {
         const serialNo = index + 1;
-        const isOpen = openMasterCardIds.has(st.id);
-        const studentScores = scores.filter(sc => sc.student_id == st.id);
-        const studentUnits = units.filter(u => u.class.toLowerCase() === st.class.toLowerCase());
-
-        let detailsHtml = '';
-        if (isOpen) {
-          // GROUP SCORES BY ALL CREATED TERMS
-          const termGroups = {};
-          terms.forEach(t => { termGroups[t.id] = { name: t.term_name, list: [] }; });
-          studentScores.forEach(sc => {
-            if (!termGroups[sc.term_id]) termGroups[sc.term_id] = { name: 'Term', list: [] };
-            termGroups[sc.term_id].list.push(sc);
-          });
-
-          detailsHtml = `
-          <div class="p-4 border-t border-slate-100 bg-slate-50 space-y-4">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <!-- Left Column: Term-Wise Academic Performance (Shows ALL Terms) -->
-              <div class="space-y-3">
-                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center justify-between">
-                  <span>📊 Term-Wise Performance (All Terms)</span>
-                  <span class="text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-bold">${terms.length} Terms Registered</span>
-                </h4>
-
-                <div class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
-                  ${terms.length > 0 ? terms.map(t => {
-                    const tScores = (termGroups[t.id] && termGroups[t.id].list) || [];
-                    return `
-                      <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-2">
-                        <div class="flex justify-between items-center border-b pb-1.5">
-                          <span class="text-xs font-bold text-indigo-700 font-mono">${t.term_name}</span>
-                          <span class="text-[10px] font-semibold text-slate-400">${tScores.length} Subject(s) Recorded</span>
-                        </div>
-                        ${tScores.length > 0 ? `
-                          <div class="space-y-1.5">
-                            ${tScores.map(sc => `
-                              <div class="flex items-center justify-between text-xs bg-slate-50 p-2 rounded border">
-                                <div>
-                                  <div class="font-bold text-slate-800">${sc.subject}</div>
-                                  <div class="text-[10px] text-slate-500 mt-0.5 flex gap-1.5 flex-wrap">
-                                    <span>Writing: <strong class="text-slate-700">${sc.writing_skill || 'AVG'}</strong></span>
-                                    <span>Reading: <strong class="text-slate-700">${sc.reading_skill || 'AVG'}</strong></span>
-                                  </div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                  <span class="font-bold text-sm">${sc.score}</span>
-                                  <span class="px-1.5 py-0.5 rounded text-[10px] font-black ${getGradeBadgeClass(sc.grade)}">${sc.grade}</span>
-                                  <button onclick="openEditScoreModal(${sc.id})" title="Edit" class="text-slate-400 hover:text-indigo-600 text-xs">✏️</button>
-                                </div>
-                              </div>
-                            `).join('')}
-                          </div>
-                        ` : `<p class="text-[11px] text-slate-400 italic">No score recorded for ${t.term_name}.</p>`}
-                      </div>`;
-                  }).join('') : `<p class="text-xs text-slate-400 italic">No terms created yet. Add terms in Tab 2.</p>`}
-                </div>
-              </div>
-
-              <!-- Right Column: Restructured Grouped BAR Chart With Specific Per-Term Indications -->
-              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-                <div class="flex justify-between items-center mb-2 flex-wrap gap-1">
-                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">📈 Progressive Term & Skills Bar Chart</h4>
-                  <span class="text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-bold">All Terms</span>
-                </div>
-                
-                <div class="relative h-64 w-full">
-                  <canvas id="chart-${st.id}"></canvas>
-                </div>
-
-                <!-- Custom Bar Chart Legend with Metric Indications -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[10px] mt-2 pt-2 border-t border-slate-100 text-slate-600">
-                  <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-indigo-600"></span> <strong>Subject Score</strong></div>
-                  <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-cyan-500"></span> <strong>Writing Skill</strong></div>
-                  <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-purple-500"></span> <strong>Reading Skill</strong></div>
-                  <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-emerald-500"></span> <strong>Notes Verified %</strong></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Unit Activity Status Grid -->
-            <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">📖 Unit & Activity Progress</h4>
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                ${studentUnits.map(u => {
-                  const uActs = activities.filter(a => a.unit_id == u.id);
-                  const verCount = uActs.filter(a => (notesStatuses[`${st.id}_${a.id}`] || 'PENDING') === 'REVIEWED').length;
-                  return `
-                    <div class="bg-white p-2.5 rounded-lg border text-xs shadow-2xs">
-                      <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-slate-800 truncate">${u.unit_name}</span>
-                        <span class="text-[10px] font-bold ${verCount === uActs.length && uActs.length > 0 ? 'text-emerald-700' : 'text-amber-700'}">${verCount}/${uActs.length} Verified</span>
-                      </div>
-                      <div class="flex flex-wrap gap-1">
-                        ${uActs.map(act => {
-                          const code = notesStatuses[`${st.id}_${act.id}`] || 'PENDING';
-                          let pill = 'bg-slate-100 text-slate-500';
-                          if (code === 'COMPLETED') pill = 'bg-emerald-500 text-white font-bold';
-                          if (code === 'REVIEWED') pill = 'bg-blue-600 text-white font-bold';
-                          return `<span class="text-[9px] px-1 py-0.5 rounded ${pill}">Act ${act.activity_no}</span>`;
-                        }).join('')}
-                      </div>
-                    </div>`;
-                }).join('')}
-              </div>
-            </div>
-          </div>`;
-        }
 
         return `
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm w-full transition-all overflow-hidden">
-          <div class="p-3.5 flex flex-wrap justify-between items-center gap-2 cursor-pointer hover:bg-slate-50" onclick="toggleMasterCard(${st.id})">
+          <div class="p-3.5 flex flex-wrap justify-between items-center gap-2 cursor-pointer hover:bg-slate-50" onclick="openFocusedStudentView(${st.id})">
             <div class="flex items-center gap-2 flex-wrap">
               <span class="text-xs font-mono font-black bg-slate-900 text-white px-2 py-0.5 rounded-md">#${serialNo}</span>
               <span class="text-xs font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">Adm: ${st.adm_no}</span>
@@ -2164,15 +2439,40 @@
               <button onclick="deleteStudent(${st.id})" title="Delete" class="text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1 rounded border border-red-200">
                 🗑️ Delete
               </button>
-              <span class="text-xs text-slate-400 font-bold ml-1">${isOpen ? '▲' : '▼'}</span>
+              <span class="text-xs text-indigo-600 font-bold ml-1 bg-indigo-50 px-2 py-0.5 rounded">View Analytics ➔</span>
             </div>
           </div>
-          ${detailsHtml}
         </div>`;
       }).join('');
     }
 
-    // ================= RESTRUCTURED BAR CHART (ALL TERMS WITH SPECIFIC INDICATIONS) =================
+    // ================= DATASET TOGGLE HANDLER (SHOW / HIDE) =================
+    function toggleChartDataset(studentId, datasetIndex) {
+      const chart = chartInstances[studentId];
+      if (!chart) return;
+      const isVisible = chart.isDatasetVisible(datasetIndex);
+      chart.setDatasetVisibility(datasetIndex, !isVisible);
+      chart.update();
+      updateLegendButtonStyles(studentId, chart);
+    }
+
+    function updateLegendButtonStyles(studentId, chart) {
+      [0, 1, 2, 3].forEach(idx => {
+        const btn = document.getElementById(`legend-btn-${studentId}-${idx}`);
+        if (btn) {
+          const visible = chart.isDatasetVisible(idx);
+          if (visible) {
+            btn.classList.remove('opacity-35', 'line-through', 'border-dashed', 'bg-slate-100');
+            btn.classList.add('bg-white');
+          } else {
+            btn.classList.add('opacity-35', 'line-through', 'border-dashed', 'bg-slate-100');
+            btn.classList.remove('bg-white');
+          }
+        }
+      });
+    }
+
+    // ================= PROGRESSIVE BAR CHART =================
     function renderStudentProgressBarChart(studentId) {
       const canvas = document.getElementById(`chart-${studentId}`);
       if (!canvas) return;
@@ -2183,7 +2483,11 @@
       const scoreData = [];
       const writingData = [];
       const readingData = [];
+      const notesData = [];
       const termSpecifics = {};
+
+      const st = students.find(s => s.id == studentId);
+      const studentClass = st ? st.class.toLowerCase() : '';
 
       terms.forEach(t => {
         const sc = scores.find(s => s.student_id == studentId && s.term_id == t.id);
@@ -2201,22 +2505,34 @@
           scoreData.push(0);
           writingData.push(0);
           readingData.push(0);
-          termSpecifics[t.id] = null;
+          termSpecifics[t.id] = { grade: 'N/A', writingRaw: 'N/A', readingRaw: 'N/A', score: 0 };
         }
-      });
 
-      // Calculate student's verified notes %
-      const st = students.find(s => s.id == studentId);
-      const studentUnits = units.filter(u => u.class.toLowerCase() === (st ? st.class.toLowerCase() : ''));
-      let totalActs = 0;
-      let verActs = 0;
-      studentUnits.forEach(u => {
-        const uActs = activities.filter(a => a.unit_id == u.id);
-        totalActs += uActs.length;
-        verActs += uActs.filter(a => (notesStatuses[`${studentId}_${a.id}`] || 'PENDING') === 'REVIEWED').length;
+        let termUnits = units.filter(u => {
+          const matchClass = (u.class || '').toLowerCase() === studentClass;
+          const matchTerm = u.term_id && String(u.term_id) === String(t.id);
+          return matchClass && matchTerm;
+        });
+
+        const anyUnitsHaveTerms = units.some(u => (u.class || '').toLowerCase() === studentClass && u.term_id);
+        if (!anyUnitsHaveTerms) {
+          termUnits = units.filter(u => (u.class || '').toLowerCase() === studentClass);
+        }
+
+        let tTotalActs = 0;
+        let tVerActs = 0;
+
+        termUnits.forEach(u => {
+          const uActs = activities.filter(a => a.unit_id == u.id);
+          tTotalActs += uActs.length;
+          tVerActs += uActs.filter(a => (notesStatuses[`${studentId}_${a.id}`] || 'PENDING') === 'REVIEWED').length;
+        });
+
+        const termNotesPercent = tTotalActs > 0 ? Math.round((tVerActs / tTotalActs) * 100) : 0;
+        notesData.push(termNotesPercent);
+        termSpecifics[t.id].notesActs = `${tVerActs}/${tTotalActs} Acts`;
+        termSpecifics[t.id].hasUnits = termUnits.length > 0;
       });
-      const notesPercent = totalActs > 0 ? Math.round((verActs / totalActs) * 100) : 0;
-      const notesData = terms.map(() => notesPercent);
 
       if (chartInstances[studentId]) {
         chartInstances[studentId].destroy();
@@ -2230,30 +2546,34 @@
             {
               label: 'Subject Score',
               data: scoreData,
-              backgroundColor: '#4f46e5',
+              backgroundColor: '#F54927',
               borderRadius: 4,
-              borderSkipped: false
+              borderSkipped: false,
+              minBarLength: 6
             },
             {
               label: 'Writing Skill',
               data: writingData,
-              backgroundColor: '#06b6d4',
+              backgroundColor: '#20C809',
               borderRadius: 4,
-              borderSkipped: false
+              borderSkipped: false,
+              minBarLength: 6
             },
             {
               label: 'Reading Skill',
               data: readingData,
-              backgroundColor: '#8b5cf6',
+              backgroundColor: '#1C09C8',
               borderRadius: 4,
-              borderSkipped: false
+              borderSkipped: false,
+              minBarLength: 6
             },
             {
-              label: 'Notes Verified %',
+              label: 'Notes Verified',
               data: notesData,
-              backgroundColor: '#10b981',
+              backgroundColor: '#C8095C',
               borderRadius: 4,
-              borderSkipped: false
+              borderSkipped: false,
+              minBarLength: 6
             }
           ]
         },
@@ -2275,7 +2595,7 @@
           },
           plugins: {
             legend: {
-              display: false // Displayed in the clean custom legend below
+              display: false
             },
             tooltip: {
               backgroundColor: 'rgba(15, 23, 42, 0.9)',
@@ -2293,13 +2613,17 @@
                     return ` Score: ${val} (Grade: ${specifics ? specifics.grade : 'N/A'})`;
                   }
                   if (dsLabel === 'Writing Skill') {
-                    return ` Writing Skill: ${specifics ? specifics.writingRaw : 'N/A'} (Score: ${val}%)`;
+                    return ` Writing: ${specifics ? specifics.writingRaw : 'N/A'} (${val}/100)`;
                   }
                   if (dsLabel === 'Reading Skill') {
-                    return ` Reading Skill: ${specifics ? specifics.readingRaw : 'N/A'} (Score: ${val}%)`;
+                    return ` Reading: ${specifics ? specifics.readingRaw : 'N/A'} (${val}/100)`;
                   }
-                  if (dsLabel === 'Notes Verified %') {
-                    return ` Notes Verified: ${val}%`;
+                  if (dsLabel === 'Notes Verified') {
+                    if (specifics && specifics.hasUnits) {
+                      return ` Notes Verified: ${val}% (${specifics.notesActs} in ${termObj.term_name})`;
+                    } else {
+                      return ` Notes Verified: ${val}% (${specifics.notesActs})`;
+                    }
                   }
                   return ` ${dsLabel}: ${val}`;
                 }
@@ -2308,6 +2632,8 @@
           }
         }
       });
+
+      updateLegendButtonStyles(studentId, chartInstances[studentId]);
     }
 
     // ================= WHATSAPP REPORT DISPATCHER =================
@@ -2322,22 +2648,32 @@
       }
 
       const stUnits = units.filter(u => u.class.toLowerCase() === st.class.toLowerCase());
+      stUnits.sort((a, b) => (a.unit_name || '').localeCompare(b.unit_name || '', undefined, { numeric: true }));
+
       let unitReport = '';
       stUnits.forEach(u => {
         const uActs = activities.filter(a => a.unit_id == u.id);
+        uActs.sort((a, b) => a.activity_no - b.activity_no);
+        const assignedTerm = terms.find(t => t.id == u.term_id);
+        const termTag = assignedTerm ? ` [${assignedTerm.term_name}]` : '';
+
         const actSummary = uActs.map(a => {
           const status = notesStatuses[`${st.id}_${a.id}`] || 'PENDING';
           const icon = status === 'REVIEWED' ? '✅' : (status === 'COMPLETED' ? '✔️' : '❌');
           return `  • Act ${a.activity_no}: ${status === 'REVIEWED' ? 'Verified' : (status === 'COMPLETED' ? 'Done' : 'Pending')} ${icon}`;
         }).join('\n');
-        unitReport += `\n*${u.unit_name}*\n${actSummary || '  No activities'}\n`;
+        unitReport += `\n*${u.unit_name}${termTag}*\n${actSummary || '  No activities'}\n`;
       });
 
       const stScores = scores.filter(sc => sc.student_id == st.id);
       let scoreReport = '';
       if (stScores.length > 0) {
         scoreReport = `\n📊 *Subject Scores & Skills:*\n` + 
-          stScores.map(sc => `• ${sc.subject}: ${sc.score} (Grade ${sc.grade}) | Writing: ${sc.writing_skill || 'AVG'} | Reading: ${sc.reading_skill || 'AVG'}`).join('\n') + `\n`;
+          stScores.map(sc => {
+            const scTerm = terms.find(t => t.id == sc.term_id);
+            const tTag = scTerm ? `(${scTerm.term_name}) ` : '';
+            return `• ${tTag}${sc.subject}: ${sc.score} (Grade ${sc.grade}) | Writing: ${sc.writing_skill || 'AVG'} | Reading: ${sc.reading_skill || 'AVG'}`;
+          }).join('\n') + `\n`;
       }
 
       const message = 
