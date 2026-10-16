@@ -2,14 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>EduTrack - TDTTI THURAVOOR</title>
+
+  <!-- PWA & Mobile Web App Meta -->
+  <meta name="theme-color" content="#4338ca" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="EduTrack" />
+
+  <!-- Inline Web App Manifest via Data URI -->
+  <link rel="manifest" href="data:application/manifest+json;utf8,%7B%22name%22%3A%22EduTrack%20TDTTI%22%2C%22short_name%22%3A%22EduTrack%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%234338ca%22%2C%22theme_color%22%3A%22%234338ca%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20100%20100'%3E%3Crect%20width%3D'100'%20height%3D'100'%20rx%3D'20'%20fill%3D'%234338ca'%2F%3E%3Ctext%20x%3D'50'%20y%3D'65'%20font-size%3D'50'%20text-anchor%3D'middle'%20fill%3D'white'%3E%F0%9F%8E%93%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%20512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D" />
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Supabase JS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Chart.js CDN for Progressive Graphs -->
+  <!-- Chart.js CDN for Progressive Bar Charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     .tap-badge {
       transition: all 0.15s ease-in-out;
@@ -17,346 +29,331 @@
       cursor: pointer;
     }
     .tap-badge:active { transform: scale(0.92); }
+    /* Safe-area padding for mobile home indicators */
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1rem); }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col w-full overflow-x-hidden">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col w-full overflow-x-hidden antialiased selection:bg-indigo-500 selection:text-white">
 
-  <!-- ================= TOP LOADER (10PX HEIGHT, Z-[999999]) ================= -->
+  <!-- ================= TOP LOADER (10PX HEIGHT) ================= -->
   <div id="yt-loader" class="fixed top-0 left-0 h-[10px] bg-red-600 shadow-[0_0_14px_#ef4444] transition-all duration-300 z-[999999] w-0 opacity-0 pointer-events-none"></div>
 
-  <!-- Top Navbar -->
-  <header id="main-header" class="bg-indigo-700 text-white shadow-md sticky top-0 z-40 w-full transition-all">
-    <div class="w-full px-4 py-2.5 flex justify-between items-center gap-2">
+  <!-- ================= TOP APP BAR ================= -->
+  <header id="main-header" class="bg-indigo-700 text-white sticky top-0 z-40 w-full shadow-md">
+    <div class="w-full px-3 sm:px-5 py-2.5 flex justify-between items-center gap-2">
       <div class="flex items-center space-x-2">
-        <span class="text-xl sm:text-2xl font-black tracking-tight">🎓 EduTrack</span>
-        <div class="flex flex-col leading-tight hidden sm:flex border-l border-indigo-500 pl-2">
-          <span class="text-xs font-black uppercase text-indigo-100 tracking-wider">TDTTI</span>
-          <span class="text-[10px] text-indigo-200 uppercase font-semibold">THURAVOOR</span>
+        <span class="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-1.5">
+          <span>🎓</span> <span>EduTrack</span>
+        </span>
+        <div class="flex items-center space-x-1 border-l border-indigo-500/60 pl-2">
+          <span class="text-[11px] font-black uppercase text-indigo-100 tracking-wider">TDTTI</span>
+          <span class="text-[9px] bg-indigo-900/60 text-indigo-200 px-1.5 py-0.2 rounded font-semibold uppercase">Thuravoor</span>
         </div>
       </div>
 
-      <!-- Connection Status Badge -->
-      <div class="text-xs bg-indigo-900/80 border border-indigo-500/50 px-3 py-1 rounded-full flex items-center gap-1.5 select-none">
-        <span id="conn-dot" class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
-        <span id="conn-status" class="font-semibold text-xs">Connecting...</span>
-      </div>
-    </div>
+      <!-- Right Controls: Status & Desktop Tabs -->
+      <div class="flex items-center gap-2">
+        <!-- Desktop Navbar Links (Visible on Tablet/Desktop) -->
+        <nav class="hidden md:flex items-center space-x-1 mr-2">
+          <button onclick="switchTab('tab-students')" id="d-btn-tab-students" class="desktop-tab-btn px-3 py-1.5 text-xs font-bold rounded-lg text-white bg-indigo-800 border border-indigo-500">
+            👥 Students
+          </button>
+          <button onclick="switchTab('tab-scores')" id="d-btn-tab-scores" class="desktop-tab-btn px-3 py-1.5 text-xs font-bold rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800/60">
+            📝 Scores
+          </button>
+          <button onclick="switchTab('tab-notes')" id="d-btn-tab-notes" class="desktop-tab-btn px-3 py-1.5 text-xs font-bold rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800/60">
+            📖 Notes
+          </button>
+          <button onclick="switchTab('tab-master')" id="d-btn-tab-master" class="desktop-tab-btn px-3 py-1.5 text-xs font-bold rounded-lg text-indigo-200 hover:text-white hover:bg-indigo-800/60">
+            🎓 Master
+          </button>
+        </nav>
 
-    <!-- Mobile-First Tab Bar -->
-    <div id="main-tab-bar" class="w-full px-2 flex space-x-1 overflow-x-auto border-t border-indigo-600 scrollbar-none transition-all">
-      <button onclick="switchTab('tab-students')" id="btn-tab-students" class="tab-btn whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-4 border-white text-white flex items-center gap-1.5">
-        👥 <span>Students</span>
-      </button>
-      <button onclick="switchTab('tab-scores')" id="btn-tab-scores" class="tab-btn whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm font-medium border-b-4 border-transparent text-indigo-200 hover:text-white flex items-center gap-1.5">
-        📝 <span>Scores & Skills</span>
-      </button>
-      <button onclick="switchTab('tab-notes')" id="btn-tab-notes" class="tab-btn whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm font-medium border-b-4 border-transparent text-indigo-200 hover:text-white flex items-center gap-1.5">
-        📖 <span>Notes Tracker</span>
-      </button>
-      <button onclick="switchTab('tab-master')" id="btn-tab-master" class="tab-btn whitespace-nowrap px-3.5 py-2.5 text-xs sm:text-sm font-medium border-b-4 border-transparent text-indigo-200 hover:text-white flex items-center gap-1.5">
-        🎓 <span>Master View</span>
-      </button>
+        <!-- Install PWA Button (Hidden by default, shown if installable) -->
+        <button id="pwa-install-btn" onclick="installPWA()" class="hidden text-xs bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-2.5 py-1 rounded-full items-center gap-1 shadow-xs">
+          ⬇️ <span class="hidden sm:inline">Install App</span>
+        </button>
+
+        <!-- Minimalist Status Dot -->
+        <div class="text-[11px] bg-indigo-900/70 border border-indigo-500/40 px-2.5 py-1 rounded-full flex items-center gap-1.5 font-mono select-none">
+          <span id="conn-dot" class="w-2 h-2 rounded-full bg-red-400"></span>
+          <span id="conn-status" class="font-bold text-[10px] hidden sm:inline">Connecting</span>
+        </div>
+      </div>
     </div>
   </header>
 
   <!-- Notification Toast -->
-  <div id="toast" class="hidden fixed bottom-5 right-5 z-[100000] bg-slate-900 text-white text-xs sm:text-sm px-4 py-2.5 rounded-lg shadow-2xl transition-all"></div>
+  <div id="toast" class="hidden fixed bottom-20 md:bottom-6 right-4 z-[100000] bg-slate-900 text-white text-xs px-3.5 py-2 rounded-xl shadow-2xl transition-all border border-slate-700"></div>
 
-  <!-- Main 100% Full-Width Wrapper -->
-  <main class="w-full p-2.5 sm:p-5 flex-1 space-y-5">
+  <!-- ================= MAIN CONTENT (FULL-WIDTH, PADDED FOR MOBILE BOTTOM BAR) ================= -->
+  <main class="w-full p-2.5 sm:p-5 flex-1 space-y-4 pb-24 md:pb-8">
 
     <!-- ================= TAB 1: STUDENTS ================= -->
-    <section id="tab-students" class="tab-panel w-full space-y-4">
-      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm w-full">
-        <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100 flex-wrap gap-2">
-          <div>
-            <h2 class="text-base sm:text-lg font-bold text-slate-900">➕ Student Entry</h2>
-            <p class="text-xs text-slate-500">Record individual student profiles</p>
-          </div>
-          <button onclick="toggleModal('bulk-student-modal')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 shadow-xs">
-            📑 Bulk Upload CSV
+    <section id="tab-students" class="tab-panel w-full space-y-3">
+      <!-- Minimal Student Entry Card -->
+      <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs w-full">
+        <div class="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
+          <h2 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+            <span>➕</span> <span>Student Entry</span>
+          </h2>
+          <button onclick="toggleModal('bulk-student-modal')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1">
+            📑 <span>Bulk CSV</span>
           </button>
         </div>
 
-        <form id="single-student-form" onsubmit="handleSingleStudent(event)" class="space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3">
-            <div class="md:col-span-1">
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Adm No</label>
-              <input type="text" id="adm_no" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="1042">
+        <form id="single-student-form" onsubmit="handleSingleStudent(event)" class="space-y-2.5">
+          <div class="grid grid-cols-2 sm:grid-cols-6 gap-2">
+            <div class="col-span-1">
+              <input type="text" id="adm_no" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50" placeholder="Adm No *">
             </div>
-            <div class="md:col-span-2">
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Full Name</label>
-              <input type="text" id="name" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Rahul Sharma">
+            <div class="col-span-1 sm:col-span-2">
+              <input type="text" id="name" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50" placeholder="Student Name *">
             </div>
-            <div class="md:col-span-1">
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Class</label>
-              <input type="text" id="class" value="7" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="7">
+            <div class="col-span-1">
+              <input type="text" id="class" value="7" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs text-center outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50" placeholder="Class">
             </div>
-            <div class="md:col-span-1">
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Div</label>
-              <input type="text" id="div" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="A">
+            <div class="col-span-1">
+              <input type="text" id="div" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs text-center outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50" placeholder="Div">
             </div>
-            <div class="md:col-span-1">
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Gender</label>
-              <select id="gender" required class="w-full border rounded-lg px-2 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500">
+            <div class="col-span-2 sm:col-span-1">
+              <select id="gender" required class="w-full border rounded-xl px-2 py-1.5 text-xs bg-slate-50/50 outline-none focus:ring-2 focus:ring-indigo-500 font-bold">
                 <option value="M">M (Male)</option>
                 <option value="F">F (Female)</option>
               </select>
             </div>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div class="sm:col-span-2">
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">10-Digit Mobile Number</label>
-              <input type="tel" id="mobile" required pattern="[0-9]{10}" maxlength="10" class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="9876543210">
+
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-2">
+              <input type="tel" id="mobile" required pattern="[0-9]{10}" maxlength="10" class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50 font-mono" placeholder="10-Digit Mobile *">
             </div>
-            <div class="flex items-end">
-              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 text-sm rounded-lg shadow-sm">Save Student</button>
+            <div class="col-span-1">
+              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 text-xs rounded-xl shadow-xs transition-all">
+                Save
+              </button>
             </div>
           </div>
         </form>
       </div>
 
-      <!-- Live Directory with Working Delete & Sl No -->
-      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm w-full space-y-3">
+      <!-- Minimal Live Student Directory -->
+      <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs w-full space-y-2.5">
         <div class="flex justify-between items-center flex-wrap gap-2">
-          <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-            <span>📋 Registered Students Directory</span>
-            <span id="tab1-count-badge" class="text-xs bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full">0</span>
-          </h3>
-          <input type="text" id="tab1-search" oninput="renderTab1Students()" placeholder="🔍 Search Adm No / Name..." class="border rounded-lg px-3 py-1 text-xs w-48 sm:w-64 outline-none focus:ring-2 focus:ring-indigo-500">
+          <div class="flex items-center gap-1.5">
+            <h3 class="font-black text-slate-900 text-xs sm:text-sm">📋 Registered Students</h3>
+            <span id="tab1-count-badge" class="text-[10px] bg-indigo-100 text-indigo-800 font-black px-2 py-0.5 rounded-full font-mono">0</span>
+          </div>
+          <input type="text" id="tab1-search" oninput="renderTab1Students()" placeholder="🔍 Filter..." class="border rounded-xl px-2.5 py-1 text-xs w-36 sm:w-56 outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50">
         </div>
 
         <div class="w-full overflow-x-auto">
-          <table class="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
-            <thead class="bg-slate-50 text-slate-700 text-xs uppercase">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-black border-b border-slate-200">
               <tr>
-                <th class="border p-2 text-center w-12 font-bold">Sl No</th>
-                <th class="border p-2">Adm</th>
-                <th class="border p-2">Name</th>
-                <th class="border p-2 text-center">Class-Div</th>
-                <th class="border p-2 text-center">Gender</th>
-                <th class="border p-2">Mobile</th>
-                <th class="border p-2 text-center w-28">Actions</th>
+                <th class="p-2 text-center w-10">#</th>
+                <th class="p-2">Adm</th>
+                <th class="p-2">Name</th>
+                <th class="p-2 text-center">Class</th>
+                <th class="p-2 text-center">Gen</th>
+                <th class="p-2 font-mono">Mobile</th>
+                <th class="p-2 text-center w-20">Act</th>
               </tr>
             </thead>
-            <tbody id="tab1-students-tbody"></tbody>
+            <tbody id="tab1-students-tbody" class="divide-y divide-slate-100"></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- ================= TAB 2: TERMS, AUTO-SCORES & SKILLS ================= -->
-    <section id="tab-scores" class="tab-panel hidden w-full space-y-4">
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm w-full flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2 flex-wrap">
-          <input type="text" id="new-term-name" placeholder="New Term (e.g. Term 1)" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm outline-none focus:ring-2 focus:ring-indigo-500 w-44">
-          <button onclick="createTerm()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg shadow-xs">➕ Add Term</button>
+    <!-- ================= TAB 2: TERMS, SCORES & SKILLS ================= -->
+    <section id="tab-scores" class="tab-panel hidden w-full space-y-3">
+      <!-- Minimal Term Bar -->
+      <div class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs w-full flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <input type="text" id="new-term-name" placeholder="New Term..." class="border rounded-xl px-2.5 py-1 text-xs outline-none focus:ring-2 focus:ring-indigo-500 w-32 sm:w-44 bg-slate-50/50">
+          <button onclick="createTerm()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 text-xs font-bold rounded-xl shadow-xs">➕ Add</button>
         </div>
         
-        <div class="flex items-center gap-2 flex-wrap">
-          <label class="text-xs font-bold text-slate-500 uppercase">Active Term:</label>
-          <select id="active-term-select" onchange="renderTab2Scores()" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm font-bold bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></select>
-          <button onclick="openEditActiveTermModal()" title="Edit Active Term Name" class="p-1.5 hover:bg-indigo-100 text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold flex items-center gap-1">
-            ✏️ <span class="hidden sm:inline">Edit Term</span>
-          </button>
-          <button onclick="deleteActiveTerm()" title="Delete Active Term" class="p-1.5 hover:bg-red-100 text-red-600 bg-red-50 border border-red-200 rounded-lg text-xs font-semibold flex items-center gap-1">
-            🗑️ <span class="hidden sm:inline">Delete Term</span>
-          </button>
+        <div class="flex items-center gap-1 flex-wrap">
+          <select id="active-term-select" onchange="renderTab2Scores()" class="border rounded-xl px-2.5 py-1 text-xs font-black bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></select>
+          <button onclick="openEditActiveTermModal()" title="Edit Active Term" class="p-1 hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs">✏️</button>
+          <button onclick="deleteActiveTerm()" title="Delete Active Term" class="p-1 hover:bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs">🗑️</button>
         </div>
       </div>
 
-      <!-- Quick Entry Section -->
-      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm w-full space-y-3">
-        <div class="flex justify-between items-center pb-2 border-b border-slate-100 flex-wrap gap-2">
-          <div>
-            <h2 class="text-base sm:text-lg font-bold text-slate-900">⚡ Quick Score & Skill Entry</h2>
-            <p class="text-xs text-slate-500">Auto-grading: &lt;30 E | 30-40 D | 41-59 C | 60-79 B | &ge;80 A</p>
-          </div>
-          <button onclick="toggleModal('bulk-score-modal')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 shadow-xs">
-            📑 Bulk Score Import
+      <!-- Minimal Score Entry Card -->
+      <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs w-full space-y-2.5">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+          <h2 class="text-sm font-black text-slate-900 flex items-center gap-1.5">
+            <span>⚡</span> <span>Score & Skills</span>
+          </h2>
+          <button onclick="toggleModal('bulk-score-modal')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold px-2.5 py-1 rounded-lg">
+            📑 Bulk CSV
           </button>
         </div>
 
-        <form id="single-score-form" onsubmit="handleSingleScore(event)" class="space-y-3">
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Student (Type Name / Adm)</label>
-              <input type="text" id="score_student_search" list="students-datalist" oninput="onStudentSearchSelect()" required placeholder="Start typing..." class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+        <form id="single-score-form" onsubmit="handleSingleScore(event)" class="space-y-2.5">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div class="col-span-2 sm:col-span-1">
+              <input type="text" id="score_student_search" list="students-datalist" oninput="onStudentSearchSelect()" required placeholder="Student (Adm/Name)..." class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50">
               <datalist id="students-datalist"></datalist>
               <input type="hidden" id="score_student_id">
             </div>
 
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Subject</label>
-              <input type="text" id="score_subject" value="Social Science" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+            <div class="col-span-2 sm:col-span-1">
+              <input type="text" id="score_subject" value="Social Science" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50">
             </div>
 
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Score (0-100)</label>
-              <div class="flex gap-2">
-                <input type="number" id="score_val" oninput="updateLiveGradePreview()" required min="0" max="100" class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="85">
-                <div id="live-grade" class="w-12 flex items-center justify-center font-bold text-base rounded-lg bg-slate-100 border text-slate-600">-</div>
+            <div class="col-span-1">
+              <div class="flex gap-1.5">
+                <input type="number" id="score_val" oninput="updateLiveGradePreview()" required min="0" max="100" class="w-full border rounded-xl px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50" placeholder="Score (0-100)">
+                <div id="live-grade" class="w-10 flex items-center justify-center font-black text-xs rounded-xl bg-slate-100 border text-slate-600">-</div>
               </div>
             </div>
 
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Writing Skill</label>
-              <select id="writing_skill" required class="w-full border rounded-lg px-2 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="POOR">POOR</option>
-                <option value="AVG" selected>AVG (Average)</option>
-                <option value="GOOD">GOOD</option>
-                <option value="VG">VG (Very Good)</option>
-                <option value="EXLNT">EXLNT (Excellent)</option>
+            <div class="col-span-1">
+              <select id="writing_skill" required class="w-full border rounded-xl px-2 py-1.5 text-xs bg-slate-50/50 outline-none font-bold">
+                <option value="POOR">Writing: POOR</option>
+                <option value="AVG" selected>Writing: AVG</option>
+                <option value="GOOD">Writing: GOOD</option>
+                <option value="VG">Writing: VG</option>
+                <option value="EXLNT">Writing: EXLNT</option>
               </select>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Reading Skill</label>
-              <select id="reading_skill" required class="w-full border rounded-lg px-2 py-1.5 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="POOR">POOR</option>
-                <option value="AVG" selected>AVG (Average)</option>
-                <option value="GOOD">GOOD</option>
-                <option value="VG">VG (Very Good)</option>
-                <option value="EXLNT">EXLNT (Excellent)</option>
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-2">
+              <select id="reading_skill" required class="w-full border rounded-xl px-2 py-1.5 text-xs bg-slate-50/50 outline-none font-bold">
+                <option value="POOR">Reading: POOR</option>
+                <option value="AVG" selected>Reading: AVG</option>
+                <option value="GOOD">Reading: GOOD</option>
+                <option value="VG">Reading: VG</option>
+                <option value="EXLNT">Reading: EXLNT</option>
               </select>
             </div>
-            <div class="flex items-end">
-              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 text-sm rounded-lg shadow-sm">Save Score & Skills</button>
+            <div class="col-span-1">
+              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 text-xs rounded-xl shadow-xs transition-all">
+                Save
+              </button>
             </div>
           </div>
         </form>
       </div>
 
       <!-- Live Recorded Assessments Table -->
-      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm w-full space-y-3">
+      <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs w-full space-y-2.5">
         <div class="flex justify-between items-center flex-wrap gap-2">
-          <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-            <span>📊 Recorded Assessments for Active Term</span>
-            <span id="tab2-count-badge" class="text-xs bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full">0</span>
-          </h3>
-          <input type="text" id="tab2-search" oninput="renderTab2Scores()" placeholder="🔍 Filter scores..." class="border rounded-lg px-3 py-1 text-xs w-48 sm:w-64 outline-none focus:ring-2 focus:ring-indigo-500">
+          <div class="flex items-center gap-1.5">
+            <h3 class="font-black text-slate-900 text-xs sm:text-sm">📊 Recorded Term Assessments</h3>
+            <span id="tab2-count-badge" class="text-[10px] bg-indigo-100 text-indigo-800 font-black px-2 py-0.5 rounded-full font-mono">0</span>
+          </div>
+          <input type="text" id="tab2-search" oninput="renderTab2Scores()" placeholder="🔍 Filter..." class="border rounded-xl px-2.5 py-1 text-xs w-36 sm:w-56 outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50">
         </div>
 
         <div class="w-full overflow-x-auto">
-          <table class="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
-            <thead class="bg-slate-50 text-slate-700 text-xs uppercase">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-black border-b border-slate-200">
               <tr>
-                <th class="border p-2">Adm</th>
-                <th class="border p-2">Student</th>
-                <th class="border p-2">Subject</th>
-                <th class="border p-2 text-center">Score</th>
-                <th class="border p-2 text-center">Grade</th>
-                <th class="border p-2 text-center">Writing Skill</th>
-                <th class="border p-2 text-center">Reading Skill</th>
-                <th class="border p-2 text-center w-24">Actions</th>
+                <th class="p-2">Adm</th>
+                <th class="p-2">Student</th>
+                <th class="p-2">Subject</th>
+                <th class="p-2 text-center">Score</th>
+                <th class="p-2 text-center">Writing</th>
+                <th class="p-2 text-center">Reading</th>
+                <th class="p-2 text-center w-16">Act</th>
               </tr>
             </thead>
-            <tbody id="tab2-scores-tbody"></tbody>
+            <tbody id="tab2-scores-tbody" class="divide-y divide-slate-100"></tbody>
           </table>
         </div>
       </div>
     </section>
 
     <!-- ================= TAB 3: NOTES TRACKER ================= -->
-    <section id="tab-notes" class="tab-panel hidden w-full space-y-4">
-      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm w-full space-y-3">
-        <div class="flex justify-between items-center flex-wrap gap-2 border-b pb-2">
-          <div>
-            <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider">🛠️ Configure Units & Activities</h2>
-            <p class="text-[11px] text-slate-500">Assign units term-wise and manage curriculum activities</p>
-          </div>
-          <button onclick="openManageUnitsModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold px-3 py-1.5 text-xs rounded-lg flex items-center gap-1 shadow-xs">
-            📋 Curriculum Units & Activities Manager
+    <section id="tab-notes" class="tab-panel hidden w-full space-y-3">
+      <!-- Minimal Units Config Header -->
+      <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-xs w-full space-y-2.5">
+        <div class="flex justify-between items-center flex-wrap gap-2">
+          <h2 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+            <span>🛠️</span> <span>Unit & Activities</span>
+          </h2>
+          <button onclick="openManageUnitsModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold px-2.5 py-1 text-xs rounded-xl shadow-xs">
+            📋 Manager
           </button>
         </div>
 
-        <!-- Unit Creation Form with Term Selector -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-          <input type="text" id="unit-name" placeholder="Unit Name (e.g. Unit 1: Our Earth)" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm outline-none">
-          <input type="text" id="unit-class" value="7" placeholder="Class (e.g. 7)" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm outline-none">
-          <select id="unit-term-select" class="border rounded-lg px-2 py-1.5 text-xs sm:text-sm bg-white font-semibold outline-none">
-            <option value="">Assign Term (Optional)</option>
+        <!-- Inline Quick Add Form -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <input type="text" id="unit-name" placeholder="Unit Name..." class="border rounded-xl px-2.5 py-1.5 text-xs outline-none bg-slate-50/50">
+          <input type="text" id="unit-class" value="7" placeholder="Class" class="border rounded-xl px-2.5 py-1.5 text-xs text-center outline-none bg-slate-50/50">
+          <select id="unit-term-select" class="border rounded-xl px-2 py-1.5 text-xs bg-slate-50/50 font-bold outline-none">
+            <option value="">Term (Opt)</option>
           </select>
-          <input type="number" id="unit-act-count" placeholder="No. of Activities (e.g. 4)" min="1" max="20" class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm outline-none">
-          <button onclick="createUnitAndActivities()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-1.5 text-xs sm:text-sm rounded-lg shadow-xs">Add Unit</button>
+          <input type="number" id="unit-act-count" placeholder="Acts (e.g. 4)" min="1" max="20" class="border rounded-xl px-2.5 py-1.5 text-xs text-center outline-none bg-slate-50/50">
+          <button onclick="createUnitAndActivities()" class="col-span-2 sm:col-span-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 text-xs rounded-xl shadow-xs">
+            ➕ Add
+          </button>
         </div>
       </div>
 
-      <!-- Filter Controls: Class Default ALL -->
-      <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 shadow-sm w-full flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <input type="text" id="notes-search" oninput="loadNotesTracker()" placeholder="🔍 Search student..." class="border rounded-lg px-2.5 py-1 text-xs w-36 sm:w-48 outline-none focus:ring-2 focus:ring-indigo-500">
+      <!-- Minimal Horizontal Filter Bar -->
+      <div class="bg-white p-2.5 rounded-2xl border border-slate-200/80 shadow-xs w-full flex items-center justify-between gap-2 overflow-x-auto">
+        <div class="flex items-center gap-1.5 shrink-0">
+          <input type="text" id="notes-search" oninput="loadNotesTracker()" placeholder="🔍 Filter..." class="border rounded-xl px-2.5 py-1 text-xs w-28 sm:w-40 outline-none bg-slate-50/50">
           
           <div class="flex items-center gap-1">
-            <span class="text-[11px] font-bold text-slate-500">Class:</span>
-            <input type="text" id="notes-class-filter" value="ALL" class="border rounded-lg px-2 py-1 text-xs w-14 text-center font-bold" onchange="onClassFilterChange()">
+            <input type="text" id="notes-class-filter" value="ALL" class="border rounded-xl px-1.5 py-1 text-xs w-12 text-center font-bold bg-slate-50" onchange="onClassFilterChange()">
           </div>
 
-          <div class="flex items-center gap-1">
-            <span class="text-[11px] font-bold text-slate-500">Div:</span>
-            <select id="notes-div-filter" onchange="loadNotesTracker()" class="border rounded-lg px-2 py-1 text-xs bg-white font-bold">
-              <option value="">All</option>
-            </select>
-          </div>
+          <select id="notes-div-filter" onchange="loadNotesTracker()" class="border rounded-xl px-2 py-1 text-xs bg-slate-50 font-bold">
+            <option value="">Div</option>
+          </select>
 
-          <div class="flex items-center gap-1">
-            <span class="text-[11px] font-bold text-slate-500">Unit:</span>
-            <select id="notes-unit-filter" onchange="onUnitFilterChange()" class="border rounded-lg px-2 py-1 text-xs bg-white max-w-[130px]">
-              <option value="">All</option>
-            </select>
-          </div>
+          <select id="notes-unit-filter" onchange="onUnitFilterChange()" class="border rounded-xl px-2 py-1 text-xs bg-slate-50 max-w-[110px]">
+            <option value="">Unit</option>
+          </select>
 
-          <div class="flex items-center gap-1">
-            <span class="text-[11px] font-bold text-slate-500">Act:</span>
-            <select id="notes-activity-filter" onchange="loadNotesTracker()" class="border rounded-lg px-2 py-1 text-xs bg-white">
-              <option value="">All</option>
-            </select>
-          </div>
-
-          <button onclick="loadNotesTracker()" class="bg-slate-100 hover:bg-slate-200 text-xs font-bold px-3 py-1 rounded-lg border">Filter</button>
+          <select id="notes-activity-filter" onchange="loadNotesTracker()" class="border rounded-xl px-2 py-1 text-xs bg-slate-50">
+            <option value="">Act</option>
+          </select>
         </div>
 
-        <div class="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap">
-          <span>Tap cycle:</span>
-          <span class="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">TAP</span> ➔ 
-          <span class="bg-emerald-500 text-white px-1.5 py-0.5 rounded font-bold">DONE</span> ➔ 
-          <span class="bg-blue-600 text-white px-1.5 py-0.5 rounded font-bold">VERIFIED</span>
+        <div class="text-[10px] text-slate-400 font-bold hidden sm:flex items-center gap-1 shrink-0">
+          <span>Tap:</span> <span class="text-slate-600">TAP</span>➔<span class="text-emerald-600">DONE</span>➔<span class="text-blue-600">VERIFIED</span>
         </div>
       </div>
 
-      <!-- ================= CATEGORY I: PENDING ================= -->
-      <div class="bg-amber-50/60 rounded-xl border border-amber-200 p-4 sm:p-5 shadow-sm w-full space-y-3">
-        <div class="flex justify-between items-center flex-wrap gap-2">
-          <div class="flex items-center gap-2">
-            <span class="text-base">⚠️</span>
-            <h3 class="font-bold text-amber-900 text-xs sm:text-sm uppercase tracking-wide">Category I: Pending / Non-Completed Students</h3>
+      <!-- Category I: Pending List -->
+      <div class="bg-amber-50/60 rounded-2xl border border-amber-200/80 p-3 sm:p-4 shadow-xs w-full space-y-2">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-1.5">
+            <span class="text-sm">⚠️</span>
+            <h3 class="font-black text-amber-900 text-xs uppercase tracking-wide">Category I: Pending</h3>
           </div>
-          <span id="incomplete-count-badge" class="text-xs bg-amber-200 text-amber-800 font-bold px-2.5 py-0.5 rounded-full">0 Pending</span>
+          <span id="incomplete-count-badge" class="text-[10px] bg-amber-200 text-amber-900 font-black px-2 py-0.5 rounded-full">0</span>
         </div>
-        <p class="text-[11px] text-amber-700">Sorted by Class ➔ Div ➔ Student Name. Serial Numbers included. Manage curriculum units in the manager above.</p>
-        <div id="incomplete-students-list" class="space-y-2 w-full"></div>
+        <div id="incomplete-students-list" class="space-y-1.5 w-full"></div>
       </div>
 
-      <!-- ================= CATEGORY II: COMPLETED ================= -->
-      <div class="bg-emerald-50/60 rounded-xl border border-emerald-200 p-4 sm:p-5 shadow-sm w-full space-y-3">
-        <div class="flex justify-between items-center flex-wrap gap-2">
-          <div class="flex items-center gap-2">
-            <span class="text-base">✅</span>
-            <h3 class="font-bold text-emerald-900 text-xs sm:text-sm uppercase tracking-wide">Category II: ALL Completed Students</h3>
+      <!-- Category II: Completed List -->
+      <div class="bg-emerald-50/60 rounded-2xl border border-emerald-200/80 p-3 sm:p-4 shadow-xs w-full space-y-2">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-1.5">
+            <span class="text-sm">✅</span>
+            <h3 class="font-black text-emerald-900 text-xs uppercase tracking-wide">Category II: Completed</h3>
           </div>
-          <span id="completed-count-badge" class="text-xs bg-emerald-200 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full">0 Completed</span>
+          <span id="completed-count-badge" class="text-[10px] bg-emerald-200 text-emerald-900 font-black px-2 py-0.5 rounded-full">0</span>
         </div>
-        <p class="text-[11px] text-emerald-700">Listed only when ALL activities across ALL units are verified.</p>
-        <div id="completed-students-list" class="space-y-2 w-full"></div>
+        <div id="completed-students-list" class="space-y-1.5 w-full"></div>
       </div>
 
-      <!-- Full Class Matrix Table -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 w-full space-y-3">
+      <!-- Full Class Matrix Table (Collapsible Unit Filters) -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-3.5 w-full space-y-2.5">
         <div class="flex justify-between items-center flex-wrap gap-2">
-          <h3 class="font-bold text-slate-800 text-xs sm:text-sm uppercase tracking-wide">Full Class Notes Matrix</h3>
-          <div id="unit-visibility-toggles" class="flex flex-wrap gap-1.5 text-xs"></div>
+          <h3 class="font-black text-slate-800 text-xs uppercase tracking-wide">Matrix View</h3>
+          <div id="unit-visibility-toggles" class="flex flex-wrap gap-1 text-[10px]"></div>
         </div>
         <div class="w-full overflow-x-auto">
           <div id="notes-matrix-container" class="w-full"></div>
@@ -365,146 +362,136 @@
     </section>
 
     <!-- ================= TAB 4: STUDENT MASTER VIEW ================= -->
-    <section id="tab-master" class="tab-panel hidden w-full space-y-5">
-      <!-- Search & Controls Header -->
-      <div id="master-search-bar" class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm w-full transition-all">
-        <div>
-          <h2 class="text-base sm:text-lg font-bold text-slate-900">Student Directory & Comprehensive Analytics</h2>
-          <p class="text-xs text-slate-500">TDTTI THURAVOOR Master Record System</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <input type="text" id="master-search" oninput="renderMasterView()" placeholder="🔍 Search name / Adm No..." class="border rounded-lg px-3 py-1.5 text-xs sm:text-sm outline-none w-48 sm:w-64 focus:ring-2 focus:ring-indigo-500">
-          <button onclick="loadInitialData()" class="bg-slate-100 border text-slate-600 px-3 py-1.5 rounded-lg text-xs hover:bg-slate-200">↻ Refresh</button>
-        </div>
+    <section id="tab-master" class="tab-panel hidden w-full space-y-3">
+      <!-- Search & Refresh Header -->
+      <div id="master-search-bar" class="flex items-center justify-between gap-2 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs w-full">
+        <input type="text" id="master-search" oninput="renderMasterView()" placeholder="🔍 Search student name / Adm..." class="border rounded-xl px-3 py-1.5 text-xs w-full outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50">
+        <button onclick="loadInitialData()" class="bg-slate-100 hover:bg-slate-200 border text-slate-600 px-3 py-1.5 rounded-xl text-xs font-bold shrink-0">↻</button>
       </div>
 
-      <!-- Collapsible Consolidated Summary -->
-      <div id="consolidated-summary-container" class="bg-white rounded-xl border border-slate-200 shadow-sm w-full overflow-hidden transition-all">
-        <div class="p-4 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-all select-none" onclick="toggleConsolidatedSummary()">
-          <div class="flex items-center gap-2 flex-wrap">
-            <h3 class="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-              <span>🏛️ Consolidated Student Enrollment Summary</span>
-            </h3>
-            <span class="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full" id="summary-toggle-badge">Click to Expand</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-mono bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-md border border-indigo-200 hidden sm:inline">TDTTI Thuravoor</span>
-            <span id="summary-chevron" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">▼ Expand</span>
-          </div>
+      <!-- Collapsible Summary Card -->
+      <div id="consolidated-summary-container" class="bg-white rounded-2xl border border-slate-200/80 shadow-xs w-full overflow-hidden">
+        <div class="p-3.5 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-all select-none" onclick="toggleConsolidatedSummary()">
+          <h3 class="font-black text-slate-900 text-xs flex items-center gap-1.5">
+            <span>🏛️</span> <span>Enrollment Summary</span>
+          </h3>
+          <span id="summary-chevron" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">▼ Expand</span>
         </div>
 
-        <div id="consolidated-summary-content" class="hidden p-4 pt-0 border-t border-slate-100">
-          <div class="w-full overflow-x-auto mt-3">
-            <table class="w-full text-left text-xs sm:text-sm border-collapse border border-slate-200">
-              <thead class="bg-slate-100 text-slate-700 uppercase font-semibold text-xs">
+        <div id="consolidated-summary-content" class="hidden p-3 pt-0 border-t border-slate-100">
+          <div class="w-full overflow-x-auto mt-2">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-50 text-slate-500 text-[10px] font-black uppercase">
                 <tr>
-                  <th class="border p-2">Class</th>
-                  <th class="border p-2">Division</th>
-                  <th class="border p-2 text-center text-blue-700">No. of Male (M)</th>
-                  <th class="border p-2 text-center text-pink-700">No. of Female (F)</th>
-                  <th class="border p-2 text-center font-bold text-slate-900">Total</th>
+                  <th class="p-1.5">Class</th>
+                  <th class="p-1.5">Div</th>
+                  <th class="p-1.5 text-center text-blue-700">Male</th>
+                  <th class="p-1.5 text-center text-pink-700">Female</th>
+                  <th class="p-1.5 text-center text-slate-900 font-bold">Total</th>
                 </tr>
               </thead>
-              <tbody id="consolidated-summary-tbody"></tbody>
-              <tfoot id="consolidated-summary-tfoot" class="bg-slate-200 font-bold text-slate-900 text-xs sm:text-sm"></tfoot>
+              <tbody id="consolidated-summary-tbody" class="divide-y divide-slate-100"></tbody>
+              <tfoot id="consolidated-summary-tfoot" class="bg-slate-100 font-bold text-xs"></tfoot>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- Master Cards Container (Supports Focused View Mode) -->
-      <div class="space-y-3 w-full">
-        <div id="master-records-container" class="space-y-3 w-full"></div>
-      </div>
+      <!-- Master Cards Container -->
+      <div id="master-records-container" class="space-y-2.5 w-full"></div>
     </section>
 
   </main>
 
-  <!-- ================= PROMISE-BASED CONFIRMATION MODAL ================= -->
+  <!-- ================= MOBILE APP BOTTOM NAVIGATION BAR (FIXED ON PHONES, HIDDEN ON DESKTOP) ================= -->
+  <nav id="mobile-nav" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 flex justify-around items-center py-1.5 pb-safe md:hidden shadow-lg select-none">
+    <button onclick="switchTab('tab-students')" id="m-btn-tab-students" class="mobile-tab-btn flex flex-col items-center justify-center flex-1 py-1 text-indigo-600 font-black">
+      <span class="text-lg">👥</span>
+      <span class="text-[10px]">Students</span>
+    </button>
+    <button onclick="switchTab('tab-scores')" id="m-btn-tab-scores" class="mobile-tab-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 font-semibold hover:text-slate-600">
+      <span class="text-lg">📝</span>
+      <span class="text-[10px]">Scores</span>
+    </button>
+    <button onclick="switchTab('tab-notes')" id="m-btn-tab-notes" class="mobile-tab-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 font-semibold hover:text-slate-600">
+      <span class="text-lg">📖</span>
+      <span class="text-[10px]">Notes</span>
+    </button>
+    <button onclick="switchTab('tab-master')" id="m-btn-tab-master" class="mobile-tab-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 font-semibold hover:text-slate-600">
+      <span class="text-lg">🎓</span>
+      <span class="text-[10px]">Master</span>
+    </button>
+  </nav>
+
+  <!-- ================= PROMISE-BASED CONFIRMATION DIALOG ================= -->
   <div id="custom-confirm-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[100000] flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-100 space-y-3.5">
       <div class="flex items-start gap-3">
-        <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 bg-red-100 text-red-600">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0 bg-red-100 text-red-600">
           🗑️
         </div>
         <div class="flex-1">
-          <h3 id="confirm-title" class="text-base font-bold text-slate-900">Confirm Action</h3>
-          <p id="confirm-message" class="text-xs text-slate-600 mt-1 whitespace-pre-line leading-relaxed"></p>
+          <h3 id="confirm-title" class="text-sm font-black text-slate-900">Confirm Action</h3>
+          <p id="confirm-message" class="text-xs text-slate-500 mt-0.5 whitespace-pre-line leading-relaxed"></p>
         </div>
       </div>
-      <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-        <button onclick="handleConfirmResponse(false)" class="px-4 py-2 border rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-all">Cancel</button>
-        <button id="confirm-ok-btn" onclick="handleConfirmResponse(true)" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm">Delete</button>
+      <div class="flex justify-end gap-2 pt-1 border-t border-slate-100">
+        <button onclick="handleConfirmResponse(false)" class="px-3 py-1.5 border rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+        <button id="confirm-ok-btn" onclick="handleConfirmResponse(true)" class="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-xs">Delete</button>
       </div>
     </div>
   </div>
 
   <!-- ================= EDIT ACTIVE TERM MODAL ================= -->
   <div id="edit-term-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-[90000] flex items-center justify-center p-3">
-    <div class="bg-white rounded-xl max-w-sm w-full p-5 shadow-2xl">
-      <h3 class="text-base font-bold text-slate-900 mb-3">Edit Active Term Name</h3>
-      <form id="edit-term-form" onsubmit="saveEditedTerm(event)" class="space-y-3">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-4 shadow-2xl space-y-3">
+      <h3 class="text-xs font-black text-slate-900 uppercase">Edit Term Name</h3>
+      <form id="edit-term-form" onsubmit="saveEditedTerm(event)" class="space-y-2.5">
         <input type="hidden" id="edit-term-id">
-        <div>
-          <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Term Name</label>
-          <input type="text" id="edit-term-name" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="toggleModal('edit-term-modal')" class="px-4 py-1.5 border rounded-lg text-xs text-slate-600">Cancel</button>
-          <button type="submit" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold">Update Term</button>
+        <input type="text" id="edit-term-name" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500">
+        <div class="flex justify-end gap-1.5 pt-1">
+          <button type="button" onclick="toggleModal('edit-term-modal')" class="px-3 py-1.5 border rounded-xl text-xs font-bold text-slate-600">Cancel</button>
+          <button type="submit" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-black">Save</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ================= MANAGE UNITS & ACTIVITIES MODAL ================= -->
+  <!-- ================= CURRICULUM MANAGER MODAL ================= -->
   <div id="manage-units-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-[85000] flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl flex flex-col max-h-[85vh]">
-      <div class="flex justify-between items-center border-b pb-3 mb-3 flex-wrap gap-2">
-        <div>
-          <h3 class="text-base font-bold text-slate-900">📋 Curriculum Units & Activities Manager</h3>
-          <p class="text-xs text-slate-500">Organized Class-wise & Term-wise</p>
-        </div>
-        <button onclick="toggleModal('manage-units-modal')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+    <div class="bg-white rounded-2xl max-w-lg w-full p-4 shadow-2xl flex flex-col max-h-[85vh] space-y-2.5">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="text-xs font-black text-slate-900 uppercase">📋 Curriculum Manager</h3>
+        <button onclick="toggleModal('manage-units-modal')" class="text-slate-400 hover:text-slate-600 font-bold text-sm">✕</button>
       </div>
 
-      <div class="flex items-center gap-2 mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex-wrap">
-        <span class="text-xs font-bold text-slate-600">Filter View:</span>
-        <select id="mgr-class-filter" onchange="renderManageUnitsModal()" class="border rounded px-2 py-1 text-xs bg-white font-semibold">
+      <div class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200">
+        <select id="mgr-class-filter" onchange="renderManageUnitsModal()" class="border rounded-lg px-2 py-1 text-xs bg-white font-bold flex-1">
           <option value="">All Classes</option>
         </select>
-        <select id="mgr-term-filter" onchange="renderManageUnitsModal()" class="border rounded px-2 py-1 text-xs bg-white font-semibold">
+        <select id="mgr-term-filter" onchange="renderManageUnitsModal()" class="border rounded-lg px-2 py-1 text-xs bg-white font-bold flex-1">
           <option value="">All Terms</option>
         </select>
       </div>
 
-      <div id="manage-units-content" class="overflow-y-auto flex-1 space-y-3 pr-1"></div>
+      <div id="manage-units-content" class="overflow-y-auto flex-1 space-y-2 pr-1"></div>
     </div>
   </div>
 
   <!-- ================= EDIT UNIT MODAL ================= -->
   <div id="edit-unit-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-[95000] flex items-center justify-center p-3">
-    <div class="bg-white rounded-xl max-w-sm w-full p-5 shadow-2xl">
-      <h3 class="text-base font-bold text-slate-900 mb-3">Modify Unit Information</h3>
-      <form id="edit-unit-form" onsubmit="saveEditedUnit(event)" class="space-y-3">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-4 shadow-2xl space-y-3">
+      <h3 class="text-xs font-black text-slate-900 uppercase">Modify Unit</h3>
+      <form id="edit-unit-form" onsubmit="saveEditedUnit(event)" class="space-y-2.5">
         <input type="hidden" id="edit-unit-id">
-        <div>
-          <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Unit Name</label>
-          <input type="text" id="edit-unit-name-input" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Class</label>
-          <input type="text" id="edit-unit-class-input" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Assigned Term</label>
-          <select id="edit-unit-term-select" class="w-full border rounded-lg px-2 py-1.5 text-sm outline-none bg-white font-semibold">
-            <option value="">No Term Assigned</option>
-          </select>
-        </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="toggleModal('edit-unit-modal')" class="px-4 py-1.5 border rounded-lg text-xs text-slate-600">Cancel</button>
-          <button type="submit" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold">Save Unit</button>
+        <input type="text" id="edit-unit-name-input" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none" placeholder="Unit Name">
+        <input type="text" id="edit-unit-class-input" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none" placeholder="Class">
+        <select id="edit-unit-term-select" class="w-full border rounded-xl px-2 py-1.5 text-xs outline-none bg-white font-bold">
+          <option value="">No Term Assigned</option>
+        </select>
+        <div class="flex justify-end gap-1.5 pt-1">
+          <button type="button" onclick="toggleModal('edit-unit-modal')" class="px-3 py-1.5 border rounded-xl text-xs font-bold text-slate-600">Cancel</button>
+          <button type="submit" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-black">Save</button>
         </div>
       </form>
     </div>
@@ -512,21 +499,15 @@
 
   <!-- ================= EDIT ACTIVITY MODAL ================= -->
   <div id="edit-act-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-[95000] flex items-center justify-center p-3">
-    <div class="bg-white rounded-xl max-w-sm w-full p-5 shadow-2xl">
-      <h3 class="text-base font-bold text-slate-900 mb-3">Modify Activity Details</h3>
-      <form id="edit-act-form" onsubmit="saveEditedActivity(event)" class="space-y-3">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-4 shadow-2xl space-y-3">
+      <h3 class="text-xs font-black text-slate-900 uppercase">Modify Activity</h3>
+      <form id="edit-act-form" onsubmit="saveEditedActivity(event)" class="space-y-2.5">
         <input type="hidden" id="edit-act-id">
-        <div>
-          <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Activity Number</label>
-          <input type="number" id="edit-act-no-input" required min="1" max="99" class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Activity Title (Optional)</label>
-          <input type="text" id="edit-act-title-input" class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="toggleModal('edit-act-modal')" class="px-4 py-1.5 border rounded-lg text-xs text-slate-600">Cancel</button>
-          <button type="submit" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold">Save Activity</button>
+        <input type="number" id="edit-act-no-input" required min="1" max="99" class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none" placeholder="Act Number">
+        <input type="text" id="edit-act-title-input" class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none" placeholder="Title (Optional)">
+        <div class="flex justify-end gap-1.5 pt-1">
+          <button type="button" onclick="toggleModal('edit-act-modal')" class="px-3 py-1.5 border rounded-xl text-xs font-bold text-slate-600">Cancel</button>
+          <button type="submit" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-black">Save</button>
         </div>
       </form>
     </div>
@@ -534,44 +515,26 @@
 
   <!-- ================= EDIT STUDENT MODAL ================= -->
   <div id="edit-student-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-[90000] flex items-center justify-center p-3">
-    <div class="bg-white rounded-xl max-w-lg w-full p-5 shadow-2xl">
-      <h3 class="text-base font-bold text-slate-900 mb-3">Modify Student Information</h3>
-      <form id="edit-student-form" onsubmit="saveEditedStudent(event)" class="space-y-3">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-2xl space-y-3">
+      <h3 class="text-xs font-black text-slate-900 uppercase">Edit Student</h3>
+      <form id="edit-student-form" onsubmit="saveEditedStudent(event)" class="space-y-2.5">
         <input type="hidden" id="edit-std-id">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Adm No</label>
-            <input type="text" id="edit-std-adm" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Full Name</label>
-            <input type="text" id="edit-std-name" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none">
-          </div>
+        <div class="grid grid-cols-2 gap-2">
+          <input type="text" id="edit-std-adm" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none" placeholder="Adm No">
+          <input type="text" id="edit-std-name" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none" placeholder="Name">
         </div>
         <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Class</label>
-            <input type="text" id="edit-std-class" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Div</label>
-            <input type="text" id="edit-std-div" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none">
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Gender</label>
-            <select id="edit-std-gender" required class="w-full border rounded-lg px-2 py-1.5 text-sm outline-none bg-white">
-              <option value="M">Male (M)</option>
-              <option value="F">Female (F)</option>
-            </select>
-          </div>
+          <input type="text" id="edit-std-class" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs text-center outline-none" placeholder="Class">
+          <input type="text" id="edit-std-div" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs text-center outline-none" placeholder="Div">
+          <select id="edit-std-gender" required class="w-full border rounded-xl px-2 py-1.5 text-xs font-bold outline-none bg-white">
+            <option value="M">M</option>
+            <option value="F">F</option>
+          </select>
         </div>
-        <div>
-          <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">10-Digit Mobile</label>
-          <input type="tel" id="edit-std-mobile" required pattern="[0-9]{10}" maxlength="10" class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none">
-        </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="toggleModal('edit-student-modal')" class="px-4 py-1.5 border rounded-lg text-xs text-slate-600">Cancel</button>
-          <button type="submit" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold">Save Changes</button>
+        <input type="tel" id="edit-std-mobile" required pattern="[0-9]{10}" maxlength="10" class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none font-mono" placeholder="Mobile">
+        <div class="flex justify-end gap-1.5 pt-1">
+          <button type="button" onclick="toggleModal('edit-student-modal')" class="px-3 py-1.5 border rounded-xl text-xs font-bold text-slate-600">Cancel</button>
+          <button type="submit" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-black">Save</button>
         </div>
       </form>
     </div>
@@ -579,43 +542,31 @@
 
   <!-- ================= EDIT SCORE MODAL ================= -->
   <div id="edit-score-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-[90000] flex items-center justify-center p-3">
-    <div class="bg-white rounded-xl max-w-md w-full p-5 shadow-2xl">
-      <h3 class="text-base font-bold text-slate-900 mb-3">Modify Score & Skills</h3>
-      <form id="edit-score-form" onsubmit="saveEditedScore(event)" class="space-y-3">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-4 shadow-2xl space-y-3">
+      <h3 class="text-xs font-black text-slate-900 uppercase">Edit Score</h3>
+      <form id="edit-score-form" onsubmit="saveEditedScore(event)" class="space-y-2.5">
         <input type="hidden" id="edit-score-id">
-        <div>
-          <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Subject</label>
-          <input type="text" id="edit-score-subject" required class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none">
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Score (0-100)</label>
-          <input type="number" id="edit-score-val" required min="0" max="100" class="w-full border rounded-lg px-3 py-1.5 text-sm outline-none">
-        </div>
+        <input type="text" id="edit-score-subject" required class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none" placeholder="Subject">
+        <input type="number" id="edit-score-val" required min="0" max="100" class="w-full border rounded-xl px-2.5 py-1.5 text-xs outline-none" placeholder="Score">
         <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Writing Skill</label>
-            <select id="edit-score-writing" required class="w-full border rounded-lg px-2 py-1.5 text-sm bg-white outline-none">
-              <option value="POOR">POOR</option>
-              <option value="AVG">AVG</option>
-              <option value="GOOD">GOOD</option>
-              <option value="VG">VG</option>
-              <option value="EXLNT">EXLNT</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Reading Skill</label>
-            <select id="edit-score-reading" required class="w-full border rounded-lg px-2 py-1.5 text-sm bg-white outline-none">
-              <option value="POOR">POOR</option>
-              <option value="AVG">AVG</option>
-              <option value="GOOD">GOOD</option>
-              <option value="VG">VG</option>
-              <option value="EXLNT">EXLNT</option>
-            </select>
-          </div>
+          <select id="edit-score-writing" required class="w-full border rounded-xl px-2 py-1.5 text-xs bg-white outline-none font-bold">
+            <option value="POOR">W: POOR</option>
+            <option value="AVG">W: AVG</option>
+            <option value="GOOD">W: GOOD</option>
+            <option value="VG">W: VG</option>
+            <option value="EXLNT">W: EXLNT</option>
+          </select>
+          <select id="edit-score-reading" required class="w-full border rounded-xl px-2 py-1.5 text-xs bg-white outline-none font-bold">
+            <option value="POOR">R: POOR</option>
+            <option value="AVG">R: AVG</option>
+            <option value="GOOD">R: GOOD</option>
+            <option value="VG">R: VG</option>
+            <option value="EXLNT">R: EXLNT</option>
+          </select>
         </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="toggleModal('edit-score-modal')" class="px-4 py-1.5 border rounded-lg text-xs text-slate-600">Cancel</button>
-          <button type="submit" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold">Update Assessment</button>
+        <div class="flex justify-end gap-1.5 pt-1">
+          <button type="button" onclick="toggleModal('edit-score-modal')" class="px-3 py-1.5 border rounded-xl text-xs font-bold text-slate-600">Cancel</button>
+          <button type="submit" class="px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-black">Save</button>
         </div>
       </form>
     </div>
@@ -623,40 +574,36 @@
 
   <!-- ================= BULK MODALS ================= -->
   <div id="bulk-student-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-[90000] flex items-center justify-center p-3">
-    <div class="bg-white rounded-xl max-w-xl w-full p-5 shadow-2xl flex flex-col justify-between">
-      <div>
-        <div class="flex justify-between items-center mb-2">
-          <h2 class="text-base font-bold text-slate-900">📑 Bulk Student Import (CSV)</h2>
-          <button onclick="toggleModal('bulk-student-modal')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
-        </div>
-        <p class="text-xs text-slate-500 mb-2">Format: <strong>AdmNo, Name, Class, Div, Gender (M/F), 10-Digit Mobile</strong></p>
-        <textarea id="bulk-student-input" rows="7" placeholder="1001, Rahul Sharma, 7, A, M, 9876543210&#10;1002, Sarah Jenkins, 7, B, F, 9845612340" class="w-full border rounded-lg p-3 text-xs font-mono outline-none bg-slate-50"></textarea>
+    <div class="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl space-y-2.5">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h2 class="text-xs font-black text-slate-900 uppercase">📑 Bulk CSV Upload</h2>
+        <button onclick="toggleModal('bulk-student-modal')" class="text-slate-400 font-bold">✕</button>
       </div>
-      <div class="flex gap-2 mt-3">
-        <button onclick="handleBulkStudents()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 text-xs rounded-lg shadow-xs">Import Students</button>
-        <button onclick="toggleModal('bulk-student-modal')" class="px-4 py-2 border text-slate-600 rounded-lg text-xs">Cancel</button>
+      <p class="text-[10px] text-slate-400 font-mono">AdmNo, Name, Class, Div, Gender, Mobile</p>
+      <textarea id="bulk-student-input" rows="6" placeholder="1001, Rahul Sharma, 7, A, M, 9876543210&#10;1002, Sarah Jenkins, 7, B, F, 9845612340" class="w-full border rounded-xl p-2.5 text-xs font-mono outline-none bg-slate-50"></textarea>
+      <div class="flex gap-2">
+        <button onclick="handleBulkStudents()" class="flex-1 bg-emerald-600 text-white font-bold py-1.5 text-xs rounded-xl shadow-xs">Import</button>
+        <button onclick="toggleModal('bulk-student-modal')" class="px-3 py-1.5 border rounded-xl text-xs font-bold text-slate-600">Cancel</button>
       </div>
     </div>
   </div>
 
   <div id="bulk-score-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-xs z-[90000] flex items-center justify-center p-3">
-    <div class="bg-white rounded-xl max-w-xl w-full p-5 shadow-2xl flex flex-col justify-between">
-      <div>
-        <div class="flex justify-between items-center mb-2">
-          <h2 class="text-base font-bold text-slate-900">📑 Bulk Score Import</h2>
-          <button onclick="toggleModal('bulk-score-modal')" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
-        </div>
-        <p class="text-xs text-slate-500 mb-2">Format: <strong>AdmNo, Subject, Score, WritingSkill (optional), ReadingSkill (optional)</strong></p>
-        <textarea id="bulk-score-input" rows="7" placeholder="1001, Social Science, 85, GOOD, VG&#10;1002, Social Science, 42, AVG, AVG" class="w-full border rounded-lg p-3 text-xs font-mono outline-none bg-slate-50"></textarea>
+    <div class="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl space-y-2.5">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h2 class="text-xs font-black text-slate-900 uppercase">📑 Bulk Scores Import</h2>
+        <button onclick="toggleModal('bulk-score-modal')" class="text-slate-400 font-bold">✕</button>
       </div>
-      <div class="flex gap-2 mt-3">
-        <button onclick="handleBulkScores()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 text-xs rounded-lg shadow-xs">Import Scores</button>
-        <button onclick="toggleModal('bulk-score-modal')" class="px-4 py-2 border text-slate-600 rounded-lg text-xs">Cancel</button>
+      <p class="text-[10px] text-slate-400 font-mono">AdmNo, Subject, Score, Writing, Reading</p>
+      <textarea id="bulk-score-input" rows="6" placeholder="1001, Social Science, 85, GOOD, VG&#10;1002, Social Science, 42, AVG, AVG" class="w-full border rounded-xl p-2.5 text-xs font-mono outline-none bg-slate-50"></textarea>
+      <div class="flex gap-2">
+        <button onclick="handleBulkScores()" class="flex-1 bg-emerald-600 text-white font-bold py-1.5 text-xs rounded-xl shadow-xs">Import</button>
+        <button onclick="toggleModal('bulk-score-modal')" class="px-3 py-1.5 border rounded-xl text-xs font-bold text-slate-600">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= APPLICATION LOGIC ================= -->
+  <!-- ================= APPLICATION JAVASCRIPT ================= -->
   <script>
     const HARDCODED_SUPABASE_URL = "https://lqglyumbavvlcjhclgzv.supabase.co";
     const HARDCODED_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxZ2x5dW1iYXZ2bGNqaGNsZ3p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNzQyNDAsImV4cCI6MjEwNjg1MDI0MH0.WqHb60TW68_xuMW2mzzC50N3y15B7cHvAmNh6vrXlYQ";
@@ -676,28 +623,22 @@
     let isConsolidatedSummaryOpen = false;
     let focusedStudentId = null;
 
-    // LOADER FUNCTIONS
+    // LOADER
     function startLoader() {
       const loader = document.getElementById('yt-loader');
       loader.style.opacity = '1';
       loader.style.width = '35%';
-      setTimeout(() => {
-        if (parseFloat(loader.style.width) < 80) loader.style.width = '75%';
-      }, 150);
+      setTimeout(() => { if (parseFloat(loader.style.width) < 80) loader.style.width = '75%'; }, 150);
     }
 
     function finishLoader() {
       const loader = document.getElementById('yt-loader');
       loader.style.width = '100%';
-      setTimeout(() => {
-        loader.style.opacity = '0';
-        setTimeout(() => { loader.style.width = '0%'; }, 250);
-      }, 250);
+      setTimeout(() => { loader.style.opacity = '0'; setTimeout(() => { loader.style.width = '0%'; }, 250); }, 250);
     }
 
-    // PROMISE CONFIRMATION DIALOG
+    // PROMISE CONFIRMATION
     let confirmResolver = null;
-
     function confirmDialog(title, message, confirmText = 'Delete') {
       return new Promise((resolve) => {
         confirmResolver = resolve;
@@ -718,7 +659,7 @@
       }
     }
 
-    // AUTO-GRADING FORMULA
+    // AUTO-GRADING
     function calculateGrade(val) {
       if (val === null || val === undefined || val === '') return '-';
       const num = Number(val);
@@ -735,7 +676,7 @@
       if (score === '') { preview.innerText = '-'; return; }
       const grade = calculateGrade(score);
       preview.innerText = grade;
-      preview.className = `w-12 flex items-center justify-center font-bold text-base rounded-lg border ${getGradeBadgeClass(grade)}`;
+      preview.className = `w-10 flex items-center justify-center font-black text-xs rounded-xl border ${getGradeBadgeClass(grade)}`;
     }
 
     function getGradeBadgeClass(grade) {
@@ -760,7 +701,7 @@
       }
     }
 
-    // STRICT SORTING HELPER: Class ➔ Division ➔ Student Name (A-Z)
+    // SORTING HELPER
     function sortStudentsHierarchy(list) {
       return [...list].sort((a, b) => {
         const clsComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
@@ -771,28 +712,26 @@
       });
     }
 
-    // SUPABASE INITIALIZATION
+    // SUPABASE SETUP
     function initSupabase() {
       let url = HARDCODED_SUPABASE_URL || localStorage.getItem('sb_url') || '';
       let key = HARDCODED_SUPABASE_ANON_KEY || localStorage.getItem('sb_key') || '';
-
       const dot = document.getElementById('conn-dot');
       const status = document.getElementById('conn-status');
 
       if (url && key) {
         try {
           db = window.supabase.createClient(url, key);
-          dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+          dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
           status.innerText = 'Connected';
           loadInitialData();
         } catch (e) {
-          console.error(e);
-          dot.className = 'w-2.5 h-2.5 rounded-full bg-red-400';
-          status.innerText = 'Disconnected';
+          dot.className = 'w-2 h-2 rounded-full bg-red-400';
+          status.innerText = 'Offline';
         }
       } else {
-        dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
-        status.innerText = 'Not Configured';
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        status.innerText = 'Unset';
       }
     }
 
@@ -804,26 +743,40 @@
       const t = document.getElementById('toast');
       t.innerText = msg;
       t.classList.remove('hidden');
-      setTimeout(() => t.classList.add('hidden'), 3500);
+      setTimeout(() => t.classList.add('hidden'), 3000);
     }
 
+    // RESPONSIVE TABS SWITCHER (SYNCS MOBILE BOTTOM BAR & DESKTOP NAVBAR)
     function switchTab(tabId) {
       if (focusedStudentId !== null) {
         closeFocusedStudentView();
       }
 
       document.querySelectorAll('.tab-panel').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('border-white', 'text-white');
-        btn.classList.add('border-transparent', 'text-indigo-200');
+
+      // Update Desktop Buttons
+      document.querySelectorAll('.desktop-tab-btn').forEach(btn => {
+        btn.classList.remove('text-white', 'bg-indigo-800', 'border', 'border-indigo-500');
+        btn.classList.add('text-indigo-200');
       });
+      const activeDesktopBtn = document.getElementById('d-btn-' + tabId);
+      if (activeDesktopBtn) {
+        activeDesktopBtn.classList.add('text-white', 'bg-indigo-800', 'border', 'border-indigo-500');
+        activeDesktopBtn.classList.remove('text-indigo-200');
+      }
+
+      // Update Mobile Bottom Bar Buttons
+      document.querySelectorAll('.mobile-tab-btn').forEach(btn => {
+        btn.classList.remove('text-indigo-600', 'font-black');
+        btn.classList.add('text-slate-400', 'font-semibold');
+      });
+      const activeMobileBtn = document.getElementById('m-btn-' + tabId);
+      if (activeMobileBtn) {
+        activeMobileBtn.classList.add('text-indigo-600', 'font-black');
+        activeMobileBtn.classList.remove('text-slate-400', 'font-semibold');
+      }
 
       document.getElementById(tabId).classList.remove('hidden');
-      const activeBtn = document.getElementById('btn-' + tabId);
-      if (activeBtn) {
-        activeBtn.classList.add('border-white', 'text-white');
-        activeBtn.classList.remove('border-transparent', 'text-indigo-200');
-      }
 
       if (tabId === 'tab-students') renderTab1Students();
       if (tabId === 'tab-scores') renderTab2Scores();
@@ -834,7 +787,7 @@
       }
     }
 
-    // INITIAL DATA LOAD
+    // INITIAL LOAD
     async function loadInitialData() {
       if (!db) return;
       startLoader();
@@ -855,8 +808,7 @@
         updateDivisionsFilter();
         renderConsolidatedSummaryTable();
       } catch (err) {
-        console.error(err);
-        showToast('Error syncing with database');
+        showToast('Sync error with database');
       } finally {
         finishLoader();
       }
@@ -878,15 +830,9 @@
         }
       }
 
-      if (unitTermSelect) {
-        unitTermSelect.innerHTML = `<option value="">Assign Term (Optional)</option>` + termOptions;
-      }
-      if (editUnitTermSelect) {
-        editUnitTermSelect.innerHTML = `<option value="">No Term Assigned</option>` + termOptions;
-      }
-      if (mgrTermFilter) {
-        mgrTermFilter.innerHTML = `<option value="">All Terms</option>` + termOptions;
-      }
+      if (unitTermSelect) unitTermSelect.innerHTML = `<option value="">Term (Opt)</option>` + termOptions;
+      if (editUnitTermSelect) editUnitTermSelect.innerHTML = `<option value="">No Term Assigned</option>` + termOptions;
+      if (mgrTermFilter) mgrTermFilter.innerHTML = `<option value="">All Terms</option>` + termOptions;
     }
 
     function updateStudentAutocompleteList() {
@@ -897,26 +843,21 @@
     function onStudentSearchSelect() {
       const val = document.getElementById('score_student_search').value.trim();
       const match = students.find(s => val.startsWith(s.adm_no) || val.toLowerCase().includes(s.name.toLowerCase()));
-      if (match) {
-        document.getElementById('score_student_id').value = match.id;
-      }
+      if (match) document.getElementById('score_student_id').value = match.id;
     }
 
-    // CONSOLIDATED SUMMARY ENROLLMENT TABLE
+    // CONSOLIDATED SUMMARY TABLE
     function toggleConsolidatedSummary() {
       isConsolidatedSummaryOpen = !isConsolidatedSummaryOpen;
       const content = document.getElementById('consolidated-summary-content');
       const chevron = document.getElementById('summary-chevron');
-      const badge = document.getElementById('summary-toggle-badge');
       if (isConsolidatedSummaryOpen) {
         content.classList.remove('hidden');
-        chevron.innerText = '▲ Collapse';
-        badge.innerText = 'Click to Hide';
+        chevron.innerText = '▲ Hide';
         renderConsolidatedSummaryTable();
       } else {
         content.classList.add('hidden');
         chevron.innerText = '▼ Expand';
-        badge.innerText = 'Click to Expand';
       }
     }
 
@@ -926,7 +867,7 @@
       if (!tbody || !tfoot) return;
 
       if (students.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400">No enrollment records available.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="p-2 text-center text-slate-400">No records</td></tr>`;
         tfoot.innerHTML = '';
         return;
       }
@@ -936,16 +877,9 @@
         const cls = st.class || '-';
         const div = st.div || '-';
         const key = `${cls}___${div}`;
-
-        if (!grouping[key]) {
-          grouping[key] = { class: cls, div: div, male: 0, female: 0, total: 0 };
-        }
-
-        if (st.gender === 'F') {
-          grouping[key].female += 1;
-        } else {
-          grouping[key].male += 1;
-        }
+        if (!grouping[key]) grouping[key] = { class: cls, div: div, male: 0, female: 0, total: 0 };
+        if (st.gender === 'F') grouping[key].female += 1;
+        else grouping[key].male += 1;
         grouping[key].total += 1;
       });
 
@@ -957,33 +891,28 @@
         return (objA.div || '').localeCompare(objB.div || '');
       });
 
-      let grandMale = 0;
-      let grandFemale = 0;
-      let grandTotal = 0;
+      let grandMale = 0, grandFemale = 0, grandTotal = 0;
 
       tbody.innerHTML = sortedKeys.map(key => {
         const item = grouping[key];
-        grandMale += item.male;
-        grandFemale += item.female;
-        grandTotal += item.total;
-
+        grandMale += item.male; grandFemale += item.female; grandTotal += item.total;
         return `
-          <tr class="hover:bg-slate-50 border-b">
-            <td class="p-2 font-bold font-mono text-slate-800">Class ${item.class}</td>
-            <td class="p-2 font-bold font-mono text-indigo-700">Div ${item.div}</td>
-            <td class="p-2 text-center font-bold text-blue-700">${item.male}</td>
-            <td class="p-2 text-center font-bold text-pink-700">${item.female}</td>
-            <td class="p-2 text-center font-black text-slate-900 bg-slate-50/50">${item.total}</td>
+          <tr class="hover:bg-slate-50">
+            <td class="p-1.5 font-bold font-mono">Class ${item.class}</td>
+            <td class="p-1.5 font-bold font-mono text-indigo-700">${item.div}</td>
+            <td class="p-1.5 text-center text-blue-700 font-bold">${item.male}</td>
+            <td class="p-1.5 text-center text-pink-700 font-bold">${item.female}</td>
+            <td class="p-1.5 text-center font-black">${item.total}</td>
           </tr>
         `;
       }).join('');
 
       tfoot.innerHTML = `
-        <tr class="border-t-2 border-slate-300">
-          <td colspan="2" class="p-2.5 uppercase tracking-wide">GRAND TOTAL</td>
-          <td class="p-2.5 text-center text-blue-800">${grandMale}</td>
-          <td class="p-2.5 text-center text-pink-800">${grandFemale}</td>
-          <td class="p-2.5 text-center text-slate-900 font-black text-sm bg-slate-300">${grandTotal}</td>
+        <tr class="border-t border-slate-300">
+          <td colspan="2" class="p-1.5 uppercase font-black">Total</td>
+          <td class="p-1.5 text-center text-blue-800">${grandMale}</td>
+          <td class="p-1.5 text-center text-pink-800">${grandFemale}</td>
+          <td class="p-1.5 text-center font-black">${grandTotal}</td>
         </tr>
       `;
     }
@@ -991,8 +920,7 @@
     // TAB 1 ACTIONS
     async function handleSingleStudent(e) {
       e.preventDefault();
-      if (!db) return showToast('Connect Supabase first!');
-
+      if (!db) return showToast('Connect database first');
       const adm_no = document.getElementById('adm_no').value.trim();
       const name = document.getElementById('name').value.trim();
       const cls = document.getElementById('class').value.trim();
@@ -1000,20 +928,13 @@
       const gender = document.getElementById('gender').value.trim();
       const mobile = document.getElementById('mobile').value.trim().replace(/\D/g, '');
 
-      if (mobile.length !== 10) {
-        showToast('Mobile number must be exactly 10 digits.');
-        return;
-      }
+      if (mobile.length !== 10) return showToast('Mobile must be 10 digits');
 
       startLoader();
       const { error } = await db.from('students').insert([{ adm_no, name, class: cls, div, gender, mobile }]);
       finishLoader();
 
-      if (error) {
-        showToast(`Error: ${error.message}`);
-        return;
-      }
-
+      if (error) return showToast(`Error: ${error.message}`);
       showToast(`Student ${name} added!`);
       document.getElementById('single-student-form').reset();
       document.getElementById('class').value = '7';
@@ -1021,7 +942,7 @@
     }
 
     async function handleBulkStudents() {
-      if (!db) return showToast('Connect Supabase first!');
+      if (!db) return showToast('Connect database first');
       const raw = document.getElementById('bulk-student-input').value.trim();
       if (!raw) return showToast('Enter CSV data');
 
@@ -1046,11 +967,7 @@
       const { error } = await db.from('students').upsert(payload, { onConflict: 'adm_no' });
       finishLoader();
 
-      if (error) {
-        showToast(`Import Error: ${error.message}`);
-        return;
-      }
-
+      if (error) return showToast(`Import Error: ${error.message}`);
       showToast(`Imported ${payload.length} students!`);
       document.getElementById('bulk-student-input').value = '';
       toggleModal('bulk-student-modal');
@@ -1060,28 +977,26 @@
     function renderTab1Students() {
       const tbody = document.getElementById('tab1-students-tbody');
       const search = (document.getElementById('tab1-search').value || '').toLowerCase();
-      
       let list = sortStudentsHierarchy(students).filter(s => 
         s.name.toLowerCase().includes(search) || s.adm_no.toLowerCase().includes(search)
       );
 
       document.getElementById('tab1-count-badge').innerText = list.length;
-
       if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No students recorded.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="p-3 text-center text-slate-400">No records</td></tr>`;
         return;
       }
 
       tbody.innerHTML = list.map((st, idx) => `
-        <tr class="hover:bg-slate-50 border-b">
-          <td class="p-2 text-center font-bold text-slate-500 font-mono">${idx + 1}</td>
+        <tr class="hover:bg-slate-50 border-b border-slate-100">
+          <td class="p-2 text-center font-bold text-slate-400 font-mono text-[10px]">${idx + 1}</td>
           <td class="p-2 font-mono font-bold">${st.adm_no}</td>
           <td class="p-2 font-semibold text-slate-900">${st.name}</td>
-          <td class="p-2 text-center font-mono">${st.class} - ${st.div}</td>
+          <td class="p-2 text-center font-mono">${st.class}-${st.div}</td>
           <td class="p-2 text-center font-bold ${st.gender === 'F' ? 'text-pink-600' : 'text-blue-600'}">${st.gender || 'M'}</td>
-          <td class="p-2 font-mono">${st.mobile || '-'}</td>
+          <td class="p-2 font-mono text-[11px]">${st.mobile || '-'}</td>
           <td class="p-2 text-center">
-            <div class="flex items-center justify-center gap-1.5">
+            <div class="flex items-center justify-center gap-1">
               <button onclick="openEditStudentModal(${st.id})" title="Edit" class="p-1 hover:bg-indigo-50 text-indigo-600 rounded">✏️</button>
               <button onclick="deleteStudent(${st.id})" title="Delete" class="p-1 hover:bg-red-50 text-red-600 rounded">🗑️</button>
             </div>
@@ -1118,25 +1033,17 @@
       const { error } = await db.from('students').update({ adm_no, name, class: cls, div, gender, mobile }).eq('id', id);
       finishLoader();
 
-      if (error) {
-        showToast(`Update Error: ${error.message}`);
-        return;
-      }
-
-      showToast('Student details updated!');
+      if (error) return showToast(`Update Error: ${error.message}`);
+      showToast('Updated');
       toggleModal('edit-student-modal');
       loadInitialData();
     }
 
-    // ================= ROBUST STUDENT DELETION =================
     async function deleteStudent(studentId) {
       const st = students.find(s => s.id == studentId);
       if (!st) return;
 
-      const confirmed = await confirmDialog(
-        'Delete Student Record?',
-        `Are you sure you want to permanently delete ${st.name} (Adm: ${st.adm_no})?\nAll scores and notes records will be deleted.`
-      );
+      const confirmed = await confirmDialog('Delete Student?', `Permanently delete ${st.name} (Adm: ${st.adm_no})?`);
       if (!confirmed) return;
 
       startLoader();
@@ -1156,11 +1063,9 @@
         openMasterCardIds.delete(studentId);
         openNotesStudentCardIds.delete(studentId);
 
-        if (focusedStudentId == studentId) {
-          closeFocusedStudentView();
-        }
+        if (focusedStudentId == studentId) closeFocusedStudentView();
 
-        showToast(`Student ${st.name} deleted successfully!`);
+        showToast(`Deleted ${st.name}`);
         renderTab1Students();
         renderTab2Scores();
         renderCategoryLists();
@@ -1175,9 +1080,9 @@
       }
     }
 
-    // ================= TAB 2: ACTIVE TERM EDIT & DELETE =================
+    // TAB 2 ACTIONS
     async function createTerm() {
-      if (!db) return showToast('Connect Supabase first!');
+      if (!db) return showToast('Connect database first');
       const nameInput = document.getElementById('new-term-name');
       const term_name = nameInput.value.trim();
       if (!term_name) return;
@@ -1186,10 +1091,7 @@
       const { error } = await db.from('terms').insert([{ term_name }]);
       finishLoader();
 
-      if (error) {
-        showToast(`Term Error: ${error.message}`);
-        return;
-      }
+      if (error) return showToast(`Term Error: ${error.message}`);
       nameInput.value = '';
       showToast('Term created');
       loadInitialData();
@@ -1198,7 +1100,7 @@
     function openEditActiveTermModal() {
       const select = document.getElementById('active-term-select');
       const termId = select.value;
-      if (!termId) return showToast('Please select or create an active term first.');
+      if (!termId) return showToast('Select active term');
       const term = terms.find(t => t.id == termId);
       if (!term) return;
 
@@ -1218,12 +1120,8 @@
       const { error } = await db.from('terms').update({ term_name }).eq('id', termId);
       finishLoader();
 
-      if (error) {
-        showToast(`Update Error: ${error.message}`);
-        return;
-      }
-
-      showToast('Term name updated!');
+      if (error) return showToast(`Error: ${error.message}`);
+      showToast('Term updated');
       toggleModal('edit-term-modal');
       loadInitialData();
     }
@@ -1231,14 +1129,11 @@
     async function deleteActiveTerm() {
       const select = document.getElementById('active-term-select');
       const termId = select.value;
-      if (!termId) return showToast('No active term selected.');
+      if (!termId) return showToast('No active term');
       const term = terms.find(t => t.id == termId);
       if (!term) return;
 
-      const confirmed = await confirmDialog(
-        'Delete Active Term?',
-        `Delete term "${term.term_name}"?\nAll student scores recorded under this term will also be permanently deleted.`
-      );
+      const confirmed = await confirmDialog('Delete Term?', `Delete term "${term.term_name}" and its scores?`);
       if (!confirmed) return;
 
       startLoader();
@@ -1252,7 +1147,7 @@
         terms = terms.filter(t => t.id != termId);
         scores = scores.filter(s => s.term_id != termId);
 
-        showToast(`Term "${term.term_name}" deleted!`);
+        showToast(`Term deleted`);
         populateTermsDropdown();
         renderTab2Scores();
         renderMasterView();
@@ -1263,7 +1158,6 @@
       }
     }
 
-    // LOADS ALL SCORES ACROSS ALL TERMS FOR COMPLETE ANALYTICS
     async function loadScoresData() {
       if (!db) return;
       const { data } = await db.from('scores').select('*');
@@ -1273,7 +1167,7 @@
 
     async function handleSingleScore(e) {
       e.preventDefault();
-      if (!db) return showToast('Connect Supabase first!');
+      if (!db) return showToast('Connect database first');
       const termId = document.getElementById('active-term-select').value;
       if (!termId) return showToast('Select an active term');
 
@@ -1284,10 +1178,7 @@
         const match = students.find(s => s.adm_no === searchVal || searchVal.startsWith(s.adm_no));
         if (match) studentId = match.id;
       }
-      if (!studentId) {
-        showToast('Please select a registered student from the autocomplete list.');
-        return;
-      }
+      if (!studentId) return showToast('Select registered student');
 
       const subject = document.getElementById('score_subject').value.trim();
       const score = Number(document.getElementById('score_val').value);
@@ -1307,12 +1198,8 @@
       }], { onConflict: 'student_id,term_id,subject' });
       finishLoader();
 
-      if (error) {
-        showToast(`Score Error: ${error.message}`);
-        return;
-      }
-
-      showToast('Score and skills recorded!');
+      if (error) return showToast(`Error: ${error.message}`);
+      showToast('Score recorded!');
       document.getElementById('score_student_search').value = '';
       document.getElementById('score_student_id').value = '';
       document.getElementById('score_val').value = '';
@@ -1322,12 +1209,12 @@
     }
 
     async function handleBulkScores() {
-      if (!db) return showToast('Connect Supabase first!');
+      if (!db) return showToast('Connect database first');
       const termId = document.getElementById('active-term-select').value;
-      if (!termId) return showToast('Select active term first');
+      if (!termId) return showToast('Select active term');
 
       const raw = document.getElementById('bulk-score-input').value.trim();
-      if (!raw) return showToast('Provide score entries');
+      if (!raw) return showToast('Provide entries');
 
       const lines = raw.split('\n');
       const payload = [];
@@ -1335,12 +1222,8 @@
       for (let line of lines) {
         const parts = line.split(/[,\t]+/).map(s => s.trim());
         if (parts.length >= 3) {
-          const adm = parts[0];
-          const subj = parts[1];
-          const sc = Number(parts[2]);
-          const writing = parts[3] || 'AVG';
-          const reading = parts[4] || 'AVG';
-
+          const adm = parts[0], subj = parts[1], sc = Number(parts[2]);
+          const writing = parts[3] || 'AVG', reading = parts[4] || 'AVG';
           const st = students.find(s => s.adm_no.toLowerCase() === adm.toLowerCase());
           if (st) {
             payload.push({
@@ -1360,12 +1243,8 @@
       const { error } = await db.from('scores').upsert(payload, { onConflict: 'student_id,term_id,subject' });
       finishLoader();
 
-      if (error) {
-        showToast(`Import Failed: ${error.message}`);
-        return;
-      }
-
-      showToast(`Imported ${payload.length} score entries!`);
+      if (error) return showToast(`Import Error: ${error.message}`);
+      showToast(`Imported ${payload.length} scores!`);
       document.getElementById('bulk-score-input').value = '';
       toggleModal('bulk-score-modal');
       await loadScoresData();
@@ -1385,25 +1264,23 @@
       });
 
       document.getElementById('tab2-count-badge').innerText = filtered.length;
-
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No assessments recorded for this term.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="p-3 text-center text-slate-400">No records</td></tr>`;
         return;
       }
 
       tbody.innerHTML = filtered.map(sc => {
         const st = students.find(s => s.id == sc.student_id) || { name: 'Unknown', adm_no: '-' };
         return `
-          <tr class="hover:bg-slate-50 border-b">
+          <tr class="hover:bg-slate-50 border-b border-slate-100">
             <td class="p-2 font-mono font-bold">${st.adm_no}</td>
             <td class="p-2 font-semibold text-slate-900">${st.name}</td>
-            <td class="p-2 font-medium">${sc.subject}</td>
-            <td class="p-2 text-center font-bold">${sc.score}</td>
-            <td class="p-2 text-center"><span class="px-1.5 py-0.5 rounded text-xs font-black ${getGradeBadgeClass(sc.grade)}">${sc.grade}</span></td>
-            <td class="p-2 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${getSkillBadgeClass(sc.writing_skill)}">${sc.writing_skill || 'AVG'}</span></td>
-            <td class="p-2 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold ${getSkillBadgeClass(sc.reading_skill)}">${sc.reading_skill || 'AVG'}</span></td>
+            <td class="p-2 text-slate-600">${sc.subject}</td>
+            <td class="p-2 text-center font-bold">${sc.score} <span class="px-1 py-0.2 rounded text-[10px] font-black ${getGradeBadgeClass(sc.grade)}">${sc.grade}</span></td>
+            <td class="p-2 text-center"><span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${getSkillBadgeClass(sc.writing_skill)}">${sc.writing_skill || 'AVG'}</span></td>
+            <td class="p-2 text-center"><span class="px-1.5 py-0.2 rounded text-[10px] font-bold ${getSkillBadgeClass(sc.reading_skill)}">${sc.reading_skill || 'AVG'}</span></td>
             <td class="p-2 text-center">
-              <div class="flex items-center justify-center gap-1.5">
+              <div class="flex items-center justify-center gap-1">
                 <button onclick="openEditScoreModal(${sc.id})" title="Edit" class="p-1 hover:bg-indigo-50 text-indigo-600 rounded">✏️</button>
                 <button onclick="deleteScore(${sc.id})" title="Delete" class="p-1 hover:bg-red-50 text-red-600 rounded">🗑️</button>
               </div>
@@ -1437,12 +1314,8 @@
       const { error } = await db.from('scores').update({ subject, score, grade, writing_skill, reading_skill }).eq('id', id);
       finishLoader();
 
-      if (error) {
-        showToast(`Update Error: ${error.message}`);
-        return;
-      }
-
-      showToast('Score updated!');
+      if (error) return showToast(`Error: ${error.message}`);
+      showToast('Updated');
       toggleModal('edit-score-modal');
       await loadScoresData();
       renderMasterView();
@@ -1452,7 +1325,7 @@
       const sc = scores.find(s => s.id == scoreId);
       if (!sc) return;
 
-      const confirmed = await confirmDialog('Delete Assessment?', `Delete score for ${sc.subject}?`);
+      const confirmed = await confirmDialog('Delete Score?', `Delete score for ${sc.subject}?`);
       if (!confirmed) return;
 
       startLoader();
@@ -1462,7 +1335,7 @@
           if (error) throw error;
         }
         scores = scores.filter(s => s.id != scoreId);
-        showToast('Assessment deleted successfully!');
+        showToast('Deleted');
         renderTab2Scores();
         renderMasterView();
       } catch (err) {
@@ -1472,53 +1345,37 @@
       }
     }
 
-    // ================= TAB 3: UNITS & ACTIVITIES (INSTANT REAL-TIME UPDATES EVERYWHERE) =================
+    // TAB 3: UNITS & ACTIVITIES
     async function createUnitAndActivities() {
-      if (!db) return showToast('Connect Supabase first!');
+      if (!db) return showToast('Connect database first');
       const name = document.getElementById('unit-name').value.trim();
       const cls = document.getElementById('unit-class').value.trim();
       const term_id = document.getElementById('unit-term-select').value || null;
       const actCount = parseInt(document.getElementById('unit-act-count').value);
 
-      if (!name || !cls || !actCount) {
-        showToast('Please fill Unit Name, Class, and No. of Activities.');
-        return;
-      }
+      if (!name || !cls || !actCount) return showToast('Fill all fields');
 
       startLoader();
       let insertPayload = { unit_name: name, class: cls };
       if (term_id) insertPayload.term_id = term_id;
 
       let { data: unit, error } = await db.from('units').insert([insertPayload]).select().single();
-
       if (error && error.message && error.message.includes('term_id')) {
         const retry = await db.from('units').insert([{ unit_name: name, class: cls }]).select().single();
-        unit = retry.data;
-        error = retry.error;
+        unit = retry.data; error = retry.error;
       }
-
-      if (error) {
-        finishLoader();
-        showToast(`Unit Error: ${error.message}`);
-        return;
-      }
+      if (error) { finishLoader(); return showToast(`Error: ${error.message}`); }
 
       const actPayload = [];
-      for (let i = 1; i <= actCount; i++) {
-        actPayload.push({ unit_id: unit.id, activity_no: i, title: `Activity ${i}` });
-      }
-
+      for (let i = 1; i <= actCount; i++) actPayload.push({ unit_id: unit.id, activity_no: i, title: `Activity ${i}` });
       const actResult = await db.from('activities').insert(actPayload).select();
       finishLoader();
 
       units.push(unit);
-      if (actResult.data) {
-        activities.push(...actResult.data);
-      } else {
-        activities.push(...actPayload.map((a, i) => ({ id: Date.now() + i, ...a })));
-      }
+      if (actResult.data) activities.push(...actResult.data);
+      else activities.push(...actPayload.map((a, i) => ({ id: Date.now() + i, ...a })));
 
-      showToast('Unit and activities created successfully!');
+      showToast('Unit added!');
       document.getElementById('unit-name').value = '';
       document.getElementById('unit-act-count').value = '';
 
@@ -1532,10 +1389,7 @@
       const u = units.find(item => item.id == unitId);
       if (!u) return;
 
-      const confirmed = await confirmDialog(
-        'Delete Unit & All Activities?',
-        `Delete "${u.unit_name}" (Class ${u.class})?\nAll activities in this unit and all student tap records will be deleted.`
-      );
+      const confirmed = await confirmDialog('Delete Unit?', `Delete "${u.unit_name}" (Class ${u.class}) & all its activities?`);
       if (!confirmed) return;
 
       startLoader();
@@ -1555,18 +1409,16 @@
         units = units.filter(item => item.id != unitId);
         activities = activities.filter(a => a.unit_id != unitId);
         actIds.forEach(aid => {
-          Object.keys(notesStatuses).forEach(key => {
-            if (key.endsWith(`_${aid}`)) delete notesStatuses[key];
-          });
+          Object.keys(notesStatuses).forEach(k => { if (k.endsWith(`_${aid}`)) delete notesStatuses[k]; });
         });
 
-        showToast(`Unit "${u.unit_name}" deleted!`);
+        showToast('Unit deleted');
         updateUnitFilterDropdown();
         loadNotesTracker();
         renderManageUnitsModal();
         renderMasterView();
       } catch (err) {
-        showToast(`Delete Error: ${err.message}`);
+        showToast(`Error: ${err.message}`);
       } finally {
         finishLoader();
       }
@@ -1582,7 +1434,6 @@
       toggleModal('edit-unit-modal');
     }
 
-    // INSTANTLY SAVES IN CURRICULUM MANAGER AND ALL CONCERNED VIEWS
     async function saveEditedUnit(e) {
       e.preventDefault();
       const unitId = document.getElementById('edit-unit-id').value;
@@ -1590,7 +1441,6 @@
       const cls = document.getElementById('edit-unit-class-input').value.trim();
       const term_id = document.getElementById('edit-unit-term-select').value || null;
 
-      // 1. INSTANT LOCAL OPTIMISTIC UPDATE
       const uIdx = units.findIndex(u => u.id == unitId);
       if (uIdx !== -1) {
         units[uIdx].unit_name = unit_name;
@@ -1603,23 +1453,16 @@
       loadNotesTracker();
       renderMasterView();
       toggleModal('edit-unit-modal');
-      showToast('Unit updated successfully!');
+      showToast('Unit updated!');
 
-      // 2. BACKGROUND DATABASE SYNC
       if (db) {
         startLoader();
         let updatePayload = { unit_name, class: cls, term_id: term_id };
         let { error } = await db.from('units').update(updatePayload).eq('id', unitId);
-
         if (error && error.message && error.message.includes('term_id')) {
-          const retry = await db.from('units').update({ unit_name, class: cls }).eq('id', unitId);
-          error = retry.error;
+          await db.from('units').update({ unit_name, class: cls }).eq('id', unitId);
         }
         finishLoader();
-
-        if (error) {
-          showToast(`Database Error: ${error.message}`);
-        }
       }
     }
 
@@ -1632,14 +1475,12 @@
       toggleModal('edit-act-modal');
     }
 
-    // INSTANTLY SAVES IN CURRICULUM MANAGER AND ALL CONCERNED VIEWS
     async function saveEditedActivity(e) {
       e.preventDefault();
       const actId = document.getElementById('edit-act-id').value;
       const activity_no = parseInt(document.getElementById('edit-act-no-input').value);
       const title = document.getElementById('edit-act-title-input').value.trim();
 
-      // 1. INSTANT LOCAL OPTIMISTIC UPDATE
       const aIdx = activities.findIndex(a => a.id == actId);
       if (aIdx !== -1) {
         activities[aIdx].activity_no = activity_no;
@@ -1650,17 +1491,12 @@
       loadNotesTracker();
       renderMasterView();
       toggleModal('edit-act-modal');
-      showToast('Activity updated successfully!');
+      showToast('Activity updated!');
 
-      // 2. BACKGROUND DATABASE SYNC
       if (db) {
         startLoader();
-        const { error } = await db.from('activities').update({ activity_no, title }).eq('id', actId);
+        await db.from('activities').update({ activity_no, title }).eq('id', actId);
         finishLoader();
-
-        if (error) {
-          showToast(`Database Error: ${error.message}`);
-        }
       }
     }
 
@@ -1668,31 +1504,25 @@
       const a = activities.find(item => item.id == actId);
       if (!a) return;
 
-      const confirmed = await confirmDialog(
-        'Delete Activity?',
-        `Delete Activity ${a.activity_no}?\nAll student tap progress for this activity will be deleted.`
-      );
+      const confirmed = await confirmDialog('Delete Activity?', `Delete Activity ${a.activity_no}?`);
       if (!confirmed) return;
 
       startLoader();
       try {
         if (db) {
           await db.from('notes_status').delete().eq('activity_id', actId);
-          const { error } = await db.from('activities').delete().eq('id', actId);
-          if (error) throw error;
+          await db.from('activities').delete().eq('id', actId);
         }
 
         activities = activities.filter(item => item.id != actId);
-        Object.keys(notesStatuses).forEach(key => {
-          if (key.endsWith(`_${actId}`)) delete notesStatuses[key];
-        });
+        Object.keys(notesStatuses).forEach(k => { if (k.endsWith(`_${actId}`)) delete notesStatuses[k]; });
 
-        showToast(`Activity ${a.activity_no} deleted!`);
+        showToast('Activity deleted');
         loadNotesTracker();
         renderManageUnitsModal();
         renderMasterView();
       } catch (err) {
-        showToast(`Delete Error: ${err.message}`);
+        showToast(`Error: ${err.message}`);
       } finally {
         finishLoader();
       }
@@ -1706,12 +1536,7 @@
       let newAct = { unit_id: unitId, activity_no: nextNo, title: `Activity ${nextNo}` };
 
       if (db) {
-        const { data, error } = await db.from('activities').insert([newAct]).select().single();
-        if (error) {
-          finishLoader();
-          showToast(`Add Activity Failed: ${error.message}`);
-          return;
-        }
+        const { data } = await db.from('activities').insert([newAct]).select().single();
         if (data) newAct = data;
       } else {
         newAct.id = Date.now();
@@ -1719,7 +1544,7 @@
       finishLoader();
 
       activities.push(newAct);
-      showToast(`Activity ${nextNo} added!`);
+      showToast(`Activity ${nextNo} added`);
       renderManageUnitsModal();
       loadNotesTracker();
       renderMasterView();
@@ -1729,18 +1554,16 @@
       const mgrClassFilter = document.getElementById('mgr-class-filter');
       const uniqueClasses = [...new Set(units.map(u => u.class))].sort();
       mgrClassFilter.innerHTML = `<option value="">All Classes</option>` + uniqueClasses.map(c => `<option value="${c}">Class ${c}</option>`).join('');
-
       renderManageUnitsModal();
       toggleModal('manage-units-modal');
     }
 
-    // CURRICULUM MANAGER WITH TYPO FIXED & NATURAL ALPHANUMERIC SORTING
     function renderManageUnitsModal() {
       const container = document.getElementById('manage-units-content');
       if (!container) return;
 
       if (units.length === 0) {
-        container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No units configured yet. Add a unit in Tab 3.</div>`;
+        container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">No units configured.</div>`;
         return;
       }
 
@@ -1751,10 +1574,9 @@
       if (selectedClass) filteredUnits = filteredUnits.filter(u => u.class == selectedClass);
       if (selectedTerm) filteredUnits = filteredUnits.filter(u => u.term_id == selectedTerm);
 
-      // TYPO FIXED: classComp used correctly with natural alphanumeric sorting
       filteredUnits.sort((a, b) => {
-        const classComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
-        if (classComp !== 0) return classComp;
+        const clsComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
+        if (clsComp !== 0) return clsComp;
 
         const termA = terms.find(t => t.id == a.term_id)?.term_name || 'ZZZ';
         const termB = terms.find(t => t.id == b.term_id)?.term_name || 'ZZZ';
@@ -1765,7 +1587,7 @@
       });
 
       if (filteredUnits.length === 0) {
-        container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No units match the filter criteria.</div>`;
+        container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">No matching units.</div>`;
         return;
       }
 
@@ -1774,36 +1596,30 @@
         const assignedTerm = terms.find(t => t.id == u.term_id);
 
         return `
-          <div class="bg-slate-50 rounded-xl border border-slate-200 p-3.5 space-y-2.5">
-            <div class="flex justify-between items-center flex-wrap gap-2 border-b pb-2">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded">Class ${u.class}</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded ${assignedTerm ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-200 text-slate-600'}">
-                  ${assignedTerm ? assignedTerm.term_name : 'No Term Assigned'}
+          <div class="bg-slate-50 rounded-xl border border-slate-200/80 p-2.5 space-y-2">
+            <div class="flex justify-between items-center flex-wrap gap-1 border-b border-slate-200 pb-1.5">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-[9px] bg-indigo-100 text-indigo-800 font-black px-1.5 py-0.2 rounded">C${u.class}</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.2 rounded ${assignedTerm ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-600'}">
+                  ${assignedTerm ? assignedTerm.term_name : 'No Term'}
                 </span>
-                <span class="font-bold text-xs sm:text-sm text-slate-800">${u.unit_name}</span>
+                <span class="font-bold text-xs text-slate-800">${u.unit_name}</span>
               </div>
-              <div class="flex items-center gap-1.5">
-                <button onclick="addActivityToUnit(${u.id})" class="px-2 py-1 text-[11px] font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-md">
-                  ➕ Add Act
-                </button>
-                <button onclick="openEditUnitModal(${u.id})" class="px-2 py-1 text-[11px] font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 rounded-md">
-                  ✏️ Edit
-                </button>
-                <button onclick="deleteUnit(${u.id})" class="px-2 py-1 text-[11px] font-semibold bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 rounded-md">
-                  🗑️ Delete
-                </button>
+              <div class="flex items-center gap-1">
+                <button onclick="addActivityToUnit(${u.id})" class="px-1.5 py-0.5 text-[10px] font-bold bg-emerald-50 text-emerald-700 rounded border border-emerald-200">➕</button>
+                <button onclick="openEditUnitModal(${u.id})" class="px-1.5 py-0.5 text-[10px] font-bold bg-indigo-50 text-indigo-700 rounded border border-indigo-200">✏️</button>
+                <button onclick="deleteUnit(${u.id})" class="px-1.5 py-0.5 text-[10px] font-bold bg-red-50 text-red-600 rounded border border-red-200">🗑️</button>
               </div>
             </div>
 
-            <div class="flex flex-wrap gap-1.5 pt-1">
+            <div class="flex flex-wrap gap-1">
               ${uActs.length > 0 ? uActs.map(act => `
-                <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-2xs">
-                  <span class="text-xs font-semibold text-slate-700">Act ${act.activity_no}</span>
-                  <button onclick="openEditActivityModal(${act.id})" title="Edit Activity" class="text-indigo-600 hover:text-indigo-800 text-[10px] pl-1">✏️</button>
-                  <button onclick="deleteActivity(${act.id})" title="Delete Activity" class="text-red-500 hover:text-red-700 text-[10px] pl-0.5">🗑️</button>
+                <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-1.5 py-0.5 text-[11px]">
+                  <span>Act ${act.activity_no}</span>
+                  <button onclick="openEditActivityModal(${act.id})" class="text-indigo-600 text-[9px]">✏️</button>
+                  <button onclick="deleteActivity(${act.id})" class="text-red-500 text-[9px]">🗑️</button>
                 </div>
-              `).join('') : `<span class="text-[11px] text-slate-400 italic">No activities in this unit. Click "Add Act" above.</span>`}
+              `).join('') : `<span class="text-[10px] text-slate-400 italic">No activities</span>`}
             </div>
           </div>
         `;
@@ -1818,9 +1634,7 @@
       activities = a || [];
       const { data: s } = await db.from('notes_status').select('*');
       notesStatuses = {};
-      (s || []).forEach(item => {
-        notesStatuses[`${item.student_id}_${item.activity_id}`] = item.status;
-      });
+      (s || []).forEach(item => { notesStatuses[`${item.student_id}_${item.activity_id}`] = item.status; });
 
       updateUnitFilterDropdown();
       loadNotesTracker();
@@ -1838,7 +1652,7 @@
       const divSelect = document.getElementById('notes-div-filter');
       const pool = (cls === 'all' || !cls) ? students : students.filter(s => s.class.toLowerCase() === cls);
       const uniqueDivs = [...new Set(pool.map(s => s.div))].sort();
-      divSelect.innerHTML = `<option value="">All</option>` + uniqueDivs.map(d => `<option value="${d}">${d}</option>`).join('');
+      divSelect.innerHTML = `<option value="">Div</option>` + uniqueDivs.map(d => `<option value="${d}">${d}</option>`).join('');
     }
 
     function updateUnitFilterDropdown() {
@@ -1846,17 +1660,16 @@
       const unitSelect = document.getElementById('notes-unit-filter');
       let filteredUnits = (classFilter === 'all' || !classFilter) ? [...units] : units.filter(u => u.class.toLowerCase() === classFilter);
 
-      // ALPHANUMERIC SORTING FOR UNIT DROPDOWN
       filteredUnits.sort((a, b) => {
         const clsComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
         if (clsComp !== 0) return clsComp;
         return (a.unit_name || '').localeCompare(b.unit_name || '', undefined, { numeric: true });
       });
 
-      unitSelect.innerHTML = `<option value="">All</option>` + filteredUnits.map(u => {
+      unitSelect.innerHTML = `<option value="">Unit</option>` + filteredUnits.map(u => {
         const assignedTerm = terms.find(t => t.id == u.term_id);
         const termLabel = assignedTerm ? ` [${assignedTerm.term_name}]` : '';
-        return `<option value="${u.id}">${u.unit_name}${termLabel} (Cls ${u.class})</option>`;
+        return `<option value="${u.id}">${u.unit_name}${termLabel}</option>`;
       }).join('');
       onUnitFilterChange();
     }
@@ -1867,32 +1680,25 @@
       const selectedUnitId = unitSelect.value;
 
       if (!selectedUnitId) {
-        actSelect.innerHTML = `<option value="">All</option>`;
+        actSelect.innerHTML = `<option value="">Act</option>`;
       } else {
         const uActs = activities.filter(a => a.unit_id == selectedUnitId);
         uActs.sort((a, b) => a.activity_no - b.activity_no);
-        actSelect.innerHTML = `<option value="">All</option>` + uActs.map(a => `<option value="${a.activity_no}">Act ${a.activity_no}</option>`).join('');
+        actSelect.innerHTML = `<option value="">Act</option>` + uActs.map(a => `<option value="${a.activity_no}">Act ${a.activity_no}</option>`).join('');
       }
       loadNotesTracker();
     }
 
-    // CHECK HELPER FOR UNIT VISIBILITY
     function isUnitHidden(unitId) {
       return hiddenUnitIds.has(unitId) || hiddenUnitIds.has(String(unitId)) || hiddenUnitIds.has(Number(unitId));
     }
 
-    // TOGGLE UNIT VISIBILITY AND RE-RENDER MATRIX INSTANTLY
     function toggleUnitVisibility(unitId) {
-      const idNum = Number(unitId);
-      const idStr = String(unitId);
+      const idNum = Number(unitId), idStr = String(unitId);
       if (isUnitHidden(unitId)) {
-        hiddenUnitIds.delete(unitId);
-        hiddenUnitIds.delete(idNum);
-        hiddenUnitIds.delete(idStr);
+        hiddenUnitIds.delete(unitId); hiddenUnitIds.delete(idNum); hiddenUnitIds.delete(idStr);
       } else {
-        hiddenUnitIds.add(unitId);
-        hiddenUnitIds.add(idNum);
-        hiddenUnitIds.add(idStr);
+        hiddenUnitIds.add(unitId); hiddenUnitIds.add(idNum); hiddenUnitIds.add(idStr);
       }
       loadNotesTracker();
     }
@@ -1945,12 +1751,10 @@
       renderCategoryLists();
     }
 
-    // NOTES TRACKER UNIT BUTTONS & ALPHANUMERIC ORDER
     function loadNotesTracker() {
       const classFilter = document.getElementById('notes-class-filter').value.trim().toLowerCase();
       let filteredUnits = (classFilter === 'all' || !classFilter) ? [...units] : units.filter(u => (u.class || '').toLowerCase() === classFilter);
 
-      // ALPHANUMERIC SORTING FOR UNIT BUTTONS
       filteredUnits.sort((a, b) => {
         const clsComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
         if (clsComp !== 0) return clsComp;
@@ -1960,10 +1764,8 @@
       const toggleContainer = document.getElementById('unit-visibility-toggles');
       toggleContainer.innerHTML = filteredUnits.map(u => {
         const isHidden = isUnitHidden(u.id);
-        const assignedTerm = terms.find(t => t.id == u.term_id);
-        const termTag = assignedTerm ? ` (${assignedTerm.term_name})` : '';
-        return `<button type="button" onclick="toggleUnitVisibility(${u.id})" class="px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all cursor-pointer ${isHidden ? 'bg-slate-200 text-slate-500 border-slate-300 line-through opacity-60' : 'bg-indigo-50 text-indigo-700 border-indigo-300 hover:bg-indigo-100 shadow-2xs'}">
-          ${isHidden ? '👁️‍🗨️ Show' : '👁️ Hide'} ${u.unit_name}${termTag}
+        return `<button type="button" onclick="toggleUnitVisibility(${u.id})" class="px-2 py-0.5 rounded-full font-bold border transition-all ${isHidden ? 'bg-slate-200 text-slate-400 line-through' : 'bg-indigo-50 text-indigo-700 border-indigo-200'}">
+          ${isHidden ? '👁️‍🗨️' : '👁️'} ${u.unit_name}
         </button>`;
       }).join('');
 
@@ -1979,8 +1781,8 @@
       const actFilter = document.getElementById('notes-activity-filter').value;
 
       let filteredStudents = sortStudentsHierarchy(students).filter(s => {
-        if (classFilter !== 'all' && classFilter !== '' && s.class.toLowerCase() !== classFilter) return false;
-        if (divFilter && s.div.toLowerCase() !== divFilter) return false;
+        if (classFilter !== 'all' && classFilter !== '' && (s.class || '').toLowerCase() !== classFilter) return false;
+        if (divFilter && (s.div || '').toLowerCase() !== divFilter) return false;
         if (searchQuery && !s.name.toLowerCase().includes(searchQuery) && !s.adm_no.toLowerCase().includes(searchQuery)) return false;
         return true;
       });
@@ -1988,7 +1790,6 @@
       let activeUnits = (classFilter === 'all' || !classFilter) ? [...units] : units.filter(u => u.class.toLowerCase() === classFilter);
       if (unitFilter) activeUnits = activeUnits.filter(u => u.id == unitFilter);
 
-      // ALPHANUMERIC SORTING FOR ACTIVE UNITS IN CATEGORY CARDS
       activeUnits.sort((a, b) => {
         const clsComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
         if (clsComp !== 0) return clsComp;
@@ -2015,19 +1816,19 @@
         else category1Students.push(st);
       });
 
-      document.getElementById('incomplete-count-badge').innerText = `${category1Students.length} Pending`;
-      document.getElementById('completed-count-badge').innerText = `${category2Students.length} Completed`;
+      document.getElementById('incomplete-count-badge').innerText = category1Students.length;
+      document.getElementById('completed-count-badge').innerText = category2Students.length;
 
       const cat1El = document.getElementById('incomplete-students-list');
       if (category1Students.length === 0) {
-        cat1El.innerHTML = `<div class="p-3 text-center text-xs text-emerald-700 bg-emerald-50 rounded-lg">🎉 All students are fully verified!</div>`;
+        cat1El.innerHTML = `<div class="p-2 text-center text-xs text-emerald-700 bg-emerald-100/50 rounded-xl font-bold">🎉 All students completed!</div>`;
       } else {
         cat1El.innerHTML = category1Students.map((st, idx) => renderNotesCategoryCard(st, activeUnits, actFilter, false, idx + 1)).join('');
       }
 
       const cat2El = document.getElementById('completed-students-list');
       if (category2Students.length === 0) {
-        cat2El.innerHTML = `<div class="p-3 text-center text-xs text-slate-500 bg-slate-50 rounded-lg">No students with 100% verified status yet.</div>`;
+        cat2El.innerHTML = `<div class="p-2 text-center text-xs text-slate-400 bg-slate-100/50 rounded-xl">No completed students yet</div>`;
       } else {
         cat2El.innerHTML = category2Students.map((st, idx) => renderNotesCategoryCard(st, activeUnits, actFilter, true, idx + 1)).join('');
       }
@@ -2040,7 +1841,7 @@
 
       if (isOpen) {
         unitsHtml = `
-          <div class="mt-3 pt-3 border-t ${isCompleted ? 'border-emerald-200' : 'border-amber-200'} space-y-2.5">
+          <div class="mt-2.5 pt-2.5 border-t ${isCompleted ? 'border-emerald-200' : 'border-amber-200'} space-y-2">
             ${studentUnits.map(u => {
               let uActs = activities.filter(a => a.unit_id == u.id);
               if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
@@ -2050,59 +1851,56 @@
               const allCompleted = uActs.every(a => (notesStatuses[`${st.id}_${a.id}`] || 'PENDING') === 'COMPLETED');
               const allVerified = uActs.every(a => (notesStatuses[`${st.id}_${a.id}`] || 'PENDING') === 'REVIEWED');
 
-              let btnText = "1️⃣ Confirm All";
+              let btnText = "1️⃣ Confirm";
               let btnClass = "bg-amber-600 text-white";
-              if (!hasPending && allCompleted) { btnText = "2️⃣ Verify All"; btnClass = "bg-blue-600 text-white"; }
-              else if (allVerified) { btnText = "✓ Verified"; btnClass = "bg-emerald-600 text-white"; }
+              if (!hasPending && allCompleted) { btnText = "2️⃣ Verify"; btnClass = "bg-blue-600 text-white"; }
+              else if (allVerified) { btnText = "✓ Done"; btnClass = "bg-emerald-600 text-white"; }
 
               const assignedTerm = terms.find(t => t.id == u.term_id);
 
               return `
-                <div class="bg-white p-2.5 rounded-lg border flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+                <div class="bg-white p-2 rounded-xl border flex flex-wrap items-center justify-between gap-1.5 shadow-2xs">
                   <div>
-                    <div class="flex items-center gap-1.5 flex-wrap">
+                    <div class="flex items-center gap-1">
                       <span class="text-xs font-bold text-slate-800">${u.unit_name}</span>
-                      ${assignedTerm ? `<span class="text-[9px] bg-amber-50 text-amber-800 border border-amber-200 font-semibold px-1.5 py-0.2 rounded">${assignedTerm.term_name}</span>` : ''}
+                      ${assignedTerm ? `<span class="text-[9px] bg-slate-100 text-slate-600 px-1 rounded">${assignedTerm.term_name}</span>` : ''}
                     </div>
                     <div class="flex flex-wrap gap-1 mt-1">
                       ${uActs.map(act => {
                         const code = notesStatuses[`${st.id}_${act.id}`] || 'PENDING';
                         let badgeStyle = "bg-slate-200 text-slate-600";
-                        let label = `Act ${act.activity_no}: TAP`;
-                        if (code === 'COMPLETED') { badgeStyle = "bg-emerald-500 text-white font-bold"; label = `Act ${act.activity_no}: DONE`; }
-                        else if (code === 'REVIEWED') { badgeStyle = "bg-blue-600 text-white font-bold"; label = `Act ${act.activity_no}: VERIFIED`; }
-                        return `<span onclick="cycleTapStatus(${st.id}, ${act.id})" class="tap-badge inline-block text-[10px] px-1.5 py-0.5 rounded ${badgeStyle}">${label}</span>`;
+                        let label = `A${act.activity_no}`;
+                        if (code === 'COMPLETED') { badgeStyle = "bg-emerald-500 text-white font-bold"; label = `A${act.activity_no} ✓`; }
+                        else if (code === 'REVIEWED') { badgeStyle = "bg-blue-600 text-white font-bold"; label = `A${act.activity_no} ★`; }
+                        return `<span onclick="cycleTapStatus(${st.id}, ${act.id})" class="tap-badge text-[10px] px-1.5 py-0.5 rounded-lg ${badgeStyle}">${label}</span>`;
                       }).join('')}
                     </div>
                   </div>
-                  <div>
-                    <button onclick="singleButtonConfirmAndVerify(${st.id}, ${u.id})" class="px-2.5 py-1 rounded text-xs font-bold ${btnClass}">${btnText}</button>
-                  </div>
+                  <button onclick="singleButtonConfirmAndVerify(${st.id}, ${u.id})" class="px-2 py-0.5 rounded-lg text-xs font-bold ${btnClass}">${btnText}</button>
                 </div>`;
             }).join('')}
           </div>`;
       }
 
       return `
-        <div class="${isCompleted ? 'bg-emerald-100/60 border-emerald-300' : 'bg-amber-100/60 border-amber-300'} rounded-lg border p-2.5 w-full">
-          <div class="flex justify-between items-center cursor-pointer flex-wrap gap-2" onclick="toggleNotesStudentCard(${st.id})">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="text-xs font-mono font-black ${isCompleted ? 'bg-emerald-800 text-white' : 'bg-amber-900 text-white'} px-2 py-0.5 rounded-md">#${serialNo}</span>
-              <span class="font-mono text-xs font-bold ${isCompleted ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-amber-900'} px-1.5 py-0.5 rounded">${st.adm_no}</span>
-              <span class="font-bold text-xs sm:text-sm text-slate-900">${st.name}</span>
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">${st.gender || 'M'}</span>
-              <span class="text-xs text-slate-500 font-semibold">(Class ${st.class}-${st.div})</span>
+        <div class="${isCompleted ? 'bg-emerald-100/50 border-emerald-300' : 'bg-amber-100/50 border-amber-300'} rounded-xl border p-2 w-full">
+          <div class="flex justify-between items-center cursor-pointer flex-wrap gap-1.5" onclick="toggleNotesStudentCard(${st.id})">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[10px] font-mono font-black ${isCompleted ? 'bg-emerald-700' : 'bg-amber-800'} text-white px-1.5 py-0.2 rounded-md">#${serialNo}</span>
+              <span class="font-mono text-xs font-bold">${st.adm_no}</span>
+              <span class="font-bold text-xs text-slate-900">${st.name}</span>
+              <span class="text-[9px] font-bold px-1 py-0.2 rounded ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">${st.gender || 'M'}</span>
+              <span class="text-[10px] text-slate-500">${st.class}-${st.div}</span>
             </div>
-            <div class="flex items-center gap-2">
-              <button onclick="event.stopPropagation(); sendWhatsAppUpdate(${st.id});" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-0.5 rounded text-[11px] font-bold flex items-center gap-1 shadow-xs">💬 WhatsApp</button>
-              <span class="text-xs font-bold text-slate-600">${isOpen ? '▲' : '▼'}</span>
+            <div class="flex items-center gap-1">
+              <button onclick="event.stopPropagation(); sendWhatsAppUpdate(${st.id});" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-0.5 rounded-lg text-xs font-bold">💬 WA</button>
+              <span class="text-[11px] font-bold text-slate-500">${isOpen ? '▲' : '▼'}</span>
             </div>
           </div>
           ${unitsHtml}
         </div>`;
     }
 
-    // FULL CLASS NOTES MATRIX: HIDES TOGGLED UNITS AND SORTS ALPHANUMERICALLY
     function renderNotesMatrixOnly() {
       const classFilter = document.getElementById('notes-class-filter').value.trim().toLowerCase();
       const divFilter = document.getElementById('notes-div-filter').value.trim().toLowerCase();
@@ -2117,15 +1915,13 @@
         return true;
       });
 
-      // FILTER OUT HIDDEN UNITS (RESPECTS HIDE TOGGLE)
       let filteredUnits = units.filter(u => {
         if (classFilter !== 'all' && classFilter !== '' && (u.class || '').toLowerCase() !== classFilter) return false;
         if (unitFilter && u.id != unitFilter) return false;
-        if (isUnitHidden(u.id)) return false; // HIDES UNIT INSTANTLY
+        if (isUnitHidden(u.id)) return false;
         return true;
       });
 
-      // NATURAL ALPHANUMERIC SORTING (Unit 1, Unit 2, Unit 10...)
       filteredUnits.sort((a, b) => {
         const clsComp = (a.class || '').localeCompare(b.class || '', undefined, { numeric: true });
         if (clsComp !== 0) return clsComp;
@@ -2134,70 +1930,63 @@
 
       const container = document.getElementById('notes-matrix-container');
       if (filteredUnits.length === 0 || filteredStudents.length === 0) {
-        container.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No records available. (Units may be hidden using the toggles above)</div>`;
+        container.innerHTML = `<div class="p-3 text-center text-slate-400 text-xs">No records available</div>`;
         return;
       }
 
-      let html = `<table class="w-full border-collapse border border-slate-200 text-xs">
-        <thead class="bg-slate-100">
+      let html = `<table class="w-full border-collapse text-xs">
+        <thead class="bg-slate-50">
           <tr>
-            <th class="border p-1.5 text-left w-14">Adm</th>
-            <th class="border p-1.5 text-left">Student Name</th>
-            <th class="border p-1.5 text-center w-8">Cls</th>
-            <th class="border p-1.5 text-center w-8">Div</th>
-            <th class="border p-1.5 text-center w-8">Gen</th>`;
+            <th class="p-1 text-left w-12 font-mono">Adm</th>
+            <th class="p-1 text-left">Student</th>
+            <th class="p-1 text-center w-6">C</th>
+            <th class="p-1 text-center w-6">D</th>`;
 
       filteredUnits.forEach(u => {
         let uActs = activities.filter(a => a.unit_id == u.id);
         if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
         uActs.sort((a, b) => a.activity_no - b.activity_no);
-
         if (uActs.length > 0) {
-          const assignedTerm = terms.find(t => t.id == u.term_id);
-          const tName = assignedTerm ? ` - ${assignedTerm.term_name}` : '';
-          html += `<th colspan="${uActs.length}" class="border p-1 text-center bg-indigo-50 font-bold">${u.unit_name}${tName} (${u.class})</th>`;
+          html += `<th colspan="${uActs.length}" class="border-l p-1 text-center bg-indigo-50/60 font-bold">${u.unit_name}</th>`;
         }
       });
 
-      html += `</tr><tr><th class="border p-1" colspan="5"></th>`;
+      html += `</tr><tr><th class="p-0.5" colspan="4"></th>`;
 
       filteredUnits.forEach(u => {
         let uActs = activities.filter(a => a.unit_id == u.id);
         if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
         uActs.sort((a, b) => a.activity_no - b.activity_no);
-
         uActs.forEach(act => {
-          html += `<th class="border p-1 text-[10px] text-center font-mono bg-slate-50">Act ${act.activity_no}</th>`;
+          html += `<th class="border-l p-0.5 text-[9px] text-center font-mono text-slate-400">A${act.activity_no}</th>`;
         });
       });
 
-      html += `</tr></thead><tbody>`;
+      html += `</tr></thead><tbody class="divide-y divide-slate-100">`;
 
       filteredStudents.forEach(st => {
         html += `<tr class="hover:bg-slate-50">
-          <td class="border p-1 font-mono font-bold">${st.adm_no}</td>
-          <td class="border p-1 font-semibold">${st.name}</td>
-          <td class="border p-1 text-center font-mono">${st.class}</td>
-          <td class="border p-1 text-center font-bold">${st.div}</td>
-          <td class="border p-1 text-center font-bold ${st.gender === 'F' ? 'text-pink-600' : 'text-blue-600'}">${st.gender || 'M'}</td>`;
+          <td class="p-1 font-mono font-bold">${st.adm_no}</td>
+          <td class="p-1 font-semibold truncate max-w-[100px]">${st.name}</td>
+          <td class="p-1 text-center font-mono text-[10px]">${st.class}</td>
+          <td class="p-1 text-center font-bold text-[10px]">${st.div}</td>`;
 
         filteredUnits.forEach(u => {
           let uActs = activities.filter(a => a.unit_id == u.id);
           if (actFilter) uActs = uActs.filter(a => a.activity_no == actFilter);
           uActs.sort((a, b) => a.activity_no - b.activity_no);
-
           uActs.forEach(act => {
             if (u.class.toLowerCase() !== st.class.toLowerCase()) {
-              html += `<td class="border p-1 text-center text-slate-300">-</td>`;
+              html += `<td class="border-l p-0.5 text-center text-slate-200">-</td>`;
             } else {
               const code = notesStatuses[`${st.id}_${act.id}`] || 'PENDING';
               let badgeStyle = "bg-slate-200 text-slate-600";
-              let label = "TAP";
-              if (code === 'COMPLETED') { badgeStyle = "bg-emerald-500 text-white font-bold"; label = "DONE"; }
-              else if (code === 'REVIEWED') { badgeStyle = "bg-blue-600 text-white font-bold"; label = "VERIFIED"; }
+              let label = "•";
+              if (code === 'COMPLETED') { badgeStyle = "bg-emerald-500 text-white font-bold"; label = "✓"; }
+              else if (code === 'REVIEWED') { badgeStyle = "bg-blue-600 text-white font-bold"; label = "★"; }
 
-              html += `<td class="border p-1 text-center">
-                <span onclick="cycleTapStatus(${st.id}, ${act.id})" class="tap-badge inline-block text-[9px] px-1.5 py-0.5 rounded ${badgeStyle}">${label}</span>
+              html += `<td class="border-l p-0.5 text-center">
+                <span onclick="cycleTapStatus(${st.id}, ${act.id})" class="tap-badge inline-block text-[9px] px-1 py-0.2 rounded ${badgeStyle}">${label}</span>
               </td>`;
             }
           });
@@ -2210,12 +1999,11 @@
       container.innerHTML = html;
     }
 
-    // ================= TAB 4: COMPREHENSIVE MASTER VIEW =================
+    // ================= TAB 4: COMPREHENSIVE MASTER VIEW (FOCUSED SINGLE STUDENT & LIST) =================
     function openFocusedStudentView(studentId) {
       focusedStudentId = studentId;
       openMasterCardIds.add(studentId);
 
-      document.getElementById('main-tab-bar').classList.add('hidden');
       document.getElementById('master-search-bar').classList.add('hidden');
       document.getElementById('consolidated-summary-container').classList.add('hidden');
 
@@ -2226,7 +2014,6 @@
     function closeFocusedStudentView() {
       focusedStudentId = null;
 
-      document.getElementById('main-tab-bar').classList.remove('hidden');
       document.getElementById('master-search-bar').classList.remove('hidden');
       document.getElementById('consolidated-summary-container').classList.remove('hidden');
 
@@ -2243,18 +2030,13 @@
       const container = document.getElementById('master-records-container');
       const search = (document.getElementById('master-search').value || '').toLowerCase();
 
-      // FOCUSED SINGLE-STUDENT VIEW:
+      // FOCUSED SINGLE-STUDENT VIEW
       if (focusedStudentId !== null) {
         const st = students.find(s => s.id == focusedStudentId);
-        if (!st) {
-          closeFocusedStudentView();
-          return;
-        }
+        if (!st) { closeFocusedStudentView(); return; }
 
         const studentScores = scores.filter(sc => sc.student_id == st.id);
         const studentUnits = units.filter(u => u.class.toLowerCase() === st.class.toLowerCase());
-
-        // SORT UNITS IN MASTER VIEW ALPHANUMERICALLY
         studentUnits.sort((a, b) => (a.unit_name || '').localeCompare(b.unit_name || '', undefined, { numeric: true }));
 
         const termGroups = {};
@@ -2265,134 +2047,113 @@
         });
 
         container.innerHTML = `
-          <div class="mb-4 flex flex-wrap items-center justify-between gap-3 bg-indigo-50 border border-indigo-200 p-4 rounded-xl shadow-xs">
-            <button onclick="closeFocusedStudentView()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition-all cursor-pointer">
-              ⬅️ Back to Student List
+          <div class="mb-2 flex items-center justify-between gap-2 bg-indigo-50 border border-indigo-200 p-2.5 rounded-2xl">
+            <button onclick="closeFocusedStudentView()" class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs">
+              ⬅️ <span>All Students</span>
             </button>
-            <div class="text-right">
-              <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider">Detailed Student Analytics</span>
-              <p class="text-[11px] text-slate-500 font-medium">Viewing complete profile for ${st.name}</p>
-            </div>
+            <span class="text-xs font-black text-indigo-900">${st.name}</span>
           </div>
 
-          <div class="bg-white rounded-xl border border-indigo-300 shadow-md w-full transition-all overflow-hidden">
-            <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap justify-between items-center gap-2">
-              <div class="flex items-center gap-2.5 flex-wrap">
-                <span class="text-xs font-mono font-bold bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded border border-indigo-200">Adm: ${st.adm_no}</span>
-                <h3 class="text-base sm:text-lg font-black text-slate-900">${st.name}</h3>
-                <span class="text-[11px] font-bold px-2 py-0.5 rounded ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">${st.gender === 'F' ? 'Female' : 'Male'}</span>
-                <span class="text-xs bg-slate-200 font-bold text-slate-700 px-2.5 py-0.5 rounded">Class ${st.class} - Div ${st.div}</span>
+          <div class="bg-white rounded-2xl border border-indigo-300 shadow-sm w-full overflow-hidden">
+            <div class="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap justify-between items-center gap-1.5">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-xs font-mono font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md">Adm: ${st.adm_no}</span>
+                <span class="text-sm font-black text-slate-900">${st.name}</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">${st.gender || 'M'}</span>
+                <span class="text-xs font-bold text-slate-600">${st.class}-${st.div}</span>
               </div>
-              <div class="flex items-center gap-2">
-                <button onclick="sendWhatsAppUpdate(${st.id})" title="WhatsApp" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-xs">
-                  💬 WhatsApp
-                </button>
-                <button onclick="openEditStudentModal(${st.id})" title="Edit" class="text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-200">
-                  ✏️ Edit
-                </button>
-                <button onclick="deleteStudent(${st.id})" title="Delete" class="text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg border border-red-200">
-                  🗑️ Delete
-                </button>
+              <div class="flex items-center gap-1">
+                <button onclick="sendWhatsAppUpdate(${st.id})" class="bg-emerald-500 text-white px-2.5 py-1 rounded-xl text-xs font-bold">💬 WA</button>
+                <button onclick="openEditStudentModal(${st.id})" class="text-xs font-bold bg-indigo-50 text-indigo-700 px-2 py-1 rounded-xl border border-indigo-200">✏️</button>
+                <button onclick="deleteStudent(${st.id})" class="text-xs font-bold bg-red-50 text-red-600 px-2 py-1 rounded-xl border border-red-200">🗑️</button>
               </div>
             </div>
 
-            <div class="p-4 sm:p-5 space-y-5">
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <div class="space-y-3">
-                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center justify-between border-b pb-1.5">
-                    <span>📊 Term-Wise Performance (All Terms)</span>
-                    <span class="text-[10px] text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-bold">${terms.length} Terms</span>
-                  </h4>
-
-                  <div class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+            <div class="p-3 sm:p-4 space-y-4">
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Scores by Term -->
+                <div class="space-y-2">
+                  <h4 class="text-xs font-black uppercase text-slate-500 border-b pb-1">📊 Academic Terms (${terms.length})</h4>
+                  <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                     ${terms.length > 0 ? terms.map(t => {
                       const tScores = (termGroups[t.id] && termGroups[t.id].list) || [];
                       return `
-                        <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-2">
-                          <div class="flex justify-between items-center border-b pb-1.5">
-                            <span class="text-xs font-bold text-indigo-700 font-mono">${t.term_name}</span>
-                            <span class="text-[10px] font-semibold text-slate-400">${tScores.length} Subject(s)</span>
+                        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 space-y-1.5">
+                          <div class="flex justify-between items-center text-xs font-black text-indigo-700 font-mono">
+                            <span>${t.term_name}</span>
+                            <span class="text-[10px] text-slate-400 font-normal">${tScores.length} Subjs</span>
                           </div>
                           ${tScores.length > 0 ? `
-                            <div class="space-y-1.5">
+                            <div class="space-y-1">
                               ${tScores.map(sc => `
-                                <div class="flex items-center justify-between text-xs bg-slate-50 p-2 rounded border">
+                                <div class="flex items-center justify-between text-xs bg-white p-1.5 rounded-lg border">
                                   <div>
                                     <div class="font-bold text-slate-800">${sc.subject}</div>
-                                    <div class="text-[10px] text-slate-500 mt-0.5 flex gap-1.5 flex-wrap">
-                                      <span>Writing: <strong class="text-slate-700">${sc.writing_skill || 'AVG'}</strong></span>
-                                      <span>Reading: <strong class="text-slate-700">${sc.reading_skill || 'AVG'}</strong></span>
+                                    <div class="text-[9px] text-slate-400 flex gap-1">
+                                      <span>W:${sc.writing_skill || 'AVG'}</span>
+                                      <span>R:${sc.reading_skill || 'AVG'}</span>
                                     </div>
                                   </div>
-                                  <div class="flex items-center gap-2">
-                                    <span class="font-bold text-sm">${sc.score}</span>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-black ${getGradeBadgeClass(sc.grade)}">${sc.grade}</span>
-                                    <button onclick="openEditScoreModal(${sc.id})" title="Edit" class="text-slate-400 hover:text-indigo-600 text-xs">✏️</button>
+                                  <div class="flex items-center gap-1.5">
+                                    <span class="font-bold text-xs">${sc.score}</span>
+                                    <span class="px-1 py-0.2 rounded text-[10px] font-black ${getGradeBadgeClass(sc.grade)}">${sc.grade}</span>
+                                    <button onclick="openEditScoreModal(${sc.id})" class="text-slate-400 text-xs">✏️</button>
                                   </div>
                                 </div>
                               `).join('')}
                             </div>
-                          ` : `<p class="text-[11px] text-slate-400 italic">No score recorded for ${t.term_name}.</p>`}
+                          ` : `<p class="text-[10px] text-slate-400 italic">No score recorded</p>`}
                         </div>`;
-                    }).join('') : `<p class="text-xs text-slate-400 italic">No terms created yet. Add terms in Tab 2.</p>`}
+                    }).join('') : `<p class="text-xs text-slate-400 italic">No terms created</p>`}
                   </div>
                 </div>
 
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-                  <div class="flex justify-between items-center mb-1 flex-wrap gap-1">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">📈 Progressive Term & Skills Bar Chart</h4>
-                    <span class="text-[10px] text-slate-400 font-medium">Click buttons below to show/hide</span>
-                  </div>
-                  
-                  <div class="relative h-64 w-full">
+                <!-- Progressive Bar Chart -->
+                <div class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
+                  <h4 class="text-xs font-black uppercase text-slate-500 mb-1">📈 Term Progress</h4>
+                  <div class="relative h-56 w-full">
                     <canvas id="chart-${st.id}"></canvas>
                   </div>
 
-                  <div class="flex flex-wrap items-center justify-center gap-1.5 text-[11px] mt-2 pt-2 border-t border-slate-100 select-none">
-                    <button type="button" onclick="toggleChartDataset(${st.id}, 0)" id="legend-btn-${st.id}-0" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
-                      <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #F54927;"></span>
-                      <span>Subject Score</span>
+                  <!-- Toggles with Exact Hex Colors -->
+                  <div class="flex flex-wrap items-center justify-center gap-1 text-[10px] mt-2 pt-2 border-t border-slate-100 select-none">
+                    <button type="button" onclick="toggleChartDataset(${st.id}, 0)" id="legend-btn-${st.id}-0" class="flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 bg-white font-bold text-slate-700">
+                      <span class="w-2.5 h-2.5 rounded-full" style="background-color: #F54927;"></span> <span>Score</span>
                     </button>
-                    <button type="button" onclick="toggleChartDataset(${st.id}, 1)" id="legend-btn-${st.id}-1" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
-                      <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #20C809;"></span>
-                      <span>Writing Skill</span>
+                    <button type="button" onclick="toggleChartDataset(${st.id}, 1)" id="legend-btn-${st.id}-1" class="flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 bg-white font-bold text-slate-700">
+                      <span class="w-2.5 h-2.5 rounded-full" style="background-color: #20C809;"></span> <span>Writing</span>
                     </button>
-                    <button type="button" onclick="toggleChartDataset(${st.id}, 2)" id="legend-btn-${st.id}-2" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
-                      <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #1C09C8;"></span>
-                      <span>Reading Skill</span>
+                    <button type="button" onclick="toggleChartDataset(${st.id}, 2)" id="legend-btn-${st.id}-2" class="flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 bg-white font-bold text-slate-700">
+                      <span class="w-2.5 h-2.5 rounded-full" style="background-color: #1C09C8;"></span> <span>Reading</span>
                     </button>
-                    <button type="button" onclick="toggleChartDataset(${st.id}, 3)" id="legend-btn-${st.id}-3" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-200 bg-white font-bold text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
-                      <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #C8095C;"></span>
-                      <span>Notes Verified</span>
+                    <button type="button" onclick="toggleChartDataset(${st.id}, 3)" id="legend-btn-${st.id}-3" class="flex items-center gap-1 px-2 py-0.5 rounded-full border border-slate-200 bg-white font-bold text-slate-700">
+                      <span class="w-2.5 h-2.5 rounded-full" style="background-color: #C8095C;"></span> <span>Notes</span>
                     </button>
                   </div>
                 </div>
               </div>
 
+              <!-- Unit Activity Progress -->
               <div class="pt-2 border-t border-slate-100">
-                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">📖 Curriculum Units & Notes Completion</h4>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                <h4 class="text-xs font-black uppercase text-slate-500 mb-1.5">📖 Notes Completion</h4>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                   ${studentUnits.map(u => {
                     const uActs = activities.filter(a => a.unit_id == u.id);
                     uActs.sort((a, b) => a.activity_no - b.activity_no);
                     const verCount = uActs.filter(a => (notesStatuses[`${st.id}_${a.id}`] || 'PENDING') === 'REVIEWED').length;
-                    const assignedTerm = terms.find(t => t.id == u.term_id);
                     return `
-                      <div class="bg-slate-50 p-2.5 rounded-lg border text-xs shadow-2xs">
-                        <div class="flex justify-between items-center mb-1 flex-wrap gap-1">
-                          <div class="flex items-center gap-1">
-                            <span class="font-bold text-slate-800 truncate">${u.unit_name}</span>
-                            ${assignedTerm ? `<span class="text-[9px] bg-amber-50 text-amber-800 font-semibold px-1 rounded">${assignedTerm.term_name}</span>` : ''}
-                          </div>
-                          <span class="text-[10px] font-bold ${verCount === uActs.length && uActs.length > 0 ? 'text-emerald-700' : 'text-amber-700'}">${verCount}/${uActs.length} Verified</span>
+                      <div class="bg-slate-50 p-2 rounded-xl border text-[11px]">
+                        <div class="flex justify-between items-center mb-1 font-bold text-slate-800">
+                          <span class="truncate">${u.unit_name}</span>
+                          <span class="text-[9px] ${verCount === uActs.length && uActs.length > 0 ? 'text-emerald-700' : 'text-amber-700'}">${verCount}/${uActs.length}</span>
                         </div>
-                        <div class="flex flex-wrap gap-1">
+                        <div class="flex flex-wrap gap-0.5">
                           ${uActs.map(act => {
                             const code = notesStatuses[`${st.id}_${act.id}`] || 'PENDING';
-                            let pill = 'bg-white text-slate-500 border';
+                            let pill = 'bg-white text-slate-400 border';
                             if (code === 'COMPLETED') pill = 'bg-emerald-500 text-white font-bold';
                             if (code === 'REVIEWED') pill = 'bg-blue-600 text-white font-bold';
-                            return `<span class="text-[9px] px-1 py-0.5 rounded ${pill}">Act ${act.activity_no}</span>`;
+                            return `<span class="text-[8px] px-1 rounded ${pill}">A${act.activity_no}</span>`;
                           }).join('')}
                         </div>
                       </div>`;
@@ -2405,48 +2166,39 @@
         return;
       }
 
-      // NORMAL MASTER LIST VIEW:
+      // NORMAL COMPACT LIST VIEW
       const list = sortStudentsHierarchy(students).filter(s => 
         s.name.toLowerCase().includes(search) || s.adm_no.toLowerCase().includes(search)
       );
 
       if (list.length === 0) {
-        container.innerHTML = `<div class="bg-white p-6 text-center text-slate-400 rounded-xl border">No students found.</div>`;
+        container.innerHTML = `<div class="bg-white p-4 text-center text-slate-400 text-xs rounded-2xl border">No students found</div>`;
         return;
       }
 
-      container.innerHTML = list.map((st, index) => {
-        const serialNo = index + 1;
-
-        return `
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm w-full transition-all overflow-hidden">
-          <div class="p-3.5 flex flex-wrap justify-between items-center gap-2 cursor-pointer hover:bg-slate-50" onclick="openFocusedStudentView(${st.id})">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="text-xs font-mono font-black bg-slate-900 text-white px-2 py-0.5 rounded-md">#${serialNo}</span>
-              <span class="text-xs font-mono font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">Adm: ${st.adm_no}</span>
-              <h3 class="text-sm sm:text-base font-bold text-slate-900">${st.name}</h3>
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">${st.gender === 'F' ? 'Female' : 'Male'}</span>
-              <span class="text-xs bg-slate-100 font-semibold text-slate-600 px-2 py-0.5 rounded">Class ${st.class}-${st.div}</span>
+      container.innerHTML = list.map((st, index) => `
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs w-full overflow-hidden">
+          <div class="p-2.5 flex justify-between items-center gap-1.5 cursor-pointer hover:bg-slate-50" onclick="openFocusedStudentView(${st.id})">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[10px] font-mono font-black bg-slate-900 text-white px-1.5 py-0.2 rounded-md">#${index + 1}</span>
+              <span class="text-xs font-mono font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded">${st.adm_no}</span>
+              <h3 class="text-xs font-black text-slate-900">${st.name}</h3>
+              <span class="text-[9px] font-bold px-1 py-0.2 rounded ${st.gender === 'F' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}">${st.gender || 'M'}</span>
+              <span class="text-[10px] text-slate-400 font-mono">${st.class}-${st.div}</span>
             </div>
 
-            <div class="flex items-center gap-2" onclick="event.stopPropagation()">
-              <button onclick="sendWhatsAppUpdate(${st.id})" title="WhatsApp" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 rounded text-xs font-bold flex items-center gap-1 shadow-xs">
-                💬 WhatsApp
-              </button>
-              <button onclick="openEditStudentModal(${st.id})" title="Edit" class="text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded border border-indigo-200">
-                ✏️ Edit
-              </button>
-              <button onclick="deleteStudent(${st.id})" title="Delete" class="text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1 rounded border border-red-200">
-                🗑️ Delete
-              </button>
-              <span class="text-xs text-indigo-600 font-bold ml-1 bg-indigo-50 px-2 py-0.5 rounded">View Analytics ➔</span>
+            <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
+              <button onclick="sendWhatsAppUpdate(${st.id})" class="bg-emerald-500 text-white px-2 py-0.5 rounded-lg text-xs font-bold">💬</button>
+              <button onclick="openEditStudentModal(${st.id})" class="text-xs font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded-lg border border-indigo-200">✏️</button>
+              <button onclick="deleteStudent(${st.id})" class="text-xs font-bold bg-red-50 text-red-600 px-1.5 py-0.5 rounded-lg border border-red-200">🗑️</button>
+              <span class="text-[10px] text-indigo-600 font-black ml-1">➔</span>
             </div>
           </div>
-        </div>`;
-      }).join('');
+        </div>
+      `).join('');
     }
 
-    // ================= DATASET TOGGLE HANDLER (SHOW / HIDE) =================
+    // CHART TOGGLES
     function toggleChartDataset(studentId, datasetIndex) {
       const chart = chartInstances[studentId];
       if (!chart) return;
@@ -2462,17 +2214,15 @@
         if (btn) {
           const visible = chart.isDatasetVisible(idx);
           if (visible) {
-            btn.classList.remove('opacity-35', 'line-through', 'border-dashed', 'bg-slate-100');
-            btn.classList.add('bg-white');
+            btn.classList.remove('opacity-30', 'line-through', 'border-dashed');
           } else {
-            btn.classList.add('opacity-35', 'line-through', 'border-dashed', 'bg-slate-100');
-            btn.classList.remove('bg-white');
+            btn.classList.add('opacity-30', 'line-through', 'border-dashed');
           }
         }
       });
     }
 
-    // ================= PROGRESSIVE BAR CHART =================
+    // PROGRESSIVE BAR CHART
     function renderStudentProgressBarChart(studentId) {
       const canvas = document.getElementById(`chart-${studentId}`);
       if (!canvas) return;
@@ -2480,10 +2230,7 @@
       const skillScale = { 'POOR': 20, 'AVG': 40, 'GOOD': 60, 'VG': 80, 'EXLNT': 100 };
       const labels = terms.map(t => t.term_name);
       
-      const scoreData = [];
-      const writingData = [];
-      const readingData = [];
-      const notesData = [];
+      const scoreData = [], writingData = [], readingData = [], notesData = [];
       const termSpecifics = {};
 
       const st = students.find(s => s.id == studentId);
@@ -2495,33 +2242,19 @@
           scoreData.push(sc.score);
           writingData.push(skillScale[sc.writing_skill] || 40);
           readingData.push(skillScale[sc.reading_skill] || 40);
-          termSpecifics[t.id] = {
-            grade: sc.grade,
-            writingRaw: sc.writing_skill || 'AVG',
-            readingRaw: sc.reading_skill || 'AVG',
-            score: sc.score
-          };
+          termSpecifics[t.id] = { grade: sc.grade, writingRaw: sc.writing_skill || 'AVG', readingRaw: sc.reading_skill || 'AVG', score: sc.score };
         } else {
-          scoreData.push(0);
-          writingData.push(0);
-          readingData.push(0);
+          scoreData.push(0); writingData.push(0); readingData.push(0);
           termSpecifics[t.id] = { grade: 'N/A', writingRaw: 'N/A', readingRaw: 'N/A', score: 0 };
         }
 
-        let termUnits = units.filter(u => {
-          const matchClass = (u.class || '').toLowerCase() === studentClass;
-          const matchTerm = u.term_id && String(u.term_id) === String(t.id);
-          return matchClass && matchTerm;
-        });
-
+        let termUnits = units.filter(u => (u.class || '').toLowerCase() === studentClass && u.term_id && String(u.term_id) === String(t.id));
         const anyUnitsHaveTerms = units.some(u => (u.class || '').toLowerCase() === studentClass && u.term_id);
         if (!anyUnitsHaveTerms) {
           termUnits = units.filter(u => (u.class || '').toLowerCase() === studentClass);
         }
 
-        let tTotalActs = 0;
-        let tVerActs = 0;
-
+        let tTotalActs = 0, tVerActs = 0;
         termUnits.forEach(u => {
           const uActs = activities.filter(a => a.unit_id == u.id);
           tTotalActs += uActs.length;
@@ -2530,51 +2263,21 @@
 
         const termNotesPercent = tTotalActs > 0 ? Math.round((tVerActs / tTotalActs) * 100) : 0;
         notesData.push(termNotesPercent);
-        termSpecifics[t.id].notesActs = `${tVerActs}/${tTotalActs} Acts`;
+        termSpecifics[t.id].notesActs = `${tVerActs}/${tTotalActs}`;
         termSpecifics[t.id].hasUnits = termUnits.length > 0;
       });
 
-      if (chartInstances[studentId]) {
-        chartInstances[studentId].destroy();
-      }
+      if (chartInstances[studentId]) chartInstances[studentId].destroy();
 
       chartInstances[studentId] = new Chart(canvas, {
         type: 'bar',
         data: {
           labels: labels,
           datasets: [
-            {
-              label: 'Subject Score',
-              data: scoreData,
-              backgroundColor: '#F54927',
-              borderRadius: 4,
-              borderSkipped: false,
-              minBarLength: 6
-            },
-            {
-              label: 'Writing Skill',
-              data: writingData,
-              backgroundColor: '#20C809',
-              borderRadius: 4,
-              borderSkipped: false,
-              minBarLength: 6
-            },
-            {
-              label: 'Reading Skill',
-              data: readingData,
-              backgroundColor: '#1C09C8',
-              borderRadius: 4,
-              borderSkipped: false,
-              minBarLength: 6
-            },
-            {
-              label: 'Notes Verified',
-              data: notesData,
-              backgroundColor: '#C8095C',
-              borderRadius: 4,
-              borderSkipped: false,
-              minBarLength: 6
-            }
+            { label: 'Subject Score', data: scoreData, backgroundColor: '#F54927', borderRadius: 4, minBarLength: 5 },
+            { label: 'Writing Skill', data: writingData, backgroundColor: '#20C809', borderRadius: 4, minBarLength: 5 },
+            { label: 'Reading Skill', data: readingData, backgroundColor: '#1C09C8', borderRadius: 4, minBarLength: 5 },
+            { label: 'Notes Verified', data: notesData, backgroundColor: '#C8095C', borderRadius: 4, minBarLength: 5 }
           ]
         },
         options: {
@@ -2583,25 +2286,13 @@
           categoryPercentage: 0.75,
           barPercentage: 0.85,
           scales: {
-            y: {
-              min: 0,
-              max: 100,
-              ticks: { stepSize: 20 },
-              grid: { color: '#f1f5f9' }
-            },
-            x: {
-              grid: { display: false }
-            }
+            y: { min: 0, max: 100, ticks: { stepSize: 20 }, grid: { color: '#f1f5f9' } },
+            x: { grid: { display: false } }
           },
           plugins: {
-            legend: {
-              display: false
-            },
+            legend: { display: false },
             tooltip: {
               backgroundColor: 'rgba(15, 23, 42, 0.9)',
-              titleFont: { weight: 'bold', size: 12 },
-              bodyFont: { size: 11 },
-              padding: 10,
               callbacks: {
                 label: function(context) {
                   const val = context.parsed.y;
@@ -2609,22 +2300,10 @@
                   const termObj = terms[context.dataIndex];
                   const specifics = termSpecifics[termObj ? termObj.id : null];
 
-                  if (dsLabel === 'Subject Score') {
-                    return ` Score: ${val} (Grade: ${specifics ? specifics.grade : 'N/A'})`;
-                  }
-                  if (dsLabel === 'Writing Skill') {
-                    return ` Writing: ${specifics ? specifics.writingRaw : 'N/A'} (${val}/100)`;
-                  }
-                  if (dsLabel === 'Reading Skill') {
-                    return ` Reading: ${specifics ? specifics.readingRaw : 'N/A'} (${val}/100)`;
-                  }
-                  if (dsLabel === 'Notes Verified') {
-                    if (specifics && specifics.hasUnits) {
-                      return ` Notes Verified: ${val}% (${specifics.notesActs} in ${termObj.term_name})`;
-                    } else {
-                      return ` Notes Verified: ${val}% (${specifics.notesActs})`;
-                    }
-                  }
+                  if (dsLabel === 'Subject Score') return ` Score: ${val} (Grade: ${specifics ? specifics.grade : 'N/A'})`;
+                  if (dsLabel === 'Writing Skill') return ` Writing: ${specifics ? specifics.writingRaw : 'N/A'} (${val}%)`;
+                  if (dsLabel === 'Reading Skill') return ` Reading: ${specifics ? specifics.readingRaw : 'N/A'} (${val}%)`;
+                  if (dsLabel === 'Notes Verified') return ` Notes: ${val}% (${specifics ? specifics.notesActs : ''})`;
                   return ` ${dsLabel}: ${val}`;
                 }
               }
@@ -2636,16 +2315,13 @@
       updateLegendButtonStyles(studentId, chartInstances[studentId]);
     }
 
-    // ================= WHATSAPP REPORT DISPATCHER =================
+    // WHATSAPP REPORT
     function sendWhatsAppUpdate(studentId) {
       const st = students.find(s => s.id == studentId);
       if (!st) return;
 
       const cleanMobile = (st.mobile || '').replace(/\D/g, '');
-      if (cleanMobile.length !== 10) {
-        showToast(`Please update a valid 10-digit mobile number for ${st.name}`);
-        return;
-      }
+      if (cleanMobile.length !== 10) return showToast(`Enter 10-digit mobile for ${st.name}`);
 
       const stUnits = units.filter(u => u.class.toLowerCase() === st.class.toLowerCase());
       stUnits.sort((a, b) => (a.unit_name || '').localeCompare(b.unit_name || '', undefined, { numeric: true }));
@@ -2672,7 +2348,7 @@
           stScores.map(sc => {
             const scTerm = terms.find(t => t.id == sc.term_id);
             const tTag = scTerm ? `(${scTerm.term_name}) ` : '';
-            return `• ${tTag}${sc.subject}: ${sc.score} (Grade ${sc.grade}) | Writing: ${sc.writing_skill || 'AVG'} | Reading: ${sc.reading_skill || 'AVG'}`;
+            return `• ${tTag}${sc.subject}: ${sc.score} (${sc.grade}) | W:${sc.writing_skill || 'AVG'} | R:${sc.reading_skill || 'AVG'}`;
           }).join('\n') + `\n`;
       }
 
@@ -2697,7 +2373,27 @@ ${unitReport || 'No units recorded.'}
       window.open(`https://wa.me/91${cleanMobile}?text=${encodeURIComponent(message)}`, '_blank');
     }
 
-    // BOOTSTRAP APP ON START
+    // PWA INSTALL LOGIC
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const installBtn = document.getElementById('pwa-install-btn');
+      if (installBtn) installBtn.classList.remove('hidden');
+    });
+
+    async function installPWA() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        const installBtn = document.getElementById('pwa-install-btn');
+        if (installBtn) installBtn.classList.add('hidden');
+      }
+      deferredPrompt = null;
+    }
+
+    // BOOTSTRAP
     window.addEventListener('DOMContentLoaded', () => {
       initSupabase();
     });
