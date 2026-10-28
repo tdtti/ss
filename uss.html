@@ -1,3 +1,6 @@
+Here is the complete, single-file index.html with all updates incorporated
+cleanly:
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,6 +36,7 @@
       --border-color: #cbd5e1;
       --success: #10b981;
       --danger: #ef4444;
+      --warning: #f59e0b;
       --shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.05);
       --shadow-md: 0 10px 20px -5px rgba(30, 64, 175, 0.12);
       --shadow-lg: 0 20px 30px -10px rgba(15, 23, 42, 0.18);
@@ -94,6 +98,31 @@
     .mode-btn.active { background: var(--primary); color: #ffffff; border-color: var(--primary); }
 
     .card { background: var(--card-bg); padding: 28px; border-radius: 18px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-bottom: 24px; }
+
+    /* BANNER ALERTS */
+    .warning-banner {
+      background: #fef3c7;
+      border: 1.5px solid #f59e0b;
+      color: #92400e;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 700;
+      line-height: 1.5;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .blocked-banner {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+      color: #991b1b;
+      padding: 24px;
+      border-radius: 16px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
 
     /* LOGIN PORTAL CARD */
     #login-sec {
@@ -210,6 +239,7 @@
     .badge { background: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; }
     .badge-success { background: #dcfce7; color: #166534; }
     .badge-danger { background: #fee2e2; color: #991b1b; }
+    .badge-warning { background: #fef3c7; color: #92400e; }
 
     .chart-item { margin-bottom: 16px; }
     .chart-label-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
@@ -271,6 +301,209 @@
 
     .target-audience-pill { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border-color); background: #ffffff; font-weight: 700; font-size: 13.5px; color: var(--text-main); cursor: pointer; user-select: none; text-align: left; transition: all 0.2s ease; box-sizing: border-box; }
     .target-audience-pill.active { background: #dbeafe; border-color: #2563eb; color: #1e40af; box-shadow: var(--shadow-sm); }
+
+    /* =========================================================================
+       MODERN MOBILE-APP PRESENCE MONITOR STYLES
+       ========================================================================= */
+    .mobile-live-header-box {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+
+    .radar-pulse-ring {
+      position: relative;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .radar-pulse-ring::after {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid #10b981;
+      animation: radar-grow 1.8s infinite ease-out;
+    }
+    @keyframes radar-grow {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+    .radar-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .mobile-icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .mobile-icon-btn:hover { background: #f1f5f9; transform: scale(1.05); }
+
+    .mobile-presence-segmented-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .segmented-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+      border: 1.5px solid transparent;
+    }
+    .segmented-pill.active-green { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+    .segmented-pill.inactive-red { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    .segmented-pill.view-all { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+    .segmented-pill:hover { transform: translateY(-1px); filter: brightness(0.97); }
+
+    .live-led-badge {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .live-led-badge.green { background: #10b981; box-shadow: 0 0 7px #10b981; }
+    .live-led-badge.red { background: #ef4444; box-shadow: 0 0 7px #ef4444; }
+
+    .mobile-cards-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mobile-presence-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 14px 16px;
+      box-shadow: 0 3px 10px rgba(15, 23, 42, 0.03);
+      position: relative;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+    .mobile-presence-card:hover {
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+    }
+    .mobile-presence-card.is-online {
+      border-left: 5px solid #10b981;
+    }
+    .mobile-presence-card.is-offline {
+      border-left: 5px solid #ef4444;
+      background: #fafafa;
+    }
+
+    .presence-avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      color: #ffffff;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .presence-avatar-circle.green {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 0 0 2.5px #ffffff, 0 0 0 4.5px #a7f3d0;
+    }
+    .presence-avatar-circle.red {
+      background: linear-gradient(135deg, #94a3b8, #64748b);
+      box-shadow: 0 0 0 2.5px #ffffff, 0 0 0 4.5px #fecaca;
+    }
+
+    .online-indicator-dot {
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      border: 2.5px solid #ffffff;
+    }
+    .online-indicator-dot.green { background: #10b981; }
+    .online-indicator-dot.red { background: #ef4444; }
+
+    .mobile-whatsapp-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #25D366;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 3px 8px rgba(37, 211, 102, 0.35);
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    .mobile-whatsapp-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 5px 12px rgba(37, 211, 102, 0.5);
+    }
+    .mobile-whatsapp-btn:active {
+      transform: scale(0.95);
+    }
+
+    .live-activity-capsule {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .live-activity-capsule.active-capsule {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+    .live-activity-capsule.inactive-capsule {
+      background: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+
+    @media (max-width: 580px) {
+      .mobile-presence-segmented-stats { grid-template-columns: 1fr; }
+      .mobile-live-header-box { padding: 14px; }
+    }
   </style>
 </head>
 <body>
@@ -298,7 +531,7 @@
         <button class="icon-action-btn" onclick="document.getElementById('attendance-sql-modal').style.display='none'">✕</button>
       </div>
       <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
-        Run this SQL in your <strong>Supabase Dashboard &rarr; SQL Editor</strong> once to create the attendance tracker table:
+        Run this SQL in your <strong>Supabase Dashboard &rarr; SQL Editor</strong> once:
       </p>
       <textarea id="supabase-sql-code" rows="11" readonly style="font-family:monospace; font-size:12px; background:#0f172a; color:#38bdf8; padding:12px; border-radius:10px; width:100%; box-sizing:border-box;">
 CREATE TABLE IF NOT EXISTS attendance (
@@ -327,7 +560,7 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
     </div>
   </div>
 
-  <!-- CSV BULK IMPORT GUIDE & SAMPLE MODAL (NO ID COLUMN) -->
+  <!-- CSV BULK IMPORT GUIDE & SAMPLE MODAL -->
   <div id="csv-guide-modal" class="modal-overlay" style="display: none;">
     <div class="modal-card" style="max-width: 820px; width: 95%;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -339,78 +572,18 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
 
       <div style="font-size:13.5px; line-height:1.6; color:var(--text-main); margin-bottom:16px;">
         <p style="margin:0 0 10px 0;">
-          Prepare your CSV with the <strong>8 columns</strong> shown below. <em>Question IDs are automatically generated by the portal and never repeated!</em>
+          Prepare your CSV with the <strong>8 columns</strong> shown below. <em>Question IDs are automatically generated!</em>
         </p>
         <ol style="margin:0 0 14px 20px; padding:0;">
-          <li>The <strong>first line (Header)</strong> must contain the 8 exact columns: <code>subject,question,option_a,option_b,option_c,option_d,correct_answer,image_url</code>.</li>
-          <li><strong>Allowed Subject Codes</strong>: 
-            <span class="badge">MI</span> (Malayalam I), 
-            <span class="badge">AR</span> (Arabic), 
-            <span class="badge">SK</span> (Sanskrit), 
-            <span class="badge">MII</span> (Malayalam II), 
-            <span class="badge">EN</span> (English), 
-            <span class="badge">MM</span> (Mathematics), 
-            <span class="badge">BS</span> (Basic Science), 
-            <span class="badge">SS</span> (Social Science).
-          </li>
-          <li><strong>Correct Choice</strong> must strictly be <span class="badge badge-success">A</span>, <span class="badge badge-success">B</span>, <span class="badge badge-success">C</span>, or <span class="badge badge-success">D</span>.</li>
-          <li><strong>image_url</strong>: Optional public diagram URL (leave blank if none).</li>
-          <li>Save file as <strong>CSV UTF-8 (Comma delimited) (.csv)</strong>.</li>
+          <li>Header line: <code>subject,question,option_a,option_b,option_c,option_d,correct_answer,image_url</code>.</li>
+          <li>Allowed Codes: <span class="badge">MI</span>, <span class="badge">AR</span>, <span class="badge">SK</span>, <span class="badge">MII</span>, <span class="badge">EN</span>, <span class="badge">MM</span>, <span class="badge">BS</span>, <span class="badge">SS</span>.</li>
+          <li>Correct Choice: <span class="badge badge-success">A</span>, <span class="badge badge-success">B</span>, <span class="badge badge-success">C</span>, or <span class="badge badge-success">D</span>.</li>
+          <li>image_url: Optional diagram URL.</li>
         </ol>
       </div>
 
-      <h4 style="margin:0 0 8px 0; color:var(--primary);">Sample Table Layout (No ID required)</h4>
-      <div class="table-responsive" style="margin-top:0;">
-        <table class="data-table" style="font-size:12px; min-width:680px;">
-          <thead>
-            <tr>
-              <th>subject</th>
-              <th>question</th>
-              <th>option_a</th>
-              <th>option_b</th>
-              <th>option_c</th>
-              <th>option_d</th>
-              <th>correct_answer</th>
-              <th>image_url</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="badge">BS</span></td>
-              <td>What is the powerhouse of the cell?</td>
-              <td>Mitochondria</td>
-              <td>Nucleus</td>
-              <td>Ribosome</td>
-              <td>Golgi Body</td>
-              <td><b>A</b></td>
-              <td><i>(optional)</i></td>
-            </tr>
-            <tr>
-              <td><span class="badge">MM</span></td>
-              <td>What is the value of Pi (approx)?</td>
-              <td>3.14</td>
-              <td>2.71</td>
-              <td>1.41</td>
-              <td>1.73</td>
-              <td><b>A</b></td>
-              <td><i>(optional)</i></td>
-            </tr>
-            <tr>
-              <td><span class="badge">MI</span></td>
-              <td>കേരളത്തിന്റെ തലസ്ഥാനം ഏത്?</td>
-              <td>തിരുവനന്തപുരം</td>
-              <td>കൊച്ചി</td>
-              <td>കോഴിക്കോട്</td>
-              <td>കണ്ണൂർ</td>
-              <td><b>A</b></td>
-              <td><i>(optional)</i></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:20px;">
-        <button class="btn btn-outline" onclick="downloadSampleCSV()" style="font-weight:700; border-color:var(--primary); color:var(--primary);">
+        <button class="btn btn-outline" onclick="downloadSampleCSV()" style="font-weight:700;">
           ⬇️ Download Sample CSV Template
         </button>
         <div style="display:flex; gap:10px;">
@@ -647,7 +820,7 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
 
-    <!-- NEW ADMIN TAB: LIVE ONLINE USERS (BEFORE AUDIT ACCESS LOGS) -->
+    <!-- LIVE ONLINE USERS TAB (BEFORE AUDIT ACCESS LOGS) -->
     <button class="icon-tab-btn admin-only" id="tab-online" onclick="showSection('admin-online-sec')" title="Live Online & Active Status">
       <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>
     </button>
@@ -691,6 +864,10 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
 
     <!-- 1. PRACTICE TAB -->
     <section id="practice-sec" class="section" style="display:none;">
+      
+      <!-- DAILY PRACTICE LIMIT REMAINING / WARNING BANNERS -->
+      <div id="practice-daily-limit-banner" style="display:none;"></div>
+
       <h3 style="margin-top:0; color:var(--primary);">Practice Center</h3>
 
       <div class="mode-selector-group" id="practice-mode-selector">
@@ -820,11 +997,14 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
     <!-- 2. MY DASHBOARD & PORTFOLIO SECTION -->
     <section id="portfolio-sec" class="section" style="display:none;">
       
-      <!-- ATTENDANCE SECTION (BEFORE PERFORMANCE DASHBOARD) -->
+      <!-- ATTENDANCE & PRACTICE TIME SECTION (WITH 60-MIN LIMIT TRACKING) -->
       <div id="portfolio-attendance-section" class="card" style="background:#ffffff; border:1px solid var(--border-color); margin-bottom:25px;">
         <h3 style="margin-top:0; color:var(--primary); display:flex; align-items:center; gap:8px;">
           📅 My Attendance & Practice Time
         </h3>
+
+        <!-- Real-Time Practice Allowance Banner -->
+        <div id="portfolio-daily-allowance-box" style="margin-bottom:16px;"></div>
         
         <div class="stats-grid" style="margin-bottom:18px;">
           <div class="card" style="margin:0; background:#f8fafc;">
@@ -982,34 +1162,63 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
       </div>
     </section>
 
-    <!-- NEW ADMIN TAB: LIVE ONLINE USERS MONITOR -->
+    <!-- MOBILE-INSPIRED REAL-TIME ONLINE USERS MONITOR -->
     <section id="admin-online-sec" class="section" style="display:none;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
-        <div>
-          <h2 style="margin:0; color: #1B257D;">🟢 Real-Time Online Users Monitor</h2>
-          <p style="color:var(--text-muted); font-size:13px; margin:4px 0 0 0;">
-            Instantly reflects who is online, idle, switched tabs, left the page, or logged out.
-          </p>
+      
+      <!-- Mobile App Header Card -->
+      <div class="mobile-live-header-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="radar-pulse-ring">
+              <span class="radar-dot"></span>
+            </div>
+            <div>
+              <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a; letter-spacing:-0.3px;">Live Activity Radar</h3>
+              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Real-time presence & location tracker</span>
+            </div>
+          </div>
+          <button onclick="renderAllUsersOnlineCards()" class="mobile-icon-btn" title="Refresh Live State">
+            🔄
+          </button>
         </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <button onclick="renderOnlineCardsFromPresence()" class="btn btn-outline">🔄 Refresh View</button>
+
+        <!-- Metric Counter Pills (Segmented) -->
+        <div class="mobile-presence-segmented-stats">
+          <div class="segmented-pill active-green" onclick="filterOnlineCards('ONLINE')">
+            <span class="live-led-badge green"></span>
+            <div style="text-align:left;">
+              <small style="display:block; font-size:10.5px; opacity:0.85; text-transform:uppercase; font-weight:800;">Active Now</small>
+              <strong id="online-active-count" style="font-size:16px;">0</strong>
+            </div>
+          </div>
+          <div class="segmented-pill inactive-red" onclick="filterOnlineCards('OFFLINE')">
+            <span class="live-led-badge red"></span>
+            <div style="text-align:left;">
+              <small style="display:block; font-size:10.5px; opacity:0.85; text-transform:uppercase; font-weight:800;">Offline / Idle</small>
+              <strong id="online-distracted-count" style="font-size:16px;">0</strong>
+            </div>
+          </div>
+          <div class="segmented-pill view-all" onclick="filterOnlineCards('ALL')">
+            <span style="font-size:13px;">👥</span>
+            <div style="text-align:left;">
+              <small style="display:block; font-size:10.5px; opacity:0.85; text-transform:uppercase; font-weight:800;">Total Users</small>
+              <strong id="online-total-count" style="font-size:16px;">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Search Filter Input -->
+        <div style="margin-top:14px; position:relative;">
+          <input type="text" id="online-user-search" oninput="renderAllUsersOnlineCards()" placeholder="🔍 Search student name, class, or phone..." style="padding:10px 14px 10px 38px; font-size:13px; border-radius:12px; background:#ffffff; border:1px solid #cbd5e1;">
+          <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px; color:#94a3b8;">🔍</span>
         </div>
       </div>
 
-      <!-- Live Online Summary Pills -->
-      <div class="stats-grid" style="margin-bottom:20px;">
-        <div class="card" style="margin:0; background:#f0fdf4; border:1px solid #bbf7d0;">
-          <p style="margin:0; color:#166534; font-size:13px; font-weight:700;">Online & Active (Interacting)</p>
-          <h2 id="online-active-count" style="margin:6px 0 0 0; color:#15803d;">0</h2>
+      <!-- Live Cards Feed Container -->
+      <div id="online-users-cards-container" class="mobile-cards-feed">
+        <div class="mobile-presence-card">
+          <p style="color:var(--text-muted); font-size:13px; text-align:center; margin:15px 0;">Connecting to live presence channel...</p>
         </div>
-        <div class="card" style="margin:0; background:#fee2e2; border:1px solid #fca5a5;">
-          <p style="margin:0; color:#991b1b; font-size:13px; font-weight:700;">Attention / Inactive / In Another App</p>
-          <h2 id="online-distracted-count" style="margin:6px 0 0 0; color:#b91c1c;">0</h2>
-        </div>
-      </div>
-
-      <div id="online-users-cards-container" style="display:flex; flex-direction:column; gap:14px; width:100%;">
-        <p style="color:var(--text-muted); font-size:14px;">Connecting to real-time presence...</p>
       </div>
     </section>
 
@@ -1043,7 +1252,7 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
               <th>S.No</th>
               <th>Student Name</th>
               <th>Class & Div</th>
-              <th>Alert</th>
+              <th>WhatsApp Report</th>
               <th>Date & Time</th>
               <th>Activity</th>
               <th>Duration</th>
@@ -1288,7 +1497,18 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
       <div class="table-responsive">
         <table class="data-table">
           <thead>
-            <tr><th>Name</th><th>Gender</th><th>Class</th><th>Div</th><th>First Language</th><th>Phone</th><th>Username</th><th>Role</th><th>Status</th><th>Action</th></tr>
+            <tr>
+              <th>Name</th>
+              <th>Gender</th>
+              <th>Class</th>
+              <th>Div</th>
+              <th>Language</th>
+              <th>Phone</th>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Live Status</th>
+              <th>Action</th>
+            </tr>
           </thead>
           <tbody id="admin-users-body"></tbody>
         </table>
@@ -1380,8 +1600,11 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
     let sessionStartTime = null;
 
     let presenceChannel = null;
+    let sessionGuardChannel = null;
     let idleTimer = null;
     let isUserCurrentlyIdle = false;
+    let currentActiveContext = 'Portal Dashboard';
+    let onlineUsersFilterMode = 'ALL'; // 'ALL', 'ONLINE', 'OFFLINE'
 
     let sortColumn = 'name';
     let sortAscending = true;
@@ -1397,6 +1620,7 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
       if (currentUser) {
         initializeSession();
         setupPresenceTracker();
+        setupSingleSessionGuard();
       }
 
       document.getElementById('login-form').addEventListener('submit', handleLogin);
@@ -1424,7 +1648,24 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
     });
 
     // =========================================================================
-    // REAL-TIME PRESENCE & ACTIVITY DETECTOR
+    // SINGLE-DEVICE SESSION GUARD
+    // =========================================================================
+    function setupSingleSessionGuard() {
+      if (!currentUser || !currentUser.username) return;
+
+      sessionGuardChannel = supabaseClient.channel('guard_' + currentUser.username);
+      sessionGuardChannel
+        .on('broadcast', { event: 'force_logout' }, (msg) => {
+          if (msg && msg.payload && msg.payload.newSessionId !== currentUser.sessionId) {
+            alert('⚠️ Session Expired: You were logged out because this account was logged into from another device or browser window.');
+            logout(true);
+          }
+        })
+        .subscribe();
+    }
+
+    // =========================================================================
+    // REAL-TIME PRESENCE & ACTIVITY CONTEXT DETECTOR
     // =========================================================================
     function setupPresenceTracker() {
       if (!currentUser) return;
@@ -1435,13 +1676,16 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
 
       presenceChannel
         .on('presence', { event: 'sync' }, () => {
-          renderOnlineCardsFromPresence();
+          renderAllUsersOnlineCards();
+          updateUsersTableLiveStatus();
         })
         .on('presence', { event: 'join' }, () => {
-          renderOnlineCardsFromPresence();
+          renderAllUsersOnlineCards();
+          updateUsersTableLiveStatus();
         })
         .on('presence', { event: 'leave' }, () => {
-          renderOnlineCardsFromPresence();
+          renderAllUsersOnlineCards();
+          updateUsersTableLiveStatus();
         })
         .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
@@ -1495,20 +1739,19 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
 
     async function updatePresenceLiveState(statusMessage) {
       if (!presenceChannel || !currentUser) return;
-      const isGreen = statusMessage === 'Online & Active';
+      const isOnlineActive = (statusMessage === 'Online & Active') && navigator.onLine;
 
       const payload = {
         username: currentUser.username,
         name: currentUser.name || currentUser.username,
-        role: currentUser.role || 'Student',
         userClass: currentUser.userClass || '10',
         division: currentUser.division || 'A',
         phone: currentUser.phone || '',
-        liveStatus: statusMessage,
-        isGreen: isGreen,
+        liveStatus: isOnlineActive ? 'Online & Active' : (navigator.onLine ? statusMessage : 'Offline (Lost Connection)'),
+        isGreen: isOnlineActive,
+        currentContext: currentActiveContext || 'Portal Dashboard',
         loginTime: currentUser.loginTimeStr || formatDateStrict(new Date().toISOString()),
-        logoutTime: isGreen ? 'Active Now' : formatDateStrict(new Date().toISOString()),
-        device: getDeviceInfo(),
+        logoutTime: isOnlineActive ? 'Active Now' : formatDateStrict(new Date().toISOString()),
         timestamp: Date.now()
       };
 
@@ -1519,92 +1762,364 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
       }
     }
 
-    function renderOnlineCardsFromPresence() {
+    function filterOnlineCards(mode) {
+      onlineUsersFilterMode = mode;
+      renderAllUsersOnlineCards();
+    }
+
+    // =========================================================================
+    // MOBILE-INSPIRED REAL-TIME PRESENCE CARDS RENDERER
+    // =========================================================================
+    function renderAllUsersOnlineCards() {
       const container = document.getElementById('online-users-cards-container');
       if (!container) return;
 
-      let presenceState = {};
-      try {
-        presenceState = presenceChannel ? presenceChannel.presenceState() : {};
-      } catch(e) {
-        presenceState = {};
-      }
+      const usersList = cachedAdminData?.users || [];
+      const logsList = cachedAdminData?.logs || [];
+      const adminIsOnline = navigator.onLine;
+      const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
 
-      const activeUsers = [];
-      for (const key in presenceState) {
-        const presences = presenceState[key];
-        if (presences && presences.length > 0) {
-          activeUsers.push(presences[presences.length - 1]);
+      let presenceMap = {};
+      try {
+        if (presenceChannel) {
+          const state = presenceChannel.presenceState();
+          for (const key in state) {
+            const list = state[key];
+            if (list && list.length > 0) {
+              presenceMap[key] = list[list.length - 1];
+            }
+          }
         }
+      } catch(e) {
+        presenceMap = {};
       }
 
       let activeGreenCount = 0;
       let distractedCount = 0;
 
-      activeUsers.forEach(u => {
-        if (u.isGreen) activeGreenCount++;
+      // Filter and Sort: Online users appear first, then sorted by name
+      const processedUsers = usersList.map(u => {
+        const pres = presenceMap[u.username];
+        const isOnlineAndActive = adminIsOnline && Boolean(pres && pres.isGreen);
+
+        if (isOnlineAndActive) activeGreenCount++;
         else distractedCount++;
+
+        let statusText = 'Offline';
+        if (!adminIsOnline) {
+          statusText = 'Offline (Admin Disconnected)';
+        } else if (pres && pres.liveStatus) {
+          statusText = pres.liveStatus;
+        }
+
+        const userLastLog = logsList.find(l => l.identifier === u.username);
+        const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
+        const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
+        const activeContext = pres?.currentContext || (isOnlineAndActive ? 'Practice Center' : 'Offline / Inactive');
+
+        return {
+          ...u,
+          isOnline: isOnlineAndActive,
+          statusText,
+          loginTime,
+          logoutTime,
+          activeContext
+        };
       });
 
+      // Update Header Badges
       const actEl = document.getElementById('online-active-count');
       const distEl = document.getElementById('online-distracted-count');
+      const totEl = document.getElementById('online-total-count');
       if (actEl) actEl.innerText = activeGreenCount;
       if (distEl) distEl.innerText = distractedCount;
+      if (totEl) totEl.innerText = usersList.length;
 
-      if (activeUsers.length === 0) {
+      // Filter Mode Application (Tabs / Search)
+      const filteredUsers = processedUsers.filter(u => {
+        if (onlineUsersFilterMode === 'ONLINE' && !u.isOnline) return false;
+        if (onlineUsersFilterMode === 'OFFLINE' && u.isOnline) return false;
+
+        if (searchInput) {
+          const matchName = String(u.name || '').toLowerCase().includes(searchInput);
+          const matchUser = String(u.username || '').toLowerCase().includes(searchInput);
+          const matchClass = `${u.class || ''}-${u.division || ''}`.toLowerCase().includes(searchInput);
+          const matchPhone = String(u.phone || '').toLowerCase().includes(searchInput);
+          return matchName || matchUser || matchClass || matchPhone;
+        }
+        return true;
+      }).sort((a, b) => (b.isOnline ? 1 : 0) - (a.isOnline ? 1 : 0));
+
+      if (filteredUsers.length === 0) {
         container.innerHTML = `
-          <div class="card" style="text-align:center; padding:35px 20px;">
-            <p style="color:var(--text-muted); font-size:15px; margin:0;">
-              No live users connected to real-time presence right now. As users sign in or open the portal, their live activity cards will appear here instantly!
-            </p>
+          <div class="mobile-presence-card" style="text-align:center; padding:30px 16px;">
+            <div style="font-size:36px; margin-bottom:8px;">🔍</div>
+            <p style="color:var(--text-muted); font-size:14px; margin:0; font-weight:600;">No users match your filter criteria.</p>
           </div>
         `;
         return;
       }
 
-      // Render Live Status Cards
-      container.innerHTML = activeUsers.map(u => {
-        const isGreen = u.isGreen;
-        const ledClass = isGreen ? 'led-green' : 'led-red';
-        const borderColor = isGreen ? 'var(--success)' : 'var(--danger)';
-        const statusBadgeClass = isGreen ? 'badge-success' : 'badge-danger';
+      // Render Clean, Modern Native Mobile Cards (No Device Specs, No Role)
+      container.innerHTML = filteredUsers.map((u, idx) => {
+        const isOnline = u.isOnline;
+        const initials = (u.name || u.username).substring(0, 2).toUpperCase();
+        const cardId = `pres-detail-${idx}`;
 
         return `
-          <div class="card" style="margin-bottom:14px; padding:20px; border-left:6px solid ${borderColor}; box-shadow:var(--shadow-sm);">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-              <div style="display:flex; align-items:center; gap:10px;">
-                <span class="led-dot ${ledClass}" title="${isGreen ? 'Online & Active' : 'Attention / Inactive'}"></span>
-                <strong style="font-size:17px; color:var(--text-main);">${escapeHtml(u.name)}</strong>
-                <span class="badge">${escapeHtml(u.role)}</span>
-                <span style="font-size:13px; color:var(--text-muted); font-weight:700;">(Class ${escapeHtml(u.userClass)}-${escapeHtml(u.division)})</span>
+          <div class="mobile-presence-card ${isOnline ? 'is-online' : 'is-offline'}" onclick="toggleAccordion('${cardId}')">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+              
+              <!-- Left: Avatar with Status Dot -->
+              <div class="presence-avatar-circle ${isOnline ? 'green' : 'red'}">
+                <span>${initials}</span>
+                <span class="online-indicator-dot ${isOnline ? 'green' : 'red'}"></span>
               </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="badge ${statusBadgeClass}" style="font-size:13px; padding:6px 12px; font-weight:800;">
-                  ${isGreen ? '🟢 ' : '🔴 '} ${escapeHtml(u.liveStatus)}
-                </span>
-                <button onclick="sendWhatsappAlert('${escapeHtml(u.name)}', '${u.phone}')" class="btn btn-outline" style="padding:6px 10px; background:#dcfce7; color:#15803d; border-color:#86efac; font-size:14px;" title="Ping on WhatsApp">
-                  💬
-                </button>
+
+              <!-- Center: Name, Class & Live Section Capsule -->
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <strong style="font-size:15px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${escapeHtml(u.name || u.username)}
+                  </strong>
+                  <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
+                </div>
+
+                <div style="margin-top:4px;">
+                  <span class="live-activity-capsule ${isOnline ? 'active-capsule' : 'inactive-capsule'}">
+                    <span>${isOnline ? '📍' : '💤'}</span>
+                    <span>${escapeHtml(u.activeContext)}</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Right: 1-Tap WhatsApp Trigger -->
+              <button onclick="event.stopPropagation(); sendOnlineUserWhatsappAlert('${escapeHtml(u.name || u.username)}', '${u.phone}', '${escapeHtml(u.statusText)}', '${escapeHtml(u.activeContext)}')" 
+                      class="mobile-whatsapp-btn" title="Ping on WhatsApp">
+                💬
+              </button>
+
+            </div>
+
+            <!-- Slide-down Collapsible Drawer: Timestamps & Session Details -->
+            <div id="${cardId}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:12.5px; color:#475569;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                <div><strong>State:</strong> <span style="font-weight:700; color:${isOnline ? 'var(--success)' : 'var(--danger)'};">${escapeHtml(u.statusText)}</span></div>
+                <div><strong>Phone:</strong> ${u.phone ? escapeHtml(u.phone) : '-'}</div>
+                <div><strong>Login:</strong> ${u.loginTime}</div>
+                <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
               </div>
             </div>
 
-            <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:12px; padding:14px 16px; font-size:13.5px; line-height:1.7;">
-              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
-                <div><strong>Role:</strong> <span class="badge">${escapeHtml(u.role)}</span></div>
-                <div><strong>Status:</strong> <span style="font-weight:800; color:${isGreen ? 'var(--success)' : 'var(--danger)'}">${escapeHtml(u.liveStatus)}</span></div>
-                <div><strong>Login Time:</strong> ${u.loginTime || '-'}</div>
-                <div><strong>Logout Time:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success">Active Now</span>' : u.logoutTime}</div>
-              </div>
-              <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border-color);">
-                <strong>Device Specifications:</strong><br>
-                <span style="font-family:monospace; color:var(--text-muted); font-size:12px; word-break:break-word;">
-                  ${escapeHtml(u.device)}
-                </span>
-              </div>
-            </div>
           </div>
         `;
       }).join('');
+    }
+
+    // TAILORED WHATSAPP ALERT IN REAL-TIME ONLINE USERS MONITOR
+    function sendOnlineUserWhatsappAlert(name, phone, statusMsg, context) {
+      let text = '';
+      if (statusMsg.includes('Online & Active')) {
+        text = `Hi ${name}! You are currently active in [${context}] on the TDTTI USS Training Portal. Excellent work! Keep practicing.`;
+      } else if (statusMsg.includes('Switched Tab') || statusMsg.includes('Another Page')) {
+        text = `Hi ${name}! Alert from TDTTI USS Portal: You have switched away from your practice page (${statusMsg.replace(/^[🟢🔴]\s*/, '')}). Please return to your USS practice now!`;
+      } else if (statusMsg.includes('Opened Another App') || statusMsg.includes('Window Inactive')) {
+        text = `Hi ${name}! Alert from TDTTI USS Portal: Your training portal window is minimized or inactive. Please refocus and complete your USS training!`;
+      } else if (statusMsg.includes('Inactive') || statusMsg.includes('Idle')) {
+        text = `Hi ${name}! Notice: You have been inactive on the TDTTI USS Portal for several minutes. Please return to your practice questions!`;
+      } else {
+        text = `Hi ${name}! Reminder from TDTTI USS Training Portal: You are currently offline. Please log in today to complete your practice sessions.`;
+      }
+
+      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    // TAILORED WHATSAPP ALERT IN STUDENT DAILY ATTENDANCE TRACKER
+    function sendAttendanceWhatsappAlert(name, phone, date, activity, duration, questions, score) {
+      const text = `Hi ${name}! Here is your TDTTI USS Training Portal Daily Attendance Report for ${date}:
+• Activity: ${activity}
+• Duration: ${duration}
+• Questions Attended: ${questions}
+• Score: ${score}
+Keep practicing consistently every day!`;
+
+      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    // =========================================================================
+    // UPDATE ENROLLED USERS TABLE LIVE STATUS COLUMN
+    // =========================================================================
+    function updateUsersTableLiveStatus() {
+      const uBody = document.getElementById('admin-users-body');
+      if (!uBody || !cachedAdminData?.users) return;
+
+      let presenceMap = {};
+      try {
+        if (presenceChannel) {
+          const state = presenceChannel.presenceState();
+          for (const key in state) {
+            const list = state[key];
+            if (list && list.length > 0) presenceMap[key] = list[list.length - 1];
+          }
+        }
+      } catch(e) {
+        presenceMap = {};
+      }
+
+      const users = cachedAdminData.users;
+      uBody.innerHTML = users.map(u => {
+        const pres = presenceMap[u.username];
+        const isOnline = navigator.onLine && Boolean(pres && pres.isGreen);
+
+        return `
+          <tr>
+            <td><b>${escapeHtml(u.name)}</b></td>
+            <td>${u.gender || 'Male'}</td>
+            <td>${u.class || '10'}</td>
+            <td>${u.division || 'A'}</td>
+            <td><span class="badge badge-success">${u.first_language || 'MI'}</span></td>
+            <td>${u.phone}</td>
+            <td>${escapeHtml(u.username)}</td>
+            <td>${u.role}</td>
+            <td>
+              <span class="status-pill" style="padding:4px 10px; background:${isOnline ? '#dcfce7' : '#fee2e2'}; color:${isOnline ? '#15803d' : '#b91c1c'}; border:1px solid ${isOnline ? '#86efac' : '#fca5a5'};">
+                <span class="led-dot ${isOnline ? 'led-green' : 'led-red'}" style="width:9px; height:9px;"></span>
+                <b>${isOnline ? 'Online' : 'Offline'}</b>
+              </span>
+            </td>
+            <td style="display:flex; gap:6px;">
+              <button onclick="editUserByUsername('${u.username}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
+              <button onclick="confirmDeleteEntireUser('${u.username}', '${u.phone}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Permanently Delete User & All Data">🗑️ Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // DAILY 60-MINUTES PRACTICE LIMIT & 30-MINUTES STABLE WARNING ENGINE
+    // =========================================================================
+    function getTodayPracticeSeconds() {
+      if (!currentUser) return 0;
+      const todayDateStr = new Date().toLocaleDateString('en-GB');
+
+      const localAtt = JSON.parse(localStorage.getItem('portal_attendance_logs') || '[]')
+        .filter(a => String(a.phone).trim() === String(currentUser.phone).trim() && (a.date === todayDateStr || a.timestamp?.startsWith(todayDateStr)));
+      
+      let sumSec = 0;
+      localAtt.forEach(a => {
+        sumSec += (Number(a.duration_seconds) || 0);
+      });
+
+      if (sessionStartTime) {
+        sumSec += Math.max(0, Math.round((Date.now() - sessionStartTime) / 1000));
+      }
+      return sumSec;
+    }
+
+    function checkDailyPracticeLimit() {
+      if (!currentUser || String(currentUser.role).toLowerCase() === 'admin') {
+        return { isBlocked: false, isWarned: false, practicedSec: 0, remainingSec: 3600 };
+      }
+
+      const practicedSec = getTodayPracticeSeconds();
+      const maxDailySec = 3600; // 60 minutes limit
+      const warnSec = 1800; // 30 minutes stable warning
+
+      const isBlocked = practicedSec >= maxDailySec;
+      const isWarned = practicedSec >= warnSec && !isBlocked;
+      const remainingSec = Math.max(0, maxDailySec - practicedSec);
+
+      return { isBlocked, isWarned, practicedSec, remainingSec };
+    }
+
+    function updatePracticeLimitUI() {
+      const { isBlocked, isWarned, practicedSec, remainingSec } = checkDailyPracticeLimit();
+      const practiceBanner = document.getElementById('practice-daily-limit-banner');
+      const portfolioAllowanceBox = document.getElementById('portfolio-daily-allowance-box');
+      const modeSelector = document.getElementById('practice-mode-selector');
+
+      const remMins = Math.floor(remainingSec / 60);
+      const remSecs = remainingSec % 60;
+      const remText = remMins > 0 ? `${remMins}m ${remSecs}s` : `${remSecs}s`;
+      const practicedMins = Math.round(practicedSec / 60);
+
+      // Render in Practice Center
+      if (practiceBanner) {
+        if (isBlocked) {
+          practiceBanner.style.display = 'block';
+          practiceBanner.innerHTML = `
+            <div class="blocked-banner">
+              <div style="font-size:46px; margin-bottom:8px;">🛑</div>
+              <h2 style="margin:0 0 8px 0; color:#991b1b;">Daily 60-Minute Practice Limit Reached</h2>
+              <p style="font-size:14.5px; line-height:1.6; max-width:600px; margin:0 auto 14px auto;">
+                You have reached your maximum practice allowance of <strong>60 minutes for today (${new Date().toLocaleDateString('en-GB')})</strong>. 
+                Subject Practice and Trial Exam modes are locked until tomorrow to maintain a healthy study balance.
+              </p>
+              <p style="font-size:13px; color:#7f1d1d; margin:0; font-weight:700;">
+                ✓ Your Performance Dashboard and Notifications remain completely open and accessible.
+              </p>
+            </div>
+          `;
+          if (modeSelector) modeSelector.style.display = 'none';
+          document.getElementById('subject-practice-box').style.display = 'none';
+          document.getElementById('trial-exam-box').style.display = 'none';
+        } else {
+          practiceBanner.style.display = 'block';
+          if (isWarned) {
+            practiceBanner.innerHTML = `
+              <div class="warning-banner">
+                <span style="font-size:22px;">⚠️</span>
+                <div>
+                  <strong>Stable Practice Warning:</strong> You have practiced for <strong>${practicedMins} minutes today</strong>.
+                  Daily practice is capped at 60 minutes. <strong>Remaining today: ${remText}</strong>.
+                </div>
+              </div>
+            `;
+          } else {
+            practiceBanner.innerHTML = `
+              <div style="background:#eff6ff; border:1px solid #93c5fd; padding:10px 16px; border-radius:10px; color:#1e40af; font-size:13px; font-weight:700; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <span>⏱️ Today's Remaining Practice Allowance:</span>
+                <span class="badge" style="background:#1e40af; color:#fff; font-size:13px; padding:4px 10px;">${remText} left / 60m</span>
+              </div>
+            `;
+          }
+          if (modeSelector && document.getElementById('quiz-card').style.display !== 'block' && document.getElementById('consolidation-card').style.display !== 'block') {
+            modeSelector.style.display = 'flex';
+          }
+        }
+      }
+
+      // Render in My Attendance & Practice Time
+      if (portfolioAllowanceBox) {
+        if (isBlocked) {
+          portfolioAllowanceBox.innerHTML = `
+            <div class="blocked-banner" style="padding:16px; margin:0;">
+              <strong style="font-size:15px;">🛑 Maximum Daily Practice Limit of 60 Mins Reached!</strong><br>
+              <span style="font-size:13px;">Subject Practice and Trial Exam modes are closed until tomorrow.</span>
+            </div>
+          `;
+        } else if (isWarned) {
+          portfolioAllowanceBox.innerHTML = `
+            <div class="warning-banner" style="margin:0;">
+              <span>⚠️</span>
+              <div>
+                <strong>30-Minute Threshold Passed:</strong> You have practiced for ${practicedMins} mins today. Remaining daily allowance: <strong>${remText}</strong>.
+              </div>
+            </div>
+          `;
+        } else {
+          portfolioAllowanceBox.innerHTML = `
+            <div style="background:#f8fafc; border:1px solid var(--border-color); padding:10px 16px; border-radius:10px; font-size:13px; font-weight:700; color:var(--text-main); display:flex; justify-content:space-between; align-items:center;">
+              <span>Daily Practice Allowance Left Today:</span>
+              <span class="badge badge-success" style="font-size:13px;">${remText} / 60m</span>
+            </div>
+          `;
+        }
+      }
     }
 
     function toggleUserPasswordVisibility() {
@@ -1627,7 +2142,6 @@ ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
       showToast('SQL setup code copied to clipboard!', 'success');
     }
 
-    // SAMPLE CSV WITHOUT ID COLUMN (IDs auto-generated)
     function downloadSampleCSV() {
       const sampleCSVContent = 
 `subject,question,option_a,option_b,option_c,option_d,correct_answer,image_url
@@ -1669,12 +2183,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
     }
 
-    function sendWhatsappAlert(identifier, phone = '') {
-      const text = `Hi ${identifier}! You are requested to log into the TDTTI USS Training Portal now for practice.`;
-      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-      window.open(url, '_blank');
-    }
-
     async function refreshCurrentView() {
       const icon = document.getElementById('global-refresh-icon');
       if (icon) icon.classList.add('spinning');
@@ -1685,7 +2193,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       try {
         if (activeId === 'portfolio-sec') await loadPortfolio();
         else if (activeId === 'notif-sec') await loadNotifications();
-        else if (activeId === 'admin-online-sec') renderOnlineCardsFromPresence();
+        else if (activeId === 'admin-online-sec') renderAllUsersOnlineCards();
         else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(activeId)) await loadAdminData();
       } catch (err) {
         console.error("Refresh Error:", err);
@@ -1785,6 +2293,8 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         led.className = 'led-dot led-green';
         text.innerText = 'Online';
       }
+      renderAllUsersOnlineCards();
+      updateUsersTableLiveStatus();
     }
 
     function showToast(message, type = 'info') {
@@ -1884,7 +2394,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     // =========================================================================
-    // AUTHENTICATION & SESSIONS
+    // AUTHENTICATION & SINGLE-SESSION LOGINS
     // =========================================================================
     async function handleLogin(e) {
       e.preventDefault();
@@ -1910,6 +2420,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
         const nowStr = formatDateStrict(new Date().toISOString());
         const logId = 'LOG-' + Date.now();
+        const newSessionId = 'SESS-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
         const deviceStr = getDeviceInfo();
 
         if (user) {
@@ -1919,7 +2430,37 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
             return;
           }
 
-          await supabaseClient.from('logs').insert([{ timestamp: nowStr, log_id: logId, identifier: user.username, role: user.role, login_status: 'SUCCESS', login_time: nowStr, logout_time: 'Active Now', device: deviceStr }]);
+          // Force logout previous sessions from logs table
+          await supabaseClient
+            .from('logs')
+            .update({ logout_time: 'Auto Logged Out (New Login on Another Device)' })
+            .eq('identifier', user.username)
+            .eq('logout_time', 'Active Now');
+
+          // Broadcast force logout to any active tabs/browsers
+          try {
+            const guardBroadcast = supabaseClient.channel('guard_' + user.username);
+            await guardBroadcast.subscribe();
+            await guardBroadcast.send({
+              type: 'broadcast',
+              event: 'force_logout',
+              payload: { newSessionId: newSessionId }
+            });
+          } catch(err) {
+            console.warn("Session guard broadcast note:", err);
+          }
+
+          // Insert fresh login log
+          await supabaseClient.from('logs').insert([{ 
+            timestamp: nowStr, 
+            log_id: logId, 
+            identifier: user.username, 
+            role: user.role, 
+            login_status: 'SUCCESS', 
+            login_time: nowStr, 
+            logout_time: 'Active Now', 
+            device: deviceStr 
+          }]);
 
           const isDefaultPass = (passwordInput === 'admin123' || passwordInput === 'student123' || passwordInput === usernameInput);
 
@@ -1934,6 +2475,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
             username: user.username,
             isDefaultPass: isDefaultPass,
             loginTimeStr: nowStr,
+            sessionId: newSessionId,
             logId: logId
           };
 
@@ -1950,6 +2492,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
           initializeSession();
           setupPresenceTracker();
+          setupSingleSessionGuard();
           showToast('Logged in successfully!', 'success');
         } else {
           showToast('Invalid Username or Password', 'danger');
@@ -1988,6 +2531,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       document.getElementById('user-display-div').innerText = currentUser.division || 'A';
 
       filterPracticeSubjectDropdown();
+      updatePracticeLimitUI();
 
       const adminNavButtons = document.querySelectorAll('.admin-only');
       const studentTabs = document.querySelectorAll('.student-tab-btn');
@@ -2032,10 +2576,14 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       }
     }
 
-    async function logout() {
-      await updatePresenceLiveState('Logged Out');
+    async function logout(forced = false) {
+      if (!forced) {
+        await updatePresenceLiveState('Logged Out');
+      }
       if (currentUser && currentUser.logId) {
-        await supabaseClient.from('logs').update({ logout_time: formatDateStrict(new Date().toISOString()) }).eq('log_id', currentUser.logId);
+        await supabaseClient.from('logs').update({ 
+          logout_time: forced ? 'Auto Logged Out (New Login on Another Device)' : formatDateStrict(new Date().toISOString()) 
+        }).eq('log_id', currentUser.logId);
       }
       localStorage.removeItem('USS_USER');
       sessionStorage.clear();
@@ -2050,7 +2598,24 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       document.getElementById(sectionId).style.display = 'block';
       document.getElementById('tab-bar-container').style.display = 'flex';
 
+      // Update Active Navigation Context for Live Monitor
+      const sectionContextMap = {
+        'practice-sec': 'Practice Center',
+        'portfolio-sec': 'My Dashboard & Portfolio',
+        'notif-sec': 'Notification Center',
+        'admin-attendance-sec': 'Admin - Attendance Tracker',
+        'admin-report-sec': 'Admin - Student Reports',
+        'admin-resets-sec': 'Admin - Reset Requests',
+        'manage-qs-sec': 'Admin - Manage Questions',
+        'manage-users-sec': 'Admin - Manage Users',
+        'admin-online-sec': 'Admin - Online Users Monitor',
+        'admin-logs-sec': 'Admin - Audit Logs'
+      };
+      currentActiveContext = sectionContextMap[sectionId] || 'Portal Dashboard';
+      updatePresenceLiveState('Online & Active');
+
       if (sectionId === 'practice-sec') {
+        updatePracticeLimitUI();
         document.getElementById('practice-mode-selector').style.display = 'flex';
         document.getElementById('subject-practice-box').style.display = 'none';
         document.getElementById('trial-exam-box').style.display = 'none';
@@ -2074,14 +2639,21 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
       if (sectionId === 'portfolio-sec') loadPortfolio();
       else if (sectionId === 'notif-sec') loadNotifications();
-      else if (sectionId === 'admin-online-sec') renderOnlineCardsFromPresence();
+      else if (sectionId === 'admin-online-sec') renderAllUsersOnlineCards();
       else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(sectionId)) loadAdminData();
     }
 
     // =========================================================================
-    // PRACTICE & TRIAL EXAM MODULE (WITH COMPULSORY QUESTIONS)
+    // PRACTICE & TRIAL EXAM MODULE (WITH COMPULSORY QUESTIONS & 60-MIN LIMIT)
     // =========================================================================
     function switchPracticeMode(mode) {
+      const { isBlocked } = checkDailyPracticeLimit();
+      if (isBlocked) {
+        showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
+        updatePracticeLimitUI();
+        return;
+      }
+
       document.getElementById('tab-bar-container').style.display = 'none';
       document.getElementById('practice-mode-selector').style.display = 'none';
       document.getElementById('quiz-card').style.display = 'none';
@@ -2092,14 +2664,18 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       if (mode === 'PRACTICE') {
         document.getElementById('subject-practice-box').style.display = 'block';
         document.getElementById('trial-exam-box').style.display = 'none';
+        currentActiveContext = 'Practice Center > Choosing Subject';
       } else {
         document.getElementById('subject-practice-box').style.display = 'none';
         document.getElementById('trial-exam-box').style.display = 'block';
+        currentActiveContext = 'Practice Center > Trial Exam Mode';
       }
+      updatePresenceLiveState('Online & Active');
     }
 
     function exitPracticeMode() {
       clearInterval(timerInterval);
+      sessionStartTime = null;
       document.getElementById('tab-bar-container').style.display = 'flex';
       document.getElementById('practice-mode-selector').style.display = 'flex';
 
@@ -2111,15 +2687,28 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       document.getElementById('consolidation-card').style.display = 'none';
 
       document.getElementById('subject-select').value = '';
+      currentActiveContext = 'Practice Center';
+      updatePresenceLiveState('Online & Active');
+      updatePracticeLimitUI();
     }
 
     async function loadPracticeSubject() {
+      const { isBlocked } = checkDailyPracticeLimit();
+      if (isBlocked) {
+        showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
+        updatePracticeLimitUI();
+        return;
+      }
+
       const subject = document.getElementById('subject-select').value;
       if (!subject) return;
 
       sessionAnswersLog = [];
       sessionStartTime = Date.now();
       isTrialMode = false;
+
+      currentActiveContext = `Practice Center > ${getFullSubjectName(subject)}`;
+      updatePresenceLiveState('Online & Active');
 
       document.getElementById('no-questions-card').style.display = 'none';
       document.getElementById('no-trial-card').style.display = 'none';
@@ -2162,6 +2751,13 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     async function startTrialExam() {
+      const { isBlocked } = checkDailyPracticeLimit();
+      if (isBlocked) {
+        showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
+        updatePracticeLimitUI();
+        return;
+      }
+
       document.getElementById('trial-exam-box').style.display = 'none';
       document.getElementById('no-trial-card').style.display = 'none';
       document.getElementById('practice-spinner').style.display = 'flex';
@@ -2169,6 +2765,9 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       isTrialMode = true;
       sessionAnswersLog = [];
       sessionStartTime = Date.now();
+
+      currentActiveContext = 'Practice Center > Trial Exam Mode';
+      updatePresenceLiveState('Online & Active');
 
       const userLang = currentUser.firstLanguage || 'MI';
       const firstLangChoices = ['MI', 'AR', 'SK'];
@@ -2259,8 +2858,17 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         timeLeft--;
         timerCount.innerText = Math.max(0, timeLeft);
         if (timeLeft <= 10) timerBadge.classList.add('danger');
+        
+        // Check 60-min daily limit every second during active quiz
+        const { isBlocked } = checkDailyPracticeLimit();
+        if (isBlocked) {
+          clearInterval(timerInterval);
+          showToast('🛑 Daily 60-minute practice limit reached! Saving session progress...', 'danger');
+          showConsolidationView();
+          return;
+        }
+
         if (timeLeft <= 0) {
-          // COMPULSORY ANSWER: Stop timer at 0s, alert student to choose an answer. Do NOT skip!
           clearInterval(timerInterval);
           showToast('⏱️ Time is up! All questions are compulsory. Please select your answer to proceed.', 'danger');
         }
@@ -2275,9 +2883,14 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       if (q.Subject === 'AR' || q.Subject === 'Arabic') quizCard.classList.add('rtl-content');
       else quizCard.classList.remove('rtl-content');
 
-      document.getElementById('quiz-subject').innerText = isTrialMode ? `TRIAL: ${getFullSubjectName(q.Subject)}` : getFullSubjectName(q.Subject);
+      const subjTitle = isTrialMode ? `TRIAL: ${getFullSubjectName(q.Subject)}` : getFullSubjectName(q.Subject);
+      document.getElementById('quiz-subject').innerText = subjTitle;
       document.getElementById('quiz-progress').innerText = `Question ${qIndex + 1} of ${currentQuestions.length} (Compulsory)`;
       document.getElementById('quiz-question').innerText = q.Question;
+
+      // Update context in real-time monitor
+      currentActiveContext = `Practice: ${subjTitle} (Q${qIndex + 1}/${currentQuestions.length})`;
+      updatePresenceLiveState('Online & Active');
       
       const imgEl = document.getElementById('quiz-image');
       if (q.ImageUrl) { imgEl.src = q.ImageUrl; imgEl.style.display = 'block'; }
@@ -2400,7 +3013,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
       document.getElementById('consolidation-card').style.display = 'block';
 
-      // CLEAN NOTIFICATION MESSAGE (NO <b> TAGS)
+      // CLEAN NOTIFICATION MESSAGE
       const studentPlainInfo = `${currentUser.name || currentUser.username} (${currentUser.userClass || '10'}-${currentUser.division || 'A'})`;
       const subjName = isTrialMode ? 'Comprehensive Trial Exam' : sessionAnswersLog[0].Subject;
 
@@ -2420,7 +3033,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         }]);
       }
 
-      // WRITE ONLY ONE CLEAN NOTIFICATION (NO DUPLICATES)
       const notifId = 'NOTIF-' + Date.now();
       await supabaseClient.from('notifications').insert([
         {
@@ -2460,16 +3072,26 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         console.warn("Supabase attendance insert exception:", err);
       }
 
-      // Local storage resilient fallback
       const localAtt = JSON.parse(localStorage.getItem('portal_attendance_logs') || '[]');
       localAtt.unshift(attendanceEntry);
       localStorage.setItem('portal_attendance_logs', JSON.stringify(localAtt.slice(0, 300)));
+
+      sessionStartTime = null;
+      updatePracticeLimitUI();
     }
 
     function exitConsolidationView() {
       document.getElementById('consolidation-card').style.display = 'none';
       document.getElementById('top-navbar').style.display = 'flex';
       document.getElementById('tab-bar-container').style.display = 'flex';
+
+      updatePracticeLimitUI();
+      const { isBlocked } = checkDailyPracticeLimit();
+
+      if (isBlocked) {
+        showSection('portfolio-sec');
+        return;
+      }
 
       if (isTrialMode) {
         document.getElementById('trial-exam-box').style.display = 'block';
@@ -2484,6 +3106,8 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     // DASHBOARD & PORTFOLIO (WITH ATTENDANCE SECTION LOADED FROM SUPABASE)
     // =========================================================================
     async function loadPortfolio() {
+      updatePracticeLimitUI();
+
       const { data: answers } = await supabaseClient.from('student_answers').select('*').eq('phone', currentUser.phone);
       const { data: trials } = await supabaseClient.from('trial_exams').select('*').eq('phone', currentUser.phone);
       
@@ -2495,7 +3119,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         console.warn("Could not query Supabase attendance table", e);
       }
 
-      // Supplement from local storage if any offline record exists
       const localAtt = JSON.parse(localStorage.getItem('portal_attendance_logs') || '[]').filter(a => String(a.phone).trim() === String(currentUser.phone).trim());
       const mergedAttendance = [...attendanceList];
       localAtt.forEach(la => {
@@ -2783,7 +3406,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         return;
       }
 
-      // DEDUPLICATE BY TITLE + TIMESTAMP + MESSAGE SIGNATURE
       const seenSignatures = new Set();
       const notifications = [];
 
@@ -2988,7 +3610,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         console.warn("Could not query Supabase attendance table", e);
       }
 
-      // Merge local storage attendance logs
       const localAtt = JSON.parse(localStorage.getItem('portal_attendance_logs') || '[]');
       localAtt.forEach(la => {
         if (!allAttendance.some(ma => ma.attendance_id === la.attendance_id)) {
@@ -3018,7 +3639,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         studentChipsContainer.appendChild(chip);
       });
 
-      // 1. RENDER ADMIN ATTENDANCE TABLE (WITH WHATSAPP PING & SUPABASE DATA)
+      // 1. RENDER ADMIN ATTENDANCE TABLE
       const adminAttBody = document.getElementById('admin-attendance-body');
       if (adminAttBody) {
         if (allAttendance.length === 0) {
@@ -3030,7 +3651,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
               <td><b>${escapeHtml(a.student_name)}</b></td>
               <td>${a.class || '10'}-${a.division || 'A'}</td>
               <td style="text-align:center;">
-                <button onclick="sendWhatsappAlert('${escapeHtml(a.student_name)}', '${a.phone}')" class="btn btn-outline" style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" title="Ping on WhatsApp">
+                <button onclick="sendAttendanceWhatsappAlert('${escapeHtml(a.student_name)}', '${a.phone}', '${a.date || a.timestamp?.split(',')[0]}', '${escapeHtml(a.activity)}', '${a.duration_text || a.duration_seconds + 's'}', '${a.questions_attended || 0}', '${a.score || '-'}')" class="btn btn-outline" style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" title="Send Attendance Report on WhatsApp">
                   💬
                 </button>
               </td>
@@ -3251,25 +3872,8 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         `).join('');
       }
 
-      // 8. ENROLLED USERS LIST
-      const uBody = document.getElementById('admin-users-body');
-      uBody.innerHTML = (users || []).map(u => `
-        <tr>
-          <td><b>${escapeHtml(u.name)}</b></td>
-          <td>${u.gender || 'Male'}</td>
-          <td>${u.class || '10'}</td>
-          <td>${u.division || 'A'}</td>
-          <td><span class="badge badge-success">${u.first_language || 'MI'}</span></td>
-          <td>${u.phone}</td>
-          <td>${escapeHtml(u.username)}</td>
-          <td>${u.role}</td>
-          <td><span class="badge ${u.status === 'Active' ? 'badge-success' : ''}">${u.status}</span></td>
-          <td style="display:flex; gap:6px;">
-            <button onclick="editUserByUsername('${u.username}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
-            <button onclick="confirmDeleteEntireUser('${u.username}', '${u.phone}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Permanently Delete User & All Data">🗑️ Delete</button>
-          </td>
-        </tr>
-      `).join('');
+      // 8. RENDER ENROLLED USERS LIST AND LIVE STATUS
+      updateUsersTableLiveStatus();
 
       // 9. AUDIT ACCESS LOGS
       const lContainer = document.getElementById('admin-logs-cards-container');
@@ -3277,18 +3881,32 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         if (logs.length === 0) {
           lContainer.innerHTML = '<p style="color:var(--text-muted); font-size:14px;">No access logs recorded yet.</p>';
         } else {
+          let presenceMap = {};
+          try {
+            if (presenceChannel) {
+              const state = presenceChannel.presenceState();
+              for (const k in state) {
+                const list = state[k];
+                if (list && list.length > 0) presenceMap[k] = list[list.length - 1];
+              }
+            }
+          } catch(e){}
+
           lContainer.innerHTML = logs.map((l, idx) => {
-            const isActive = l.logout_time === 'Active Now';
+            const pres = presenceMap[l.identifier];
+            const isOnlineNow = navigator.onLine && (l.logout_time === 'Active Now') && pres && pres.isGreen;
             const relativeTime = getRelativeTime(l.timestamp || l.login_time);
 
             return `
-              <div class="card" style="margin-bottom:12px; padding:16px; width:100%; box-shadow:var(--shadow-sm); border:1px solid var(--border-color);">
+              <div class="card" style="margin-bottom:12px; padding:16px; width:100%; box-shadow:var(--shadow-sm); border:1px solid var(--border-color); border-left:5px solid ${isOnlineNow ? 'var(--success)' : 'var(--danger)'};">
                 <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:10px;">
                   <div style="display:flex; align-items:center; gap:12px; cursor:pointer; flex:1;" onclick="toggleAccordion('log-detail-${idx}')">
-                    <span class="led-dot ${isActive ? 'led-green' : 'led-red'}" title="${isActive ? 'Active' : 'Inactive'}"></span>
+                    <span class="led-dot ${isOnlineNow ? 'led-green' : 'led-red'}" title="${isOnlineNow ? 'Online & Active' : 'Offline / Inactive'}"></span>
                     <div>
                       <strong style="font-size:15px; color:var(--primary); display:block;">${escapeHtml(l.identifier)}</strong>
-                      <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Last Active: ${relativeTime}</span>
+                      <span style="font-size:12px; color:var(--text-muted); font-weight:600;">
+                        ${isOnlineNow ? '<b style="color:var(--success);">Active Now (Online)</b>' : `Last Active: ${relativeTime}`}
+                      </span>
                     </div>
                   </div>
 
@@ -3304,10 +3922,10 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
                 <div id="log-detail-${idx}" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-color);">
                   <div style="font-size:13px; line-height:1.6;">
-                    <div><strong>Role:</strong> <span class="badge">${l.role}</span></div>
-                    <div><strong>Status:</strong> <span class="badge ${l.login_status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}">${l.login_status}</span></div>
+                    <div><strong>Role:</strong> <span class="badge">${escapeHtml(l.role)}</span></div>
+                    <div><strong>Live Session:</strong> <span class="badge ${isOnlineNow ? 'badge-success' : 'badge-danger'}">${isOnlineNow ? '🟢 Online & Active' : '🔴 ' + (l.logout_time || 'Offline')}</span></div>
                     <div><strong>Login Time:</strong> ${formatDateStrict(l.login_time || l.timestamp)}</div>
-                    <div><strong>Logout Time:</strong> ${isActive ? '<span class="badge badge-success">Active Now</span>' : formatDateStrict(l.logout_time)}</div>
+                    <div><strong>Logout Time:</strong> ${isOnlineNow ? '<span class="badge badge-success">Active Now</span>' : formatDateStrict(l.logout_time)}</div>
                     <div style="margin-top:4px;"><strong>Device Specifications:</strong> <br><small style="color:var(--text-muted); font-family:monospace;">${escapeHtml(l.device || '')}</small></div>
                   </div>
                 </div>
@@ -3326,10 +3944,9 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       showToast('Scanning past trial exams and activities to sync with Supabase...', 'info');
       setProgress(30);
 
-      const { users, allTrialExams, allAnswers } = cachedAdminData;
+      const { allTrialExams, allAnswers } = cachedAdminData;
       let newRows = [];
 
-      // Generate attendance from trial exams
       (allTrialExams || []).forEach(tr => {
         newRows.push({
           attendance_id: 'ATT-TR-' + (tr.id || Date.now()) + '-' + Math.random().toString(36).substr(2, 4),
@@ -3347,7 +3964,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         });
       });
 
-      // Group answers by student & date for subject practice
       const studentMap = {};
       (allAnswers || []).forEach(ans => {
         const key = `${ans.phone}_${ans.subject}_${ans.timestamp ? ans.timestamp.split(',')[0] : ''}`;
@@ -3759,7 +4375,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
           return;
         }
 
-        // Check if header starts with ID or Subject
         const headerCols = parseCSVLine(lines[0]).map(h => h.toLowerCase());
         const hasIdCol = headerCols[0] === 'id';
         const rows = [];
@@ -3782,7 +4397,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
             const rawAns = (values[ansIdx] || 'A').toUpperCase().trim();
             const correctAns = ['A','B','C','D'].includes(rawAns) ? rawAns : 'A';
 
-            // AUTO GENERATE UNIQUE NON-REPEATING ID
             const autoId = 'Q-' + Date.now() + '-' + i + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
 
             rows.push({
@@ -3880,7 +4494,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
     async function handleSaveQuestion(e) {
       e.preventDefault();
-      // GUARANTEED UNIQUE QUESTION ID GENERATION
       const qId = document.getElementById('q-id').value || ('Q-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase());
 
       const questionData = {
@@ -4010,13 +4623,12 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
         if (!error) {
           showToast('All access logs cleared!', 'success');
-        loadAdminData();
-      } else {
-        showToast('Failed to clear logs: ' + error.message, 'danger');
-      }
-    });
-  }
+          loadAdminData();
+        } else {
+          showToast('Failed to clear logs: ' + error.message, 'danger');
+        }
+      });
+    }
   </script>
 </body>
 </html>
-
