@@ -298,7 +298,7 @@
         <button class="icon-action-btn" onclick="document.getElementById('attendance-sql-modal').style.display='none'">✕</button>
       </div>
       <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
-        Run this SQL in your <strong>Supabase Dashboard &rarr; SQL Editor</strong> once to create the attendance tracker table with public access enabled:
+        Run this SQL in your <strong>Supabase Dashboard &rarr; SQL Editor</strong> once to create the attendance tracker table:
       </p>
       <textarea id="supabase-sql-code" rows="11" readonly style="font-family:monospace; font-size:12px; background:#0f172a; color:#38bdf8; padding:12px; border-radius:10px; width:100%; box-sizing:border-box;">
 CREATE TABLE IF NOT EXISTS attendance (
@@ -318,9 +318,7 @@ CREATE TABLE IF NOT EXISTS attendance (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Public Attendance Access" ON attendance;
-CREATE POLICY "Public Attendance Access" ON attendance FOR ALL TO anon USING (true) WITH CHECK (true);
+ALTER TABLE attendance DISABLE ROW LEVEL SECURITY;
       </textarea>
       <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
         <button class="btn btn-outline" onclick="copyAttendanceSQL()">📋 Copy SQL</button>
@@ -648,6 +646,12 @@ CREATE POLICY "Public Attendance Access" ON attendance FOR ALL TO anon USING (tr
     <button class="icon-tab-btn admin-only" id="tab-manage-users" onclick="showSection('manage-users-sec')" title="Manage Users & Optimization">
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
+
+    <!-- NEW ADMIN TAB: LIVE ONLINE USERS (BEFORE AUDIT ACCESS LOGS) -->
+    <button class="icon-tab-btn admin-only" id="tab-online" onclick="showSection('admin-online-sec')" title="Live Online & Active Status">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>
+    </button>
+
     <button class="icon-tab-btn admin-only" id="tab-logs" onclick="showSection('admin-logs-sec')" title="Audit Access Logs">
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -978,18 +982,53 @@ CREATE POLICY "Public Attendance Access" ON attendance FOR ALL TO anon USING (tr
       </div>
     </section>
 
-    <!-- NEW ADMIN TAB: Student Daily Attendance Tracker -->
+    <!-- NEW ADMIN TAB: LIVE ONLINE USERS MONITOR -->
+    <section id="admin-online-sec" class="section" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h2 style="margin:0; color: #1B257D;">🟢 Real-Time Online Users Monitor</h2>
+          <p style="color:var(--text-muted); font-size:13px; margin:4px 0 0 0;">
+            Instantly reflects who is online, idle, switched tabs, left the page, or logged out.
+          </p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button onclick="renderOnlineCardsFromPresence()" class="btn btn-outline">🔄 Refresh View</button>
+        </div>
+      </div>
+
+      <!-- Live Online Summary Pills -->
+      <div class="stats-grid" style="margin-bottom:20px;">
+        <div class="card" style="margin:0; background:#f0fdf4; border:1px solid #bbf7d0;">
+          <p style="margin:0; color:#166534; font-size:13px; font-weight:700;">Online & Active (Interacting)</p>
+          <h2 id="online-active-count" style="margin:6px 0 0 0; color:#15803d;">0</h2>
+        </div>
+        <div class="card" style="margin:0; background:#fee2e2; border:1px solid #fca5a5;">
+          <p style="margin:0; color:#991b1b; font-size:13px; font-weight:700;">Attention / Inactive / In Another App</p>
+          <h2 id="online-distracted-count" style="margin:6px 0 0 0; color:#b91c1c;">0</h2>
+        </div>
+      </div>
+
+      <div id="online-users-cards-container" style="display:flex; flex-direction:column; gap:14px; width:100%;">
+        <p style="color:var(--text-muted); font-size:14px;">Connecting to real-time presence...</p>
+      </div>
+    </section>
+
+    <!-- ADMIN TAB: Student Daily Attendance Tracker -->
     <section id="admin-attendance-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
         <h2 style="margin:0; color: #1B257D;">Student Daily Attendance Tracker</h2>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          
-          <button onclick="exportAttendanceCSV()" class="btn btn-outline" title="Export complete attendance CSV">
-            📥
+          <button onclick="syncPastActivitiesToSupabase()" class="btn btn-outline" title="Scan practice and trial exams to populate attendance in Supabase">
+            ⚡ Sync Past Activities to Supabase
           </button>
-          
+          <button onclick="exportAttendanceCSV()" class="btn btn-outline" title="Export complete attendance CSV">
+            📥 Export Attendance CSV
+          </button>
+          <button onclick="document.getElementById('attendance-sql-modal').style.display='flex'" class="btn btn-outline" title="View Supabase Table SQL Setup">
+            ⚙️ Supabase SQL Setup
+          </button>
           <button onclick="loadAdminData()" class="btn btn-primary">
-            🔄 
+            🔄 Refresh Attendance
           </button>
         </div>
       </div>
@@ -1301,6 +1340,19 @@ CREATE POLICY "Public Attendance Access" ON attendance FOR ALL TO anon USING (tr
 
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // =========================================================================
+    // UNIVERSAL SAFE HTML ESCAPER (DECLARED AT TOP TO PREVENT REFERENCE ERRORS)
+    // =========================================================================
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     const SUBJECT_MAP = {
       'MI': 'Malayalam I',
       'AR': 'Arabic',
@@ -1327,6 +1379,10 @@ CREATE POLICY "Public Attendance Access" ON attendance FOR ALL TO anon USING (tr
     let sessionAnswersLog = [];
     let sessionStartTime = null;
 
+    let presenceChannel = null;
+    let idleTimer = null;
+    let isUserCurrentlyIdle = false;
+
     let sortColumn = 'name';
     let sortAscending = true;
     let consolidatedStudentsList = [];
@@ -1338,7 +1394,10 @@ CREATE POLICY "Public Attendance Access" ON attendance FOR ALL TO anon USING (tr
     let showStudentTabsForAdmin = false;
 
     document.addEventListener('DOMContentLoaded', () => {
-      if (currentUser) initializeSession();
+      if (currentUser) {
+        initializeSession();
+        setupPresenceTracker();
+      }
 
       document.getElementById('login-form').addEventListener('submit', handleLogin);
       document.getElementById('question-form').addEventListener('submit', handleSaveQuestion);
@@ -1352,15 +1411,201 @@ CREATE POLICY "Public Attendance Access" ON attendance FOR ALL TO anon USING (tr
       window.addEventListener('online', () => {
         showToast('⚡ You are Online.', 'success');
         updateNetworkStatus();
+        updatePresenceLiveState('Online & Active');
       });
 
       window.addEventListener('offline', () => {
         showToast('⚠️ You are Offline.', 'danger');
         updateNetworkStatus();
+        updatePresenceLiveState('Offline (Lost Connection)');
       });
 
       updateNetworkStatus();
     });
+
+    // =========================================================================
+    // REAL-TIME PRESENCE & ACTIVITY DETECTOR
+    // =========================================================================
+    function setupPresenceTracker() {
+      if (!currentUser) return;
+
+      presenceChannel = supabaseClient.channel('uss_live_presence', {
+        config: { presence: { key: currentUser.username } }
+      });
+
+      presenceChannel
+        .on('presence', { event: 'sync' }, () => {
+          renderOnlineCardsFromPresence();
+        })
+        .on('presence', { event: 'join' }, () => {
+          renderOnlineCardsFromPresence();
+        })
+        .on('presence', { event: 'leave' }, () => {
+          renderOnlineCardsFromPresence();
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await updatePresenceLiveState('Online & Active');
+          }
+        });
+
+      // 1. Detect switching tab / leaving page
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          updatePresenceLiveState('Switched Tab / Opened Another Page');
+        } else {
+          updatePresenceLiveState('Online & Active');
+        }
+      });
+
+      // 2. Detect leaving window / opening another app
+      window.addEventListener('blur', () => {
+        if (document.visibilityState !== 'hidden') {
+          updatePresenceLiveState('Opened Another App / Window Inactive');
+        }
+      });
+
+      window.addEventListener('focus', () => {
+        updatePresenceLiveState('Online & Active');
+      });
+
+      // 3. Detect Idle (no interaction for > 90 seconds)
+      const resetIdleTimer = () => {
+        if (isUserCurrentlyIdle) {
+          isUserCurrentlyIdle = false;
+          updatePresenceLiveState('Online & Active');
+        }
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+          isUserCurrentlyIdle = true;
+          updatePresenceLiveState('Inactive / Idle (No Interaction for >90s)');
+        }, 90000);
+      };
+
+      ['mousemove', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+        window.addEventListener(evt, resetIdleTimer, { passive: true });
+      });
+      resetIdleTimer();
+
+      // 4. Page unload / disconnect
+      window.addEventListener('beforeunload', () => {
+        updatePresenceLiveState('Left / Closed the Portal Page');
+      });
+    }
+
+    async function updatePresenceLiveState(statusMessage) {
+      if (!presenceChannel || !currentUser) return;
+      const isGreen = statusMessage === 'Online & Active';
+
+      const payload = {
+        username: currentUser.username,
+        name: currentUser.name || currentUser.username,
+        role: currentUser.role || 'Student',
+        userClass: currentUser.userClass || '10',
+        division: currentUser.division || 'A',
+        phone: currentUser.phone || '',
+        liveStatus: statusMessage,
+        isGreen: isGreen,
+        loginTime: currentUser.loginTimeStr || formatDateStrict(new Date().toISOString()),
+        logoutTime: isGreen ? 'Active Now' : formatDateStrict(new Date().toISOString()),
+        device: getDeviceInfo(),
+        timestamp: Date.now()
+      };
+
+      try {
+        await presenceChannel.track(payload);
+      } catch (e) {
+        console.warn("Presence track error", e);
+      }
+    }
+
+    function renderOnlineCardsFromPresence() {
+      const container = document.getElementById('online-users-cards-container');
+      if (!container) return;
+
+      let presenceState = {};
+      try {
+        presenceState = presenceChannel ? presenceChannel.presenceState() : {};
+      } catch(e) {
+        presenceState = {};
+      }
+
+      const activeUsers = [];
+      for (const key in presenceState) {
+        const presences = presenceState[key];
+        if (presences && presences.length > 0) {
+          activeUsers.push(presences[presences.length - 1]);
+        }
+      }
+
+      let activeGreenCount = 0;
+      let distractedCount = 0;
+
+      activeUsers.forEach(u => {
+        if (u.isGreen) activeGreenCount++;
+        else distractedCount++;
+      });
+
+      const actEl = document.getElementById('online-active-count');
+      const distEl = document.getElementById('online-distracted-count');
+      if (actEl) actEl.innerText = activeGreenCount;
+      if (distEl) distEl.innerText = distractedCount;
+
+      if (activeUsers.length === 0) {
+        container.innerHTML = `
+          <div class="card" style="text-align:center; padding:35px 20px;">
+            <p style="color:var(--text-muted); font-size:15px; margin:0;">
+              No live users connected to real-time presence right now. As users sign in or open the portal, their live activity cards will appear here instantly!
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      // Render Live Status Cards
+      container.innerHTML = activeUsers.map(u => {
+        const isGreen = u.isGreen;
+        const ledClass = isGreen ? 'led-green' : 'led-red';
+        const borderColor = isGreen ? 'var(--success)' : 'var(--danger)';
+        const statusBadgeClass = isGreen ? 'badge-success' : 'badge-danger';
+
+        return `
+          <div class="card" style="margin-bottom:14px; padding:20px; border-left:6px solid ${borderColor}; box-shadow:var(--shadow-sm);">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span class="led-dot ${ledClass}" title="${isGreen ? 'Online & Active' : 'Attention / Inactive'}"></span>
+                <strong style="font-size:17px; color:var(--text-main);">${escapeHtml(u.name)}</strong>
+                <span class="badge">${escapeHtml(u.role)}</span>
+                <span style="font-size:13px; color:var(--text-muted); font-weight:700;">(Class ${escapeHtml(u.userClass)}-${escapeHtml(u.division)})</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="badge ${statusBadgeClass}" style="font-size:13px; padding:6px 12px; font-weight:800;">
+                  ${isGreen ? '🟢 ' : '🔴 '} ${escapeHtml(u.liveStatus)}
+                </span>
+                <button onclick="sendWhatsappAlert('${escapeHtml(u.name)}', '${u.phone}')" class="btn btn-outline" style="padding:6px 10px; background:#dcfce7; color:#15803d; border-color:#86efac; font-size:14px;" title="Ping on WhatsApp">
+                  💬
+                </button>
+              </div>
+            </div>
+
+            <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:12px; padding:14px 16px; font-size:13.5px; line-height:1.7;">
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <div><strong>Role:</strong> <span class="badge">${escapeHtml(u.role)}</span></div>
+                <div><strong>Status:</strong> <span style="font-weight:800; color:${isGreen ? 'var(--success)' : 'var(--danger)'}">${escapeHtml(u.liveStatus)}</span></div>
+                <div><strong>Login Time:</strong> ${u.loginTime || '-'}</div>
+                <div><strong>Logout Time:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success">Active Now</span>' : u.logoutTime}</div>
+              </div>
+              <div style="margin-top:10px; padding-top:8px; border-top:1px dashed var(--border-color);">
+                <strong>Device Specifications:</strong><br>
+                <span style="font-family:monospace; color:var(--text-muted); font-size:12px; word-break:break-word;">
+                  ${escapeHtml(u.device)}
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
     function toggleUserPasswordVisibility() {
       const passInput = document.getElementById('u-password');
@@ -1440,6 +1685,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       try {
         if (activeId === 'portfolio-sec') await loadPortfolio();
         else if (activeId === 'notif-sec') await loadNotifications();
+        else if (activeId === 'admin-online-sec') renderOnlineCardsFromPresence();
         else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(activeId)) await loadAdminData();
       } catch (err) {
         console.error("Refresh Error:", err);
@@ -1687,6 +1933,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
             role: user.role || 'Student',
             username: user.username,
             isDefaultPass: isDefaultPass,
+            loginTimeStr: nowStr,
             logId: logId
           };
 
@@ -1702,6 +1949,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
           }
 
           initializeSession();
+          setupPresenceTracker();
           showToast('Logged in successfully!', 'success');
         } else {
           showToast('Invalid Username or Password', 'danger');
@@ -1748,7 +1996,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       if (role === 'admin') {
         adminNavButtons.forEach(btn => btn.style.display = 'inline-flex');
         studentTabs.forEach(tab => tab.style.display = showStudentTabsForAdmin ? 'inline-flex' : 'none');
-        showSection('admin-report-sec');
+        showSection('admin-online-sec');
         checkAdminPendingAlerts();
       } else {
         adminNavButtons.forEach(btn => btn.style.display = 'none');
@@ -1785,6 +2033,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     async function logout() {
+      await updatePresenceLiveState('Logged Out');
       if (currentUser && currentUser.logId) {
         await supabaseClient.from('logs').update({ logout_time: formatDateStrict(new Date().toISOString()) }).eq('log_id', currentUser.logId);
       }
@@ -1818,12 +2067,14 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         'admin-resets-sec': 'tab-resets',
         'manage-qs-sec': 'tab-manage-qs',
         'manage-users-sec': 'tab-manage-users',
+        'admin-online-sec': 'tab-online',
         'admin-logs-sec': 'tab-logs'
       };
       if (tabMap[sectionId]) document.getElementById(tabMap[sectionId]).classList.add('active');
 
       if (sectionId === 'portfolio-sec') loadPortfolio();
       else if (sectionId === 'notif-sec') loadNotifications();
+      else if (sectionId === 'admin-online-sec') renderOnlineCardsFromPresence();
       else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(sectionId)) loadAdminData();
     }
 
@@ -3172,16 +3423,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       showToast('Attendance report exported!', 'success');
     }
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
     // =========================================================================
     // BULK QUESTION SELECTION & DELETION
     // =========================================================================
@@ -3769,12 +4010,13 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
         if (!error) {
           showToast('All access logs cleared!', 'success');
-          loadAdminData();
-        } else {
-          showToast('Failed to clear logs: ' + error.message, 'danger');
-        }
-      });
-    }
+        loadAdminData();
+      } else {
+        showToast('Failed to clear logs: ' + error.message, 'danger');
+      }
+    });
+  }
   </script>
 </body>
 </html>
+
