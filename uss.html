@@ -1527,14 +1527,13 @@
     }
 
     // =========================================================================
-    // INSTANT REALTIME PRESENCE & HEARTBEAT TRACKER (FIX FOR MUKUND RAM RAJ)
+    // INSTANT REALTIME PRESENCE & LEAVE TRACKER (<500ms Response)
     // =========================================================================
     let presenceHeartbeatInterval = null;
 
     function setupPresenceTracker() {
       if (!currentUser) return;
 
-      // Clean standardized unique key
       const myPresenceKey = String(currentUser.phone || currentUser.username || 'user')
         .replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
 
@@ -1542,7 +1541,6 @@
         config: { presence: { key: myPresenceKey } }
       });
 
-      // INSTANT REACTIVE EVENT LISTENERS
       presenceChannel
         .on('presence', { event: 'sync' }, () => {
           renderAllUsersOnlineCards();
@@ -1556,12 +1554,12 @@
           renderAllUsersOnlineCards();
           updateUsersTableLiveStatus();
         })
-        // INSTANT PEER-TO-PEER BROADCAST (Bypasses socket lag)
+        // INSTANT BROADCAST LISTENER (Updates state across all devices in <300ms)
         .on('broadcast', { event: 'heartbeat_ping' }, (payload) => {
           if (payload && payload.payload) {
             window._liveHeartbeats = window._liveHeartbeats || {};
             const item = payload.payload;
-            const peerKey = String(item.phone || item.username || '').trim().toLowerCase();
+            const peerKey = String(item.phone || item.username || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
             if (peerKey) {
               window._liveHeartbeats[peerKey] = { ...item, receivedAt: Date.now() };
             }
@@ -1572,46 +1570,51 @@
           if (status === 'SUBSCRIBED') {
             await updatePresenceLiveState('Online & Active');
             
-            // Send periodic live pulse every 15 seconds to ensure 100% online accuracy
             clearInterval(presenceHeartbeatInterval);
             presenceHeartbeatInterval = setInterval(() => {
-              if (navigator.onLine && !isUserCurrentlyIdle) {
-                broadcastLivePulse('Online & Active');
+              if (navigator.onLine && !isUserCurrentlyIdle && document.visibilityState === 'visible') {
+                broadcastLivePulse('Online & Active', true);
               }
-            }, 15000);
+            }, 10000); // 10s pulse
           }
         });
 
-      // Quick tab/window visibility detector
+      // 1. INSTANT TAB SWITCH / MINIMIZE DETECTOR
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
+          // Instantly send leave event to admin feed
+          broadcastLivePulse('Switched Tab / Opened Another Page', false);
           updatePresenceLiveState('Switched Tab / Opened Another Page');
         } else {
+          broadcastLivePulse('Online & Active', true);
           updatePresenceLiveState('Online & Active');
-          broadcastLivePulse('Online & Active');
         }
       });
 
+      // 2. WINDOW BLUR / OPENED ANOTHER APPLICATION (Mobile split screen, app switch)
       window.addEventListener('blur', () => {
         if (document.visibilityState !== 'hidden') {
-          updatePresenceLiveState('Window Inactive / Another App');
+          broadcastLivePulse('Opened Another App / Window Inactive', false);
+          updatePresenceLiveState('Opened Another App / Window Inactive');
         }
       });
 
       window.addEventListener('focus', () => {
+        broadcastLivePulse('Online & Active', true);
         updatePresenceLiveState('Online & Active');
-        broadcastLivePulse('Online & Active');
       });
 
+      // 3. IDLE DETECTOR
       const resetIdleTimer = () => {
         if (isUserCurrentlyIdle) {
           isUserCurrentlyIdle = false;
+          broadcastLivePulse('Online & Active', true);
           updatePresenceLiveState('Online & Active');
-          broadcastLivePulse('Online & Active');
         }
         clearTimeout(idleTimer);
         idleTimer = setTimeout(() => {
           isUserCurrentlyIdle = true;
+          broadcastLivePulse('Inactive / Idle (>90s)', false);
           updatePresenceLiveState('Inactive / Idle (>90s)');
         }, 90000);
       };
@@ -1621,12 +1624,19 @@
       });
       resetIdleTimer();
 
-      window.addEventListener('beforeunload', () => {
-        updatePresenceLiveState('Left / Closed the Portal');
-      });
+      // 4. INSTANT APP EXIT / WINDOW CLOSE
+      const handleAppExit = () => {
+        broadcastLivePulse('Left / Closed the Portal', false);
+        try {
+          if (presenceChannel) presenceChannel.untrack();
+        } catch (e) {}
+      };
+
+      window.addEventListener('pagehide', handleAppExit);
+      window.addEventListener('beforeunload', handleAppExit);
     }
 
-    async function broadcastLivePulse(statusMsg) {
+    async function broadcastLivePulse(statusMsg, isGreenFlag) {
       if (!presenceChannel || !currentUser) return;
       try {
         await presenceChannel.send({
@@ -1639,8 +1649,9 @@
             division: currentUser.division || 'A',
             phone: currentUser.phone || '',
             liveStatus: statusMsg,
-            isGreen: statusMsg === 'Online & Active',
+            isGreen: (isGreenFlag === true),
             currentContext: currentActiveContext || 'Portal Dashboard',
+            todaySeconds: getTodayElapsedSeconds(), // Broadcasts live consumed practice seconds
             timestamp: Date.now()
           }
         });
@@ -1648,14 +1659,13 @@
     }
 
     // =========================================================================
-    // INSTANT LIVE RADAR RENDERER (RESOLVES MUKUND RAM RAJ IDENTIFICATION)
+    // INSTANT LIVE RADAR RENDERER (STRICT INSTANT SEPARATION)
     // =========================================================================
     async function renderAllUsersOnlineCards() {
       const activeFeed = document.getElementById('online-active-feed');
       const inactiveFeed = document.getElementById('online-inactive-feed');
       if (!activeFeed || !inactiveFeed) return;
 
-      // 1. AUTO-HEAL: If cachedAdminData is not loaded yet, fetch immediately without delay
       if (!cachedAdminData || !cachedAdminData.users || cachedAdminData.users.length === 0) {
         const { data: quickUsers } = await supabaseClient.from('users').select('*');
         const { data: quickLogs } = await supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(60);
@@ -1669,7 +1679,7 @@
       const adminIsOnline = navigator.onLine;
       const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
 
-      // Collect all presence tracker entries
+      // Collect presence entries
       let presenceEntries = [];
       try {
         if (presenceChannel) {
@@ -1683,19 +1693,25 @@
         presenceEntries = [];
       }
 
-      // Merge broadcasted real-time heartbeats
+      // Merge broadcasted pings (overrides socket presence with highest priority)
       const livePings = window._liveHeartbeats || {};
       for (const k in livePings) {
         const ping = livePings[k];
-        if (Date.now() - ping.receivedAt < 45000) { // Valid within last 45 seconds
-          presenceEntries.push(ping);
+        if (Date.now() - ping.receivedAt < 40000) {
+          // Replace or push fresher broadcast state
+          const existingIdx = presenceEntries.findIndex(p => 
+            String(p.phone || p.username || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === k
+          );
+          if (existingIdx !== -1) {
+            presenceEntries[existingIdx] = ping;
+          } else {
+            presenceEntries.push(ping);
+          }
         }
       }
 
       const activeList = [];
       const inactiveList = [];
-
-      // Clean, alphanumeric-only fuzzy normalizer
       const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
       // Strictly Students Only
@@ -1706,7 +1722,6 @@
         const cleanDbPhone = String(u.phone || '').trim();
         const cleanDbName = cleanString(u.name);
 
-        // BULLETPROOF MATCHER (Matches Mukund Ram Raj by username, phone, or name)
         const pres = presenceEntries.find(p => {
           const pUser = cleanString(p.username);
           const pPhone = String(p.phone || '').trim();
@@ -1717,29 +1732,24 @@
                  (cleanDbName && pName && (cleanDbName.includes(pName) || pName.includes(cleanDbName)));
         });
 
-        // Activity Check: Active if presence is alive OR heartbeat was pinged recently (within 2 minutes)
-        const isRecentlyActive = pres && (Date.now() - (pres.timestamp || pres.receivedAt || 0) < 120000);
-
-        // Database log fallback (Active Now check)
-        const userLastLog = logsList.find(l => {
-          const lId = cleanString(l.identifier);
-          return lId === cleanDbUser || lId === cleanDbName;
-        });
-        const hasActiveDbSession = userLastLog && userLastLog.logout_time === 'Active Now';
-
-        // FINAL STATUS
-        const isOnlineAndActive = adminIsOnline && Boolean(
-          (pres && (pres.isGreen || isRecentlyActive)) || (hasActiveDbSession && pres)
-        );
-
+        // Resolve status string
         let statusText = 'Offline';
         if (!adminIsOnline) {
           statusText = 'Offline (Admin Disconnected)';
         } else if (pres && pres.liveStatus) {
           statusText = pres.liveStatus;
-        } else if (hasActiveDbSession) {
-          statusText = 'Online & Active';
         }
+
+        // STRICT LOGIC: Must be online, pres exists, and explicitly isGreen === true.
+        // If status is 'Switched Tab', 'Window Inactive', or 'Left', isGreen is FALSE.
+        const isOnlineAndActive = adminIsOnline && Boolean(
+          pres && pres.isGreen === true && (statusText === 'Online & Active')
+        );
+
+        const userLastLog = logsList.find(l => {
+          const lId = cleanString(l.identifier);
+          return lId === cleanDbUser || lId === cleanDbName;
+        });
 
         const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
         const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
@@ -1793,7 +1803,7 @@
                 <div style="margin-top:4px;">
                   <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
                     <span>${isAct ? '⚡' : '💤'}</span>
-                    <span>${escapeHtml(u.activeContext)}</span>
+                    <span>${escapeHtml(u.statusText)}</span>
                   </span>
                 </div>
               </div>
@@ -1825,6 +1835,8 @@
         : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">All registered students are active!</div>`;
     }
 
+
+
     async function updatePresenceLiveState(statusMessage) {
       if (!presenceChannel || !currentUser) return;
       const isOnlineActive = (statusMessage === 'Online & Active') && navigator.onLine;
@@ -1850,12 +1862,12 @@
 
     
 
-    function sendTailoredRadarWhatsapp(name, phone, isActive, context) {
+    function sendTailoredRadarWhatsapp(name, phone, isActive, context, timeLeft) {
       let text = '';
       if (isActive) {
-        text = `🌟 TDTTI USS TRAINING PORTAL\n\nDear ${name},\nGreat job! You are currently ACTIVE and practicing in [${context}]. Keep up the steady focus toward your USS Exam success! 🚀📚`;
+        text = `🌟 TDTTI USS TRAINING PORTAL\n\nDear ${name},\nGreat job! You are currently ACTIVE and practicing in [${context}].\n⏳ Remaining Practice Allowance Today: ${timeLeft || 'Active'}\nKeep up the steady focus toward your USS Exam success! 🚀📚`;
       } else {
-        text = `⚠️ TDTTI USS PORTAL - URGENT PRACTICE REMINDER\n\nDear ${name},\nYou are currently OFFLINE / INACTIVE on the USS Training Portal.\nDaily continuous practice is essential to qualify for the USS Scholarship! Please log in immediately and complete today's Subject Practice & Trial Exam sessions. ✍️🎯`;
+        text = `⚠️ TDTTI USS PORTAL - URGENT PRACTICE REMINDER\n\nDear ${name},\nYou are currently OFFLINE / INACTIVE on the USS Training Portal.\n⏳ Practice Allowance Left Today: ${timeLeft || '60m available'}\nDaily continuous practice is essential to qualify for the USS Scholarship! Please log in now and complete today's sessions. ✍️🎯`;
       }
       const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
       window.open(url, '_blank');
