@@ -624,7 +624,12 @@
           </div>
           <div class="form-group">
             <label>Password</label>
-            <input type="password" id="login-password" required placeholder="Enter password">
+            <div style="position:relative;">
+              <input type="password" id="login-password" required placeholder="Enter password" style="padding-right:45px;">
+              <button type="button" onclick="toggleLoginPasswordVisibility()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:transparent; border:none; cursor:pointer; font-size:16px; padding:4px;" title="Show/Hide Password">
+                👁️
+              </button>
+            </div>
           </div>
           <div id="keep-logged-pill" class="keep-logged-pill active" onclick="toggleKeepLoggedPill()">
             <span class="pill-indicator-dot"></span>
@@ -1936,7 +1941,7 @@
     }
 
     // =========================================================================
-    // REALTIME PRESENCE & LEAVE TRACKER
+    // INSTANT REALTIME PRESENCE & LEAVE TRACKER (<100ms UI SHIFT)
     // =========================================================================
     function setupPresenceTracker() {
       if (!currentUser) return;
@@ -1967,7 +1972,11 @@
             const item = payload.payload;
             const peerKey = String(item.phone || item.username || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
             if (peerKey) {
-              window._liveHeartbeats[peerKey] = { ...item, receivedAt: Date.now() };
+              // Direct sync overwrite
+              window._liveHeartbeats[peerKey] = {
+                ...item,
+                receivedAt: Date.now()
+              };
             }
             renderAllUsersOnlineCards();
           }
@@ -1978,17 +1987,19 @@
             
             clearInterval(presenceHeartbeatInterval);
             presenceHeartbeatInterval = setInterval(() => {
-              if (navigator.onLine && !isUserCurrentlyIdle && document.visibilityState === 'visible') {
+              if (navigator.onLine && !isUserCurrentlyIdle && document.visibilityState === 'visible' && isWindowCurrentlyFocused) {
                 broadcastLivePulse('Online & Active', true);
               }
-            }, 10000);
+            }, 8000); // 8-second tight pulse
           }
         });
 
+      // 1. INSTANT TAB SWITCH OR MINIMIZE
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
           isWindowCurrentlyFocused = false;
           updatePausedQuotaUI();
+          // Instantly broadcast leave with false flag
           broadcastLivePulse('Switched Tab / Opened Another Page', false);
           updatePresenceLiveState('Switched Tab / Opened Another Page');
         } else {
@@ -1999,15 +2010,15 @@
         }
       });
 
+      // 2. INSTANT APP SWITCH / BLUR
       window.addEventListener('blur', () => {
         isWindowCurrentlyFocused = false;
         updatePausedQuotaUI();
-        if (document.visibilityState !== 'hidden') {
-          broadcastLivePulse('Opened Another App / Window Inactive', false);
-          updatePresenceLiveState('Opened Another App / Window Inactive');
-        }
+        broadcastLivePulse('Opened Another App / Window Inactive', false);
+        updatePresenceLiveState('Opened Another App / Window Inactive');
       });
 
+      // 3. INSTANT FOCUS RESTORE
       window.addEventListener('focus', () => {
         isWindowCurrentlyFocused = true;
         isUserCurrentlyIdle = false;
@@ -2016,6 +2027,7 @@
         updatePresenceLiveState('Online & Active');
       });
 
+      // 4. IDLE LISTENER
       const resetIdleTimer = () => {
         if (isUserCurrentlyIdle) {
           isUserCurrentlyIdle = false;
@@ -2037,6 +2049,7 @@
       });
       resetIdleTimer();
 
+      // 5. IMMEDIATE CLOSE / EXIT
       const handleAppExit = () => {
         broadcastLivePulse('Left / Closed the Portal', false);
         try {
@@ -2049,23 +2062,33 @@
     }
 
     async function broadcastLivePulse(statusMsg, isGreenFlag) {
-      if (!presenceChannel || !currentUser) return;
+      if (!currentUser) return;
+      
+      const isGreen = (isGreenFlag === true) && (statusMsg === 'Online & Active');
+      const payload = {
+        username: currentUser.username,
+        name: currentUser.name || currentUser.username,
+        userClass: currentUser.userClass || '10',
+        division: currentUser.division || 'A',
+        phone: currentUser.phone || '',
+        liveStatus: statusMsg,
+        isGreen: isGreen,
+        currentContext: currentActiveContext || 'Portal Dashboard',
+        todaySeconds: getTodayElapsedSeconds(),
+        timestamp: Date.now()
+      };
+
+      // Immediately write to local memory if this browser is running both tabs
+      window._liveHeartbeats = window._liveHeartbeats || {};
+      const selfKey = String(currentUser.phone || currentUser.username || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      window._liveHeartbeats[selfKey] = { ...payload, receivedAt: Date.now() };
+
+      if (!presenceChannel) return;
       try {
         await presenceChannel.send({
           type: 'broadcast',
           event: 'heartbeat_ping',
-          payload: {
-            username: currentUser.username,
-            name: currentUser.name || currentUser.username,
-            userClass: currentUser.userClass || '10',
-            division: currentUser.division || 'A',
-            phone: currentUser.phone || '',
-            liveStatus: statusMsg,
-            isGreen: (isGreenFlag === true),
-            currentContext: currentActiveContext || 'Portal Dashboard',
-            todaySeconds: getTodayElapsedSeconds(),
-            timestamp: Date.now()
-          }
+          payload: payload
         });
       } catch (err) {}
     }
@@ -2095,264 +2118,288 @@
     }
 
     // =========================================================================
-    // LIVE ACTIVITY RADAR (STRICTLY STUDENTS; SOUND ALERTS & NEW RESTORE ICON)
+    // DEDUPLICATED LIVE RADAR WITH STRICT ACTIVE FILTERING
     // =========================================================================
+    let isRadarRendering = false;
+
     async function renderAllUsersOnlineCards() {
-      const activeFeed = document.getElementById('online-active-feed');
-      const inactiveFeed = document.getElementById('online-inactive-feed');
-      if (!activeFeed || !inactiveFeed) return;
+      if (isRadarRendering) return;
+      isRadarRendering = true;
 
-      if (!cachedAdminData || !cachedAdminData.users || cachedAdminData.users.length === 0) {
-        const { data: quickUsers } = await supabaseClient.from('users').select('*');
-        const { data: quickLogs } = await supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(60);
-        const { data: quickAtt } = await supabaseClient.from('attendance').select('*').order('id', { ascending: false });
-        cachedAdminData = cachedAdminData || {};
-        cachedAdminData.users = quickUsers || [];
-        cachedAdminData.logs = quickLogs || [];
-        cachedAdminData.allAttendance = quickAtt || [];
-      }
-
-      const usersList = cachedAdminData?.users || [];
-      const logsList = cachedAdminData?.logs || [];
-      const allAtt = cachedAdminData?.allAttendance || [];
-      const adminIsOnline = navigator.onLine;
-      const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
-      const cleanDate = new Date().toLocaleDateString('en-GB');
-
-      let presenceEntries = [];
       try {
+        const activeFeed = document.getElementById('online-active-feed');
+        const inactiveFeed = document.getElementById('online-inactive-feed');
+        if (!activeFeed || !inactiveFeed) {
+          isRadarRendering = false;
+          return;
+        }
+
+        if (!cachedAdminData || !cachedAdminData.users || cachedAdminData.users.length === 0) {
+          const { data: quickUsers } = await supabaseClient.from('users').select('*');
+          const { data: quickLogs } = await supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(60);
+          const { data: quickAtt } = await supabaseClient.from('attendance').select('*').order('id', { ascending: false });
+          cachedAdminData = cachedAdminData || {};
+          cachedAdminData.users = quickUsers || [];
+          cachedAdminData.logs = quickLogs || [];
+          cachedAdminData.allAttendance = quickAtt || [];
+        }
+
+        const usersList = cachedAdminData?.users || [];
+        const logsList = cachedAdminData?.logs || [];
+        const allAtt = cachedAdminData?.allAttendance || [];
+        const adminIsOnline = navigator.onLine;
+        const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
+        const cleanDate = new Date().toLocaleDateString('en-GB');
+
+        // Build the latest presence state map
+        const latestPresenceMap = new Map();
+
+        // 1. Read socket presence
         if (presenceChannel) {
-          const state = presenceChannel.presenceState();
-          for (const key in state) {
-            const list = state[key];
-            if (list && list.length > 0) presenceEntries.push(list[list.length - 1]);
+          try {
+            const state = presenceChannel.presenceState();
+            for (const key in state) {
+              const list = state[key];
+              if (list && list.length > 0) {
+                const item = list[list.length - 1];
+                const normKey = String(item.phone || item.username || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                if (normKey) latestPresenceMap.set(normKey, item);
+              }
+            }
+          } catch (e) {}
+        }
+
+        // 2. Heartbeat broadcasts take precedence (they carry immediate tab-switch & blur updates)
+        const livePings = window._liveHeartbeats || {};
+        for (const k in livePings) {
+          const ping = livePings[k];
+          if (Date.now() - ping.receivedAt < 40000) {
+            latestPresenceMap.set(k, ping);
           }
         }
-      } catch (e) {
-        presenceEntries = [];
-      }
 
-      const livePings = window._liveHeartbeats || {};
-      for (const k in livePings) {
-        const ping = livePings[k];
-        if (Date.now() - ping.receivedAt < 40000) {
-          const existingIdx = presenceEntries.findIndex(p => 
-            String(p.phone || p.username || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === k
+        const activeList = [];
+        const inactiveList = [];
+        const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        const seenProcessedUsers = new Set();
+        const onlyStudents = usersList.filter(u => !isStaffOrAdminUser(u));
+
+        onlyStudents.forEach(u => {
+          const cleanDbUser = cleanString(u.username);
+          const cleanDbPhone = String(u.phone || '').trim();
+          const cleanDbName = cleanString(u.name);
+          const primaryUserKey = cleanDbPhone || cleanDbUser;
+
+          if (seenProcessedUsers.has(primaryUserKey)) return;
+          seenProcessedUsers.add(primaryUserKey);
+
+          // Find match
+          let pres = latestPresenceMap.get(cleanString(cleanDbPhone)) || latestPresenceMap.get(cleanDbUser);
+          if (!pres) {
+            for (const [, p] of latestPresenceMap) {
+              const pUser = cleanString(p.username);
+              const pPhone = String(p.phone || '').trim();
+              const pName = cleanString(p.name);
+              if ((cleanDbPhone && pPhone && cleanDbPhone === pPhone) ||
+                  (cleanDbUser && pUser && cleanDbUser === pUser) ||
+                  (cleanDbName && pName && (cleanDbName.includes(pName) || pName.includes(cleanDbName)))) {
+                pres = p;
+                break;
+              }
+            }
+          }
+
+          let statusText = 'Offline';
+          if (!adminIsOnline) {
+            statusText = 'Offline (Admin Disconnected)';
+          } else if (pres && pres.liveStatus) {
+            statusText = String(pres.liveStatus).trim();
+          }
+
+          // STRICT CHECK:
+          // Must be online, isGreen must be explicitly true, AND statusText must strictly be "Online & Active".
+          // If statusText is "Switched Tab..." or "Opened Another App...", isOnlineAndActive is strictly FALSE.
+          const isOnlineAndActive = adminIsOnline && Boolean(
+            pres && 
+            pres.isGreen === true && 
+            statusText === 'Online & Active'
           );
-          if (existingIdx !== -1) {
-            presenceEntries[existingIdx] = ping;
-          } else {
-            presenceEntries.push(ping);
+
+          // TRANSITION DETECTOR + ALERT
+          const previousState = window._previousUserStates[primaryUserKey];
+          if (window._hasInitialPresenceSynced && previousState !== undefined && previousState !== isOnlineAndActive) {
+            const stName = u.name || u.username;
+            const stClass = u.class || '10';
+            const stDiv = u.division || 'A';
+
+            if (isOnlineAndActive) {
+              playActiveChime();
+              showToast(`🟢 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) is now <strong>ACTIVE</strong>!`, 'success');
+            } else {
+              playInactiveChime();
+              showToast(`🔴 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) is now <strong>INACTIVE</strong> (${escapeHtml(statusText)})`, 'danger');
+            }
           }
-        }
-      }
+          window._previousUserStates[primaryUserKey] = isOnlineAndActive;
 
-      const activeList = [];
-      const inactiveList = [];
-      const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          let usedSeconds = 0;
+          if (pres && typeof pres.todaySeconds === 'number') {
+            usedSeconds = Math.max(usedSeconds, pres.todaySeconds);
+          }
 
-      const onlyStudents = usersList.filter(u => !isStaffOrAdminUser(u));
+          const localUsed = getTodayElapsedSeconds(u.phone || u.username);
+          if (localUsed > usedSeconds) usedSeconds = localUsed;
 
-      onlyStudents.forEach(u => {
-        const cleanDbUser = cleanString(u.username);
-        const cleanDbPhone = String(u.phone || '').trim();
-        const cleanDbName = cleanString(u.name);
+          const studentTodayAtt = allAtt.filter(a => 
+            String(a.phone).trim() === cleanDbPhone && 
+            (a.date === cleanDate || (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate))
+          );
+          let dbTotalSec = 0;
+          studentTodayAtt.forEach(a => { dbTotalSec += (Number(a.duration_seconds) || 0); });
+          if (dbTotalSec > usedSeconds) usedSeconds = dbTotalSec;
 
-        const pres = presenceEntries.find(p => {
-          const pUser = cleanString(p.username);
-          const pPhone = String(p.phone || '').trim();
-          const pName = cleanString(p.name);
+          const maxDailySec = 3600;
+          const remainingSec = Math.max(0, maxDailySec - usedSeconds);
+          const remMins = Math.floor(remainingSec / 60);
+          const remSecs = remainingSec % 60;
+          
+          let timeLeftFormatted = '';
+          let timeLeftBadgeClass = 'badge-success';
 
-          return (cleanDbPhone && pPhone && cleanDbPhone === pPhone) ||
-                 (cleanDbUser && pUser && cleanDbUser === pUser) ||
-                 (cleanDbName && pName && (cleanDbName.includes(pName) || pName.includes(cleanDbName)));
+          if (usedSeconds >= maxDailySec) {
+            timeLeftFormatted = '0m (Expired)';
+            timeLeftBadgeClass = 'badge-danger';
+          } else if (remMins < 15) {
+            timeLeftFormatted = `${remMins}m ${remSecs}s left`;
+            timeLeftBadgeClass = 'badge-danger';
+          } else if (remMins < 30) {
+            timeLeftFormatted = `${remMins}m ${remSecs}s left`;
+            timeLeftBadgeClass = 'badge-warning';
+          } else {
+            timeLeftFormatted = `${remMins}m left`;
+            timeLeftBadgeClass = 'badge-success';
+          }
+
+          const usedMins = Math.floor(usedSeconds / 60);
+          const usedFormatted = `${usedMins}m ${usedSeconds % 60}s`;
+
+          const userLastLog = logsList.find(l => {
+            const lId = cleanString(l.identifier);
+            return lId === cleanDbUser || lId === cleanDbName;
+          });
+
+          const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
+          const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
+          const activeContext = pres?.currentContext || (isOnlineAndActive ? 'Practice Center' : 'Offline / Inactive');
+
+          const userData = {
+            ...u,
+            isOnline: isOnlineAndActive,
+            statusText,
+            loginTime,
+            logoutTime,
+            activeContext,
+            timeLeftFormatted,
+            timeLeftBadgeClass,
+            usedFormatted
+          };
+
+          if (searchInput) {
+            const matchName = String(u.name || '').toLowerCase().includes(searchInput);
+            const matchUser = String(u.username || '').toLowerCase().includes(searchInput);
+            const matchClass = `${u.class || ''}-${u.division || ''}`.toLowerCase().includes(searchInput);
+            const matchPhone = String(u.phone || '').toLowerCase().includes(searchInput);
+            if (!matchName && !matchUser && !matchClass && !matchPhone) return;
+          }
+
+          if (isOnlineAndActive) activeList.push(userData);
+          else inactiveList.push(userData);
         });
 
-        let statusText = 'Offline';
-        if (!adminIsOnline) {
-          statusText = 'Offline (Admin Disconnected)';
-        } else if (pres && pres.liveStatus) {
-          statusText = pres.liveStatus;
-        }
+        window._hasInitialPresenceSynced = true;
 
-        const isOnlineAndActive = adminIsOnline && Boolean(
-          pres && pres.isGreen === true && (statusText === 'Online & Active')
-        );
+        const actEl = document.getElementById('badge-active-count');
+        const inactEl = document.getElementById('badge-inactive-count');
+        if (actEl) actEl.innerText = `${activeList.length} Active`;
+        if (inactEl) inactEl.innerText = `${inactiveList.length} Offline`;
 
-        // TRANSITION DETECTOR + SOUND CHIME ALERT
-        const studentUniqueKey = cleanDbPhone || cleanDbUser;
-        const previousState = window._previousUserStates[studentUniqueKey];
+        const renderCard = (u, idx, isAct) => {
+          const initials = (u.name || u.username).substring(0, 2).toUpperCase();
+          const cardId = `pres-detail-${isAct ? 'act' : 'inact'}-${idx}`;
 
-        if (window._hasInitialPresenceSynced && previousState !== undefined && previousState !== isOnlineAndActive) {
-          const stName = u.name || u.username;
-          const stClass = u.class || '10';
-          const stDiv = u.division || 'A';
+          return `
+            <div class="mobile-presence-card ${isAct ? 'is-online' : 'is-offline'}" onclick="toggleAccordion('${cardId}')">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                <div class="presence-avatar-circle ${isAct ? 'green' : 'red'}">
+                  <span>${initials}</span>
+                  <span class="online-indicator-dot ${isAct ? 'green' : 'red'}"></span>
+                </div>
 
-          if (isOnlineAndActive) {
-            playActiveChime();
-            showToast(`🟢 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) is now <strong>ACTIVE</strong>!`, 'success');
-          } else {
-            playInactiveChime();
-            showToast(`🔴 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) is now <strong>INACTIVE</strong> (${escapeHtml(statusText)})`, 'danger');
-          }
-        }
-        window._previousUserStates[studentUniqueKey] = isOnlineAndActive;
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <strong style="font-size:15px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                      ${escapeHtml(u.name || u.username)}
+                    </strong>
+                    <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
+                  </div>
+                  
+                  <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
+                      <span>${isAct ? '⚡' : '💤'}</span>
+                      <span>${escapeHtml(u.statusText)}</span>
+                    </span>
 
-        let usedSeconds = 0;
-        if (pres && typeof pres.todaySeconds === 'number') {
-          usedSeconds = Math.max(usedSeconds, pres.todaySeconds);
-        }
+                    <span class="badge ${u.timeLeftBadgeClass}" style="display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:11px; padding:3px 8px;">
+                      <span>⏳</span>
+                      <span>${escapeHtml(u.timeLeftFormatted)}</span>
+                    </span>
+                  </div>
+                </div>
 
-        const localUsed = getTodayElapsedSeconds(u.phone || u.username);
-        if (localUsed > usedSeconds) usedSeconds = localUsed;
+                <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}', '${escapeHtml(u.timeLeftFormatted)}')" 
+                        class="mobile-whatsapp-btn" title="${isAct ? 'Encourage Student' : 'Alert Student to Practice'}">
+                  💬
+                </button>
+              </div>
 
-        const studentTodayAtt = allAtt.filter(a => 
-          String(a.phone).trim() === cleanDbPhone && 
-          (a.date === cleanDate || (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate))
-        );
-        let dbTotalSec = 0;
-        studentTodayAtt.forEach(a => { dbTotalSec += (Number(a.duration_seconds) || 0); });
-        if (dbTotalSec > usedSeconds) usedSeconds = dbTotalSec;
-
-        const maxDailySec = 3600;
-        const remainingSec = Math.max(0, maxDailySec - usedSeconds);
-        const remMins = Math.floor(remainingSec / 60);
-        const remSecs = remainingSec % 60;
-        
-        let timeLeftFormatted = '';
-        let timeLeftBadgeClass = 'badge-success';
-
-        if (usedSeconds >= maxDailySec) {
-          timeLeftFormatted = '0m (Expired)';
-          timeLeftBadgeClass = 'badge-danger';
-        } else if (remMins < 15) {
-          timeLeftFormatted = `${remMins}m ${remSecs}s left`;
-          timeLeftBadgeClass = 'badge-danger';
-        } else if (remMins < 30) {
-          timeLeftFormatted = `${remMins}m ${remSecs}s left`;
-          timeLeftBadgeClass = 'badge-warning';
-        } else {
-          timeLeftFormatted = `${remMins}m left`;
-          timeLeftBadgeClass = 'badge-success';
-        }
-
-        const usedMins = Math.floor(usedSeconds / 60);
-        const usedFormatted = `${usedMins}m ${usedSeconds % 60}s`;
-
-        const userLastLog = logsList.find(l => {
-          const lId = cleanString(l.identifier);
-          return lId === cleanDbUser || lId === cleanDbName;
-        });
-
-        const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
-        const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
-        const activeContext = pres?.currentContext || (isOnlineAndActive ? 'Practice Center' : 'Offline / Inactive');
-
-        const userData = {
-          ...u,
-          isOnline: isOnlineAndActive,
-          statusText,
-          loginTime,
-          logoutTime,
-          activeContext,
-          timeLeftFormatted,
-          timeLeftBadgeClass,
-          usedFormatted
+              <div id="${cardId}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:12.5px; color:#475569;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                  <div><strong>State:</strong> <span style="font-weight:700; color:${isAct ? 'var(--success)' : 'var(--danger)'};">${escapeHtml(u.statusText)}</span></div>
+                  <div><strong>Time Left Today:</strong> <b style="color:var(--primary);">${escapeHtml(u.timeLeftFormatted)}</b></div>
+                  <div><strong>Time Used Today:</strong> ${escapeHtml(u.usedFormatted)} / 60m</div>
+                  <div><strong>Phone:</strong> ${u.phone ? escapeHtml(u.phone) : '-'}</div>
+                  <div><strong>Login:</strong> ${u.loginTime}</div>
+                  <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
+                  
+                  <div style="grid-column: span 2; margin-top: 8px;">
+                    <button onclick="event.stopPropagation(); adminResetStudentQuota('${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.name || u.username)}')" 
+                            class="btn btn-outline" 
+                            style="width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:7px 14px; font-size:12.5px; font-weight:700; color:var(--primary); border-color:#93c5fd; background:#eff6ff; border-radius:10px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                      </svg>
+                      Restore 60m Quota for this Student
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
         };
 
-        if (searchInput) {
-          const matchName = String(u.name || '').toLowerCase().includes(searchInput);
-          const matchUser = String(u.username || '').toLowerCase().includes(searchInput);
-          const matchClass = `${u.class || ''}-${u.division || ''}`.toLowerCase().includes(searchInput);
-          const matchPhone = String(u.phone || '').toLowerCase().includes(searchInput);
-          if (!matchName && !matchUser && !matchClass && !matchPhone) return;
-        }
+        activeFeed.innerHTML = activeList.length > 0
+          ? activeList.map((u, idx) => renderCard(u, idx, true)).join('')
+          : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">No active students online right now.</div>`;
 
-        if (isOnlineAndActive) activeList.push(userData);
-        else inactiveList.push(userData);
-      });
+        inactiveFeed.innerHTML = inactiveList.length > 0
+          ? inactiveList.map((u, idx) => renderCard(u, idx, false)).join('')
+          : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">All registered students are active!</div>`;
 
-      window._hasInitialPresenceSynced = true;
-
-      const actEl = document.getElementById('badge-active-count');
-      const inactEl = document.getElementById('badge-inactive-count');
-      if (actEl) actEl.innerText = `${activeList.length} Active`;
-      if (inactEl) inactEl.innerText = `${inactiveList.length} Offline`;
-
-      const renderCard = (u, idx, isAct) => {
-        const initials = (u.name || u.username).substring(0, 2).toUpperCase();
-        const cardId = `pres-detail-${isAct ? 'act' : 'inact'}-${idx}`;
-
-        return `
-          <div class="mobile-presence-card ${isAct ? 'is-online' : 'is-offline'}" onclick="toggleAccordion('${cardId}')">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-              <div class="presence-avatar-circle ${isAct ? 'green' : 'red'}">
-                <span>${initials}</span>
-                <span class="online-indicator-dot ${isAct ? 'green' : 'red'}"></span>
-              </div>
-
-              <div style="flex:1; min-width:0;">
-                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                  <strong style="font-size:15px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    ${escapeHtml(u.name || u.username)}
-                  </strong>
-                  <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
-                </div>
-                
-                <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                  <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
-                    <span>${isAct ? '⚡' : '💤'}</span>
-                    <span>${escapeHtml(u.statusText)}</span>
-                  </span>
-
-                  <!-- TIME LEFT BADGE -->
-                  <span class="badge ${u.timeLeftBadgeClass}" style="display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:11px; padding:3px 8px;">
-                    <span>⏳</span>
-                    <span>${escapeHtml(u.timeLeftFormatted)}</span>
-                  </span>
-                </div>
-              </div>
-
-              <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}', '${escapeHtml(u.timeLeftFormatted)}')" 
-                      class="mobile-whatsapp-btn" title="${isAct ? 'Encourage Student' : 'Alert Student to Practice'}">
-                💬
-              </button>
-            </div>
-
-            <div id="${cardId}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:12.5px; color:#475569;">
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                <div><strong>State:</strong> <span style="font-weight:700; color:${isAct ? 'var(--success)' : 'var(--danger)'};">${escapeHtml(u.statusText)}</span></div>
-                <div><strong>Time Left Today:</strong> <b style="color:var(--primary);">${escapeHtml(u.timeLeftFormatted)}</b></div>
-                <div><strong>Time Used Today:</strong> ${escapeHtml(u.usedFormatted)} / 60m</div>
-                <div><strong>Phone:</strong> ${u.phone ? escapeHtml(u.phone) : '-'}</div>
-                <div><strong>Login:</strong> ${u.loginTime}</div>
-                <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
-                
-                <!-- ADMIN RESTORE QUOTA BUTTON WITH CRISP SVG ICON -->
-                <div style="grid-column: span 2; margin-top: 8px;">
-                  <button onclick="event.stopPropagation(); adminResetStudentQuota('${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.name || u.username)}')" 
-                          class="btn btn-outline" 
-                          style="width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:7px 14px; font-size:12.5px; font-weight:700; color:var(--primary); border-color:#93c5fd; background:#eff6ff; border-radius:10px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                      <path d="M3 3v5h5"/>
-                    </svg>
-                    Restore 60m Quota for this Student
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      };
-
-      activeFeed.innerHTML = activeList.length > 0
-        ? activeList.map((u, idx) => renderCard(u, idx, true)).join('')
-        : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">No active students online right now.</div>`;
-
-      inactiveFeed.innerHTML = inactiveList.length > 0
-        ? inactiveList.map((u, idx) => renderCard(u, idx, false)).join('')
-        : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">All registered students are active!</div>`;
+      } finally {
+        isRadarRendering = false;
+      }
     }
 
     function sendTailoredRadarWhatsapp(name, phone, isActive, context, timeLeft) {
@@ -2769,6 +2816,9 @@
       }
     }
 
+    // =========================================================================
+    // SAVE ON EXIT: INSERTS ANSWERS, ATTENDANCE & PRACTICE NOTIFICATION
+    // =========================================================================
     async function saveCompletedSessionOnExit() {
       if (sessionAnswersLog.length === 0) return;
       const cleanDate = new Date().toLocaleDateString('en-GB');
@@ -2792,6 +2842,7 @@
 
       const total = sessionAnswersLog.length;
       const score = sessionAnswersLog.filter(a => a.IsCorrect).length;
+      const subjName = sessionAnswersLog[0]?.Subject || 'Practice';
       const attId = `ATT-${currentUser.phone}-${cleanDate}-${sessionAnswersLog[0]?.SubjectCode || 'PRAC'}`;
 
       await supabaseClient.from('attendance').upsert([{
@@ -2802,14 +2853,30 @@
         division: String(currentUser.division || 'A'),
         date: cleanDate,
         timestamp: formattedDT,
-        activity: `Subject Practice (${sessionAnswersLog[0]?.Subject || 'Practice'})`,
+        activity: `Subject Practice (${subjName})`,
         duration_seconds: total * 30,
         duration_text: `${Math.round((total * 30) / 60)}m 00s`,
         questions_attended: total,
         score: `${score} / ${total}`
       }], { onConflict: 'attendance_id' });
 
-      showToast(`Saved ${total} completed question(s) to Subject Overview & Attendance!`, 'success');
+      // INSERT NOTIFICATION FOR SUBJECT PRACTICE
+      try {
+        const notifId = 'NOTIF-PRAC-' + Date.now();
+        await supabaseClient.from('notifications').insert([{
+          notification_id: notifId,
+          timestamp: formattedDT,
+          recipient_phone: String(currentUser.phone || '').trim(),
+          title: `📖 ${subjName} Practice Completed`,
+          message: `${currentUser.name || currentUser.username} (Class ${currentUser.userClass || '10'}-${currentUser.division || 'A'}) completed a ${subjName} practice session.\n\n• Questions Attended: ${total}\n• Correct: ${score}\n• Incorrect: ${total - score}\n• Accuracy: ${Math.round((score / total) * 100)}%`,
+          sender: 'Practice Center'
+        }]);
+      } catch (e) {
+        console.warn("Notification insert note:", e);
+      }
+
+      showToast(`Saved ${total} question(s) & generated notification!`, 'success');
+      loadNotifications(); // Refresh badge & feed
     }
 
     async function loadPracticeSubject() {
@@ -3056,7 +3123,7 @@
     }
 
     // =========================================================================
-    // CONSOLIDATION VIEW
+    // CONSOLIDATION VIEW: INSERTS TRIAL EXAM DATA & TRIAL NOTIFICATION
     // =========================================================================
     async function showConsolidationView() {
       clearInterval(timerInterval);
@@ -3065,8 +3132,8 @@
       const total = sessionAnswersLog.length;
       const score = sessionAnswersLog.filter(a => a.IsCorrect).length;
       const victoryRate = total ? Math.round((score / total) * 100) : 0;
-
       const formattedDT = formatDateStrict(new Date().toISOString());
+      const cleanDate = new Date().toLocaleDateString('en-GB');
 
       document.getElementById('summary-score-val').innerText = `${score} / ${total}`;
       document.getElementById('summary-acc-val').innerText = `${victoryRate}%`;
@@ -3087,6 +3154,7 @@
       document.getElementById('consolidation-card').style.display = 'block';
 
       if (isTrialMode) {
+        // 1. Insert trial exam results
         await supabaseClient.from('trial_exams').insert([{
           timestamp: formattedDT,
           phone: currentUser.phone,
@@ -3097,6 +3165,56 @@
           total_questions: total,
           answers_json: sessionAnswersLog
         }]);
+
+        // 2. Insert trial exam attendance
+        const trialAttId = `ATT-${currentUser.phone}-${cleanDate}-TRIAL`;
+        await supabaseClient.from('attendance').upsert([{
+          attendance_id: trialAttId,
+          student_name: currentUser.name || currentUser.username,
+          phone: String(currentUser.phone || ''),
+          class: String(currentUser.userClass || '10'),
+          division: String(currentUser.division || 'A'),
+          date: cleanDate,
+          timestamp: formattedDT,
+          activity: 'Comprehensive Trial Exam',
+          duration_seconds: total * 30,
+          duration_text: `${Math.round((total * 30) / 60)}m 00s`,
+          questions_attended: total,
+          score: `${score} / ${total}`
+        }], { onConflict: 'attendance_id' });
+
+        // 3. INSERT NOTIFICATION FOR TRIAL EXAM
+        try {
+          const notifId = 'NOTIF-TRIAL-' + Date.now();
+          await supabaseClient.from('notifications').insert([{
+            notification_id: notifId,
+            timestamp: formattedDT,
+            recipient_phone: String(currentUser.phone || '').trim(),
+            title: `⭐ Trial Exam Results: ${score}/${total} (${victoryRate}%)`,
+            message: `Comprehensive Trial Exam completed by ${currentUser.name || currentUser.username} (Class ${currentUser.userClass || '10'}-${currentUser.division || 'A'}).\n\n• Total Questions: ${total}\n• Score: ${score}\n• Victory Rate: ${victoryRate}%\n• Date: ${formattedDT}\n\nReview your detailed answers in Tab 2 (Portfolio).`,
+            sender: 'Trial Exam Evaluator'
+          }]);
+        } catch (e) {
+          console.warn("Trial notification note:", e);
+        }
+
+        showToast('Trial Exam recorded & notification sent!', 'success');
+        loadNotifications(); // Refresh badge & feed
+      } else {
+        // Practice finished naturally without early exit
+        try {
+          const subjName = sessionAnswersLog[0]?.Subject || 'Subject Practice';
+          const notifId = 'NOTIF-PRAC-' + Date.now();
+          await supabaseClient.from('notifications').insert([{
+            notification_id: notifId,
+            timestamp: formattedDT,
+            recipient_phone: String(currentUser.phone || '').trim(),
+            title: `📖 ${subjName} Session Summary`,
+            message: `${currentUser.name || currentUser.username} completed ${total} questions in ${subjName}.\n\n• Score: ${score}/${total}\n• Accuracy: ${victoryRate}%\n• Date: ${formattedDT}`,
+            sender: 'Practice Center'
+          }]);
+        } catch (e) {}
+        loadNotifications();
       }
     }
 
@@ -3326,25 +3444,28 @@
       }
     }
 
-    // =========================================================================
-    // NOTIFICATIONS
-    // =========================================================================
     async function loadNotifications() {
       let query = supabaseClient.from('notifications').select('*').order('created_at', { ascending: false });
       const permittedTabs = parseTabAccessList(currentUser?.tabAccess || currentUser?.role || '1,2,3,4');
       const isPrivileged = permittedTabs.some(t => Number(t) >= 5);
 
-      if (!isPrivileged) {
-        query = query.or(`recipient_phone.eq.ALL,recipient_phone.eq.${currentUser.phone}`);
+      if (!isPrivileged && currentUser) {
+        const cleanPhone = String(currentUser.phone || '').trim();
+        query = query.or(`recipient_phone.eq.ALL,recipient_phone.eq.${cleanPhone}`);
       }
 
-      const { data: rawNotifications } = await query;
+      const { data: rawNotifications, error } = await query;
+      if (error) {
+        console.warn("Notification query error:", error);
+      }
+      
       const container = document.getElementById('notifications-list-container');
       const readSet = new Set(JSON.parse(localStorage.getItem('read_notifs_' + currentUser.username) || '[]'));
 
       if (!rawNotifications || rawNotifications.length === 0) {
         container.innerHTML = `<p style="color:var(--text-muted); font-size:14px;">No notifications yet.</p>`;
-        document.getElementById('notif-badge-dot').style.display = 'none';
+        const badge = document.getElementById('notif-badge-dot');
+        if (badge) badge.style.display = 'none';
         return;
       }
 
@@ -3391,7 +3512,8 @@
         container.appendChild(card);
       });
 
-      document.getElementById('notif-badge-dot').style.display = unreadCount > 0 ? 'block' : 'none';
+      const badge = document.getElementById('notif-badge-dot');
+      if (badge) badge.style.display = unreadCount > 0 ? 'block' : 'none';
     }
 
     function toggleNotifRead(notifId) {
@@ -4874,6 +4996,12 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       } else {
         bar.style.opacity = '1';
       }
+    }
+
+    function toggleLoginPasswordVisibility() {
+      const passInput = document.getElementById('login-password');
+      if (!passInput) return;
+      passInput.type = (passInput.type === 'password') ? 'text' : 'password';
     }
   </script>
 </body>
