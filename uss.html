@@ -1659,7 +1659,7 @@
     }
 
     // =========================================================================
-    // INSTANT LIVE RADAR RENDERER (STRICT INSTANT SEPARATION)
+    // INSTANT LIVE RADAR RENDERER (SHOWING TIME LEFT TODAY FOR EACH STUDENT)
     // =========================================================================
     async function renderAllUsersOnlineCards() {
       const activeFeed = document.getElementById('online-active-feed');
@@ -1669,15 +1669,19 @@
       if (!cachedAdminData || !cachedAdminData.users || cachedAdminData.users.length === 0) {
         const { data: quickUsers } = await supabaseClient.from('users').select('*');
         const { data: quickLogs } = await supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(60);
+        const { data: quickAtt } = await supabaseClient.from('attendance').select('*').order('id', { ascending: false });
         cachedAdminData = cachedAdminData || {};
         cachedAdminData.users = quickUsers || [];
         cachedAdminData.logs = quickLogs || [];
+        cachedAdminData.allAttendance = quickAtt || [];
       }
 
       const usersList = cachedAdminData?.users || [];
       const logsList = cachedAdminData?.logs || [];
+      const allAtt = cachedAdminData?.allAttendance || [];
       const adminIsOnline = navigator.onLine;
       const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
+      const cleanDate = new Date().toLocaleDateString('en-GB');
 
       // Collect presence entries
       let presenceEntries = [];
@@ -1693,12 +1697,11 @@
         presenceEntries = [];
       }
 
-      // Merge broadcasted pings (overrides socket presence with highest priority)
+      // Merge broadcasted pings
       const livePings = window._liveHeartbeats || {};
       for (const k in livePings) {
         const ping = livePings[k];
         if (Date.now() - ping.receivedAt < 40000) {
-          // Replace or push fresher broadcast state
           const existingIdx = presenceEntries.findIndex(p => 
             String(p.phone || p.username || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === k
           );
@@ -1732,7 +1735,7 @@
                  (cleanDbName && pName && (cleanDbName.includes(pName) || pName.includes(cleanDbName)));
         });
 
-        // Resolve status string
+        // Resolve online status
         let statusText = 'Offline';
         if (!adminIsOnline) {
           statusText = 'Offline (Admin Disconnected)';
@@ -1740,11 +1743,63 @@
           statusText = pres.liveStatus;
         }
 
-        // STRICT LOGIC: Must be online, pres exists, and explicitly isGreen === true.
-        // If status is 'Switched Tab', 'Window Inactive', or 'Left', isGreen is FALSE.
         const isOnlineAndActive = adminIsOnline && Boolean(
           pres && pres.isGreen === true && (statusText === 'Online & Active')
         );
+
+        // -------------------------------------------------------------
+        // CALCULATE CONCERNED STUDENT'S TIME LEFT TODAY
+        // -------------------------------------------------------------
+        let usedSeconds = 0;
+
+        // Check live broadcasted seconds first
+        if (pres && typeof pres.todaySeconds === 'number') {
+          usedSeconds = Math.max(usedSeconds, pres.todaySeconds);
+        }
+
+        // Check local storage key for current day
+        const localUsed = getTodayElapsedSeconds(u.phone || u.username);
+        if (localUsed > usedSeconds) {
+          usedSeconds = localUsed;
+        }
+
+        // Check Supabase attendance table for today's recorded usage
+        const studentTodayAtt = allAtt.filter(a => 
+          String(a.phone).trim() === cleanDbPhone && 
+          (a.date === cleanDate || (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate))
+        );
+        let dbTotalSec = 0;
+        studentTodayAtt.forEach(a => {
+          dbTotalSec += (Number(a.duration_seconds) || 0);
+        });
+        if (dbTotalSec > usedSeconds) {
+          usedSeconds = dbTotalSec;
+        }
+
+        const maxDailySec = 3600; // 60 mins
+        const remainingSec = Math.max(0, maxDailySec - usedSeconds);
+        const remMins = Math.floor(remainingSec / 60);
+        const remSecs = remainingSec % 60;
+        
+        let timeLeftFormatted = '';
+        let timeLeftBadgeClass = 'badge-success';
+
+        if (usedSeconds >= maxDailySec) {
+          timeLeftFormatted = '0m (Quota Expired)';
+          timeLeftBadgeClass = 'badge-danger';
+        } else if (remMins < 15) {
+          timeLeftFormatted = `${remMins}m ${remSecs}s left`;
+          timeLeftBadgeClass = 'badge-danger';
+        } else if (remMins < 30) {
+          timeLeftFormatted = `${remMins}m ${remSecs}s left`;
+          timeLeftBadgeClass = 'badge-warning';
+        } else {
+          timeLeftFormatted = `${remMins}m left`;
+          timeLeftBadgeClass = 'badge-success';
+        }
+
+        const usedMins = Math.floor(usedSeconds / 60);
+        const usedFormatted = `${usedMins}m ${usedSeconds % 60}s`;
 
         const userLastLog = logsList.find(l => {
           const lId = cleanString(l.identifier);
@@ -1761,7 +1816,10 @@
           statusText,
           loginTime,
           logoutTime,
-          activeContext
+          activeContext,
+          timeLeftFormatted,
+          timeLeftBadgeClass,
+          usedFormatted
         };
 
         if (searchInput) {
@@ -1800,15 +1858,22 @@
                   </strong>
                   <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
                 </div>
-                <div style="margin-top:4px;">
+                
+                <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                   <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
                     <span>${isAct ? '⚡' : '💤'}</span>
-                    <span>${escapeHtml(u.statusText)}</span>
+                    <span>${escapeHtml(u.activeContext)}</span>
+                  </span>
+
+                  <!-- TIME LEFT BADGE FOR CONCERNED STUDENT -->
+                  <span class="badge ${u.timeLeftBadgeClass}" style="display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:11px; padding:3px 8px;">
+                    <span>⏳</span>
+                    <span>${escapeHtml(u.timeLeftFormatted)}</span>
                   </span>
                 </div>
               </div>
 
-              <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}')" 
+              <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}', '${escapeHtml(u.timeLeftFormatted)}')" 
                       class="mobile-whatsapp-btn" title="${isAct ? 'Encourage Student' : 'Alert Student to Practice'}">
                 💬
               </button>
@@ -1817,6 +1882,8 @@
             <div id="${cardId}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:12.5px; color:#475569;">
               <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
                 <div><strong>State:</strong> <span style="font-weight:700; color:${isAct ? 'var(--success)' : 'var(--danger)'};">${escapeHtml(u.statusText)}</span></div>
+                <div><strong>Time Left Today:</strong> <b style="color:var(--primary);">${escapeHtml(u.timeLeftFormatted)}</b></div>
+                <div><strong>Time Used Today:</strong> ${escapeHtml(u.usedFormatted)} / 60m</div>
                 <div><strong>Phone:</strong> ${u.phone ? escapeHtml(u.phone) : '-'}</div>
                 <div><strong>Login:</strong> ${u.loginTime}</div>
                 <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
