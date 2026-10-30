@@ -1253,10 +1253,6 @@
     let isUserCurrentlyIdle = false;
     let currentActiveContext = 'Portal Dashboard';
 
-    // CONTINUOUS DAILY QUOTA CLOCK
-    const DAILY_MAX_QUOTA_SECONDS = 3600; // 60 Minutes Maximum
-    let globalQuotaInterval = null;
-
     // SORTING & STATE VARIABLES
     let sortColumn = 'name';
     let sortAscending = true;
@@ -1324,8 +1320,12 @@
     });
 
     // =========================================================================
-    // DAILY TIME QUOTA ENGINE (STARTS RUNNING IMMEDIATELY AT APP ENTRY)
+    // CONTINUOUS REAL-TIME DAILY USAGE (PAUSES WHEN INACTIVE / SWITCHED AWAY)
     // =========================================================================
+    const DAILY_MAX_QUOTA_SECONDS = 3600; // 60 Minutes
+    let globalQuotaInterval = null;
+    let isWindowCurrentlyFocused = true;
+
     function getTodayKey(phoneOrUser) {
       const d = new Date();
       const id = phoneOrUser || currentUser?.phone || currentUser?.username || 'user';
@@ -1337,8 +1337,24 @@
       return parseInt(localStorage.getItem(key) || '0', 10);
     }
 
+    // CHECK IF TIME SHOULD BE TICKING
+    function isStudentActivelyFocused() {
+      if (!currentUser || isStaffOrAdminUser(currentUser)) return false;
+      // Do not count time if page is hidden, window lost focus, or user is idle
+      if (document.visibilityState !== 'visible') return false;
+      if (!isWindowCurrentlyFocused) return false;
+      if (isUserCurrentlyIdle) return false;
+      return true;
+    }
+
     function recordElapsedSecond() {
       if (!currentUser || isStaffOrAdminUser(currentUser)) return;
+
+      // PAUSE CONDITION: If student is not active, do not consume quota
+      if (!isStudentActivelyFocused()) {
+        updatePausedQuotaUI();
+        return;
+      }
 
       const key = getTodayKey();
       let current = parseInt(localStorage.getItem(key) || '0', 10);
@@ -1375,10 +1391,30 @@
       const initialUsed = getTodayElapsedSeconds();
       checkAndEnforceQuota(initialUsed);
 
-      // Continuous timer: increment second by second while user is in the app
+      // Continuous loop every second
       globalQuotaInterval = setInterval(() => {
         recordElapsedSecond();
       }, 1000);
+    }
+
+    function updatePausedQuotaUI() {
+      const elapsedSec = getTodayElapsedSeconds();
+      const remainingSec = Math.max(0, DAILY_MAX_QUOTA_SECONDS - elapsedSec);
+      const remMins = Math.floor(remainingSec / 60);
+      const remSecs = remainingSec % 60;
+
+      const quotaPill = document.getElementById('header-quota-pill');
+      const quotaText = document.getElementById('header-quota-text');
+
+      if (quotaText) {
+        quotaText.innerText = `${remMins}m ${String(remSecs).padStart(2, '0')}s (Paused)`;
+      }
+
+      if (quotaPill) {
+        quotaPill.style.background = 'rgba(148, 163, 184, 0.2)';
+        quotaPill.style.borderColor = '#94a3b8';
+        quotaPill.style.color = '#cbd5e1';
+      }
     }
 
     function checkAndEnforceQuota(elapsedSec) {
