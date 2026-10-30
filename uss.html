@@ -84,6 +84,28 @@
     .top-navbar { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #0f172a, #1e3a8a); color: #fff; padding: 14px 28px; box-shadow: var(--shadow-md); }
     .brand-logo { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 16px; letter-spacing: 0.5px; }
 
+    /* STICKY SUB-HEADER STYLING */
+    .sticky-sub-header {
+      position: -webkit-sticky;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #0f172a;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 8px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+    }
+
+    .sub-header-left, .sub-header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .status-pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.12); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); }
     .led-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
     .led-green { background-color: #10b981; box-shadow: 0 0 8px #10b981; }
@@ -207,6 +229,7 @@
       .grid-2, .options-grid, .stats-grid { grid-template-columns: 1fr; }
       .container { padding: 0 12px; margin: 15px auto; }
       .top-navbar { padding: 12px 16px; }
+      .sticky-sub-header { padding: 6px 14px; }
     }
 
     @media print {
@@ -277,7 +300,7 @@
         Dear <strong id="locked-student-name">Student</strong>, you have fully consumed your <strong>60-minute daily practice allowance</strong> for today (<span id="locked-today-date"></span>).
       </p>
       <div style="background:#fee2e2; border-left:4px solid #ef4444; padding:12px; border-radius:8px; text-align:left; font-size:13px; color:#7f1d1d; margin-bottom:20px;">
-        📌 <strong>Portal Policy:</strong> To prevent digital screen strain, daily practice is capped at 60 minutes. Your allowance will reset at <strong>12:00 AM Midnight</strong>, or your teacher/admin can reset it for you.
+        📌 <strong>Portal Policy:</strong> To prevent digital screen strain, daily practice is capped at 60 minutes across all devices. Your allowance resets at <strong>12:00 AM Midnight</strong>, or your teacher/admin can restore it for you.
       </div>
       <button class="btn btn-danger btn-block" onclick="logout(true)" style="padding:14px; font-weight:800; font-size:15px;">
         Sign Out & Close Portal
@@ -397,7 +420,7 @@
     </div>
   </div>
 
-  <!-- PROFILE & SETTINGS MODAL (GRANTED TABS COMPLETELY HIDDEN) -->
+  <!-- PROFILE & SETTINGS MODAL -->
   <div id="settings-modal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -480,25 +503,13 @@
     </div>
   </div>
 
-  <!-- Top Navbar with Header Quota Clock -->
+  <!-- Top Navbar -->
   <nav class="top-navbar" id="top-navbar" style="display: none;">
     <div class="brand-logo">
       <span>🎓 TDTTI USS PORTAL</span>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <!-- NETWORK STATUS PILL -->
-      <div class="status-pill">
-        <span id="network-led" class="led-dot led-green"></span>
-        <span id="network-status-text">Online</span>
-      </div>
-
-      <!-- TODAY'S TIME QUOTA PILL (NEXT TO ONLINE) -->
-      <div id="header-quota-pill" class="status-pill" style="background: rgba(254, 243, 199, 0.18); border-color: #f59e0b; color: #fef08a;">
-        <span>⏳</span>
-        <span id="header-quota-text">60m 00s left</span>
-      </div>
-
+    <div style="display: flex; align-items: center; gap: 12px;">
       <div style="text-align: right; font-size: 13px;">
         <div id="user-display-name" style="font-weight: 700;">User</div>
         <!-- DISPLAYED FOR STUDENTS ONLY -->
@@ -516,6 +527,23 @@
       </button>
     </div>
   </nav>
+
+  <!-- STICKY SUB-HEADER (REMAINS FIXED AT TOP WHILE SCROLLING) -->
+  <div id="sticky-sub-header" class="sticky-sub-header" style="display: none;">
+    <div class="sub-header-left">
+      <div class="status-pill">
+        <span id="network-led" class="led-dot led-green"></span>
+        <span id="network-status-text">Online</span>
+      </div>
+    </div>
+
+    <div class="sub-header-right">
+      <div id="header-quota-pill" class="status-pill" style="background: rgba(254, 243, 199, 0.18); border-color: #f59e0b; color: #fef08a;">
+        <span>⏳</span>
+        <span id="header-quota-text">60m 00s left</span>
+      </div>
+    </div>
+  </div>
 
   <!-- NUMBERED TAB NAVIGATION BAR -->
   <div class="tab-bar-container" id="tab-bar-container" style="display: none;">
@@ -605,7 +633,140 @@
           <button type="submit" class="btn btn-primary btn-block" style="padding:14px; font-weight:800;">Sign In →</button>
         </form>
       </div>
+      <!-- USS Portal Guide Component Start -->
+<div class="guide-wrapper">
+  <style>
+    .guide-wrapper {
+      --primary: #4f46e5;
+      --primary-light: #eef2ff;
+      --danger: #ef4444;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --bg-card: #ffffff;
+      
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text-main);
+      max-width: 620px;
+      margin: 16px auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+      overflow: hidden;
+    }
+
+    .guide-header {
+      padding: 20px 24px;
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      color: #ffffff;
+    }
+
+    .guide-header h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .guide-body {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .guide-section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .guide-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .guide-item {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .guide-item::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 8px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+
+    .rules-list .guide-item::before {
+      background: var(--danger);
+    }
+
+    .guide-item strong {
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .guide-footer {
+      padding: 12px 24px;
+      background: #f8fafc;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+  </style>
+
+  <div class="guide-header">
+    <h3>📖 USS Practice Portal: Student Guide</h3>
+  </div>
+
+  <div class="guide-body">
+    <div>
+      <div class="guide-section-title">Core Modules</div>
+      <ul class="guide-list">
+        <li class="guide-item"><strong>Subject Practice:</strong> Topic-wise drills with a 30s timer and detailed answer reviews.</li>
+        <li class="guide-item"><strong>Trial Exam:</strong> Full-length mock test across all subjects under real test conditions.</li>
+        <li class="guide-item"><strong>Dashboard:</strong> Green shows strong areas (&ge;70%); yellow/orange highlights revision priorities.</li>
+        <li class="guide-item"><strong>Notifications:</strong> Instant updates, test summaries, and guidance from teachers.</li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="guide-section-title">Practice Guidelines</div>
+      <ul class="guide-list rules-list">
+        <li class="guide-item"><strong>60-Min Daily Cap:</strong> Practice locks after 60 minutes to maintain healthy study balance.</li>
+        <li class="guide-item"><strong>Single Session:</strong> Multi-tab usage or duplicate logins causes automatic logout.</li>
+        <li class="guide-item"><strong>Active Connection:</strong> Continuous internet is required to record progress and attendance.</li>
+        <li class="guide-item"><strong>Mandatory Answers:</strong> No question skipping; choose an option within 30 seconds.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="guide-footer">
+    Consistent daily practice leads to USS success! ✨
+  </div>
+</div>
+<!-- USS Portal Guide Component End -->
     </section>
+    
 
     <!-- 1. PRACTICE TAB -->
     <section id="practice-sec" class="section" style="display:none;">
@@ -854,7 +1015,7 @@
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
         <div>
           <h2 style="margin:0; color: #1B257D;">Student Daily Attendance Tracker (Tab 5)</h2>
-          <p style="color:var(--text-muted); font-size:13px; margin:4px 0 0 0;">Strictly tracks students. Unified question deduplication across practice and trial exams.</p>
+          <p style="color:var(--text-muted); font-size:13px; margin:4px 0 0 0;">Unified daily allowance & deduplicated practice questions across all devices.</p>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button onclick="syncPastActivitiesToSupabase()" class="btn btn-outline" title="Scan practice and trial exams to populate attendance in Supabase">⚡ Sync Past Activities</button>
@@ -954,7 +1115,7 @@
           <textarea id="q-text" required rows="3" placeholder="Type Question Here..."></textarea>
           <input type="text" id="q-img-url" style="display:none;">
           <div style="text-align:right;">
-            <img id="q-img-preview" src="" style="display:none; max-height:120px; border-radius:8px; margin-top:10px; border:1px solid var(--border-color);">
+            <img id="modal-q-img-preview" src="" style="display:none; max-height:120px; border-radius:8px; margin-top:10px; border:1px solid var(--border-color);">
           </div>
         </div>
 
@@ -1217,6 +1378,88 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3bmZqb2d2bm5jcmZ6ZHpxbG1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MjgyMDksImV4cCI6MjEwMTAwNDIwOX0.aLlZqnZ-pVXyd2thZ6xNDLBTir8dChsCaTyw5wtPJbk";
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // =========================================================================
+    // CLEAR SYNTHESIZED SOUND CHIMES (WEB AUDIO API)
+    // =========================================================================
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playActiveChime() {
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(1046.50, now); // C6
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1567.98, now + 0.12); // G6
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(now);
+        osc1.stop(now + 0.12);
+        osc2.start(now + 0.12);
+        osc2.stop(now + 0.45);
+      } catch (e) {
+        console.warn("Audio play blocked", e);
+      }
+    }
+
+    function playInactiveChime() {
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(659.25, now); // E5
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(523.25, now + 0.15); // C5
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(now);
+        osc1.stop(now + 0.15);
+        osc2.start(now + 0.15);
+        osc2.stop(now + 0.5);
+      } catch (e) {
+        console.warn("Audio play blocked", e);
+      }
+    }
+
+    ['click', 'touchstart', 'keydown'].forEach(evt => {
+      window.addEventListener(evt, () => getAudioContext(), { once: true });
+    });
+
     function escapeHtml(str) {
       if (str === null || str === undefined) return '';
       return String(str)
@@ -1259,11 +1502,12 @@
     let isUserCurrentlyIdle = false;
     let currentActiveContext = 'Portal Dashboard';
 
-    // CONTINUOUS DAILY QUOTA CLOCK WITH SMART PAUSE
+    // SUPABASE-BACKED CENTRALIZED DAILY USAGE & RESTRICTION (CROSS-DEVICE)
     const DAILY_MAX_QUOTA_SECONDS = 3600; // 60 Minutes
     let globalQuotaInterval = null;
     let isWindowCurrentlyFocused = true;
     let presenceHeartbeatInterval = null;
+    let cachedTodayUsedSeconds = 0; // In-memory accumulator synced with Supabase
 
     // SORTING & STATE VARIABLES
     let sortColumn = 'name';
@@ -1273,6 +1517,10 @@
     let selectedNotifIds = new Set();
     let selectedQuestionIds = new Set();
     let securityProtectionActive = true;
+
+    // GLOBAL TRANSITION TRACKER FOR ACTIVE/INACTIVE ALERTS
+    window._previousUserStates = window._previousUserStates || {};
+    window._hasInitialPresenceSynced = window._hasInitialPresenceSynced || false;
 
     // =========================================================================
     // EXCLUSION FILTER: DISTINGUISH STUDENTS FROM ADMIN & QUESTION MASTER
@@ -1288,19 +1536,21 @@
       if (roleStr.includes('admin') || roleStr.includes('master')) return true;
 
       const tabs = parseTabAccessList(roleStr);
-      // Staff tabs: Tab 8 (Questions), Tab 9 (Users), Tab 11 (Logs), Tab 5 (Attendance Tracker), Tab 6 (Reports)
       if (tabs.includes('8') || tabs.includes('9') || tabs.includes('11') || tabs.includes('5') || tabs.includes('6')) {
         return true;
       }
       return false;
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       if (currentUser) {
-        // Enforce daily quota lockout at startup if non-admin has finished allowance
-        if (!isStaffOrAdminUser(currentUser) && getTodayElapsedSeconds() >= DAILY_MAX_QUOTA_SECONDS) {
-          triggerAppLockout();
-          return;
+        if (!isStaffOrAdminUser(currentUser)) {
+          const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone);
+          const localSec = getTodayElapsedSeconds(currentUser.phone || currentUser.username);
+          if (Math.max(remoteSec, localSec) >= DAILY_MAX_QUOTA_SECONDS) {
+            triggerAppLockout();
+            return;
+          }
         }
         initializeSession();
         setupPresenceTracker();
@@ -1332,17 +1582,46 @@
     });
 
     // =========================================================================
-    // DAILY TIME QUOTA ENGINE (PAUSES WHEN INACTIVE / OUT OF FOCUS)
+    // CENTRALIZED SUPABASE DAILY QUOTA ENGINE (CROSS-DEVICE WITH SMART PAUSE)
     // =========================================================================
-    function getTodayKey(phoneOrUser) {
+    function getTodayDateIso() {
       const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function getTodayKey(phoneOrUser) {
       const id = phoneOrUser || currentUser?.phone || currentUser?.username || 'user';
-      return `usage_${id}_${d.getFullYear()}_${d.getMonth() + 1}_${d.getDate()}`;
+      return `usage_${id}_${getTodayDateIso()}`;
     }
 
     function getTodayElapsedSeconds(phoneOrUser) {
       const key = getTodayKey(phoneOrUser);
-      return parseInt(localStorage.getItem(key) || '0', 10);
+      const localVal = parseInt(localStorage.getItem(key) || '0', 10);
+      return Math.max(localVal, cachedTodayUsedSeconds);
+    }
+
+    async function fetchSupabaseDailyUsage(phone) {
+      if (!phone) return 0;
+      try {
+        const todayIso = getTodayDateIso();
+        const dailyAttId = `ATT-${String(phone).trim()}-${todayIso}-DAILY`;
+        
+        const { data } = await supabaseClient
+          .from('attendance')
+          .select('duration_seconds')
+          .eq('attendance_id', dailyAttId)
+          .maybeSingle();
+
+        if (data && typeof data.duration_seconds === 'number') {
+          return data.duration_seconds;
+        }
+      } catch (err) {
+        console.warn("Could not fetch remote daily usage:", err);
+      }
+      return 0;
     }
 
     function isStudentActivelyFocused() {
@@ -1356,26 +1635,23 @@
     function recordElapsedSecond() {
       if (!currentUser || isStaffOrAdminUser(currentUser)) return;
 
-      // PAUSE CHECK: If not actively interacting or page is hidden, pause tick
       if (!isStudentActivelyFocused()) {
         updatePausedQuotaUI();
         return;
       }
 
+      cachedTodayUsedSeconds += 1;
       const key = getTodayKey();
-      let current = parseInt(localStorage.getItem(key) || '0', 10);
-      current += 1;
-      localStorage.setItem(key, current);
+      localStorage.setItem(key, cachedTodayUsedSeconds);
 
-      // Periodically sync live attendance duration to Supabase every 30 seconds
-      if (current % 30 === 0) {
-        saveLiveAttendanceProgress(current);
+      if (cachedTodayUsedSeconds % 10 === 0 || cachedTodayUsedSeconds >= DAILY_MAX_QUOTA_SECONDS) {
+        saveLiveAttendanceProgress(cachedTodayUsedSeconds);
       }
 
-      checkAndEnforceQuota(current);
+      checkAndEnforceQuota(cachedTodayUsedSeconds);
     }
 
-    function startLiveAppQuotaClock() {
+    async function startLiveAppQuotaClock() {
       clearInterval(globalQuotaInterval);
       if (!currentUser) return;
 
@@ -1394,8 +1670,14 @@
 
       if (quotaPill) quotaPill.style.display = 'inline-flex';
 
-      const initialUsed = getTodayElapsedSeconds();
-      checkAndEnforceQuota(initialUsed);
+      const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone);
+      const localKey = getTodayKey();
+      const localSec = parseInt(localStorage.getItem(localKey) || '0', 10);
+      
+      cachedTodayUsedSeconds = Math.max(remoteSec, localSec);
+      localStorage.setItem(localKey, cachedTodayUsedSeconds);
+
+      checkAndEnforceQuota(cachedTodayUsedSeconds);
 
       globalQuotaInterval = setInterval(() => {
         recordElapsedSecond();
@@ -1446,7 +1728,6 @@
         }
       }
 
-      // Time expired: Lock application completely
       if (remainingSec <= 0) {
         clearInterval(globalQuotaInterval);
         clearInterval(timerInterval);
@@ -1463,39 +1744,42 @@
       document.getElementById('app-quota-lock-overlay').style.display = 'flex';
       document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
       document.getElementById('tab-bar-container').style.display = 'none';
+      const subHeader = document.getElementById('sticky-sub-header');
+      if (subHeader) subHeader.style.display = 'none';
 
       const quotaText = document.getElementById('header-quota-text');
       if (quotaText) quotaText.innerText = '0m 00s (Expired)';
     }
 
-    function saveLiveAttendanceProgress(totalSecondsToday) {
+    async function saveLiveAttendanceProgress(totalSecondsToday) {
       if (!currentUser || isStaffOrAdminUser(currentUser)) return;
       const cleanDate = new Date().toLocaleDateString('en-GB');
+      const todayIso = getTodayDateIso();
       const mins = Math.floor(totalSecondsToday / 60);
       const secs = totalSecondsToday % 60;
 
       const attendanceEntry = {
-        attendance_id: `ATT-${currentUser.phone}-${cleanDate}-DAILY`,
+        attendance_id: `ATT-${String(currentUser.phone).trim()}-${todayIso}-DAILY`,
         student_name: currentUser.name || currentUser.username,
-        phone: String(currentUser.phone || ''),
+        phone: String(currentUser.phone || '').trim(),
         class: String(currentUser.userClass || '10'),
         division: String(currentUser.division || 'A'),
         date: cleanDate,
         timestamp: formatDateStrict(new Date().toISOString()),
         activity: 'Daily USS Training Session',
         duration_seconds: totalSecondsToday,
-        duration_text: `${mins}m ${secs}s`,
+        duration_text: `${mins}m ${String(secs).padStart(2, '0')}s`,
         questions_attended: sessionAnswersLog.length || 0,
         score: 'Active'
       };
 
       try {
-        supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' });
+        await supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' });
       } catch(e) {}
     }
 
     // =========================================================================
-    // ADMIN ACTION: RESET 60M DAILY QUOTA FOR A SPECIFIC STUDENT
+    // ADMIN ACTION: RESTORE 60M DAILY QUOTA FOR A SPECIFIC STUDENT
     // =========================================================================
     async function adminResetStudentQuota(phone, username, studentName) {
       if (!isStaffOrAdminUser(currentUser)) {
@@ -1505,32 +1789,42 @@
 
       showConfirmModal(
         '🔄 Reset Daily 60m Quota',
-        `Are you sure you want to reset today's practice quota for ${studentName || username} (${phone})? This will immediately grant them a fresh 60 minutes today.`,
+        `Are you sure you want to restore today's 60-minute allowance for ${studentName || username} (${phone})? This will immediately unlock them on all devices.`,
         async () => {
           setProgress(30);
 
+          const todayIso = getTodayDateIso();
           const cleanDate = new Date().toLocaleDateString('en-GB');
-          const d = new Date();
-          const key1 = `usage_${phone}_${d.getFullYear()}_${d.getMonth() + 1}_${d.getDate()}`;
-          const key2 = `usage_${username}_${d.getFullYear()}_${d.getMonth() + 1}_${d.getDate()}`;
-          localStorage.removeItem(key1);
-          localStorage.removeItem(key2);
+          const cleanPhone = String(phone).trim();
+          const cleanUser = String(username).trim();
+
+          localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
+          localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
 
           try {
-            const dailyAttId = `ATT-${phone}-${cleanDate}-DAILY`;
+            const dailyAttId = `ATT-${cleanPhone}-${todayIso}-DAILY`;
             await supabaseClient
               .from('attendance')
-              .update({ duration_seconds: 0, duration_text: '0m 00s' })
-              .eq('attendance_id', dailyAttId);
-          } catch (e) {}
+              .upsert([{
+                attendance_id: dailyAttId,
+                student_name: studentName,
+                phone: cleanPhone,
+                date: cleanDate,
+                duration_seconds: 0,
+                duration_text: '0m 00s',
+                score: 'Reset by Admin'
+              }], { onConflict: 'attendance_id' });
+          } catch (e) {
+            console.error("Supabase quota reset error:", e);
+          }
 
           try {
-            const studentChannel = supabaseClient.channel('guard_' + username);
-            await studentChannel.subscribe();
-            await studentChannel.send({
+            const studentGuardChannel = supabaseClient.channel('guard_' + cleanUser);
+            await studentGuardChannel.subscribe();
+            await studentGuardChannel.send({
               type: 'broadcast',
               event: 'admin_reset_quota',
-              payload: { phone, username }
+              payload: { phone: cleanPhone, username: cleanUser }
             });
           } catch (e) {}
 
@@ -1538,15 +1832,15 @@
             await supabaseClient.from('notifications').insert([{
               notification_id: 'NOTIF-' + Date.now(),
               timestamp: formatDateStrict(new Date().toISOString()),
-              recipient_phone: phone,
-              title: 'Daily Practice Quota Reset',
-              message: `Your 60-minute daily practice allowance has been reset by the Administrator for today (${cleanDate}). You can resume your practice sessions!`,
+              recipient_phone: cleanPhone,
+              title: 'Daily Practice Quota Restored',
+              message: `Your 60-minute daily practice allowance has been reset by Administrator for today (${cleanDate}). You can resume practicing now!`,
               sender: 'Administrator'
             }]);
           } catch (e) {}
 
           setProgress(100);
-          showToast(`60m Quota reset successfully for ${studentName || username}!`, 'success');
+          showToast(`60m Quota restored successfully for ${studentName}!`, 'success');
 
           if (cachedAdminData) await loadAdminData();
           renderAllUsersOnlineCards();
@@ -1625,102 +1919,21 @@
           }
         })
         .on('broadcast', { event: 'admin_reset_quota' }, () => {
+          cachedTodayUsedSeconds = 0;
           const key = getTodayKey();
           localStorage.removeItem(key);
           const overlay = document.getElementById('app-quota-lock-overlay');
           if (overlay) overlay.style.display = 'none';
           document.getElementById('tab-bar-container').style.display = 'flex';
-          showToast('🎉 Admin has reset your 60-minute daily practice quota!', 'success');
+          const subHeader = document.getElementById('sticky-sub-header');
+          if (subHeader) subHeader.style.display = 'flex';
+          
+          showToast('🎉 Admin has restored your 60-minute daily practice quota!', 'success');
           checkAndEnforceQuota(0);
           showSection('practice-sec');
         })
         .subscribe();
     }
-
-    // =========================================================================
-    // CLEAR SYNTHESIZED SOUND CHIMES (WEB AUDIO API)
-    // =========================================================================
-    let audioCtx = null;
-
-    function getAudioContext() {
-      if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) audioCtx = new AudioContext();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      return audioCtx;
-    }
-
-    // High clear double-chime for Active / Online (C6 -> G6)
-    function playActiveChime() {
-      try {
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        const now = ctx.currentTime;
-
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(1046.50, now); // C6
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1567.98, now + 0.12); // G6
-
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc1.start(now);
-        osc1.stop(now + 0.12);
-        osc2.start(now + 0.12);
-        osc2.stop(now + 0.45);
-      } catch (e) {
-        console.warn("Audio play blocked or unavailable", e);
-      }
-    }
-
-    // Low two-tone chime for Inactive / Left (E5 -> C5)
-    function playInactiveChime() {
-      try {
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        const now = ctx.currentTime;
-
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc1.type = 'triangle';
-        osc1.frequency.setValueAtTime(659.25, now); // E5
-        osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(523.25, now + 0.15); // C5
-
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc1.start(now);
-        osc1.stop(now + 0.15);
-        osc2.start(now + 0.15);
-        osc2.stop(now + 0.5);
-      } catch (e) {
-        console.warn("Audio play blocked or unavailable", e);
-      }
-    }
-
-    // Unlock Audio Context on first interaction
-    ['click', 'touchstart', 'keydown'].forEach(evt => {
-      window.addEventListener(evt, () => getAudioContext(), { once: true });
-    });
 
     // =========================================================================
     // REALTIME PRESENCE & LEAVE TRACKER
@@ -1882,12 +2095,8 @@
     }
 
     // =========================================================================
-    // LIVE ACTIVITY RADAR (STRICTLY STUDENTS; TIME LEFT & RESET BUTTONS)
+    // LIVE ACTIVITY RADAR (STRICTLY STUDENTS; SOUND ALERTS & NEW RESTORE ICON)
     // =========================================================================
-    // Global tracker for previous student states
-    window._previousUserStates = window._previousUserStates || {};
-    window._hasInitialPresenceSynced = window._hasInitialPresenceSynced || false;
-
     async function renderAllUsersOnlineCards() {
       const activeFeed = document.getElementById('online-active-feed');
       const inactiveFeed = document.getElementById('online-inactive-feed');
@@ -1910,7 +2119,6 @@
       const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
       const cleanDate = new Date().toLocaleDateString('en-GB');
 
-      // Collect presence entries
       let presenceEntries = [];
       try {
         if (presenceChannel) {
@@ -1924,7 +2132,6 @@
         presenceEntries = [];
       }
 
-      // Merge broadcasted pings
       const livePings = window._liveHeartbeats || {};
       for (const k in livePings) {
         const ping = livePings[k];
@@ -1944,7 +2151,6 @@
       const inactiveList = [];
       const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-      // Strictly Students Only
       const onlyStudents = usersList.filter(u => !isStaffOrAdminUser(u));
 
       onlyStudents.forEach(u => {
@@ -1973,13 +2179,10 @@
           pres && pres.isGreen === true && (statusText === 'Online & Active')
         );
 
-        // =============================================================
-        // STATE TRANSITION DETECTOR + SOUND & TOAST ALERT
-        // =============================================================
+        // TRANSITION DETECTOR + SOUND CHIME ALERT
         const studentUniqueKey = cleanDbPhone || cleanDbUser;
         const previousState = window._previousUserStates[studentUniqueKey];
 
-        // Check for state changes after initial load
         if (window._hasInitialPresenceSynced && previousState !== undefined && previousState !== isOnlineAndActive) {
           const stName = u.name || u.username;
           const stClass = u.class || '10';
@@ -1993,11 +2196,8 @@
             showToast(`🔴 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) is now <strong>INACTIVE</strong> (${escapeHtml(statusText)})`, 'danger');
           }
         }
-
-        // Save current state for the next check
         window._previousUserStates[studentUniqueKey] = isOnlineAndActive;
 
-        // Calculate student's remaining time today
         let usedSeconds = 0;
         if (pres && typeof pres.todaySeconds === 'number') {
           usedSeconds = Math.max(usedSeconds, pres.todaySeconds);
@@ -2072,7 +2272,6 @@
         else inactiveList.push(userData);
       });
 
-      // Mark first cycle as completed so subsequent checks trigger transition alerts
       window._hasInitialPresenceSynced = true;
 
       const actEl = document.getElementById('badge-active-count');
@@ -2129,12 +2328,16 @@
                 <div><strong>Login:</strong> ${u.loginTime}</div>
                 <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
                 
-                <!-- ADMIN RESET BUTTON -->
+                <!-- ADMIN RESTORE QUOTA BUTTON WITH CRISP SVG ICON -->
                 <div style="grid-column: span 2; margin-top: 8px;">
                   <button onclick="event.stopPropagation(); adminResetStudentQuota('${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.name || u.username)}')" 
                           class="btn btn-outline" 
-                          style="width:100%; padding:6px 12px; font-size:12px; font-weight:700; color:var(--primary); border-color:#93c5fd; background:#eff6ff;">
-                    🔄 Reset 60m Quota for this Student
+                          style="width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:7px 14px; font-size:12.5px; font-weight:700; color:var(--primary); border-color:#93c5fd; background:#eff6ff; border-radius:10px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                      <path d="M3 3v5h5"/>
+                    </svg>
+                    Restore 60m Quota for this Student
                   </button>
                 </div>
               </div>
@@ -2217,7 +2420,7 @@
     }
 
     // =========================================================================
-    // AUTHENTICATION & LOGIN
+    // AUTHENTICATION & LOGIN (CROSS-DEVICE VERIFIED)
     // =========================================================================
     async function handleLogin(e) {
       e.preventDefault();
@@ -2248,9 +2451,18 @@
         const isStaff = isStaffOrAdminUser(user);
 
         if (!isStaff) {
-          const usedSec = getTodayElapsedSeconds(user.phone || user.username);
-          if (usedSec >= DAILY_MAX_QUOTA_SECONDS) {
-            currentUser = { name: user.name, phone: user.phone, username: user.username };
+          const remoteSec = await fetchSupabaseDailyUsage(user.phone);
+          const localSec = getTodayElapsedSeconds(user.phone || user.username);
+          const actualUsage = Math.max(remoteSec, localSec);
+
+          if (actualUsage >= DAILY_MAX_QUOTA_SECONDS) {
+            currentUser = { 
+              name: user.name, 
+              phone: user.phone, 
+              username: user.username,
+              userClass: user.class,
+              division: user.division
+            };
             triggerAppLockout();
             return;
           }
@@ -2342,6 +2554,7 @@
     function initializeSession() {
       document.getElementById('login-sec').style.display = 'none';
       document.getElementById('top-navbar').style.display = 'flex';
+      document.getElementById('sticky-sub-header').style.display = 'flex';
       document.getElementById('tab-bar-container').style.display = 'flex';
 
       document.getElementById('user-display-name').innerText = currentUser.name || currentUser.username;
@@ -2717,6 +2930,7 @@
 
     function enterExamFocusMode() {
       document.getElementById('top-navbar').style.display = 'none';
+      document.getElementById('sticky-sub-header').style.display = 'none';
       document.getElementById('tab-bar-container').style.display = 'none';
       document.querySelector('.mode-selector-group').style.display = 'none';
       document.getElementById('subject-practice-box').style.display = 'none';
@@ -2889,6 +3103,7 @@
     function exitConsolidationView() {
       document.getElementById('consolidation-card').style.display = 'none';
       document.getElementById('top-navbar').style.display = 'flex';
+      document.getElementById('sticky-sub-header').style.display = 'flex';
       document.getElementById('tab-bar-container').style.display = 'flex';
 
       if (isTrialMode) {
@@ -3369,7 +3584,11 @@
           return b.practicedSec - a.practicedSec;
         });
 
-        adminAttBody.innerHTML = aggregatedList.map((row, idx) => `
+        adminAttBody.innerHTML = aggregatedList.map((row, idx) => {
+          const matchedUser = (users || []).find(u => String(u.phone).trim() === String(row.phone).trim());
+          const targetUsername = matchedUser ? matchedUser.username : row.student_name;
+
+          return `
           <tr style="${row.isBlocked ? 'background:#fff1f2;' : (row.isWarned ? 'background:#fffbeb;' : '')}">
             <td>${idx + 1}</td>
             <td><b>${escapeHtml(row.student_name)}</b></td>
@@ -3388,15 +3607,20 @@
               <span class="badge ${row.isBlocked ? 'badge-danger' : 'badge-success'}">
                 ${row.isBlocked ? '🛑 60m Limit Reached' : 'Active Practicing'}
               </span>
-              <button onclick="adminResetStudentQuota('${row.phone}', '${escapeHtml(row.student_name)}', '${escapeHtml(row.student_name)}')" 
+              <!-- RESTORE QUOTA BUTTON WITH SVG ICON -->
+              <button onclick="adminResetStudentQuota('${row.phone}', '${escapeHtml(targetUsername)}', '${escapeHtml(row.student_name)}')" 
                       class="btn btn-outline" 
-                      style="display:block; margin-top:4px; padding:3px 6px; font-size:11px; font-weight:700; color:var(--primary); border-color:#bfdbfe; background:#eff6ff;" 
-                      title="Reset 60m Quota">
-                🔄 Reset Quota
+                      style="display:inline-flex; align-items:center; margin-top:5px; padding:4px 8px; font-size:11.5px; font-weight:700; color:var(--primary); border-color:#bfdbfe; background:#eff6ff; border-radius:8px;" 
+                      title="Restore 60m Practice Quota">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+                Restore Quota
               </button>
             </td>
           </tr>
-        `).join('') || '<tr><td colspan="10" style="text-align:center;">No student attendance records found.</td></tr>';
+        `;}).join('') || '<tr><td colspan="10" style="text-align:center;">No student attendance records found.</td></tr>';
       }
 
       // 2. EVALUATION REPORTS (TAB 6) - ALPHABETICAL (STUDENTS ONLY)
@@ -3471,7 +3695,7 @@
 
       optAccordion.innerHTML = scoredStudents.map((item, idx) => `
         <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')">
+        <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')">
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
               <span class="badge ${idx < 3 ? 'badge-success' : 'badge-warning'}" style="font-weight:900;">#${idx + 1} Top Scorer</span>
               <strong>${escapeHtml(item.user.name)}</strong> — Class ${item.user.class || '10'}-${item.user.division || 'A'}
