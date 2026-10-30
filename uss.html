@@ -1286,9 +1286,7 @@
       });
 
       window.addEventListener('blur', () => {
-        if (document.visibilityState !== 'hidden') {
-          updatePresenceLiveState('Opened Another App / Window Inactive');
-        }
+      updatePresenceLiveState('Opened Another App / Window Inactive');
       });
 
       window.addEventListener('focus', () => {
@@ -1344,131 +1342,161 @@
     }
 
     // =========================================================================
-    // REARRANGED LIVE ACTIVITY RADAR INTO ACTIVE & INACTIVE WITH TARGETED ALERTS
-    // =========================================================================
-    function renderAllUsersOnlineCards() {
-      const activeFeed = document.getElementById('online-active-feed');
-      const inactiveFeed = document.getElementById('online-inactive-feed');
-      if (!activeFeed || !inactiveFeed) return;
+// ROBUST LIVE ACTIVITY RADAR (FIXED CASE & FALLBACK MATCHING)
+// =========================================================================
+function renderAllUsersOnlineCards() {
+  const activeFeed = document.getElementById('online-active-feed');
+  const inactiveFeed = document.getElementById('online-inactive-feed');
+  if (!activeFeed || !inactiveFeed) return;
 
-      const usersList = cachedAdminData?.users || [];
-      const logsList = cachedAdminData?.logs || [];
-      const adminIsOnline = navigator.onLine;
-      const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
+  const usersList = cachedAdminData?.users || [];
+  const logsList = cachedAdminData?.logs || [];
+  const adminIsOnline = navigator.onLine;
+  const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
 
-      let presenceMap = {};
-      try {
-        if (presenceChannel) {
-          const state = presenceChannel.presenceState();
-          for (const key in state) {
-            const list = state[key];
-            if (list && list.length > 0) {
-              presenceMap[key] = list[list.length - 1];
-            }
-          }
+  // 1. Gather all presence entries into a normalized map and list
+  let presenceEntries = [];
+  try {
+    if (presenceChannel) {
+      const state = presenceChannel.presenceState();
+      for (const key in state) {
+        const list = state[key];
+        if (list && list.length > 0) {
+          presenceEntries.push(list[list.length - 1]);
         }
-      } catch(e) {
-        presenceMap = {};
       }
+    }
+  } catch (e) {
+    presenceEntries = [];
+  }
 
-      const activeList = [];
-      const inactiveList = [];
+  const activeList = [];
+  const inactiveList = [];
 
-      usersList.forEach(u => {
-        const pres = presenceMap[u.username];
-        const isOnlineAndActive = adminIsOnline && Boolean(pres && pres.isGreen);
+  usersList.forEach(u => {
+    const cleanDbUser = String(u.username || '').trim().toLowerCase();
+    const cleanDbPhone = String(u.phone || '').trim();
+    const cleanDbName = String(u.name || '').trim().toLowerCase();
 
-        let statusText = 'Offline';
-        if (!adminIsOnline) {
-          statusText = 'Offline (Admin Disconnected)';
-        } else if (pres && pres.liveStatus) {
-          statusText = pres.liveStatus;
-        }
+    // MATCH BY USERNAME, PHONE, OR NAME (Case-Insensitive)
+    const pres = presenceEntries.find(p => {
+      const pUser = String(p.username || '').trim().toLowerCase();
+      const pPhone = String(p.phone || '').trim();
+      const pName = String(p.name || '').trim().toLowerCase();
+      return (pUser && pUser === cleanDbUser) || 
+             (pPhone && cleanDbPhone && pPhone === cleanDbPhone) ||
+             (pName && pName === cleanDbName);
+    });
 
-        const userLastLog = logsList.find(l => l.identifier === u.username);
-        const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
-        const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
-        const activeContext = pres?.currentContext || (isOnlineAndActive ? 'Practice Center' : 'Offline / Inactive');
+    // Check if heartbeat/timestamp is recent (within last 3 minutes)
+    const isRecentlyActive = pres && (Date.now() - (pres.timestamp || 0) < 180000);
 
-        const userData = {
-          ...u,
-          isOnline: isOnlineAndActive,
-          statusText,
-          loginTime,
-          logoutTime,
-          activeContext
-        };
+    // Fallback: Check if their latest database log is marked "Active Now"
+    const userLastLog = logsList.find(l => 
+      String(l.identifier || '').trim().toLowerCase() === cleanDbUser ||
+      String(l.identifier || '').trim().toLowerCase() === cleanDbName
+    );
+    const hasActiveDbSession = userLastLog && userLastLog.logout_time === 'Active Now';
 
-        if (searchInput) {
-          const matchName = String(u.name || '').toLowerCase().includes(searchInput);
-          const matchUser = String(u.username || '').toLowerCase().includes(searchInput);
-          const matchClass = `${u.class || ''}-${u.division || ''}`.toLowerCase().includes(searchInput);
-          const matchPhone = String(u.phone || '').toLowerCase().includes(searchInput);
-          if (!matchName && !matchUser && !matchClass && !matchPhone) return;
-        }
+    // A student is ACTIVE if online via presence channel OR has an active heartbeat/session
+    const isOnlineAndActive = adminIsOnline && Boolean(
+      (pres && (pres.isGreen || isRecentlyActive)) || (hasActiveDbSession && pres)
+    );
 
-        if (isOnlineAndActive) activeList.push(userData);
-        else inactiveList.push(userData);
-      });
+    let statusText = 'Offline';
+    if (!adminIsOnline) {
+      statusText = 'Offline (Admin Disconnected)';
+    } else if (pres && pres.liveStatus) {
+      statusText = pres.liveStatus;
+    } else if (hasActiveDbSession) {
+      statusText = 'Online (Active Session)';
+    }
 
-      document.getElementById('badge-active-count').innerText = `${activeList.length} Active Now`;
-      document.getElementById('badge-inactive-count').innerText = `${inactiveList.length} Offline / Inactive`;
+    const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
+    const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
+    const activeContext = pres?.currentContext || (isOnlineAndActive ? 'Practice Center' : 'Offline / Inactive');
 
-      const renderCard = (u, idx, isAct) => {
-        const initials = (u.name || u.username).substring(0, 2).toUpperCase();
-        const cardId = `pres-detail-${isAct ? 'act' : 'inact'}-${idx}`;
-        const tabAccessList = parseTabAccessList(u.role || u.tab_access || '1,2,3,4');
+    const userData = {
+      ...u,
+      isOnline: isOnlineAndActive,
+      statusText,
+      loginTime,
+      logoutTime,
+      activeContext
+    };
 
-        return `
-          <div class="mobile-presence-card ${isAct ? 'is-online' : 'is-offline'}" onclick="toggleAccordion('${cardId}')">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-              <div class="presence-avatar-circle ${isAct ? 'green' : 'red'}">
-                <span>${initials}</span>
-                <span class="online-indicator-dot ${isAct ? 'green' : 'red'}"></span>
-              </div>
+    if (searchInput) {
+      const matchName = String(u.name || '').toLowerCase().includes(searchInput);
+      const matchUser = String(u.username || '').toLowerCase().includes(searchInput);
+      const matchClass = `${u.class || ''}-${u.division || ''}`.toLowerCase().includes(searchInput);
+      const matchPhone = String(u.phone || '').toLowerCase().includes(searchInput);
+      if (!matchName && !matchUser && !matchClass && !matchPhone) return;
+    }
 
-              <div style="flex:1; min-width:0;">
-                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                  <strong style="font-size:15px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    ${escapeHtml(u.name || u.username)}
-                  </strong>
-                  <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
-                </div>
-                <div style="margin-top:4px;">
-                  <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
-                    <span>${isAct ? '⚡' : '💤'}</span>
-                    <span>${escapeHtml(u.activeContext)}</span>
-                  </span>
-                </div>
-              </div>
+    if (isOnlineAndActive) activeList.push(userData);
+    else inactiveList.push(userData);
+  });
 
-              <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}')" 
-                      class="mobile-whatsapp-btn" title="${isAct ? 'Praise & Encourage' : 'Send Urge / Alert to Practice'}">
-                💬
-              </button>
+  const actCountEl = document.getElementById('badge-active-count');
+  const inactCountEl = document.getElementById('badge-inactive-count');
+  if (actCountEl) actCountEl.innerText = `${activeList.length} Active Now`;
+  if (inactCountEl) inactCountEl.innerText = `${inactiveList.length} Offline / Inactive`;
+
+  const renderCard = (u, idx, isAct) => {
+    const initials = (u.name || u.username).substring(0, 2).toUpperCase();
+    const cardId = `pres-detail-${isAct ? 'act' : 'inact'}-${idx}`;
+    const tabAccessList = parseTabAccessList(u.role || u.tab_access || '1,2,3,4');
+
+    return `
+      <div class="mobile-presence-card ${isAct ? 'is-online' : 'is-offline'}" onclick="toggleAccordion('${cardId}')">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+          <div class="presence-avatar-circle ${isAct ? 'green' : 'red'}">
+            <span>${initials}</span>
+            <span class="online-indicator-dot ${isAct ? 'green' : 'red'}"></span>
+          </div>
+
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <strong style="font-size:15px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${escapeHtml(u.name || u.username)}
+              </strong>
+              <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
             </div>
-
-            <div id="${cardId}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:12.5px; color:#475569;">
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                <div><strong>State:</strong> <span style="font-weight:700; color:${isAct ? 'var(--success)' : 'var(--danger)'};">${escapeHtml(u.statusText)}</span></div>
-                <div><strong>Phone:</strong> ${u.phone ? escapeHtml(u.phone) : '-'}</div>
-                <div><strong>Login:</strong> ${u.loginTime}</div>
-                <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
-                <div style="grid-column: span 2;"><strong>Tab No Access:</strong> <span class="badge" style="background:#e0e7ff; color:#3730a3;">Tabs: ${tabAccessList.join(', ')}</span></div>
-              </div>
+            <div style="margin-top:4px;">
+              <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
+                <span>${isAct ? '⚡' : '💤'}</span>
+                <span>${escapeHtml(u.activeContext)}</span>
+              </span>
             </div>
           </div>
-        `;
-      };
 
-      activeFeed.innerHTML = activeList.length > 0
-        ? activeList.map((u, idx) => renderCard(u, idx, true)).join('')
-        : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">No active students online right now.</div>`;
+          <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}')" 
+                  class="mobile-whatsapp-btn" title="${isAct ? 'Praise & Encourage' : 'Send Urge / Alert to Practice'}">
+            💬
+          </button>
+        </div>
 
-      inactiveFeed.innerHTML = inactiveList.length > 0
-        ? inactiveList.map((u, idx) => renderCard(u, idx, false)).join('')
-        : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">All registered students are active!</div>`;
-    }
+        <div id="${cardId}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:12.5px; color:#475569;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+            <div><strong>State:</strong> <span style="font-weight:700; color:${isAct ? 'var(--success)' : 'var(--danger)'};">${escapeHtml(u.statusText)}</span></div>
+            <div><strong>Phone:</strong> ${u.phone ? escapeHtml(u.phone) : '-'}</div>
+            <div><strong>Login:</strong> ${u.loginTime}</div>
+            <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
+            <div style="grid-column: span 2;"><strong>Tab No Access:</strong> <span class="badge" style="background:#e0e7ff; color:#3730a3;">Tabs: ${tabAccessList.join(', ')}</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  activeFeed.innerHTML = activeList.length > 0
+    ? activeList.map((u, idx) => renderCard(u, idx, true)).join('')
+    : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">No active students online right now.</div>`;
+
+  inactiveFeed.innerHTML = inactiveList.length > 0
+    ? inactiveList.map((u, idx) => renderCard(u, idx, false)).join('')
+    : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">All registered students are active!</div>`;
+}
 
     function sendTailoredRadarWhatsapp(name, phone, isActive, context) {
       let text = '';
