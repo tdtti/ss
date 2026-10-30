@@ -637,7 +637,7 @@
     <!-- 1. PRACTICE TAB -->
     <section id="practice-sec" class="section" style="display:none;">
       <h3 style="margin-top:0; color:var(--primary);">Practice Center (Tab 1)</h3>
-
+      
       <div class="mode-selector-group" id="practice-mode-selector">
         <button class="mode-btn" onclick="switchPracticeMode('PRACTICE')">📖 Subject Practice</button>
         <button class="mode-btn" onclick="switchPracticeMode('TRIAL')">⭐ Trial Exam Mode</button>
@@ -747,6 +747,7 @@
         </div>
       </div>
     </section>
+    
 
     <!-- 2. MY DASHBOARD & PORTFOLIO SECTION -->
     <section id="portfolio-sec" class="section" style="display:none;">
@@ -1302,7 +1303,9 @@
     let selectedQuestionIds = new Set();
     let securityProtectionActive = true;
 
-    // SYNTHESIZED WEB AUDIO API SYSTEM
+    // =========================================================================
+    // CLEAR SYNTHESIZED SOUND CHIMES (WEB AUDIO API)
+    // =========================================================================
     let audioCtx = null;
     window._previousUserStates = window._previousUserStates || {};
     window._hasInitialPresenceSynced = window._hasInitialPresenceSynced || false;
@@ -1318,50 +1321,24 @@
       return audioCtx;
     }
 
-    function playActiveChime() {
+    // 1. ENTRY SOUND (Bright Double Ding-Dong: F5 -> A5)
+    function playEntryChime() {
       try {
         const ctx = getAudioContext();
         if (!ctx) return;
         const now = ctx.currentTime;
+
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator();
         const gain = ctx.createGain();
 
         osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(1046.50, now); // C6
+        osc1.frequency.setValueAtTime(698.46, now); // F5
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(1567.98, now + 0.12); // G6
-
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc1.start(now);
-        osc1.stop(now + 0.12);
-        osc2.start(now + 0.12);
-        osc2.stop(now + 0.45);
-      } catch (e) {}
-    }
-
-    function playInactiveChime() {
-      try {
-        const ctx = getAudioContext();
-        if (!ctx) return;
-        const now = ctx.currentTime;
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc1.type = 'triangle';
-        osc1.frequency.setValueAtTime(659.25, now); // E5
-        osc2.type = 'triangle';
-        osc2.frequency.setValueAtTime(523.25, now + 0.15); // C5
+        osc2.frequency.setValueAtTime(880.00, now + 0.15); // A5
 
         gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
 
         osc1.connect(gain);
         osc2.connect(gain);
@@ -1370,9 +1347,66 @@
         osc1.start(now);
         osc1.stop(now + 0.15);
         osc2.start(now + 0.15);
-        osc2.stop(now + 0.5);
+        osc2.stop(now + 0.6);
       } catch (e) {}
     }
+
+    // 2. EXIT SOUND (Descending Soft Tone: G4 -> C4)
+    function playExitChime() {
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(392.00, now); // G4
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(261.63, now + 0.18); // C4
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(now);
+        osc1.stop(now + 0.18);
+        osc2.start(now + 0.18);
+        osc2.stop(now + 0.55);
+      } catch (e) {}
+    }
+
+    // 3. NOTIFICATION SOUND (Triple Marimba Ping: C6 -> E6 -> G6)
+    function playNotificationChime() {
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        [1046.50, 1318.51, 1567.98].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + (i * 0.08));
+
+          gain.gain.setValueAtTime(0.2, now + (i * 0.08));
+          gain.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.08) + 0.25);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now + (i * 0.08));
+          osc.stop(now + (i * 0.08) + 0.25);
+        });
+      } catch (e) {}
+    }
+
+    
 
     ['click', 'touchstart', 'keydown'].forEach(evt => {
       window.addEventListener(evt, () => getAudioContext(), { once: true });
@@ -1640,8 +1674,8 @@
       }
 
       showConfirmModal(
-        '🔄 Reset Daily 60m Quota',
-        `Are you sure you want to restore today's 60-minute allowance for ${studentName || username} (${phone})? This will immediately unlock them on all devices.`,
+        '🔄 Restore Daily 60m Quota',
+        `Restore today's 60-minute allowance for ${studentName || username} (${phone})? This will immediately reset Cumulative Usage to 0 and Time Left to 60m.`,
         async () => {
           setProgress(30);
 
@@ -1650,9 +1684,23 @@
           const cleanPhone = String(phone).trim();
           const cleanUser = String(username).trim();
 
+          // 1. Wipe local keys
           localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
           localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
 
+          // 2. INSTANT IN-MEMORY REFLECTION IN CACHED ADMIN DATA (TAB 5 & TAB 10)
+          if (cachedAdminData && cachedAdminData.allAttendance) {
+            const todayAttIndex = cachedAdminData.allAttendance.findIndex(a =>
+              String(a.phone).trim() === cleanPhone &&
+              (a.date === cleanDate || (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate))
+            );
+            if (todayAttIndex !== -1) {
+              cachedAdminData.allAttendance[todayAttIndex].duration_seconds = 0;
+              cachedAdminData.allAttendance[todayAttIndex].duration_text = '0m 00s';
+            }
+          }
+
+          // 3. Clear in Supabase attendance table
           try {
             const dailyAttId = `ATT-${cleanPhone}-${todayIso}-DAILY`;
             await supabaseClient
@@ -1664,10 +1712,11 @@
                 date: cleanDate,
                 duration_seconds: 0,
                 duration_text: '0m 00s',
-                score: 'Reset by Admin'
+                score: 'Active'
               }], { onConflict: 'attendance_id' });
           } catch (e) {}
 
+          // 4. Remote unlock signal to student device
           try {
             const studentGuardChannel = supabaseClient.channel('guard_' + cleanUser);
             await studentGuardChannel.subscribe();
@@ -1678,21 +1727,23 @@
             });
           } catch (e) {}
 
+          // 5. Send notification to student's inbox
           try {
             await supabaseClient.from('notifications').insert([{
               notification_id: 'NOTIF-' + Date.now(),
               timestamp: formatDateStrict(new Date().toISOString()),
               recipient_phone: cleanPhone,
               title: 'Daily Practice Quota Restored',
-              message: `Your 60-minute daily practice allowance has been restored by Administrator for today (${cleanDate}). You can resume practicing now!`,
+              message: `Your 60-minute daily practice allowance has been restored by Administrator for today (${cleanDate}). You have 60m remaining.`,
               sender: 'Administrator'
             }]);
           } catch (e) {}
 
           setProgress(100);
-          showToast(`60m Quota restored successfully for ${studentName}!`, 'success');
+          showToast(`60m Quota restored! Cumulative Usage is now 0m and Time Left is 60m.`, 'success');
 
-          if (cachedAdminData) await loadAdminData();
+          // 6. INSTANT RE-RENDER: Redraw Tab 5 and Tab 10 with 0m usage and 60m left
+          await loadAdminData();
           renderAllUsersOnlineCards();
         }
       );
@@ -2053,11 +2104,11 @@
           const stDiv = u.division || 'A';
 
           if (isOnlineAndActive) {
-            playActiveChime();
-            showToast(`🟢 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) is now <strong>ACTIVE</strong>!`, 'success');
+            playEntryChime(); // ENTRY SOUND
+            showToast(`🟢 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) entered the portal!`, 'success');
           } else {
-            playInactiveChime();
-            showToast(`🔴 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) is now <strong>INACTIVE</strong> (${escapeHtml(statusText)})`, 'danger');
+            playExitChime(); // EXIT SOUND
+            showToast(`🔴 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) left the app (${escapeHtml(statusText)})`, 'danger');
           }
         }
 
@@ -2168,7 +2219,8 @@
                 <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                   <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
                     <span>${isAct ? '⚡' : '💤'}</span>
-                    <span>${escapeHtml(u.statusText)}</span>
+                    <!-- SHOWS REAL-TIME PRESENT ACTIVITY WHEN ACTIVE, OR STATUS WHEN INACTIVE -->
+                    <span>${escapeHtml(isAct ? u.activeContext : u.statusText)}</span>
                   </span>
 
                   <!-- TIME LEFT BADGE -->
@@ -2613,6 +2665,9 @@
       }
 
       sessionStartTime = null;
+      // RESTORE BOTH HEADER AND SUB-HEADER ON EXIT
+      document.getElementById('top-navbar').style.display = 'flex';
+      document.getElementById('sticky-sub-header').style.display = 'flex';
       document.getElementById('tab-bar-container').style.display = 'flex';
       document.getElementById('practice-mode-selector').style.display = 'flex';
       document.getElementById('subject-practice-box').style.display = 'none';
@@ -2811,8 +2866,8 @@
     }
 
     function enterExamFocusMode() {
-      document.getElementById('top-navbar').style.display = 'none';
-      document.getElementById('sticky-sub-header').style.display = 'none';
+      document.getElementById('top-navbar').style.display = 'none'; // Hide main header
+      document.getElementById('sticky-sub-header').style.display = 'flex'; // KEEP SUB-HEADER VISIBLE!
       document.getElementById('tab-bar-container').style.display = 'none';
       document.querySelector('.mode-selector-group').style.display = 'none';
       document.getElementById('subject-practice-box').style.display = 'none';
@@ -3011,6 +3066,7 @@
 
     function exitConsolidationView() {
       document.getElementById('consolidation-card').style.display = 'none';
+      // RESTORE BOTH HEADER AND SUB-HEADER ON FINISH
       document.getElementById('top-navbar').style.display = 'flex';
       document.getElementById('sticky-sub-header').style.display = 'flex';
       document.getElementById('tab-bar-container').style.display = 'flex';
@@ -3302,6 +3358,11 @@
       });
 
       document.getElementById('notif-badge-dot').style.display = unreadCount > 0 ? 'block' : 'none';
+      if (unreadCount > 0 && !window._hasPlayedNotifSound) {
+        playNotificationChime();
+        window._hasPlayedNotifSound = true;
+      }
+    
     }
 
     function toggleNotifRead(notifId) {
