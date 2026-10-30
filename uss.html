@@ -1619,149 +1619,167 @@
     // LIVE ACTIVITY RADAR (STRICTLY STUDENTS; TAB ACCESS HIDDEN)
     // =========================================================================
     function renderAllUsersOnlineCards() {
-      const activeFeed = document.getElementById('online-active-feed');
-      const inactiveFeed = document.getElementById('online-inactive-feed');
-      if (!activeFeed || !inactiveFeed) return;
+  const activeFeed = document.getElementById('online-active-feed');
+  const inactiveFeed = document.getElementById('online-inactive-feed');
+  if (!activeFeed || !inactiveFeed) return;
 
-      const usersList = cachedAdminData?.users || [];
-      const logsList = cachedAdminData?.logs || [];
-      const adminIsOnline = navigator.onLine;
-      const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
+  // 1. Fetch user list from memory or localStorage instantly
+  let usersList = cachedAdminData?.users;
+  if (!usersList || usersList.length === 0) {
+    try {
+      usersList = JSON.parse(localStorage.getItem('cached_enrolled_users') || '[]');
+    } catch (e) { usersList = []; }
+  }
 
-      let presenceEntries = [];
-      try {
-        if (presenceChannel) {
-          const state = presenceChannel.presenceState();
-          for (const key in state) {
-            const list = state[key];
-            if (list && list.length > 0) presenceEntries.push(list[list.length - 1]);
-          }
-        }
-      } catch (e) {
-        presenceEntries = [];
+  // If still completely empty, fetch in background and return fast loading skeleton
+  if (!usersList || usersList.length === 0) {
+    supabaseClient.from('users').select('*').then(({ data }) => {
+      if (data && data.length > 0) {
+        if (!cachedAdminData) cachedAdminData = {};
+        cachedAdminData.users = data;
+        localStorage.setItem('cached_enrolled_users', JSON.stringify(data));
+        renderAllUsersOnlineCards();
       }
+    });
+    activeFeed.innerHTML = '<div style="padding:15px; color:var(--text-muted); font-size:13px;">Checking active students...</div>';
+    inactiveFeed.innerHTML = '<div style="padding:15px; color:var(--text-muted); font-size:13px;">Checking inactive students...</div>';
+    return;
+  }
 
-      const activeList = [];
-      const inactiveList = [];
+  const logsList = cachedAdminData?.logs || [];
+  const adminIsOnline = navigator.onLine;
+  const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
 
-      // Exclude Admin & Question Master from Student Radar
-      const onlyStudents = usersList.filter(u => !isStaffOrAdminUser(u));
-
-      onlyStudents.forEach(u => {
-        const cleanDbUser = String(u.username || '').trim().toLowerCase();
-        const cleanDbPhone = String(u.phone || '').trim();
-        const cleanDbName = String(u.name || '').trim().toLowerCase();
-
-        const pres = presenceEntries.find(p => {
-          const pUser = String(p.username || '').trim().toLowerCase();
-          const pPhone = String(p.phone || '').trim();
-          const pName = String(p.name || '').trim().toLowerCase();
-          return (pUser && pUser === cleanDbUser) || 
-                 (pPhone && cleanDbPhone && pPhone === cleanDbPhone) ||
-                 (pName && pName === cleanDbName);
-        });
-
-        const isRecentlyActive = pres && (Date.now() - (pres.timestamp || 0) < 180000);
-        const userLastLog = logsList.find(l => 
-          String(l.identifier || '').trim().toLowerCase() === cleanDbUser ||
-          String(l.identifier || '').trim().toLowerCase() === cleanDbName
-        );
-        const hasActiveDbSession = userLastLog && userLastLog.logout_time === 'Active Now';
-
-        const isOnlineAndActive = adminIsOnline && Boolean(
-          (pres && (pres.isGreen || isRecentlyActive)) || (hasActiveDbSession && pres)
-        );
-
-        let statusText = 'Offline';
-        if (!adminIsOnline) {
-          statusText = 'Offline (Admin Disconnected)';
-        } else if (pres && pres.liveStatus) {
-          statusText = pres.liveStatus;
-        } else if (hasActiveDbSession) {
-          statusText = 'Online (Active Session)';
+  // 2. Read realtime presence state from memory instantly
+  const presenceEntries = [];
+  try {
+    if (presenceChannel) {
+      const state = presenceChannel.presenceState();
+      for (const key in state) {
+        const list = state[key];
+        if (list && list.length > 0) {
+          presenceEntries.push(list[list.length - 1]);
         }
+      }
+    }
+  } catch (e) {}
 
-        const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
-        const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
-        const activeContext = pres?.currentContext || (isOnlineAndActive ? 'Practice Center' : 'Offline / Inactive');
+  // Fast hash-map lookup for O(1) instant matching
+  const presenceMap = new Map();
+  presenceEntries.forEach(p => {
+    if (p.username) presenceMap.set(String(p.username).trim().toLowerCase(), p);
+    if (p.phone) presenceMap.set(String(p.phone).trim(), p);
+    if (p.name) presenceMap.set(String(p.name).trim().toLowerCase(), p);
+  });
 
-        const userData = {
-          ...u,
-          isOnline: isOnlineAndActive,
-          statusText,
-          loginTime,
-          logoutTime,
-          activeContext
-        };
+  const activeList = [];
+  const inactiveList = [];
+  const now = Date.now();
 
-        if (searchInput) {
-          const matchName = String(u.name || '').toLowerCase().includes(searchInput);
-          const matchUser = String(u.username || '').toLowerCase().includes(searchInput);
-          const matchClass = `${u.class || ''}-${u.division || ''}`.toLowerCase().includes(searchInput);
-          const matchPhone = String(u.phone || '').toLowerCase().includes(searchInput);
-          if (!matchName && !matchUser && !matchClass && !matchPhone) return;
-        }
+  // Filter strictly students (exclude Admin and Question Master)
+  const studentsOnly = usersList.filter(u => !isStaffOrAdminUser(u));
 
-        if (isOnlineAndActive) activeList.push(userData);
-        else inactiveList.push(userData);
-      });
+  for (let i = 0; i < studentsOnly.length; i++) {
+    const u = studentsOnly[i];
+    const cleanUser = String(u.username || '').trim().toLowerCase();
+    const cleanPhone = String(u.phone || '').trim();
+    const cleanName = String(u.name || '').trim().toLowerCase();
 
-      document.getElementById('badge-active-count').innerText = `${activeList.length} Active Now`;
-      document.getElementById('badge-inactive-count').innerText = `${inactiveList.length} Offline / Inactive`;
+    // Instant lookup
+    const pres = presenceMap.get(cleanUser) || (cleanPhone ? presenceMap.get(cleanPhone) : null) || presenceMap.get(cleanName);
 
-      const renderCard = (u, idx, isAct) => {
-        const initials = (u.name || u.username).substring(0, 2).toUpperCase();
-        const cardId = `pres-detail-${isAct ? 'act' : 'inact'}-${idx}`;
+    // Instant online condition: presence track active within 3 minutes
+    const isLive = pres && (pres.isGreen || (now - (pres.timestamp || 0) < 180000));
+    const isOnlineAndActive = adminIsOnline && Boolean(isLive);
 
-        return `
-          <div class="mobile-presence-card ${isAct ? 'is-online' : 'is-offline'}" onclick="toggleAccordion('${cardId}')">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-              <div class="presence-avatar-circle ${isAct ? 'green' : 'red'}">
-                <span>${initials}</span>
-                <span class="online-indicator-dot ${isAct ? 'green' : 'red'}"></span>
-              </div>
+    let statusText = 'Offline';
+    if (!adminIsOnline) statusText = 'Offline (Admin Disconnected)';
+    else if (pres?.liveStatus) statusText = pres.liveStatus;
 
-              <div style="flex:1; min-width:0;">
-                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                  <strong style="font-size:15px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    ${escapeHtml(u.name || u.username)}
-                  </strong>
-                  <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
-                </div>
-                <div style="margin-top:4px;">
-                  <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
-                    <span>${isAct ? '⚡' : '💤'}</span>
-                    <span>${escapeHtml(u.activeContext)}</span>
-                  </span>
-                </div>
-              </div>
+    const userLastLog = logsList.find(l => String(l.identifier || '').trim().toLowerCase() === cleanUser);
+    const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
+    const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
+    const activeContext = pres?.currentContext || (isOnlineAndActive ? 'Practice Center' : 'Offline / Inactive');
 
-              <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}')" 
-                      class="mobile-whatsapp-btn" title="${isAct ? 'Encourage Student' : 'Alert Student to Practice'}">
-                💬
-              </button>
+    const userData = {
+      ...u,
+      isOnline: isOnlineAndActive,
+      statusText,
+      loginTime,
+      logoutTime,
+      activeContext
+    };
+
+    if (searchInput) {
+      const match = cleanName.includes(searchInput) || cleanUser.includes(searchInput) ||
+                    `${u.class || ''}-${u.division || ''}`.toLowerCase().includes(searchInput) || cleanPhone.includes(searchInput);
+      if (!match) continue;
+    }
+
+    if (isOnlineAndActive) activeList.push(userData);
+    else inactiveList.push(userData);
+  }
+
+  // Update counter badges
+  const actCountEl = document.getElementById('badge-active-count');
+  const inactCountEl = document.getElementById('badge-inactive-count');
+  if (actCountEl) actCountEl.innerText = `${activeList.length} Active Now`;
+  if (inactCountEl) inactCountEl.innerText = `${inactiveList.length} Offline / Inactive`;
+
+  // Pre-compiled fast card template
+  const renderCard = (u, idx, isAct) => {
+    const initials = (u.name || u.username || 'ST').substring(0, 2).toUpperCase();
+    const cardId = `pres-detail-${isAct ? 'act' : 'inact'}-${idx}`;
+
+    return `
+      <div class="mobile-presence-card ${isAct ? 'is-online' : 'is-offline'}" onclick="toggleAccordion('${cardId}')">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+          <div class="presence-avatar-circle ${isAct ? 'green' : 'red'}">
+            <span>${initials}</span>
+            <span class="online-indicator-dot ${isAct ? 'green' : 'red'}"></span>
+          </div>
+
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <strong style="font-size:15px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${escapeHtml(u.name || u.username)}
+              </strong>
+              <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
             </div>
-
-            <div id="${cardId}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:12.5px; color:#475569;">
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-                <div><strong>State:</strong> <span style="font-weight:700; color:${isAct ? 'var(--success)' : 'var(--danger)'};">${escapeHtml(u.statusText)}</span></div>
-                <div><strong>Phone:</strong> ${u.phone ? escapeHtml(u.phone) : '-'}</div>
-                <div><strong>Login:</strong> ${u.loginTime}</div>
-                <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
-              </div>
+            <div style="margin-top:4px;">
+              <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
+                <span>${isAct ? '⚡' : '💤'}</span>
+                <span>${escapeHtml(u.activeContext)}</span>
+              </span>
             </div>
           </div>
-        `;
-      };
 
-      activeFeed.innerHTML = activeList.length > 0
-        ? activeList.map((u, idx) => renderCard(u, idx, true)).join('')
-        : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">No active students online right now.</div>`;
+          <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}')" 
+                  class="mobile-whatsapp-btn" title="${isAct ? 'Praise Student' : 'Alert Student to Join'}">
+            💬
+          </button>
+        </div>
 
-      inactiveFeed.innerHTML = inactiveList.length > 0
-        ? inactiveList.map((u, idx) => renderCard(u, idx, false)).join('')
-        : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">All students are currently active!</div>`;
-    }
+        <div id="${cardId}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:12.5px; color:#475569;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+            <div><strong>State:</strong> <span style="font-weight:700; color:${isAct ? 'var(--success)' : 'var(--danger)'};">${escapeHtml(u.statusText)}</span></div>
+            <div><strong>Phone:</strong> ${u.phone ? escapeHtml(u.phone) : '-'}</div>
+            <div><strong>Login:</strong> ${u.loginTime}</div>
+            <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  activeFeed.innerHTML = activeList.length > 0
+    ? activeList.map((u, idx) => renderCard(u, idx, true)).join('')
+    : `<div class="mobile-presence-card" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">No active students online right now.</div>`;
+
+  inactiveFeed.innerHTML = inactiveList.length > 0
+    ? inactiveList.map((u, idx) => renderCard(u, idx, false)).join('')
+    : `<div class="mobile-presence-card" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">All registered students are active!</div>`;
+}
 
     function sendTailoredRadarWhatsapp(name, phone, isActive, context) {
       let text = '';
@@ -2083,9 +2101,24 @@
       };
       if (tabMap[sectionId]) document.getElementById(tabMap[sectionId]).classList.add('active');
 
+      // Inside showSection(sectionId) function:
       if (sectionId === 'portfolio-sec') loadPortfolio();
       else if (sectionId === 'notif-sec') loadNotifications();
-      else if (sectionId === 'admin-online-sec') renderAllUsersOnlineCards();
+      else if (sectionId === 'admin-online-sec') {
+        // INSTANT: Render immediately in 0ms from cache
+        renderAllUsersOnlineCards();
+        // Silent background sync for any user changes
+        if (!cachedAdminData?.users) {
+          supabaseClient.from('users').select('*').then(({ data }) => {
+            if (data) {
+              if (!cachedAdminData) cachedAdminData = {};
+              cachedAdminData.users = data;
+              localStorage.setItem('cached_enrolled_users', JSON.stringify(data));
+              renderAllUsersOnlineCards();
+            }
+          });
+        }
+      }
       else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(sectionId)) loadAdminData();
     }
 
@@ -2877,49 +2910,70 @@
     // =========================================================================
     // ADMIN DATA & HARMONIZED MODULE SYNC
     // =========================================================================
+    // =========================================================================
+    // FULL UPDATED ADMIN DATA LOADER (HARMONIZED & ZERO-DELAY OPTIMIZED)
+    // =========================================================================
     async function loadAdminData() {
-      const { data: users } = await supabaseClient.from('users').select('*');
-      const { data: questions } = await supabaseClient.from('questions').select('*');
-      const { data: logs } = await supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(200);
-      const { data: allAnswers } = await supabaseClient.from('student_answers').select('*').order('created_at', { ascending: false });
-      const { data: allTrialExams } = await supabaseClient.from('trial_exams').select('*').order('created_at', { ascending: false });
-      const { data: resetRequests } = await supabaseClient.from('reset_requests').select('*').order('created_at', { ascending: false });
+      // 1. Parallel fetch all relevant tables from Supabase
+      const [
+        { data: users },
+        { data: questions },
+        { data: logs },
+        { data: allAnswers },
+        { data: allTrialExams },
+        { data: resetRequests }
+      ] = await Promise.all([
+        supabaseClient.from('users').select('*'),
+        supabaseClient.from('questions').select('*'),
+        supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(200),
+        supabaseClient.from('student_answers').select('*').order('created_at', { ascending: false }),
+        supabaseClient.from('trial_exams').select('*').order('created_at', { ascending: false }),
+        supabaseClient.from('reset_requests').select('*').order('created_at', { ascending: false })
+      ]);
 
       let allAttendance = [];
       try {
         const { data: dbAtt } = await supabaseClient.from('attendance').select('*').order('id', { ascending: false });
         allAttendance = dbAtt || [];
-      } catch(e) {}
+      } catch (e) {
+        console.warn("Could not query attendance table:", e);
+      }
 
+      // 2. Cache in global memory and localStorage for instant Tab 10 radar rendering
       cachedAdminData = { users, questions, logs, allAnswers, allTrialExams, resetRequests, allAttendance };
+      if (users && users.length > 0) {
+        localStorage.setItem('cached_enrolled_users', JSON.stringify(users));
+      }
 
-      // Filter out Admin and Question Master from Student Selection
-      const studentChipsContainer = document.getElementById('student-chips-container');
+      // 3. Strict Student Filtering (Exclude Full Admin and Question Master)
       const studentsOnly = (users || []).filter(u => !isStaffOrAdminUser(u));
 
-      studentChipsContainer.innerHTML = '';
-      studentsOnly.forEach(s => {
-        const chip = document.createElement('div');
-        chip.className = 'student-chip';
-        chip.innerText = `${s.name} (${s.class || '10'}-${s.division || 'A'}) [${s.phone}]`;
-        chip.onclick = () => {
-          if (selectedStudentPhones.has(s.phone)) {
-            selectedStudentPhones.delete(s.phone);
-            chip.classList.remove('selected');
-          } else {
-            selectedStudentPhones.add(s.phone);
-            chip.classList.add('selected');
-          }
-        };
-        studentChipsContainer.appendChild(chip);
-      });
+      // 4. Populate Student Chips in Notification Composer (Tab 3)
+      const studentChipsContainer = document.getElementById('student-chips-container');
+      if (studentChipsContainer) {
+        studentChipsContainer.innerHTML = '';
+        studentsOnly.forEach(s => {
+          const chip = document.createElement('div');
+          chip.className = `student-chip ${selectedStudentPhones.has(s.phone) ? 'selected' : ''}`;
+          chip.innerText = `${s.name} (${s.class || '10'}-${s.division || 'A'}) [${s.phone}]`;
+          chip.onclick = () => {
+            if (selectedStudentPhones.has(s.phone)) {
+              selectedStudentPhones.delete(s.phone);
+              chip.classList.remove('selected');
+            } else {
+              selectedStudentPhones.add(s.phone);
+              chip.classList.add('selected');
+            }
+          };
+          studentChipsContainer.appendChild(chip);
+        });
+      }
 
-      // 1. ATTENDANCE TRACKER (HARMONIZED QUESTION COUNT DEDUPLICATION)
+      // 5. STUDENT DAILY ATTENDANCE TRACKER (TAB 5) - UNIFIED DEDUPLICATED COUNTS
       const adminAttBody = document.getElementById('admin-attendance-body');
       if (adminAttBody) {
         const dailyGroups = {};
 
-        // Process only student accounts
         allAttendance.forEach(a => {
           const matchedUser = (users || []).find(u => String(u.phone).trim() === String(a.phone).trim());
           if (matchedUser && isStaffOrAdminUser(matchedUser)) return;
@@ -2978,7 +3032,10 @@
             <td><b>${escapeHtml(row.student_name)}</b></td>
             <td>${escapeHtml(row.class)}-${escapeHtml(row.division)}</td>
             <td style="text-align:center;">
-              <button onclick="sendAttendanceWhatsappAlert('${escapeHtml(row.student_name)}', '${row.phone}', '${row.date}', '${escapeHtml(row.activitiesString)}', '${row.durationFormatted}', '${row.remainingFormatted}', '${row.verified_questions}')" class="btn btn-outline" style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;">
+              <button onclick="sendAttendanceWhatsappAlert('${escapeHtml(row.student_name)}', '${row.phone}', '${row.date}', '${escapeHtml(row.activitiesString)}', '${row.durationFormatted}', '${row.remainingFormatted}', '${row.verified_questions}')" 
+                      class="btn btn-outline" 
+                      style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" 
+                      title="Send Attendance WhatsApp Report">
                 💬
               </button>
             </td>
@@ -2989,122 +3046,125 @@
             <td><b>${row.verified_questions}</b> Qs</td>
             <td><span class="badge ${row.isBlocked ? 'badge-danger' : 'badge-success'}">${row.isBlocked ? '🛑 60m Limit Reached' : 'Active Practicing'}</span></td>
           </tr>
-        `).join('') || '<tr><td colspan="10" style="text-align:center;">No student attendance records found.</td></tr>';
+        `).join('') || '<tr><td colspan="10" style="text-align:center; color:var(--text-muted);">No student attendance records found.</td></tr>';
       }
 
-      // 2. EVALUATION REPORTS (TAB 6) - ALPHABETICAL (STUDENTS ONLY)
+      // 6. EVALUATION REPORTS (TAB 6) - ALPHABETICAL (STUDENTS ONLY)
       const reportAccordion = document.getElementById('admin-student-accordion-list');
-      const alphabeticalStudents = [...studentsOnly].sort((a, b) => {
-        return String(a.name || a.username).trim().localeCompare(String(b.name || b.username).trim());
-      });
+      if (reportAccordion) {
+        const alphabeticalStudents = [...studentsOnly].sort((a, b) => {
+          return String(a.name || a.username).trim().localeCompare(String(b.name || b.username).trim());
+        });
 
-      reportAccordion.innerHTML = alphabeticalStudents.map((st, idx) => `
-        <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion('report-acc-${idx}')">
-            <div><strong>${idx + 1}. ${escapeHtml(st.name)}</strong> — Class ${st.class || '10'}-${st.division || 'A'} [FL: ${st.first_language || 'MI'}] [${st.phone}]</div>
-            <div>▾</div>
-          </div>
-          <div class="accordion-body" id="report-acc-${idx}">
-            <div id="admin-rep-container-${idx}"></div>
-          </div>
-        </div>
-      `).join('');
-
-      alphabeticalStudents.forEach((st, idx) => {
-        const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
-        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(st.phone).trim()).map(t => ({
-          Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
-        }));
-
-        const container = document.getElementById(`admin-rep-container-${idx}`);
-        if (container) {
-          container.innerHTML = `
-            <h4 style="margin-top:0; color:var(--primary);">Subject Overview</h4>
-            <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="admin-rep-overview-${idx}"></tbody></table></div>
-            <h4 style="margin-top:20px; color:var(--primary);">Trial Exam Consolidations</h4>
-            <div id="admin-rep-trial-box-${idx}">
-              ${stTrials.length > 0 ? stTrials.map(t => {
-                let tAns = typeof t.AnswersJson === 'string' ? JSON.parse(t.AnswersJson || '[]') : (t.AnswersJson || []);
-                return `
-                  <div style="background:#f8fafc; border:1px solid var(--border-color); padding:12px; border-radius:8px; margin-bottom:12px;">
-                    <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Date: ${formatDateStrict(t.Timestamp)} | Score: ${t.Score} / ${t.TotalQuestions}</div>
-                    <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>User Choice</th><th>Correct Choice</th></tr></thead><tbody>
-                      ${tAns.map((a, aIdx) => `<tr><td>${aIdx + 1}</td><td>${getFullSubjectName(a.Subject)}</td><td>${escapeHtml(a.QuestionText)}</td><td><b>${escapeHtml(a.UserAnswer)}</b></td><td><b style="color:var(--success);">${escapeHtml(a.CorrectAnswer)}</b></td></tr>`).join('')}
-                    </tbody></table></div>
-                  </div>
-                `;
-              }).join('') : '<p style="font-size:13px; color:var(--text-muted);">No trial exams recorded.</p>'}
+        reportAccordion.innerHTML = alphabeticalStudents.map((st, idx) => `
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion('report-acc-${idx}')">
+              <div><strong>${idx + 1}. ${escapeHtml(st.name)}</strong> — Class ${st.class || '10'}-${st.division || 'A'} [FL: ${st.first_language || 'MI'}] [${st.phone}]</div>
+              <div>▾</div>
             </div>
-            <h4 style="margin-top:20px; color:var(--primary);">Practice Audit Log</h4>
-            <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Status</th></tr></thead><tbody id="admin-rep-audit-${idx}"></tbody></table></div>
-          `;
-          renderStudentDashboardAndOverview({ 
-            detailedAnswers: metrics.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
-            trialExams: stTrials 
-          }, null, null, null, null, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
-        }
-      });
+            <div class="accordion-body" id="report-acc-${idx}">
+              <div id="admin-rep-container-${idx}"></div>
+            </div>
+          </div>
+        `).join('');
 
-      // 3. STUDENT OPTIMIZATION ANALYTICS (TAB 9) - HARMONIZED ACCURACY / QUESTIONS
+        alphabeticalStudents.forEach((st, idx) => {
+          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
+          const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(st.phone).trim()).map(t => ({
+            Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
+          }));
+
+          const container = document.getElementById(`admin-rep-container-${idx}`);
+          if (container) {
+            container.innerHTML = `
+              <h4 style="margin-top:0; color:var(--primary);">Subject Overview</h4>
+              <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="admin-rep-overview-${idx}"></tbody></table></div>
+              <h4 style="margin-top:20px; color:var(--primary);">Trial Exam Consolidations</h4>
+              <div id="admin-rep-trial-box-${idx}">
+                ${stTrials.length > 0 ? stTrials.map(t => {
+                  let tAns = typeof t.AnswersJson === 'string' ? JSON.parse(t.AnswersJson || '[]') : (t.AnswersJson || []);
+                  return `
+                    <div style="background:#f8fafc; border:1px solid var(--border-color); padding:12px; border-radius:8px; margin-bottom:12px;">
+                      <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Date: ${formatDateStrict(t.Timestamp)} | Score: ${t.Score} / ${t.TotalQuestions}</div>
+                      <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>User Choice</th><th>Correct Choice</th></tr></thead><tbody>
+                        ${tAns.map((a, aIdx) => `<tr><td>${aIdx + 1}</td><td>${getFullSubjectName(a.Subject)}</td><td>${escapeHtml(a.QuestionText)}</td><td><b>${escapeHtml(a.UserAnswer)}</b></td><td><b style="color:var(--success);">${escapeHtml(a.CorrectAnswer)}</b></td></tr>`).join('')}
+                      </tbody></table></div>
+                    </div>
+                  `;
+                }).join('') : '<p style="font-size:13px; color:var(--text-muted);">No trial exams recorded.</p>'}
+              </div>
+              <h4 style="margin-top:20px; color:var(--primary);">Practice Audit Log</h4>
+              <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Status</th></tr></thead><tbody id="admin-rep-audit-${idx}"></tbody></table></div>
+            `;
+            renderStudentDashboardAndOverview({ 
+              detailedAnswers: metrics.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
+              trialExams: stTrials 
+            }, null, null, null, null, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
+          }
+        });
+      }
+
+      // 7. STUDENT OPTIMIZATION ANALYTICS (TAB 9) - RANKED BY TOP SCORER METRIC
       const optAccordion = document.getElementById('manage-users-analytics-accordion');
-      
-      const scoredStudents = studentsOnly.map(st => {
-        const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
-        const scoreMetric = metrics.total > 0 ? Number(((metrics.accuracy / metrics.total) * 100).toFixed(2)) : 0;
+      if (optAccordion) {
+        const scoredStudents = studentsOnly.map(st => {
+          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
+          const scoreMetric = metrics.total > 0 ? Number(((metrics.accuracy / metrics.total) * 100).toFixed(2)) : 0;
 
-        return {
-          user: st,
-          total: metrics.total,
-          correct: metrics.correct,
-          accuracy: metrics.accuracy,
-          scoreMetric,
-          combined: metrics.combined
-        };
-      }).sort((a, b) => (b.scoreMetric - a.scoreMetric) || (b.accuracy - a.accuracy) || (b.total - a.total));
+          return {
+            user: st,
+            total: metrics.total,
+            correct: metrics.correct,
+            accuracy: metrics.accuracy,
+            scoreMetric,
+            combined: metrics.combined
+          };
+        }).sort((a, b) => (b.scoreMetric - a.scoreMetric) || (b.accuracy - a.accuracy) || (b.total - a.total));
 
-      optAccordion.innerHTML = scoredStudents.map((item, idx) => `
-        <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')">
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-              <span class="badge ${idx < 3 ? 'badge-success' : 'badge-warning'}" style="font-weight:900;">#${idx + 1} Top Scorer</span>
-              <strong>${escapeHtml(item.user.name)}</strong> — Class ${item.user.class || '10'}-${item.user.division || 'A'}
-              <span class="badge" style="background:#eff6ff; color:#1e40af;">Metric: ${item.scoreMetric}</span>
-            </div>
-            <div>▾</div>
-          </div>
-          <div class="accordion-body" id="opt-acc-${idx}">
-            <div class="stats-grid">
-              <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Total Answered</p><h3 id="opt-tot-${idx}">${item.total}</h3></div>
-              <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Overall Accuracy</p><h3 id="opt-acc-val-${idx}">${item.accuracy}%</h3></div>
-            </div>
-            <div class="grid-2" style="margin-bottom:20px;">
-              <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px;">
-                <h5 style="margin:0 0 10px 0; color:#166534;">🌟 Strengths (≥70%)</h5>
-                <div id="opt-strong-${idx}"></div>
+        optAccordion.innerHTML = scoredStudents.map((item, idx) => `
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')">
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span class="badge ${idx < 3 ? 'badge-success' : 'badge-warning'}" style="font-weight:900;">#${idx + 1} Top Scorer</span>
+                <strong>${escapeHtml(item.user.name)}</strong> — Class ${item.user.class || '10'}-${item.user.division || 'A'}
+                <span class="badge" style="background:#eff6ff; color:#1e40af;">Metric: ${item.scoreMetric}</span>
               </div>
-              <div style="background:#fffbe0; border:1px solid #fef08a; padding:12px; border-radius:10px;">
-                <h5 style="margin:0 0 10px 0; color:#92400e;">⚠️ Priorities (&lt;70%)</h5>
-                <div id="opt-weak-${idx}"></div>
-              </div>
+              <div>▾</div>
             </div>
-            <h4 style="margin:20px 0 8px 0; color:var(--primary); font-weight:800;">Subject Overview</h4>
-            <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="opt-overview-${idx}"></tbody></table></div>
+            <div class="accordion-body" id="opt-acc-${idx}">
+              <div class="stats-grid">
+                <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Total Answered</p><h3 id="opt-tot-${idx}">${item.total}</h3></div>
+                <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Overall Accuracy</p><h3 id="opt-acc-val-${idx}">${item.accuracy}%</h3></div>
+              </div>
+              <div class="grid-2" style="margin-bottom:20px;">
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px;">
+                  <h5 style="margin:0 0 10px 0; color:#166534;">🌟 Strengths (≥70%)</h5>
+                  <div id="opt-strong-${idx}"></div>
+                </div>
+                <div style="background:#fffbe0; border:1px solid #fef08a; padding:12px; border-radius:10px;">
+                  <h5 style="margin:0 0 10px 0; color:#92400e;">⚠️ Priorities (&lt;70%)</h5>
+                  <div id="opt-weak-${idx}"></div>
+                </div>
+              </div>
+              <h4 style="margin:20px 0 8px 0; color:var(--primary); font-weight:800;">Subject Overview</h4>
+              <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="opt-overview-${idx}"></tbody></table></div>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `).join('');
 
-      scoredStudents.forEach((item, idx) => {
-        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(item.user.phone).trim()).map(t => ({
-          Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
-        }));
+        scoredStudents.forEach((item, idx) => {
+          const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(item.user.phone).trim()).map(t => ({
+            Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
+          }));
 
-        renderStudentDashboardAndOverview({ 
-          detailedAnswers: item.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
-          trialExams: stTrials 
-        }, `opt-tot-${idx}`, `opt-acc-val-${idx}`, `opt-strong-${idx}`, `opt-weak-${idx}`, `opt-overview-${idx}`);
-      });
+          renderStudentDashboardAndOverview({ 
+            detailedAnswers: item.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
+            trialExams: stTrials 
+          }, `opt-tot-${idx}`, `opt-acc-val-${idx}`, `opt-strong-${idx}`, `opt-weak-${idx}`, `opt-overview-${idx}`);
+        });
+      }
 
-      // 4. PERFORMANCE CONSOLIDATED SUMMARY (DEFAULT ALPHABETICAL BY NAME A-Z)
+      // 8. PERFORMANCE CONSOLIDATED SUMMARY (TAB 9) - DEFAULT ALPHABETICAL BY NAME A-Z
       consolidatedStudentsList = studentsOnly.map((st, index) => {
         const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
         return {
@@ -3124,50 +3184,53 @@
       sortAscending = true;
       renderConsolidatedTable();
 
-      // 5. RESET REQUESTS (TAB 7)
+      // 9. RESET REQUESTS (TAB 7)
       const resetBody = document.getElementById('admin-resets-body');
-      resetBody.innerHTML = (resetRequests || []).map(r => `
-        <tr>
-          <td><small>${r.request_id}</small></td>
-          <td>${formatDateStrict(r.timestamp)}</td>
-          <td><b>${escapeHtml(r.student_name)}</b></td>
-          <td>${r.class || '10'}-${r.division || 'A'}</td>
-          <td>${r.phone}</td>
-          <td><span class="badge">${r.subject}</span></td>
-          <td><b>${r.status}</b></td>
-          <td>
-            ${r.status === 'Pending' ? `
-              <button onclick="handleReset('${r.request_id}', 'Accepted', '${r.phone}', '${r.subject}')" class="btn btn-primary" style="padding:4px 8px; font-size:12px;">Accept</button>
-              <button onclick="handleReset('${r.request_id}', 'Rejected', '${r.phone}', '${r.subject}')" class="btn btn-danger" style="padding:4px 8px; font-size:12px;">Reject</button>
-            ` : '-'}
-          </td>
-        </tr>
-      `).join('');
+      if (resetBody) {
+        resetBody.innerHTML = (resetRequests || []).map(r => `
+          <tr>
+            <td><small>${r.request_id}</small></td>
+            <td>${formatDateStrict(r.timestamp)}</td>
+            <td><b>${escapeHtml(r.student_name)}</b></td>
+            <td>${r.class || '10'}-${r.division || 'A'}</td>
+            <td>${r.phone}</td>
+            <td><span class="badge">${r.subject}</span></td>
+            <td><b>${r.status}</b></td>
+            <td>
+              ${r.status === 'Pending' ? `
+                <button onclick="handleReset('${r.request_id}', 'Accepted', '${r.phone}', '${r.subject}')" class="btn btn-primary" style="padding:4px 8px; font-size:12px;">Accept</button>
+                <button onclick="handleReset('${r.request_id}', 'Rejected', '${r.phone}', '${r.subject}')" class="btn btn-danger" style="padding:4px 8px; font-size:12px;">Reject</button>
+              ` : '-'}
+            </td>
+          </tr>
+        `).join('') || '<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No reset requests found.</td></tr>';
+      }
 
-      // 6. QUESTION SUMMARY
+      // 10. SUBJECT-WISE QUESTION SUMMARY (TAB 8)
       const qsList = questions || [];
       const summaryBody = document.getElementById('admin-questions-summary-body');
-      let grandTotalQs = 0;
-
-      summaryBody.innerHTML = SUBJECT_ORDER.map((code, idx) => {
-        const count = qsList.filter(q => String(q.subject).trim().toUpperCase() === code).length;
-        grandTotalQs += count;
-        return `
-          <tr>
-            <td>${idx + 1}</td>
-            <td><span class="badge">${code}</span></td>
-            <td><b>${SUBJECT_MAP[code]}</b></td>
-            <td><b>${count}</b> Questions</td>
+      if (summaryBody) {
+        let grandTotalQs = 0;
+        summaryBody.innerHTML = SUBJECT_ORDER.map((code, idx) => {
+          const count = qsList.filter(q => String(q.subject).trim().toUpperCase() === code).length;
+          grandTotalQs += count;
+          return `
+            <tr>
+              <td>${idx + 1}</td>
+              <td><span class="badge">${code}</span></td>
+              <td><b>${SUBJECT_MAP[code]}</b></td>
+              <td><b>${count}</b> Questions</td>
+            </tr>
+          `;
+        }).join('') + `
+          <tr style="background:#eff6ff; font-weight:800; border-top:2px solid var(--primary) !important;">
+            <td colspan="3">GRAND TOTAL (ALL SUBJECTS)</td>
+            <td><span class="badge badge-success" style="font-size:13px;">${grandTotalQs} Total Questions</span></td>
           </tr>
         `;
-      }).join('') + `
-        <tr style="background:#eff6ff; font-weight:800; border-top:2px solid var(--primary) !important;">
-          <td colspan="3">GRAND TOTAL</td>
-          <td><span class="badge badge-success" style="font-size:13px;">${grandTotalQs} Total Questions</span></td>
-        </tr>
-      `;
+      }
 
-      // 7. QUESTION BANK
+      // 11. QUESTION BANK (TAB 8)
       selectedQuestionIds.clear();
       updateBulkDeleteQsButton();
       const selectAllCheckbox = document.getElementById('select-all-qs');
@@ -3183,22 +3246,30 @@
       });
 
       const qBody = document.getElementById('admin-questions-body');
-      qBody.innerHTML = sortedQuestions.map((q, idx) => `
-        <tr>
-          <td style="text-align:center;"><input type="checkbox" class="q-checkbox" data-id="${q.id}" onchange="toggleSelectQuestion('${q.id}', this.checked)"></td>
-          <td>${idx + 1}</td>
-          <td><span class="badge">${q.subject}</span></td>
-          <td>${escapeHtml(q.question)} ${q.image_url ? '📷' : ''}</td>
-          <td><b>${q.correct_answer}</b></td>
-          <td style="display:flex; gap:8px;">
-            <button onclick="openInstantEditModalById('${q.id}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
-            <button onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;">🗑️ Delete</button>
-          </td>
-        </tr>
-      `).join('') || '<tr><td colspan="6" style="text-align:center;">No questions found.</td></tr>';
+      if (qBody) {
+        qBody.innerHTML = sortedQuestions.map((q, idx) => `
+          <tr>
+            <td style="text-align:center;"><input type="checkbox" class="q-checkbox" data-id="${q.id}" onchange="toggleSelectQuestion('${q.id}', this.checked)"></td>
+            <td>${idx + 1}</td>
+            <td><span class="badge">${q.subject}</span></td>
+            <td>${escapeHtml(q.question)} ${q.image_url ? '📷' : ''}</td>
+            <td><b>${q.correct_answer}</b></td>
+            <td style="display:flex; gap:8px;">
+              <button onclick="openInstantEditModalById('${q.id}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
+              <button onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;">🗑️ Delete</button>
+            </td>
+          </tr>
+        `).join('') || '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No questions found.</td></tr>';
+      }
 
+      // 12. ENROLLED USERS WITH CREDENTIALS BUTTON (TAB 9)
       updateUsersTableLiveStatus();
+
+      // 13. AUDIT ACCESS LOGS GROUPED BY USER (TAB 11)
       renderGroupedAuditLogs(logs || []);
+
+      // 14. FAST PRE-RENDER OF LIVE ACTIVITY RADAR (TAB 10)
+      renderAllUsersOnlineCards();
     }
 
     // =========================================================================
