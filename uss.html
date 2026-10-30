@@ -21,6 +21,21 @@
       text-size-adjust: 100%;
     }
 
+    /* TEXT SELECTION INACTIVE WHEN SECURITY ACTIVE */
+    body.security-active {
+      -webkit-user-select: none !important;
+      -moz-user-select: none !important;
+      -ms-user-select: none !important;
+      user-select: none !important;
+    }
+    body.security-active input, 
+    body.security-active textarea {
+      -webkit-user-select: text !important;
+      -moz-user-select: text !important;
+      -ms-user-select: text !important;
+      user-select: text !important;
+    }
+
     :root {
       --primary: #1e40af;
       --primary-hover: #1e3a8a;
@@ -248,10 +263,27 @@
     .user-logs-header:hover { background: #eff6ff; }
   </style>
 </head>
-<body>
+<body class="security-active">
 
   <div id="progress-bar-container"><div id="progress-bar"></div></div>
   <div id="toast-container"></div>
+
+  <!-- FULL APP LOCKOUT OVERLAY (DAILY PRACTICE ALLOWANCE EXCEEDED) -->
+  <div id="app-quota-lock-overlay" class="modal-overlay" style="display:none; z-index:999999; background:rgba(15, 23, 42, 0.95);">
+    <div class="modal-card" style="text-align:center; max-width:540px; padding:35px 25px; border:2px solid #ef4444; box-shadow: 0 0 40px rgba(239, 68, 68, 0.4);">
+      <div style="font-size: 58px; margin-bottom: 12px;">🛑</div>
+      <h2 style="color: #991b1b; margin: 0 0 10px 0; font-size: 22px;">Daily Practice Time Expired</h2>
+      <p style="color: #334155; font-size: 14.5px; line-height: 1.6; margin: 0 0 16px 0;">
+        Dear <strong id="locked-student-name">Student</strong>, you have fully consumed your <strong>60-minute daily practice allowance</strong> for today (<span id="locked-today-date"></span>).
+      </p>
+      <div style="background:#fee2e2; border-left:4px solid #ef4444; padding:12px; border-radius:8px; text-align:left; font-size:13px; color:#7f1d1d; margin-bottom:20px;">
+        📌 <strong>Portal Policy:</strong> To avoid digital fatigue and encourage daily consistency, app access is closed for the remainder of today. Your 60-minute quota resets at <strong>12:00 AM Midnight</strong>.
+      </div>
+      <button class="btn btn-danger btn-block" onclick="logout(true)" style="padding:14px; font-weight:800; font-size:15px;">
+        Sign Out & Close Portal
+      </button>
+    </div>
+  </div>
 
   <!-- Confirmation Modal -->
   <div id="confirm-modal" class="modal-overlay" style="display: none;">
@@ -365,7 +397,7 @@
     </div>
   </div>
 
-  <!-- PROFILE & SETTINGS MODAL -->
+  <!-- PROFILE & SETTINGS MODAL (GRANTED TABS HIDDEN) -->
   <div id="settings-modal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -394,7 +426,6 @@
           <div><strong>Gender:</strong> <span id="set-gender">-</span></div>
           <div><strong>Class/Div:</strong> <span id="set-class">-</span>-<span id="set-div">-</span></div>
           <div style="grid-column: span 2;"><strong>Phone:</strong> <span id="set-phone">-</span></div>
-          <div style="grid-column: span 2;"><strong>Granted Tabs:</strong> <span id="set-tab-access" class="badge" style="background:#e0e7ff; color:#3730a3;">-</span></div>
         </div>
       </div>
 
@@ -428,7 +459,7 @@
             <span id="security-pill-status">Security Active: ENABLED</span>
           </div>
           <small style="color:var(--text-muted); font-size:12px; display:block; margin-top:8px;">
-            Prevents right-clicking, inspection shortcuts, and clipboard tampering when enabled.
+            Prevents right-clicking, inspection shortcuts, and disables all text selection on portal pages.
           </small>
         </div>
       </div>
@@ -449,16 +480,23 @@
     </div>
   </div>
 
-  <!-- Top Navbar -->
+  <!-- Top Navbar with Header Quota Clock -->
   <nav class="top-navbar" id="top-navbar" style="display: none;">
     <div class="brand-logo">
       <span>🎓 TDTTI USS PORTAL</span>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <!-- NETWORK STATUS PILL -->
       <div class="status-pill">
         <span id="network-led" class="led-dot led-green"></span>
         <span id="network-status-text">Online</span>
+      </div>
+
+      <!-- TODAY'S TIME QUOTA PILL (NEXT TO ONLINE) -->
+      <div id="header-quota-pill" class="status-pill" style="background: rgba(254, 243, 199, 0.18); border-color: #f59e0b; color: #fef08a;">
+        <span>⏳</span>
+        <span id="header-quota-text">60m 00s left</span>
       </div>
 
       <div style="text-align: right; font-size: 13px;">
@@ -475,48 +513,59 @@
   <!-- NUMBERED TAB NAVIGATION BAR -->
   <div class="tab-bar-container" id="tab-bar-container" style="display: none;">
     <button class="icon-tab-btn active tab-permission-item" data-tab-no="1" id="tab-practice" onclick="showSection('practice-sec')" title="Practice Center">
+      <span class="tab-no-pill">1</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Practice</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="2" id="tab-portfolio" onclick="showSection('portfolio-sec')" title="My Dashboard & Portfolio">
+      <span class="tab-no-pill">2</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Portfolio</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="3" id="tab-notif" onclick="showSection('notif-sec')" title="Notification Center">
+      <span class="tab-no-pill">3</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Notifs</span>
       <span class="tab-badge-dot" id="notif-badge-dot" style="display:none;"></span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="4" id="tab-refresh" onclick="refreshCurrentView()" title="Refresh Data">
+      <span class="tab-no-pill">4</span>
       <svg id="global-refresh-icon" viewBox="0 0 24 24" fill="none"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Refresh</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="5" id="tab-attendance" onclick="showSection('admin-attendance-sec')" title="Student Attendance Tracker">
+      <span class="tab-no-pill">5</span>
       <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/></svg>
       <span>Attendance</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="6" id="tab-student-reports" onclick="showSection('admin-report-sec')" title="Student Reports">
+      <span class="tab-no-pill">6</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Reports</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="7" id="tab-resets" onclick="showSection('admin-resets-sec')" title="Reset Requests">
+      <span class="tab-no-pill">7</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8m0 0V3m0 5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Resets</span>
       <span class="tab-badge-dot" id="reset-badge-dot" style="display:none;"></span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="8" id="tab-manage-qs" onclick="showSection('manage-qs-sec')" title="Manage Questions">
+      <span class="tab-no-pill">8</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Questions</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="9" id="tab-manage-users" onclick="showSection('manage-users-sec')" title="Manage Users & Optimization">
+      <span class="tab-no-pill">9</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Users</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="10" id="tab-online" onclick="showSection('admin-online-sec')" title="Live Online & Active Status">
+      <span class="tab-no-pill">10</span>
       <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>
       <span>Online</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="11" id="tab-logs" onclick="showSection('admin-logs-sec')" title="Audit Access Logs">
+      <span class="tab-no-pill">11</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Logs</span>
     </button>
@@ -554,7 +603,7 @@
     <!-- 1. PRACTICE TAB -->
     <section id="practice-sec" class="section" style="display:none;">
       <div id="practice-daily-limit-banner" style="display:none;"></div>
-      <h3 style="margin-top:0; color:var(--primary);">Practice Center</h3>
+      <h3 style="margin-top:0; color:var(--primary);">Practice Center (Tab 1)</h3>
 
       <div class="mode-selector-group" id="practice-mode-selector">
         <button class="mode-btn" onclick="switchPracticeMode('PRACTICE')">📖 Subject Practice</button>
@@ -668,9 +717,10 @@
 
     <!-- 2. MY DASHBOARD & PORTFOLIO SECTION -->
     <section id="portfolio-sec" class="section" style="display:none;">
-      <h3 style="margin-top:0; color:var(--primary); display:flex; align-items:center; gap:8px;">📅 My Attendance & Practice Time</h3>
       <div id="portfolio-attendance-section" class="card" style="background:#ffffff; border:1px solid var(--border-color); margin-bottom:25px;">
+        <h3 style="margin-top:0; color:var(--primary); display:flex; align-items:center; gap:8px;">📅 My Attendance & Practice Time</h3>
         <div id="portfolio-daily-allowance-box" style="margin-bottom:16px;"></div>
+        
         <div class="stats-grid" style="margin-bottom:18px;">
           <div class="card" style="margin:0; background:#f8fafc;">
             <p style="margin:0; color:var(--text-muted); font-size:13px; font-weight:700;">Total Time Practiced</p>
@@ -693,7 +743,7 @@
         </div>
       </div>
 
-      <h3 style="margin-top:0; color:var(--primary);">My Performance Dashboard</h3>
+      <h3 style="margin-top:0; color:var(--primary);">My Performance Dashboard (Tab 2)</h3>
       <div class="stats-grid">
         <div class="card" style="margin:0;">
           <p style="margin:0; color:var(--text-muted); font-size:13px; font-weight:700;">Total Answered Questions</p>
@@ -747,7 +797,7 @@
     <!-- 3. NOTIFICATION CENTER TAB -->
     <section id="notif-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin:0; color: #1B257D;">Notification Center </h2>
+        <h2 style="margin:0; color: #1B257D;">Notification Center (Tab 3)</h2>
         <button class="btn btn-outline" onclick="markAllNotifsAsRead()">Mark All Read ✓</button>
       </div>
       
@@ -797,12 +847,12 @@
     <section id="admin-attendance-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
         <div>
-          <h2 style="margin:0; color: #1B257D;">Student Daily Attendance Tracker </h2>
-          <p style="color:var(--text-muted); font-size:13px; margin:4px 0 0 0;">Grouped by student per day, ranked by highest practice usage.</p>
+          <h2 style="margin:0; color: #1B257D;">Student Daily Attendance Tracker (Tab 5)</h2>
+          <p style="color:var(--text-muted); font-size:13px; margin:4px 0 0 0;">Strictly tracks students. Unified question deduplication across practice and trial exams.</p>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button onclick="syncPastActivitiesToSupabase()" class="btn btn-outline" title="Scan practice and trial exams to populate attendance in Supabase">⚡</button>
-          <button onclick="loadAdminData()" class="btn btn-primary">🔄</button>
+          <button onclick="syncPastActivitiesToSupabase()" class="btn btn-outline" title="Scan practice and trial exams to populate attendance in Supabase">⚡ Sync Past Activities</button>
+          <button onclick="loadAdminData()" class="btn btn-primary">🔄 Refresh Attendance</button>
         </div>
       </div>
 
@@ -830,8 +880,8 @@
     <!-- TAB 6: EVALUATION REPORTS -->
     <section id="admin-report-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h2 style="margin:0; color: #1B257D;">Evaluation Reports </h2>
-        <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700;"></span>
+        <h2 style="margin:0; color: #1B257D;">Evaluation Reports (Tab 6)</h2>
+        <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700;">Alphabetical Order (A to Z)</span>
       </div>
       <div id="admin-student-accordion-list"></div>
     </section>
@@ -839,7 +889,7 @@
     <!-- TAB 7: RESET REQUESTS -->
     <section id="admin-resets-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h2 style="margin:0; color: #1B257D;">Reset Requests </h2>
+        <h2 style="margin:0; color: #1B257D;">Reset Requests (Tab 7)</h2>
         <button onclick="refreshResetRequests()" class="btn btn-outline" title="Refresh Requests">🔄 Refresh</button>
       </div>
       <div class="table-responsive">
@@ -855,17 +905,18 @@
     <!-- TAB 8: MANAGE QUESTIONS -->
     <section id="manage-qs-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
-        <h2 style="margin:0; color: #1B257D;">Manage Questions</h2>
+        <h2 style="margin:0; color: #1B257D;">Manage Questions (Tab 8)</h2>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <button type="button" class="btn btn-outline" onclick="openCSVGuideModal()" style="padding:8px 14px;" title="View CSV formatting guide and sample">💡</button>
+          <button type="button" class="btn btn-outline" onclick="openCSVGuideModal()" style="padding:8px 14px;" title="View CSV formatting guide and sample">💡 CSV Guide & Example</button>
           <label class="btn btn-primary" title="Import Questions from CSV" style="cursor:pointer; padding:8px 14px;">
             <input type="file" accept=".csv" onchange="handleCSVQuestionsImport(this)" hidden>
-            📥
+            📥 Bulk Import CSV
           </label>
         </div>
       </div>
 
       <form id="question-form" class="card">
+        <h3 style="margin-top:0; color:var(--primary); font-size:16px;">➕ Add New Question</h3>
         <input type="hidden" id="q-id">
         <div class="form-group">
           <label>Subject</label>
@@ -959,7 +1010,8 @@
     <section id="manage-users-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:8px;">
         <div>
-          <h2 style="margin:0; color: #1B257D;">Student Optimization Analytics</h2>
+          <h2 style="margin:0; color: #1B257D;">Student Optimization Analytics (Tab 9)</h2>
+          <small style="color:var(--text-muted); font-weight:700;">Ranked by Top Scorer Metric: (Accuracy % / Total Answered × 100) • Strictly students only</small>
         </div>
       </div>
       <div id="manage-users-analytics-accordion"></div>
@@ -971,7 +1023,8 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
           <div>
             <h3 style="margin:0; color: #1B257D;">Performance Consolidated Summary</h3>
-            </div>
+            <small style="color:var(--text-muted); font-weight:600;">Default Ordered: Alphabetical (A to Z) • Tap column headers to sort</small>
+          </div>
           <button class="btn btn-outline print-icon-btn no-print" onclick="printConsolidatedTable()">🖨️ Print Report</button>
         </div>
 
@@ -1031,9 +1084,12 @@
           <div style="grid-column: span 2;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
               <label style="font-size:12.5px; font-weight:800; color:var(--primary);">
-                Tab No Access
+                Tab No Access (Comma-separated, e.g. 1,2,3,4 or 1,2,3,4,5,6,7,8,9,10,11):
               </label>
               <div>
+                <span class="quick-preset-chip" onclick="setTabPreset('1,2,3,4')">Student (1-4)</span>
+                <span class="quick-preset-chip" onclick="setTabPreset('1,2,3,4,8')">Question Master (1-4, 8)</span>
+                <span class="quick-preset-chip" onclick="setTabPreset('1,2,3,4,5,6,7,8,9,10,11')">Full Admin (1-11)</span>
               </div>
             </div>
             <input type="text" id="u-tab-access" placeholder="e.g. 1,2,3,4 or 1,2,3,4,5,6,7,8,9,10,11" required value="1,2,3,4" style="font-weight:700; background:#fff; border:1.5px solid var(--primary);">
@@ -1064,22 +1120,22 @@
       </div>
     </section>
 
-    <!-- TAB 10: LIVE ONLINE USERS MONITOR (REARRANGED INTO ACTIVE & INACTIVE SECTIONS) -->
+    <!-- TAB 10: LIVE ONLINE USERS MONITOR -->
     <section id="admin-online-sec" class="section" style="display:none;">
       <div class="mobile-live-header-box">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
           <div style="display:flex; align-items:center; gap:10px;">
             <div class="radar-pulse-ring"><span class="radar-dot"></span></div>
             <div>
-              <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a; letter-spacing:-0.3px;">Live Activity Radar</h3>
-              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Separated into Active Now & Inactive users with specialized alerts</span>
+              <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a; letter-spacing:-0.3px;">Live Activity Radar (Tab 10)</h3>
+              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Student Activity Radar • Admin and Question Master excluded</span>
             </div>
           </div>
-          <button onclick="renderAllUsersOnlineCards()" class="btn btn-outline" style="padding:6px 12px; font-size:13px;" title="Refresh Live State">🔄</button>
+          <button onclick="renderAllUsersOnlineCards()" class="btn btn-outline" style="padding:6px 12px; font-size:13px;" title="Refresh Live State">🔄 Refresh</button>
         </div>
 
         <div style="margin-top:14px; position:relative;">
-          <input type="text" id="online-user-search" oninput="renderAllUsersOnlineCards()" placeholder="Search student name, class, or phone..." style="padding:10px 14px 10px 38px; font-size:13px; border-radius:12px; background:#ffffff; border:1px solid #cbd5e1;">
+          <input type="text" id="online-user-search" oninput="renderAllUsersOnlineCards()" placeholder="🔍 Search student name, class, or phone..." style="padding:10px 14px 10px 38px; font-size:13px; border-radius:12px; background:#ffffff; border:1px solid #cbd5e1;">
           <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px; color:#94a3b8;">🔍</span>
         </div>
       </div>
@@ -1089,7 +1145,7 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="led-dot led-green"></span>
-            <h3 style="margin:0; font-size:16px; color:#15803d;">ACTIVE USERS (Online Now)</h3>
+            <h3 style="margin:0; font-size:16px; color:#15803d;">🟢 ACTIVE STUDENTS (Online Now)</h3>
           </div>
           <span class="badge badge-success" id="badge-active-count">0 Active</span>
         </div>
@@ -1101,7 +1157,7 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="led-dot led-red"></span>
-            <h3 style="margin:0; font-size:16px; color:#b91c1c;">INACTIVE / OFFLINE USERS</h3>
+            <h3 style="margin:0; font-size:16px; color:#b91c1c;">🔴 INACTIVE / OFFLINE STUDENTS</h3>
           </div>
           <span class="badge badge-danger" id="badge-inactive-count">0 Offline</span>
         </div>
@@ -1109,11 +1165,11 @@
       </div>
     </section>
 
-    <!-- TAB 11: AUDIT ACCESS LOGS (GROUPED BY USER) -->
+    <!-- TAB 11: AUDIT ACCESS LOGS -->
     <section id="admin-logs-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
         <div>
-          <h2 style="margin:0; color: #1B257D;">Access Logs </h2>
+          <h2 style="margin:0; color: #1B257D;">Audit Access Logs (Tab 11)</h2>
           <small style="color:var(--text-muted); font-weight:600;">Grouped by user account with consolidated login sessions</small>
         </div>
         <button class="btn btn-outline" style="color:var(--danger); border-color:#fca5a5; padding:6px 14px;" onclick="clearAllLogs()">
@@ -1197,6 +1253,10 @@
     let isUserCurrentlyIdle = false;
     let currentActiveContext = 'Portal Dashboard';
 
+    // CONTINUOUS DAILY QUOTA CLOCK
+    const DAILY_MAX_QUOTA_SECONDS = 3600; // 60 Minutes Maximum
+    let globalQuotaInterval = null;
+
     // SORTING & STATE VARIABLES
     let sortColumn = 'name';
     let sortAscending = true;
@@ -1206,8 +1266,34 @@
     let selectedQuestionIds = new Set();
     let securityProtectionActive = true;
 
+    // =========================================================================
+    // EXCLUSION FILTER: DISTINGUISH STUDENTS FROM ADMIN & QUESTION MASTER
+    // =========================================================================
+    function isStaffOrAdminUser(userObj) {
+      if (!userObj) return false;
+      const roleStr = String(userObj.role || userObj.tabAccess || userObj.tab_access || '').toLowerCase();
+      const uName = String(userObj.username || '').toLowerCase();
+      const name = String(userObj.name || '').toLowerCase();
+
+      if (uName.includes('admin') || name.includes('admin')) return true;
+      if (uName.includes('question') || name.includes('question') || uName.includes('qm') || name.includes('master')) return true;
+      if (roleStr.includes('admin') || roleStr.includes('master')) return true;
+
+      const tabs = parseTabAccessList(roleStr);
+      // If user has access to Tab 8 (Questions) or Tab 9 (Users) or Tab 11 (Logs), they are Staff/Admin
+      if (tabs.includes('8') || tabs.includes('9') || tabs.includes('11') || tabs.includes('5') || tabs.includes('6')) {
+        return true;
+      }
+      return false;
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       if (currentUser) {
+        // Enforce daily quota lockout at startup if non-admin has finished allowance
+        if (!isStaffOrAdminUser(currentUser) && getTodayElapsedSeconds() >= DAILY_MAX_QUOTA_SECONDS) {
+          triggerAppLockout();
+          return;
+        }
         initializeSession();
         setupPresenceTracker();
         setupSingleSessionGuard();
@@ -1237,6 +1323,195 @@
       updateNetworkStatus();
     });
 
+    // =========================================================================
+    // DAILY TIME QUOTA ENGINE (STARTS RUNNING IMMEDIATELY AT APP ENTRY)
+    // =========================================================================
+    function getTodayKey(phoneOrUser) {
+      const d = new Date();
+      const id = phoneOrUser || currentUser?.phone || currentUser?.username || 'user';
+      return `usage_${id}_${d.getFullYear()}_${d.getMonth() + 1}_${d.getDate()}`;
+    }
+
+    function getTodayElapsedSeconds(phoneOrUser) {
+      const key = getTodayKey(phoneOrUser);
+      return parseInt(localStorage.getItem(key) || '0', 10);
+    }
+
+    function recordElapsedSecond() {
+      if (!currentUser || isStaffOrAdminUser(currentUser)) return;
+
+      const key = getTodayKey();
+      let current = parseInt(localStorage.getItem(key) || '0', 10);
+      current += 1;
+      localStorage.setItem(key, current);
+
+      // Periodically sync live attendance duration to Supabase every 30 seconds
+      if (current % 30 === 0) {
+        saveLiveAttendanceProgress(current);
+      }
+
+      checkAndEnforceQuota(current);
+    }
+
+    function startLiveAppQuotaClock() {
+      clearInterval(globalQuotaInterval);
+      if (!currentUser) return;
+
+      const quotaPill = document.getElementById('header-quota-pill');
+      const quotaText = document.getElementById('header-quota-text');
+
+      if (isStaffOrAdminUser(currentUser)) {
+        if (quotaPill) {
+          quotaPill.style.display = 'inline-flex';
+          quotaPill.style.borderColor = '#10b981';
+          quotaPill.style.color = '#a7f3d0';
+          if (quotaText) quotaText.innerText = 'Staff (Unlimited)';
+        }
+        return;
+      }
+
+      if (quotaPill) quotaPill.style.display = 'inline-flex';
+
+      const initialUsed = getTodayElapsedSeconds();
+      checkAndEnforceQuota(initialUsed);
+
+      // Continuous timer: increment second by second while user is in the app
+      globalQuotaInterval = setInterval(() => {
+        recordElapsedSecond();
+      }, 1000);
+    }
+
+    function checkAndEnforceQuota(elapsedSec) {
+      if (isStaffOrAdminUser(currentUser)) return;
+
+      const remainingSec = Math.max(0, DAILY_MAX_QUOTA_SECONDS - elapsedSec);
+      const remMins = Math.floor(remainingSec / 60);
+      const remSecs = remainingSec % 60;
+      const timeStr = `${remMins}m ${String(remSecs).padStart(2, '0')}s left`;
+
+      const quotaPill = document.getElementById('header-quota-pill');
+      const quotaText = document.getElementById('header-quota-text');
+      if (quotaText) quotaText.innerText = timeStr;
+
+      if (quotaPill) {
+        if (remainingSec <= 600) {
+          quotaPill.style.background = 'rgba(239, 68, 68, 0.25)';
+          quotaPill.style.borderColor = '#ef4444';
+          quotaPill.style.color = '#fca5a5';
+        } else {
+          quotaPill.style.background = 'rgba(254, 243, 199, 0.18)';
+          quotaPill.style.borderColor = '#f59e0b';
+          quotaPill.style.color = '#fef08a';
+        }
+      }
+
+      // Time expired: Lock application completely
+      if (remainingSec <= 0) {
+        clearInterval(globalQuotaInterval);
+        clearInterval(timerInterval);
+        triggerAppLockout();
+      }
+    }
+
+    function triggerAppLockout() {
+      saveLiveAttendanceProgress(DAILY_MAX_QUOTA_SECONDS);
+
+      document.getElementById('locked-student-name').innerText = currentUser?.name || currentUser?.username || 'Student';
+      document.getElementById('locked-today-date').innerText = new Date().toLocaleDateString('en-GB');
+
+      document.getElementById('app-quota-lock-overlay').style.display = 'flex';
+      document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+      document.getElementById('tab-bar-container').style.display = 'none';
+
+      const quotaText = document.getElementById('header-quota-text');
+      if (quotaText) quotaText.innerText = '0m 00s (Expired)';
+    }
+
+    function saveLiveAttendanceProgress(totalSecondsToday) {
+      if (!currentUser || isStaffOrAdminUser(currentUser)) return;
+      const cleanDate = new Date().toLocaleDateString('en-GB');
+      const mins = Math.floor(totalSecondsToday / 60);
+      const secs = totalSecondsToday % 60;
+
+      const attendanceEntry = {
+        attendance_id: `ATT-${currentUser.phone}-${cleanDate}-DAILY`,
+        student_name: currentUser.name || currentUser.username,
+        phone: String(currentUser.phone || ''),
+        class: String(currentUser.userClass || '10'),
+        division: String(currentUser.division || 'A'),
+        date: cleanDate,
+        timestamp: formatDateStrict(new Date().toISOString()),
+        activity: 'Daily USS Training Session',
+        duration_seconds: totalSecondsToday,
+        duration_text: `${mins}m ${secs}s`,
+        questions_attended: sessionAnswersLog.length || 0,
+        score: 'Active'
+      };
+
+      try {
+        supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' });
+      } catch(e) {}
+    }
+
+    // =========================================================================
+    // SECURITY PROTECTION (TEXT SELECTION INACTIVE)
+    // =========================================================================
+    function enableSecurityProtection() {
+      document.body.classList.add('security-active');
+
+      document.addEventListener('contextmenu', (e) => {
+        if (!securityProtectionActive) return;
+        e.preventDefault();
+        return false;
+      });
+
+      document.addEventListener('copy', (e) => {
+        if (!securityProtectionActive) return;
+        e.preventDefault();
+        showToast('⚠️ Copying content is restricted!', 'danger');
+      });
+
+      document.addEventListener('selectstart', (e) => {
+        if (!securityProtectionActive) return;
+        if (!['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+          e.preventDefault();
+          return false;
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (!securityProtectionActive) return;
+        const isCtrl = e.ctrlKey || e.metaKey;
+        if (e.keyCode === 123) { e.preventDefault(); return false; }
+        if (isCtrl && ['u', 's', 'p', 'a', 'c'].includes(e.key.toLowerCase())) {
+          if (['a', 'c'].includes(e.key.toLowerCase()) && ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+          e.preventDefault();
+          return false;
+        }
+      });
+    }
+
+    function toggleSecurityModePill() {
+      securityProtectionActive = !securityProtectionActive;
+      const pill = document.getElementById('security-pill-btn');
+      const statusText = document.getElementById('security-pill-status');
+
+      if (securityProtectionActive) {
+        document.body.classList.add('security-active');
+        pill.className = 'tap-toggle-pill enabled';
+        statusText.innerText = 'Security Active: ENABLED';
+        showToast('Security protection ENABLED (Text Selection Disabled)', 'success');
+      } else {
+        document.body.classList.remove('security-active');
+        pill.className = 'tap-toggle-pill disabled';
+        statusText.innerText = 'Security Active: DISABLED';
+        showToast('Security protection DISABLED', 'warning');
+      }
+    }
+
+    // =========================================================================
+    // SINGLE-SESSION GUARD & PRESENCE
+    // =========================================================================
     function setupSingleSessionGuard() {
       if (!currentUser || !currentUser.username) return;
 
@@ -1244,7 +1519,7 @@
       sessionGuardChannel
         .on('broadcast', { event: 'force_logout' }, (msg) => {
           if (msg && msg.payload && msg.payload.newSessionId !== currentUser.sessionId) {
-            alert('⚠️ Session Expired: You were logged out because this account was logged into from another device or browser window.');
+            alert('⚠️ Session Expired: Logged in from another device/window.');
             logout(true);
           }
         })
@@ -1286,7 +1561,9 @@
       });
 
       window.addEventListener('blur', () => {
-      updatePresenceLiveState('Opened Another App / Window Inactive');
+        if (document.visibilityState !== 'hidden') {
+          updatePresenceLiveState('Window Inactive / Another App');
+        }
       });
 
       window.addEventListener('focus', () => {
@@ -1301,7 +1578,7 @@
         clearTimeout(idleTimer);
         idleTimer = setTimeout(() => {
           isUserCurrentlyIdle = true;
-          updatePresenceLiveState('Inactive / Idle (No Interaction for >90s)');
+          updatePresenceLiveState('Inactive / Idle (>90s)');
         }, 90000);
       };
 
@@ -1311,7 +1588,7 @@
       resetIdleTimer();
 
       window.addEventListener('beforeunload', () => {
-        updatePresenceLiveState('Left / Closed the Portal Page');
+        updatePresenceLiveState('Left / Closed the Portal');
       });
     }
 
@@ -1325,7 +1602,6 @@
         userClass: currentUser.userClass || '10',
         division: currentUser.division || 'A',
         phone: currentUser.phone || '',
-        tabAccess: currentUser.tabAccess || '1,2,3,4',
         liveStatus: isOnlineActive ? 'Online & Active' : (navigator.onLine ? statusMessage : 'Offline (Lost Connection)'),
         isGreen: isOnlineActive,
         currentContext: currentActiveContext || 'Portal Dashboard',
@@ -1336,172 +1612,161 @@
 
       try {
         await presenceChannel.track(payload);
-      } catch (e) {
-        console.warn("Presence track error", e);
-      }
+      } catch (e) {}
     }
 
     // =========================================================================
-// ROBUST LIVE ACTIVITY RADAR (FIXED CASE & FALLBACK MATCHING)
-// =========================================================================
-function renderAllUsersOnlineCards() {
-  const activeFeed = document.getElementById('online-active-feed');
-  const inactiveFeed = document.getElementById('online-inactive-feed');
-  if (!activeFeed || !inactiveFeed) return;
+    // LIVE ACTIVITY RADAR (STRICTLY STUDENTS; TAB ACCESS HIDDEN)
+    // =========================================================================
+    function renderAllUsersOnlineCards() {
+      const activeFeed = document.getElementById('online-active-feed');
+      const inactiveFeed = document.getElementById('online-inactive-feed');
+      if (!activeFeed || !inactiveFeed) return;
 
-  const usersList = cachedAdminData?.users || [];
-  const logsList = cachedAdminData?.logs || [];
-  const adminIsOnline = navigator.onLine;
-  const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
+      const usersList = cachedAdminData?.users || [];
+      const logsList = cachedAdminData?.logs || [];
+      const adminIsOnline = navigator.onLine;
+      const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
 
-  // 1. Gather all presence entries into a normalized map and list
-  let presenceEntries = [];
-  try {
-    if (presenceChannel) {
-      const state = presenceChannel.presenceState();
-      for (const key in state) {
-        const list = state[key];
-        if (list && list.length > 0) {
-          presenceEntries.push(list[list.length - 1]);
+      let presenceEntries = [];
+      try {
+        if (presenceChannel) {
+          const state = presenceChannel.presenceState();
+          for (const key in state) {
+            const list = state[key];
+            if (list && list.length > 0) presenceEntries.push(list[list.length - 1]);
+          }
         }
+      } catch (e) {
+        presenceEntries = [];
       }
-    }
-  } catch (e) {
-    presenceEntries = [];
-  }
 
-  const activeList = [];
-  const inactiveList = [];
+      const activeList = [];
+      const inactiveList = [];
 
-  usersList.forEach(u => {
-    const cleanDbUser = String(u.username || '').trim().toLowerCase();
-    const cleanDbPhone = String(u.phone || '').trim();
-    const cleanDbName = String(u.name || '').trim().toLowerCase();
+      // Exclude Admin & Question Master from Student Radar
+      const onlyStudents = usersList.filter(u => !isStaffOrAdminUser(u));
 
-    // MATCH BY USERNAME, PHONE, OR NAME (Case-Insensitive)
-    const pres = presenceEntries.find(p => {
-      const pUser = String(p.username || '').trim().toLowerCase();
-      const pPhone = String(p.phone || '').trim();
-      const pName = String(p.name || '').trim().toLowerCase();
-      return (pUser && pUser === cleanDbUser) || 
-             (pPhone && cleanDbPhone && pPhone === cleanDbPhone) ||
-             (pName && pName === cleanDbName);
-    });
+      onlyStudents.forEach(u => {
+        const cleanDbUser = String(u.username || '').trim().toLowerCase();
+        const cleanDbPhone = String(u.phone || '').trim();
+        const cleanDbName = String(u.name || '').trim().toLowerCase();
 
-    // Check if heartbeat/timestamp is recent (within last 3 minutes)
-    const isRecentlyActive = pres && (Date.now() - (pres.timestamp || 0) < 180000);
+        const pres = presenceEntries.find(p => {
+          const pUser = String(p.username || '').trim().toLowerCase();
+          const pPhone = String(p.phone || '').trim();
+          const pName = String(p.name || '').trim().toLowerCase();
+          return (pUser && pUser === cleanDbUser) || 
+                 (pPhone && cleanDbPhone && pPhone === cleanDbPhone) ||
+                 (pName && pName === cleanDbName);
+        });
 
-    // Fallback: Check if their latest database log is marked "Active Now"
-    const userLastLog = logsList.find(l => 
-      String(l.identifier || '').trim().toLowerCase() === cleanDbUser ||
-      String(l.identifier || '').trim().toLowerCase() === cleanDbName
-    );
-    const hasActiveDbSession = userLastLog && userLastLog.logout_time === 'Active Now';
+        const isRecentlyActive = pres && (Date.now() - (pres.timestamp || 0) < 180000);
+        const userLastLog = logsList.find(l => 
+          String(l.identifier || '').trim().toLowerCase() === cleanDbUser ||
+          String(l.identifier || '').trim().toLowerCase() === cleanDbName
+        );
+        const hasActiveDbSession = userLastLog && userLastLog.logout_time === 'Active Now';
 
-    // A student is ACTIVE if online via presence channel OR has an active heartbeat/session
-    const isOnlineAndActive = adminIsOnline && Boolean(
-      (pres && (pres.isGreen || isRecentlyActive)) || (hasActiveDbSession && pres)
-    );
+        const isOnlineAndActive = adminIsOnline && Boolean(
+          (pres && (pres.isGreen || isRecentlyActive)) || (hasActiveDbSession && pres)
+        );
 
-    let statusText = 'Offline';
-    if (!adminIsOnline) {
-      statusText = 'Offline (Admin Disconnected)';
-    } else if (pres && pres.liveStatus) {
-      statusText = pres.liveStatus;
-    } else if (hasActiveDbSession) {
-      statusText = 'Online (Active Session)';
-    }
+        let statusText = 'Offline';
+        if (!adminIsOnline) {
+          statusText = 'Offline (Admin Disconnected)';
+        } else if (pres && pres.liveStatus) {
+          statusText = pres.liveStatus;
+        } else if (hasActiveDbSession) {
+          statusText = 'Online (Active Session)';
+        }
 
-    const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
-    const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
-    const activeContext = pres?.currentContext || (isOnlineAndActive ? 'Practice Center' : 'Offline / Inactive');
+        const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
+        const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
+        const activeContext = pres?.currentContext || (isOnlineAndActive ? 'Practice Center' : 'Offline / Inactive');
 
-    const userData = {
-      ...u,
-      isOnline: isOnlineAndActive,
-      statusText,
-      loginTime,
-      logoutTime,
-      activeContext
-    };
+        const userData = {
+          ...u,
+          isOnline: isOnlineAndActive,
+          statusText,
+          loginTime,
+          logoutTime,
+          activeContext
+        };
 
-    if (searchInput) {
-      const matchName = String(u.name || '').toLowerCase().includes(searchInput);
-      const matchUser = String(u.username || '').toLowerCase().includes(searchInput);
-      const matchClass = `${u.class || ''}-${u.division || ''}`.toLowerCase().includes(searchInput);
-      const matchPhone = String(u.phone || '').toLowerCase().includes(searchInput);
-      if (!matchName && !matchUser && !matchClass && !matchPhone) return;
-    }
+        if (searchInput) {
+          const matchName = String(u.name || '').toLowerCase().includes(searchInput);
+          const matchUser = String(u.username || '').toLowerCase().includes(searchInput);
+          const matchClass = `${u.class || ''}-${u.division || ''}`.toLowerCase().includes(searchInput);
+          const matchPhone = String(u.phone || '').toLowerCase().includes(searchInput);
+          if (!matchName && !matchUser && !matchClass && !matchPhone) return;
+        }
 
-    if (isOnlineAndActive) activeList.push(userData);
-    else inactiveList.push(userData);
-  });
+        if (isOnlineAndActive) activeList.push(userData);
+        else inactiveList.push(userData);
+      });
 
-  const actCountEl = document.getElementById('badge-active-count');
-  const inactCountEl = document.getElementById('badge-inactive-count');
-  if (actCountEl) actCountEl.innerText = `${activeList.length} Active Now`;
-  if (inactCountEl) inactCountEl.innerText = `${inactiveList.length} Offline / Inactive`;
+      document.getElementById('badge-active-count').innerText = `${activeList.length} Active Now`;
+      document.getElementById('badge-inactive-count').innerText = `${inactiveList.length} Offline / Inactive`;
 
-  const renderCard = (u, idx, isAct) => {
-    const initials = (u.name || u.username).substring(0, 2).toUpperCase();
-    const cardId = `pres-detail-${isAct ? 'act' : 'inact'}-${idx}`;
-    const tabAccessList = parseTabAccessList(u.role || u.tab_access || '1,2,3,4');
+      const renderCard = (u, idx, isAct) => {
+        const initials = (u.name || u.username).substring(0, 2).toUpperCase();
+        const cardId = `pres-detail-${isAct ? 'act' : 'inact'}-${idx}`;
 
-    return `
-      <div class="mobile-presence-card ${isAct ? 'is-online' : 'is-offline'}" onclick="toggleAccordion('${cardId}')">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-          <div class="presence-avatar-circle ${isAct ? 'green' : 'red'}">
-            <span>${initials}</span>
-            <span class="online-indicator-dot ${isAct ? 'green' : 'red'}"></span>
-          </div>
+        return `
+          <div class="mobile-presence-card ${isAct ? 'is-online' : 'is-offline'}" onclick="toggleAccordion('${cardId}')">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+              <div class="presence-avatar-circle ${isAct ? 'green' : 'red'}">
+                <span>${initials}</span>
+                <span class="online-indicator-dot ${isAct ? 'green' : 'red'}"></span>
+              </div>
 
-          <div style="flex:1; min-width:0;">
-            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-              <strong style="font-size:15px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                ${escapeHtml(u.name || u.username)}
-              </strong>
-              <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                  <strong style="font-size:15px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${escapeHtml(u.name || u.username)}
+                  </strong>
+                  <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
+                </div>
+                <div style="margin-top:4px;">
+                  <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
+                    <span>${isAct ? '⚡' : '💤'}</span>
+                    <span>${escapeHtml(u.activeContext)}</span>
+                  </span>
+                </div>
+              </div>
+
+              <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}')" 
+                      class="mobile-whatsapp-btn" title="${isAct ? 'Encourage Student' : 'Alert Student to Practice'}">
+                💬
+              </button>
             </div>
-            <div style="margin-top:4px;">
-              <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
-                <span>${isAct ? '⚡' : '💤'}</span>
-                <span>${escapeHtml(u.activeContext)}</span>
-              </span>
+
+            <div id="${cardId}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:12.5px; color:#475569;">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                <div><strong>State:</strong> <span style="font-weight:700; color:${isAct ? 'var(--success)' : 'var(--danger)'};">${escapeHtml(u.statusText)}</span></div>
+                <div><strong>Phone:</strong> ${u.phone ? escapeHtml(u.phone) : '-'}</div>
+                <div><strong>Login:</strong> ${u.loginTime}</div>
+                <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
+              </div>
             </div>
           </div>
+        `;
+      };
 
-          <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}')" 
-                  class="mobile-whatsapp-btn" title="${isAct ? 'Praise & Encourage' : 'Send Urge / Alert to Practice'}">
-            💬
-          </button>
-        </div>
+      activeFeed.innerHTML = activeList.length > 0
+        ? activeList.map((u, idx) => renderCard(u, idx, true)).join('')
+        : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">No active students online right now.</div>`;
 
-        <div id="${cardId}" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:12.5px; color:#475569;">
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-            <div><strong>State:</strong> <span style="font-weight:700; color:${isAct ? 'var(--success)' : 'var(--danger)'};">${escapeHtml(u.statusText)}</span></div>
-            <div><strong>Phone:</strong> ${u.phone ? escapeHtml(u.phone) : '-'}</div>
-            <div><strong>Login:</strong> ${u.loginTime}</div>
-            <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
-            <div style="grid-column: span 2;"><strong>Tab No Access:</strong> <span class="badge" style="background:#e0e7ff; color:#3730a3;">Tabs: ${tabAccessList.join(', ')}</span></div>
-          </div>
-        </div>
-      </div>
-    `;
-  };
-
-  activeFeed.innerHTML = activeList.length > 0
-    ? activeList.map((u, idx) => renderCard(u, idx, true)).join('')
-    : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">No active students online right now.</div>`;
-
-  inactiveFeed.innerHTML = inactiveList.length > 0
-    ? inactiveList.map((u, idx) => renderCard(u, idx, false)).join('')
-    : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">All registered students are active!</div>`;
-}
+      inactiveFeed.innerHTML = inactiveList.length > 0
+        ? inactiveList.map((u, idx) => renderCard(u, idx, false)).join('')
+        : `<div class="mobile-presence-card" style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">All students are currently active!</div>`;
+    }
 
     function sendTailoredRadarWhatsapp(name, phone, isActive, context) {
       let text = '';
       if (isActive) {
-        text = `🌟 TDTTI USS TRAINING PORTAL\n\nDear ${name},\nGreat job! You are currently ACTIVE and practicing in [${context}]. Keep up the steady focus and dedication toward your USS Exam success! 🚀📚`;
+        text = `🌟 TDTTI USS TRAINING PORTAL\n\nDear ${name},\nGreat job! You are currently ACTIVE and practicing in [${context}]. Keep up the steady focus toward your USS Exam success! 🚀📚`;
       } else {
         text = `⚠️ TDTTI USS PORTAL - URGENT PRACTICE REMINDER\n\nDear ${name},\nYou are currently OFFLINE / INACTIVE on the USS Training Portal.\nDaily continuous practice is essential to qualify for the USS Scholarship! Please log in immediately and complete today's Subject Practice & Trial Exam sessions. ✍️🎯`;
       }
@@ -1510,156 +1775,233 @@ function renderAllUsersOnlineCards() {
     }
 
     // =========================================================================
-    // PERFORMANCE CONSOLIDATED WHATSAPP DETAILED REPORT GENERATOR
+    // UNIFIED STUDENT QUESTIONS DEDUPLICATION HELPER
     // =========================================================================
-    function sendConsolidatedStudentWhatsapp(phone, name, userClass, div) {
-      if (!cachedAdminData) return;
-      const { allAnswers, allTrialExams } = cachedAdminData;
+    function getStudentUniqueAnswerRecords(studentPhone, allAnswers, allTrialExams) {
+      const cleanPhone = String(studentPhone || '').trim();
+      const stAnswers = (allAnswers || []).filter(a => String(a.phone).trim() === cleanPhone);
+      const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === cleanPhone);
 
-      const stPhone = String(phone).trim();
-      const stAnswers = (allAnswers || []).filter(a => String(a.phone).trim() === stPhone);
-      const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === stPhone);
+      const seenQKeys = new Set();
+      const combined = [];
 
-      // Subject-wise practice breakdown
-      const subjectStats = {};
       stAnswers.forEach(a => {
-        const s = a.subject || 'General';
-        if (!subjectStats[s]) subjectStats[s] = { total: 0, correct: 0, wrong: 0 };
-        subjectStats[s].total++;
-        if (a.is_correct === 'YES' || a.is_correct === true) subjectStats[s].correct++;
-        else subjectStats[s].wrong++;
-      });
-
-      let subPracticeLines = [];
-      let totalPracticeQ = 0;
-      let totalPracticeCorr = 0;
-
-      SUBJECT_ORDER.forEach(code => {
-        if (subjectStats[code]) {
-          const st = subjectStats[code];
-          totalPracticeQ += st.total;
-          totalPracticeCorr += st.correct;
-          const pct = Math.round((st.correct / st.total) * 100);
-          subPracticeLines.push(`• ${SUBJECT_MAP[code] || code}: ${st.correct}/${st.total} (${pct}%)`);
+        const key = `${a.question_id || a.question_text}`;
+        if (!seenQKeys.has(key)) {
+          seenQKeys.add(key);
+          combined.push({
+            subject: a.subject,
+            question_id: a.question_id,
+            question_text: a.question_text,
+            user_answer: a.user_answer,
+            correct_answer: a.correct_answer,
+            is_correct: (a.is_correct === 'YES' || a.is_correct === true),
+            timestamp: a.timestamp
+          });
         }
       });
 
-      // Trial Exams summary
-      let totalTrialExams = stTrials.length;
-      let totalTrialQs = 0;
-      let totalTrialCorr = 0;
-      let latestTrialScore = '-';
-
-      stTrials.forEach((t, i) => {
-        totalTrialQs += Number(t.total_questions || 0);
-        totalTrialCorr += Number(t.score || 0);
-        if (i === 0) latestTrialScore = `${t.score}/${t.total_questions}`;
+      stTrials.forEach(tr => {
+        let tAns = typeof tr.answers_json === 'string' ? JSON.parse(tr.answers_json || '[]') : (tr.answers_json || []);
+        tAns.forEach(ta => {
+          const key = `${ta.QuestionID || ta.QuestionText || ta.question_id || ta.question_text}`;
+          if (!seenQKeys.has(key)) {
+            seenQKeys.add(key);
+            combined.push({
+              subject: ta.Subject || ta.subject,
+              question_id: ta.QuestionID || ta.question_id,
+              question_text: ta.QuestionText || ta.question_text,
+              user_answer: ta.UserAnswer || ta.user_answer,
+              correct_answer: ta.CorrectAnswer || ta.correct_answer,
+              is_correct: (ta.IsCorrect === true || ta.IsCorrect === 'YES' || ta.is_correct === true || ta.is_correct === 'YES'),
+              timestamp: tr.timestamp
+            });
+          }
+        });
       });
 
-      const grandTotal = totalPracticeQ + totalTrialQs;
-      const grandCorrect = totalPracticeCorr + totalTrialCorr;
-      const grandPct = grandTotal ? Math.round((grandCorrect / grandTotal) * 100) : 0;
+      const total = combined.length;
+      const correct = combined.filter(c => c.is_correct).length;
+      const accuracy = total ? Math.round((correct / total) * 100) : 0;
 
-      let msg = `🎓 TDTTI USS TRAINING PORTAL 2026-27\n`;
-      msg += `📊 CONSOLIDATED PERFORMANCE REPORT\n\n`;
-      msg += `Student: ${name}\n`;
-      msg += `Class & Div: ${userClass}-${div}\n`;
-      msg += `Phone: ${phone}\n`;
-      msg += `─────────────────────────\n`;
-      msg += `🏆 Overall Performance: ${grandCorrect}/${grandTotal} (${grandPct}%)\n\n`;
-      
-      msg += `📖 SUBJECT PRACTICE BREAKDOWN:\n`;
-      if (subPracticeLines.length > 0) {
-        msg += subPracticeLines.join('\n') + '\n';
-      } else {
-        msg += `• No subject practice recorded yet.\n`;
-      }
-
-      msg += `\n⭐ TRIAL EXAM SUMMARY:\n`;
-      msg += `• Total Trials Taken: ${totalTrialExams}\n`;
-      if (totalTrialExams > 0) {
-        const trialPct = totalTrialQs ? Math.round((totalTrialCorr / totalTrialQs) * 100) : 0;
-        msg += `• Cumulative Trial Score: ${totalTrialCorr}/${totalTrialQs} (${trialPct}%)\n`;
-        msg += `• Latest Trial Exam: ${latestTrialScore}\n`;
-      } else {
-        msg += `• No trial exams taken yet.\n`;
-      }
-
-      msg += `─────────────────────────\n`;
-      msg += `Keep practicing daily to secure top honors in USS 2026-27!`;
-
-      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-      window.open(url, '_blank');
-    }
-
-    function sendAttendanceWhatsappAlert(name, phone, date, activities, duration, remaining, questions) {
-      const text = `Hi ${name}! Here is your TDTTI USS Training Portal Daily Attendance Report for ${date}:
-• Activities: ${activities}
-• Daily Practice Time: ${duration}
-• Remaining Allowance Today: ${remaining}
-• Questions Practiced: ${questions}
-Keep up the daily practice!`;
-
-      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-      window.open(url, '_blank');
+      return { combined, total, correct, accuracy, trialsCount: stTrials.length };
     }
 
     // =========================================================================
-    // UPDATE ENROLLED USERS TABLE
+    // AUTHENTICATION & LOGIN
     // =========================================================================
-    function updateUsersTableLiveStatus() {
-  const uBody = document.getElementById('admin-users-body');
-  if (!uBody || !cachedAdminData?.users) return;
+    async function handleLogin(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('login-username').value.trim();
+      const passwordInput = document.getElementById('login-password').value.trim();
+      setProgress(50);
 
-  let presenceMap = {};
-  try {
-    if (presenceChannel) {
-      const state = presenceChannel.presenceState();
-      for (const key in state) {
-        const list = state[key];
-        if (list && list.length > 0) presenceMap[key] = list[list.length - 1];
+      try {
+        const { data: user, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .ilike('username', usernameInput)
+          .eq('password', passwordInput)
+          .maybeSingle();
+
+        setProgress(100);
+
+        if (error) {
+          showToast(`Supabase Error: ${error.message}`, 'danger');
+          return;
+        }
+
+        if (!user) {
+          showToast('Invalid Username or Password', 'danger');
+          return;
+        }
+
+        const isStaff = isStaffOrAdminUser(user);
+
+        // Daily Allowance Check upon login attempt
+        if (!isStaff) {
+          const usedSec = getTodayElapsedSeconds(user.phone || user.username);
+          if (usedSec >= DAILY_MAX_QUOTA_SECONDS) {
+            currentUser = { name: user.name, phone: user.phone, username: user.username };
+            triggerAppLockout();
+            return;
+          }
+        }
+
+        if (String(user.status).toLowerCase() === 'blocked') {
+          showToast('Your account is blocked. Contact Admin.', 'danger');
+          return;
+        }
+
+        const nowStr = formatDateStrict(new Date().toISOString());
+        const logId = 'LOG-' + Date.now();
+        const newSessionId = 'SESS-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+
+        await supabaseClient
+          .from('logs')
+          .update({ logout_time: 'Auto Logged Out (New Login)' })
+          .eq('identifier', user.username)
+          .eq('logout_time', 'Active Now');
+
+        await supabaseClient.from('logs').insert([{ 
+          timestamp: nowStr, 
+          log_id: logId, 
+          identifier: user.username, 
+          role: user.role, 
+          login_status: 'SUCCESS', 
+          login_time: nowStr, 
+          logout_time: 'Active Now', 
+          device: getDeviceInfo() 
+        }]);
+
+        const isDefaultPass = (passwordInput === 'admin123' || passwordInput === 'student123' || passwordInput === usernameInput);
+
+        currentUser = {
+          name: user.name || user.username,
+          gender: user.gender || 'Male',
+          userClass: user.class || '10',
+          division: user.division || 'A',
+          firstLanguage: (user.first_language || 'MI').toUpperCase(),
+          phone: user.phone,
+          role: user.role || '1,2,3,4',
+          tabAccess: user.role || '1,2,3,4',
+          username: user.username,
+          isDefaultPass: isDefaultPass,
+          loginTimeStr: nowStr,
+          sessionId: newSessionId,
+          logId: logId
+        };
+
+        if (isDefaultPass) {
+          document.getElementById('first-time-pass-modal').style.display = 'flex';
+          return;
+        }
+
+        if (document.getElementById('keep-logged-pill').classList.contains('active')) {
+          localStorage.setItem('USS_USER', JSON.stringify(currentUser));
+        } else {
+          sessionStorage.setItem('USS_USER', JSON.stringify(currentUser));
+        }
+
+        initializeSession();
+        setupPresenceTracker();
+        setupSingleSessionGuard();
+        showToast('Logged in successfully!', 'success');
+      } catch (err) {
+        setProgress(100);
+        showToast(`System Error: ${err.message}`, 'danger');
       }
     }
-  } catch (e) {
-    presenceMap = {};
-  }
 
-  const users = cachedAdminData.users;
-  uBody.innerHTML = users.map(u => {
-    const pres = presenceMap[u.username];
-    const isOnline = navigator.onLine && Boolean(pres && pres.isGreen);
-    const tabAccessList = parseTabAccessList(u.role || u.tab_access || '1,2,3,4');
+    function filterPracticeSubjectDropdown() {
+      if (!currentUser) return;
+      const select = document.getElementById('subject-select');
+      const userLang = (currentUser.firstLanguage || 'MI').trim().toUpperCase();
 
-    return `
-      <tr>
-        <td><b>${escapeHtml(u.name)}</b></td>
-        <td>${u.gender || 'Male'}</td>
-        <td>${u.class || '10'}</td>
-        <td>${u.division || 'A'}</td>
-        <td><span class="badge badge-success">${u.first_language || 'MI'}</span></td>
-        <td>${u.phone}</td>
-        <td>${escapeHtml(u.username)}</td>
-        <td><span class="badge" style="background:#e0e7ff; color:#3730a3;">Tabs: ${tabAccessList.join(', ')}</span></td>
-        <td>
-          <span class="status-pill" style="padding:4px 10px; background:${isOnline ? '#dcfce7' : '#fee2e2'}; color:${isOnline ? '#15803d' : '#b91c1c'}; border:1px solid ${isOnline ? '#86efac' : '#fca5a5'};">
-            <span class="led-dot ${isOnline ? 'led-green' : 'led-red'}" style="width:9px; height:9px;"></span>
-            <b>${isOnline ? 'Online' : 'Offline'}</b>
-          </span>
-        </td>
-        <td style="display:flex; gap:6px; align-items:center;">
-          <button onclick="sendUserCredentialsWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.password || '')}', '${escapeHtml(u.class || '10')}', '${escapeHtml(u.division || 'A')}')" 
-                  class="btn btn-outline" 
-                  style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" 
-                  title="Send Login Credentials via WhatsApp">
-            💬
-          </button>
-          <button onclick="editUserByUsername('${u.username}')" class="btn btn-outline" style="padding:4px 8px;">✏️ </button>
-          <button onclick="confirmDeleteEntireUser('${u.username}', '${u.phone}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Permanently Delete User & All Data">🗑️</button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
+      Array.from(select.options).forEach(opt => {
+        if (opt.getAttribute('data-firstlang') === 'true') {
+          if (opt.value.toUpperCase() === userLang) {
+            opt.style.display = '';
+            opt.disabled = false;
+          } else {
+            opt.style.display = 'none';
+            opt.disabled = true;
+          }
+        }
+      });
+    }
+
+    function initializeSession() {
+      document.getElementById('login-sec').style.display = 'none';
+      document.getElementById('top-navbar').style.display = 'flex';
+      document.getElementById('tab-bar-container').style.display = 'flex';
+
+      document.getElementById('user-display-name').innerText = currentUser.name || currentUser.username;
+      document.getElementById('user-display-class').innerText = currentUser.userClass || '10';
+      document.getElementById('user-display-div').innerText = currentUser.division || 'A';
+
+      filterPracticeSubjectDropdown();
+      startLiveAppQuotaClock();
+      applyUserTabPermissions();
+      checkAdminPendingAlerts();
+      loadNotifications();
+    }
+
+    async function checkAdminPendingAlerts() {
+      const { data: pending } = await supabaseClient.from('reset_requests').select('*').eq('status', 'Pending');
+      const resetBadge = document.getElementById('reset-badge-dot');
+      if (resetBadge) {
+        resetBadge.style.display = (pending && pending.length > 0) ? 'block' : 'none';
+      }
+    }
+
+    async function handleChangePassword(e) {
+      e.preventDefault();
+      const newPass = document.getElementById('new-password').value.trim();
+      if (!newPass) return;
+
+      const { error } = await supabaseClient.from('users').update({ password: newPass }).eq('username', currentUser.username);
+      if (!error) {
+        showToast('Password updated successfully!', 'success');
+        document.getElementById('change-pass-form').reset();
+        document.getElementById('settings-modal').style.display = 'none';
+      } else {
+        showToast('Failed to update password.', 'danger');
+      }
+    }
+
+    async function logout(forced = false) {
+      clearInterval(globalQuotaInterval);
+      if (!forced) await updatePresenceLiveState('Logged Out');
+      if (currentUser && currentUser.logId) {
+        await supabaseClient.from('logs').update({ 
+          logout_time: forced ? 'Auto Logged Out (Quota Expired or Device Switch)' : formatDateStrict(new Date().toISOString()) 
+        }).eq('log_id', currentUser.logId);
+      }
+      localStorage.removeItem('USS_USER');
+      sessionStorage.clear();
+      location.reload();
+    }
 
     function parseTabAccessList(accessStr) {
       if (!accessStr) return ['1', '2', '3', '4'];
@@ -1696,499 +2038,6 @@ Keep up the daily practice!`;
       else if (permittedSet.has('6')) showSection('admin-report-sec');
     }
 
-    function setTabPreset(val) {
-      document.getElementById('u-tab-access').value = val;
-    }
-
-    // =========================================================================
-    // DAILY 60-MINUTES PRACTICE LIMIT ENGINE
-    // =========================================================================
-    function getTodayPracticeSeconds() {
-      if (!currentUser) return 0;
-      const todayDateStr = new Date().toLocaleDateString('en-GB');
-      const localAtt = JSON.parse(localStorage.getItem('portal_attendance_logs') || '[]')
-        .filter(a => String(a.phone).trim() === String(currentUser.phone).trim() && (a.date === todayDateStr || a.timestamp?.startsWith(todayDateStr)));
-      
-      let sumSec = 0;
-      localAtt.forEach(a => { sumSec += (Number(a.duration_seconds) || 0); });
-      if (sessionStartTime) sumSec += Math.max(0, Math.round((Date.now() - sessionStartTime) / 1000));
-      return sumSec;
-    }
-
-    function checkDailyPracticeLimit() {
-      const permittedTabs = parseTabAccessList(currentUser?.tabAccess || currentUser?.role || '1,2,3,4');
-      const isAdminUser = permittedTabs.some(t => Number(t) >= 5);
-      if (!currentUser || isAdminUser) return { isBlocked: false, isWarned: false, practicedSec: 0, remainingSec: 3600 };
-
-      const practicedSec = getTodayPracticeSeconds();
-      const maxDailySec = 3600;
-      const warnSec = 1800;
-
-      const isBlocked = practicedSec >= maxDailySec;
-      const isWarned = practicedSec >= warnSec && !isBlocked;
-      const remainingSec = Math.max(0, maxDailySec - practicedSec);
-
-      return { isBlocked, isWarned, practicedSec, remainingSec };
-    }
-
-    function updatePracticeLimitUI() {
-      const { isBlocked, isWarned, practicedSec, remainingSec } = checkDailyPracticeLimit();
-      const practiceBanner = document.getElementById('practice-daily-limit-banner');
-      const portfolioAllowanceBox = document.getElementById('portfolio-daily-allowance-box');
-      const modeSelector = document.getElementById('practice-mode-selector');
-
-      const remMins = Math.floor(remainingSec / 60);
-      const remSecs = remainingSec % 60;
-      const remText = remMins > 0 ? `${remMins}m ${remSecs}s` : `${remSecs}s`;
-      const practicedMins = Math.round(practicedSec / 60);
-
-      if (practiceBanner) {
-        if (isBlocked) {
-          practiceBanner.style.display = 'block';
-          practiceBanner.innerHTML = `
-            <div class="blocked-banner">
-              <div style="font-size:46px; margin-bottom:8px;">🛑</div>
-              <h2 style="margin:0 0 8px 0; color:#991b1b;">Daily 60-Minute Practice Limit Reached</h2>
-              <p style="font-size:14.5px; line-height:1.6; max-width:600px; margin:0 auto 14px auto;">
-                You have reached your maximum practice allowance of <strong>60 minutes for today (${new Date().toLocaleDateString('en-GB')})</strong>. 
-                Subject Practice and Trial Exam modes are locked until tomorrow.
-              </p>
-            </div>
-          `;
-          if (modeSelector) modeSelector.style.display = 'none';
-          document.getElementById('subject-practice-box').style.display = 'none';
-          document.getElementById('trial-exam-box').style.display = 'none';
-        } else {
-          practiceBanner.style.display = 'block';
-          if (isWarned) {
-            practiceBanner.innerHTML = `
-              <div class="warning-banner">
-                <span style="font-size:22px;">⚠️</span>
-                <div><strong>Notice:</strong> You have practiced for ${practicedMins} mins today. Remaining daily allowance: <strong>${remText}</strong>.</div>
-              </div>
-            `;
-          } else {
-            practiceBanner.innerHTML = `
-              <div style="background:#eff6ff; border:1px solid #93c5fd; padding:10px 16px; border-radius:10px; color:#1e40af; font-size:13px; font-weight:700; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <span>⏱️ Today's Remaining Practice Allowance:</span>
-                <span class="badge" style="background:#1e40af; color:#fff; font-size:13px; padding:4px 10px;">${remText} left </span>
-              </div>
-            `;
-          }
-          if (modeSelector && document.getElementById('quiz-card').style.display !== 'block' && document.getElementById('consolidation-card').style.display !== 'block') {
-            modeSelector.style.display = 'flex';
-          }
-        }
-      }
-
-      if (portfolioAllowanceBox) {
-        if (isBlocked) {
-          portfolioAllowanceBox.innerHTML = `
-            <div class="blocked-banner" style="padding:16px; margin:0;">
-              <strong style="font-size:15px;">🛑 Maximum Daily Practice Limit of 60 Mins Reached!</strong>
-            </div>
-          `;
-        } else {
-          portfolioAllowanceBox.innerHTML = `
-            <div style="background:#f8fafc; border:1px solid var(--border-color); padding:10px 16px; border-radius:10px; font-size:13px; font-weight:700; color:var(--text-main); display:flex; justify-content:space-between; align-items:center;">
-              <span>Daily Practice Allowance Left Today:</span>
-              <span class="badge badge-success" style="font-size:13px;">${remText} </span>
-            </div>
-          `;
-        }
-      }
-    }
-
-    function toggleUserPasswordVisibility() {
-      const passInput = document.getElementById('u-password');
-      if (!passInput) return;
-      passInput.type = (passInput.type === 'password') ? 'text' : 'password';
-    }
-
-    function openCSVGuideModal() { document.getElementById('csv-guide-modal').style.display = 'flex'; }
-    function closeCSVGuideModal() { document.getElementById('csv-guide-modal').style.display = 'none'; }
-
-    function downloadSampleCSV() {
-      const sampleCSVContent = 
-`subject,question,option_a,option_b,option_c,option_d,correct_answer,image_url
-BS,"What is the powerhouse of the cell?",Mitochondria,Nucleus,Ribosome,Golgi Body,A,
-MM,"What is the value of Pi (approx)?",3.14,2.71,1.41,1.73,A,
-EN,"Choose the correct synonym of 'Huge':",Tiny,Gigantic,Narrow,Fragile,B,
-SS,"Who is known as the Father of the Indian Constitution?",Mahatma Gandhi,Dr. B.R. Ambedkar,Jawaharlal Nehru,Sardar Patel,B,
-MI,"കേരളത്തിന്റെ തലസ്ഥാനം ഏത്?",തിരുവനന്തപുരം,കൊച്ചി,കോഴിക്കോട്,കണ്ണൂർ,A,
-AR,"ما هو الحرف الأول في الأبجدية؟",ألف,باء,تاء,ثاء,A,
-SK,"सूर्यः कस्यां दिशि उदेति?",पूर्वस्याम्,पश्चिमस्याम्,उत्तरस्याम्,दक्षिणस्याम्,A,`;
-
-      const blob = new Blob([sampleCSVContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'uss_questions_sample.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('Sample CSV template downloaded!', 'success');
-    }
-
-    function getRelativeTime(dateStr) {
-      if (!dateStr || dateStr === '-') return 'N/A';
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-
-      const now = new Date();
-      const diffMs = now - d;
-      const diffSec = Math.floor(diffMs / 1000);
-      const diffMin = Math.floor(diffSec / 60);
-      const diffHr = Math.floor(diffMin / 60);
-      const diffDay = Math.floor(diffHr / 24);
-
-      if (diffSec < 60) return 'Just now';
-      if (diffMin < 60) return `${diffMin} min ago`;
-      if (diffHr < 24) return `${diffHr} hr${diffHr > 1 ? 's' : ''} ago`;
-      return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-    }
-
-    async function refreshCurrentView() {
-      const icon = document.getElementById('global-refresh-icon');
-      if (icon) icon.classList.add('spinning');
-
-      const activeSec = document.querySelector('.section[style*="display: block"]');
-      const activeId = activeSec ? activeSec.id : 'practice-sec';
-
-      try {
-        if (activeId === 'portfolio-sec') await loadPortfolio();
-        else if (activeId === 'notif-sec') await loadNotifications();
-        else if (activeId === 'admin-online-sec') renderAllUsersOnlineCards();
-        else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(activeId)) await loadAdminData();
-      } catch (err) {
-        console.error("Refresh Error:", err);
-      }
-
-      setTimeout(() => {
-        if (icon) icon.classList.remove('spinning');
-        showToast('Data refreshed successfully!', 'success');
-      }, 500);
-    }
-
-    function getFullSubjectName(code) {
-      return SUBJECT_MAP[code] || code || 'General';
-    }
-
-    function enableSecurityProtection() {
-      document.addEventListener('contextmenu', (e) => {
-        if (!securityProtectionActive) return;
-        e.preventDefault();
-        return false;
-      });
-
-      document.addEventListener('copy', (e) => {
-        if (!securityProtectionActive) return;
-        e.preventDefault();
-        showToast('⚠️ Copying content is restricted!', 'danger');
-      });
-
-      document.addEventListener('keydown', (e) => {
-        if (!securityProtectionActive) return;
-        const isCtrl = e.ctrlKey || e.metaKey;
-        if (e.keyCode === 123) { e.preventDefault(); return false; }
-        if (isCtrl && ['u', 's', 'p'].includes(e.key.toLowerCase())) { e.preventDefault(); return false; }
-      });
-    }
-
-    function toggleSecurityModePill() {
-      securityProtectionActive = !securityProtectionActive;
-      const pill = document.getElementById('security-pill-btn');
-      const statusText = document.getElementById('security-pill-status');
-
-      if (securityProtectionActive) {
-        pill.className = 'tap-toggle-pill enabled';
-        statusText.innerText = 'Security Active: ENABLED';
-        showToast('Security protection ENABLED', 'success');
-      } else {
-        pill.className = 'tap-toggle-pill disabled';
-        statusText.innerText = 'Security Active: DISABLED';
-        showToast('Security protection DISABLED', 'warning');
-      }
-    }
-
-    function updateNetworkStatus() {
-      const led = document.getElementById('network-led');
-      const text = document.getElementById('network-status-text');
-
-      if (!navigator.onLine) {
-        led.className = 'led-dot led-red';
-        text.innerText = 'Offline';
-      } else {
-        led.className = 'led-dot led-green';
-        text.innerText = 'Online';
-      }
-      renderAllUsersOnlineCards();
-      updateUsersTableLiveStatus();
-    }
-
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = `toast toast-${type}`;
-      toast.innerHTML = `<span>${message}</span>`;
-      container.appendChild(toast);
-
-      setTimeout(() => toast.classList.add('show'), 10);
-      setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-      }, 3500);
-    }
-
-    function showConfirmModal(title, msg, onConfirm) {
-      document.getElementById('modal-title').innerText = title;
-      document.getElementById('modal-msg').innerText = msg;
-      confirmCallback = onConfirm;
-      document.getElementById('confirm-modal').style.display = 'flex';
-      document.getElementById('modal-confirm-btn').onclick = () => { closeConfirmModal(true); };
-    }
-
-    function closeConfirmModal(isConfirmed) {
-      document.getElementById('confirm-modal').style.display = 'none';
-      if (isConfirmed && confirmCallback) confirmCallback();
-      confirmCallback = null;
-    }
-
-    function openSettingsModal() {
-      document.getElementById('set-name').innerText = currentUser.name || currentUser.username;
-      document.getElementById('set-gender').innerText = currentUser.gender || 'Male';
-      document.getElementById('set-class').innerText = currentUser.userClass || '10';
-      document.getElementById('set-div').innerText = currentUser.division || 'A';
-      document.getElementById('set-first-lang').innerText = currentUser.firstLanguage || 'MI';
-      document.getElementById('set-phone').innerText = currentUser.phone;
-      document.getElementById('set-username-display').innerText = currentUser.username;
-
-      const permittedTabs = parseTabAccessList(currentUser.tabAccess || currentUser.role || '1,2,3,4');
-      document.getElementById('set-tab-access').innerText = permittedTabs.join(', ');
-      document.getElementById('settings-modal').style.display = 'flex';
-    }
-
-    function formatDateStrict(dateStr) {
-      if (!dateStr || dateStr === '-' || dateStr === 'Active Now') return dateStr;
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-
-      const dd = String(d.getDate()).padStart(2, '0');
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const yyyy = d.getFullYear();
-      let hours = d.getHours();
-      const minutes = String(d.getMinutes()).padStart(2, '0');
-      const seconds = String(d.getSeconds()).padStart(2, '0');
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-      hours = hours ? hours : 12;
-      const hh = String(hours).padStart(2, '0');
-
-      return `${dd}/${mm}/${yyyy}, ${hh}:${minutes}:${seconds} ${ampm}`;
-    }
-
-    function getDeviceInfo() {
-      const ua = navigator.userAgent;
-      const platform = navigator.platform || 'Unknown';
-      let os = "Unknown OS";
-      if (ua.includes("Win")) os = "Windows PC";
-      else if (ua.includes("Android")) os = "Android Device";
-      else if (ua.includes("iPhone")) os = "Apple iPhone";
-      else if (ua.includes("Mac")) os = "macOS";
-      else if (ua.includes("Linux")) os = "Linux Desktop";
-
-      let browser = "Browser";
-      if (ua.includes("Edg")) browser = "Edge";
-      else if (ua.includes("Chrome")) browser = "Chrome";
-      else if (ua.includes("Safari")) browser = "Safari";
-      else if (ua.includes("Firefox")) browser = "Firefox";
-
-      return `${os} | ${browser} (${platform})`;
-    }
-
-    function setProgress(percent) {
-      const bar = document.getElementById('progress-bar');
-      if (!bar) return;
-      bar.style.width = percent + '%';
-      if (percent >= 100) {
-        setTimeout(() => { bar.style.opacity = '0'; setTimeout(() => { bar.style.width = '0%'; bar.style.opacity = '1'; }, 250); }, 300);
-      } else {
-        bar.style.opacity = '1';
-      }
-    }
-
-    // =========================================================================
-    // AUTHENTICATION
-    // =========================================================================
-    async function handleLogin(e) {
-      e.preventDefault();
-      const usernameInput = document.getElementById('login-username').value.trim();
-      const passwordInput = document.getElementById('login-password').value.trim();
-      setProgress(50);
-
-      try {
-        const { data: user, error } = await supabaseClient
-          .from('users')
-          .select('*')
-          .ilike('username', usernameInput)
-          .eq('password', passwordInput)
-          .maybeSingle();
-
-        setProgress(100);
-
-        if (error) {
-          showToast(`Supabase Error: ${error.message}`, 'danger');
-          return;
-        }
-
-        const nowStr = formatDateStrict(new Date().toISOString());
-        const logId = 'LOG-' + Date.now();
-        const newSessionId = 'SESS-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
-        const deviceStr = getDeviceInfo();
-
-        if (user) {
-          if (String(user.status).toLowerCase() === 'blocked') {
-            await supabaseClient.from('logs').insert([{ timestamp: nowStr, log_id: logId, identifier: usernameInput, role: user.role, login_status: 'BLOCKED', login_time: nowStr, logout_time: '-', device: deviceStr }]);
-            showToast('Your account is blocked. Contact Admin.', 'danger');
-            return;
-          }
-
-          await supabaseClient
-            .from('logs')
-            .update({ logout_time: 'Auto Logged Out (New Login on Another Device)' })
-            .eq('identifier', user.username)
-            .eq('logout_time', 'Active Now');
-
-          try {
-            const guardBroadcast = supabaseClient.channel('guard_' + user.username);
-            await guardBroadcast.subscribe();
-            await guardBroadcast.send({ type: 'broadcast', event: 'force_logout', payload: { newSessionId: newSessionId } });
-          } catch(err){}
-
-          await supabaseClient.from('logs').insert([{ 
-            timestamp: nowStr, 
-            log_id: logId, 
-            identifier: user.username, 
-            role: user.role, 
-            login_status: 'SUCCESS', 
-            login_time: nowStr, 
-            logout_time: 'Active Now', 
-            device: deviceStr 
-          }]);
-
-          const isDefaultPass = (passwordInput === 'admin123' || passwordInput === 'student123' || passwordInput === usernameInput);
-
-          currentUser = {
-            name: user.name || user.username,
-            gender: user.gender || 'Male',
-            userClass: user.class || '10',
-            division: user.division || 'A',
-            firstLanguage: (user.first_language || 'MI').toUpperCase(),
-            phone: user.phone,
-            role: user.role || '1,2,3,4',
-            tabAccess: user.role || '1,2,3,4',
-            username: user.username,
-            isDefaultPass: isDefaultPass,
-            loginTimeStr: nowStr,
-            sessionId: newSessionId,
-            logId: logId
-          };
-
-          if (isDefaultPass) {
-            document.getElementById('first-time-pass-modal').style.display = 'flex';
-            return;
-          }
-
-          if (document.getElementById('keep-logged-pill').classList.contains('active')) {
-            localStorage.setItem('USS_USER', JSON.stringify(currentUser));
-          } else {
-            sessionStorage.setItem('USS_USER', JSON.stringify(currentUser));
-          }
-
-          initializeSession();
-          setupPresenceTracker();
-          setupSingleSessionGuard();
-          showToast('Logged in successfully!', 'success');
-        } else {
-          showToast('Invalid Username or Password', 'danger');
-        }
-      } catch (err) {
-        setProgress(100);
-        showToast(`System Error: ${err.message}`, 'danger');
-      }
-    }
-
-    function filterPracticeSubjectDropdown() {
-      if (!currentUser) return;
-      const select = document.getElementById('subject-select');
-      const userLang = (currentUser.firstLanguage || 'MI').trim().toUpperCase();
-
-      Array.from(select.options).forEach(opt => {
-        if (opt.getAttribute('data-firstlang') === 'true') {
-          if (opt.value.toUpperCase() === userLang) {
-            opt.style.display = '';
-            opt.disabled = false;
-          } else {
-            opt.style.display = 'none';
-            opt.disabled = true;
-          }
-        }
-      });
-    }
-
-    function initializeSession() {
-      document.getElementById('login-sec').style.display = 'none';
-      document.getElementById('top-navbar').style.display = 'flex';
-      document.getElementById('tab-bar-container').style.display = 'flex';
-
-      document.getElementById('user-display-name').innerText = currentUser.name || currentUser.username;
-      document.getElementById('user-display-class').innerText = currentUser.userClass || '10';
-      document.getElementById('user-display-div').innerText = currentUser.division || 'A';
-
-      filterPracticeSubjectDropdown();
-      updatePracticeLimitUI();
-      applyUserTabPermissions();
-      checkAdminPendingAlerts();
-      loadNotifications();
-    }
-
-    async function checkAdminPendingAlerts() {
-      const { data: pending } = await supabaseClient.from('reset_requests').select('*').eq('status', 'Pending');
-      if (pending && pending.length > 0) {
-        document.getElementById('reset-badge-dot').style.display = 'block';
-      } else {
-        document.getElementById('reset-badge-dot').style.display = 'none';
-      }
-    }
-
-    async function handleChangePassword(e) {
-      e.preventDefault();
-      const newPass = document.getElementById('new-password').value.trim();
-      if (!newPass) return;
-
-      const { error } = await supabaseClient.from('users').update({ password: newPass }).eq('username', currentUser.username);
-      if (!error) {
-        showToast('Password updated successfully!', 'success');
-        document.getElementById('change-pass-form').reset();
-        document.getElementById('settings-modal').style.display = 'none';
-      } else {
-        showToast('Failed to update password.', 'danger');
-      }
-    }
-
-    async function logout(forced = false) {
-      if (!forced) await updatePresenceLiveState('Logged Out');
-      if (currentUser && currentUser.logId) {
-        await supabaseClient.from('logs').update({ 
-          logout_time: forced ? 'Auto Logged Out (New Login on Another Device)' : formatDateStrict(new Date().toISOString()) 
-        }).eq('log_id', currentUser.logId);
-      }
-      localStorage.removeItem('USS_USER');
-      sessionStorage.clear();
-      location.reload();
-    }
-
     function showSection(sectionId) {
       clearInterval(timerInterval);
       document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
@@ -2213,7 +2062,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       updatePresenceLiveState('Online & Active');
 
       if (sectionId === 'practice-sec') {
-        updatePracticeLimitUI();
         document.getElementById('practice-mode-selector').style.display = 'flex';
         document.getElementById('subject-practice-box').style.display = 'none';
         document.getElementById('trial-exam-box').style.display = 'none';
@@ -2242,13 +2090,11 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     // =========================================================================
-    // PRACTICE & TRIAL EXAM MODULE
+    // PRACTICE & TRIAL WITH COMPLETED QUESTIONS SAVED ON EXIT
     // =========================================================================
     function switchPracticeMode(mode) {
-      const { isBlocked } = checkDailyPracticeLimit();
-      if (isBlocked) {
-        showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
-        updatePracticeLimitUI();
+      if (!isStaffOrAdminUser(currentUser) && getTodayElapsedSeconds() >= DAILY_MAX_QUOTA_SECONDS) {
+        triggerAppLockout();
         return;
       }
 
@@ -2271,8 +2117,15 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       updatePresenceLiveState('Online & Active');
     }
 
-    function exitPracticeMode() {
+    // EXIT FROM PRACTICE: Automatically saves completed questions to Subject Overview & Attendance
+    async function exitPracticeMode() {
       clearInterval(timerInterval);
+
+      // If user had attended questions before exiting, consolidate & save them
+      if (sessionAnswersLog.length > 0) {
+        await saveCompletedSessionOnExit();
+      }
+
       sessionStartTime = null;
       document.getElementById('tab-bar-container').style.display = 'flex';
       document.getElementById('practice-mode-selector').style.display = 'flex';
@@ -2285,17 +2138,63 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       document.getElementById('subject-select').value = '';
       currentActiveContext = 'Practice Center';
       updatePresenceLiveState('Online & Active');
-      updatePracticeLimitUI();
+    }
+
+    async function triggerEarlyExitPractice() {
+      clearInterval(timerInterval);
+      if (sessionAnswersLog.length > 0) {
+        await saveCompletedSessionOnExit();
+        showConsolidationView();
+      } else {
+        exitPracticeMode();
+      }
+    }
+
+    async function saveCompletedSessionOnExit() {
+      if (sessionAnswersLog.length === 0) return;
+      const cleanDate = new Date().toLocaleDateString('en-GB');
+      const formattedDT = formatDateStrict(new Date().toISOString());
+
+      const upsertRows = sessionAnswersLog.map(q => ({
+        timestamp: formattedDT,
+        phone: currentUser.phone,
+        student_name: currentUser.name || currentUser.username,
+        class: currentUser.userClass || '10',
+        division: currentUser.division || 'A',
+        subject: q.SubjectCode || 'General',
+        question_id: q.QuestionID,
+        question_text: q.QuestionText,
+        user_answer: q.UserAnswer,
+        correct_answer: q.CorrectAnswer,
+        is_correct: q.IsCorrect ? 'YES' : 'NO'
+      }));
+
+      await supabaseClient.from('student_answers').upsert(upsertRows, { onConflict: 'phone,question_id' });
+
+      // Save attendance log for attended questions
+      const total = sessionAnswersLog.length;
+      const score = sessionAnswersLog.filter(a => a.IsCorrect).length;
+      const attId = `ATT-${currentUser.phone}-${cleanDate}-${sessionAnswersLog[0]?.SubjectCode || 'PRAC'}`;
+
+      await supabaseClient.from('attendance').upsert([{
+        attendance_id: attId,
+        student_name: currentUser.name || currentUser.username,
+        phone: String(currentUser.phone || ''),
+        class: String(currentUser.userClass || '10'),
+        division: String(currentUser.division || 'A'),
+        date: cleanDate,
+        timestamp: formattedDT,
+        activity: `Subject Practice (${sessionAnswersLog[0]?.Subject || 'Practice'})`,
+        duration_seconds: total * 30,
+        duration_text: `${Math.round((total * 30) / 60)}m 00s`,
+        questions_attended: total,
+        score: `${score} / ${total}`
+      }], { onConflict: 'attendance_id' });
+
+      showToast(`Saved ${total} completed question(s) to Subject Overview & Attendance!`, 'success');
     }
 
     async function loadPracticeSubject() {
-      const { isBlocked } = checkDailyPracticeLimit();
-      if (isBlocked) {
-        showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
-        updatePracticeLimitUI();
-        return;
-      }
-
       const subject = document.getElementById('subject-select').value;
       if (!subject) return;
 
@@ -2346,13 +2245,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     async function startTrialExam() {
-      const { isBlocked } = checkDailyPracticeLimit();
-      if (isBlocked) {
-        showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
-        updatePracticeLimitUI();
-        return;
-      }
-
       document.getElementById('trial-exam-box').style.display = 'none';
       document.getElementById('no-trial-card').style.display = 'none';
       document.getElementById('practice-spinner').style.display = 'flex';
@@ -2424,13 +2316,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       document.querySelector('.mode-selector-group').style.display = 'none';
       document.getElementById('subject-practice-box').style.display = 'none';
       document.getElementById('trial-exam-box').style.display = 'none';
-      document.getElementById('quiz-exit-btn').style.display = isTrialMode ? 'none' : 'inline-flex';
-    }
-
-    function triggerEarlyExitPractice() {
-      if (isTrialMode) return;
-      if (sessionAnswersLog.length > 0) showConsolidationView();
-      else exitConsolidationView();
+      document.getElementById('quiz-exit-btn').style.display = 'inline-flex';
     }
 
     function closeNoTrialCard() {
@@ -2450,14 +2336,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         timeLeft--;
         timerCount.innerText = Math.max(0, timeLeft);
         if (timeLeft <= 10) timerBadge.classList.add('danger');
-        
-        const { isBlocked } = checkDailyPracticeLimit();
-        if (isBlocked) {
-          clearInterval(timerInterval);
-          showToast('🛑 Daily 60-minute practice limit reached! Saving session...', 'danger');
-          showConsolidationView();
-          return;
-        }
 
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
@@ -2533,22 +2411,21 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
           IsCorrect: isCorrect
         });
 
-        if (!isTrialMode) {
-          const nowStr = formatDateStrict(new Date().toISOString());
-          await supabaseClient.from('student_answers').upsert([{
-            timestamp: nowStr,
-            phone: currentUser.phone,
-            student_name: currentUser.name || currentUser.username,
-            class: currentUser.userClass || '10',
-            division: currentUser.division || 'A',
-            subject: q.Subject,
-            question_id: q.ID,
-            question_text: q.Question,
-            user_answer: userChoice,
-            correct_answer: q.CorrectAnswer,
-            is_correct: isCorrect ? 'YES' : 'NO'
-          }], { onConflict: 'phone,question_id' });
-        }
+        // Instant commit to database
+        const nowStr = formatDateStrict(new Date().toISOString());
+        await supabaseClient.from('student_answers').upsert([{
+          timestamp: nowStr,
+          phone: currentUser.phone,
+          student_name: currentUser.name || currentUser.username,
+          class: currentUser.userClass || '10',
+          division: currentUser.division || 'A',
+          subject: q.Subject,
+          question_id: q.ID,
+          question_text: q.Question,
+          user_answer: userChoice,
+          correct_answer: q.CorrectAnswer,
+          is_correct: isCorrect ? 'YES' : 'NO'
+        }], { onConflict: 'phone,question_id' });
       }
 
       if (qIndex + 1 < currentQuestions.length) {
@@ -2561,7 +2438,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     // =========================================================================
-    // CONSOLIDATION, ATTENDANCE & NOTIFICATIONS
+    // CONSOLIDATION VIEW
     // =========================================================================
     async function showConsolidationView() {
       clearInterval(timerInterval);
@@ -2571,18 +2448,11 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       const score = sessionAnswersLog.filter(a => a.IsCorrect).length;
       const victoryRate = total ? Math.round((score / total) * 100) : 0;
 
-      const sessionEndTime = Date.now();
-      const durationSeconds = Math.max(1, Math.round(((sessionEndTime - (sessionStartTime || sessionEndTime)) / 1000)));
-      const minutes = Math.floor(durationSeconds / 60);
-      const seconds = durationSeconds % 60;
-      const durationText = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-
       const formattedDT = formatDateStrict(new Date().toISOString());
-      const activityType = isTrialMode ? 'Trial Exam Mode' : `Subject Practice (${sessionAnswersLog[0]?.Subject || 'General'})`;
 
       document.getElementById('summary-score-val').innerText = `${score} / ${total}`;
       document.getElementById('summary-acc-val').innerText = `${victoryRate}%`;
-      document.getElementById('consolidation-title').innerText = isTrialMode ? 'Trial Exam Report Consolidation' : 'Subject Practice Summary';
+      document.getElementById('consolidation-title').innerText = isTrialMode ? 'Trial Exam Report Consolidation' : 'Practice Session Summary';
 
       const tbody = document.getElementById('summary-breakdown-body');
       tbody.innerHTML = sessionAnswersLog.map(item => `
@@ -2598,12 +2468,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
       document.getElementById('consolidation-card').style.display = 'block';
 
-      const studentPlainInfo = `${currentUser.name || currentUser.username} (${currentUser.userClass || '10'}-${currentUser.division || 'A'})`;
-      const subjName = isTrialMode ? 'Comprehensive Trial Exam' : sessionAnswersLog[0].Subject;
-
-      const notifTitle = `${subjName} Practice Activity Summary`;
-      const notifMsg = `${studentPlainInfo} completed a ${subjName} session ON ${formattedDT}\n\nTotal Questions Practiced/Attended: ${total}\nCorrect: ${score} • Incorrect: ${total - score}`;
-
       if (isTrialMode) {
         await supabaseClient.from('trial_exams').insert([{
           timestamp: formattedDT,
@@ -2616,56 +2480,12 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
           answers_json: sessionAnswersLog
         }]);
       }
-
-      await supabaseClient.from('notifications').insert([{
-        notification_id: 'NOTIF-' + Date.now(),
-        timestamp: formattedDT,
-        recipient_phone: currentUser.phone,
-        title: notifTitle,
-        message: notifMsg,
-        sender: 'Practice Monitor'
-      }]);
-
-      const cleanDate = new Date().toLocaleDateString('en-GB');
-      const attendanceEntry = {
-        attendance_id: `ATT-${currentUser.phone}-${cleanDate}-${isTrialMode ? 'TRIAL' : (sessionAnswersLog[0]?.SubjectCode || 'PRAC')}`,
-        student_name: currentUser.name || currentUser.username,
-        phone: String(currentUser.phone || ''),
-        class: String(currentUser.userClass || '10'),
-        division: String(currentUser.division || 'A'),
-        date: cleanDate,
-        timestamp: formattedDT,
-        activity: activityType,
-        duration_seconds: durationSeconds,
-        duration_text: durationText,
-        questions_attended: total,
-        score: `${score} / ${total}`
-      };
-
-      try {
-        await supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' });
-      } catch (err) {}
-
-      const localAtt = JSON.parse(localStorage.getItem('portal_attendance_logs') || '[]')
-        .filter(a => a.attendance_id !== attendanceEntry.attendance_id);
-      localAtt.unshift(attendanceEntry);
-      localStorage.setItem('portal_attendance_logs', JSON.stringify(localAtt.slice(0, 300)));
-
-      sessionStartTime = null;
-      updatePracticeLimitUI();
     }
 
     function exitConsolidationView() {
       document.getElementById('consolidation-card').style.display = 'none';
       document.getElementById('top-navbar').style.display = 'flex';
       document.getElementById('tab-bar-container').style.display = 'flex';
-
-      updatePracticeLimitUI();
-      const { isBlocked } = checkDailyPracticeLimit();
-      if (isBlocked) {
-        showSection('portfolio-sec');
-        return;
-      }
 
       if (isTrialMode) {
         document.getElementById('trial-exam-box').style.display = 'block';
@@ -2677,10 +2497,9 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     // =========================================================================
-    // DASHBOARD & PORTFOLIO
+    // DASHBOARD & PORTFOLIO (UNIFIED COUNTS)
     // =========================================================================
     async function loadPortfolio() {
-      updatePracticeLimitUI();
       const { data: answers } = await supabaseClient.from('student_answers').select('*').eq('phone', currentUser.phone);
       const { data: trials } = await supabaseClient.from('trial_exams').select('*').eq('phone', currentUser.phone);
       
@@ -2690,25 +2509,21 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         attendanceList = dbAtt || [];
       } catch(e) {}
 
-      const localAtt = JSON.parse(localStorage.getItem('portal_attendance_logs') || '[]').filter(a => String(a.phone).trim() === String(currentUser.phone).trim());
-      const mergedAttendance = [...attendanceList];
-      localAtt.forEach(la => {
-        if (!mergedAttendance.some(ma => ma.attendance_id === la.attendance_id)) {
-          mergedAttendance.push(la);
-        }
-      });
+      // UNIFIED STUDENT DEDUPLICATION
+      const studentMetrics = getStudentUniqueAnswerRecords(currentUser.phone, answers, trials);
 
-      renderStudentAttendance(mergedAttendance);
+      // Render Attendance with matching deduplicated question counts
+      renderStudentAttendance(attendanceList, studentMetrics.total);
 
       const resData = {
-        detailedAnswers: (answers || []).map(a => ({
-          QuestionID: a.question_id,
-          QuestionText: a.question_text,
-          Subject: a.subject,
-          UserAnswer: a.user_answer,
-          CorrectAnswer: a.correct_answer,
-          IsCorrect: a.is_correct === 'YES' || a.is_correct === true,
-          Timestamp: a.timestamp
+        detailedAnswers: studentMetrics.combined.map(c => ({
+          QuestionID: c.question_id,
+          QuestionText: c.question_text,
+          Subject: c.subject,
+          UserAnswer: c.user_answer,
+          CorrectAnswer: c.correct_answer,
+          IsCorrect: c.is_correct,
+          Timestamp: c.timestamp
         })),
         trialExams: (trials || []).map(t => ({
           Timestamp: t.timestamp,
@@ -2721,7 +2536,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       renderStudentDashboardAndOverview(resData, 'stat-total', 'stat-accuracy', 'strong-subjects-chart-container', 'weak-subjects-chart-container', 'portfolio-overview-body', 'portfolio-trial-history-box', 'portfolio-trial-history-container', 'portfolio-audit-body');
     }
 
-    function renderStudentAttendance(attLogs) {
+    function renderStudentAttendance(attLogs, verifiedTotalQuestions) {
       let totalSec = 0;
       const activeDaysSet = new Set();
 
@@ -2731,13 +2546,16 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         else if (item.timestamp) activeDaysSet.add(item.timestamp.split(',')[0]);
       });
 
-      const totalMins = Math.round(totalSec / 60);
-      document.getElementById('att-total-time').innerText = totalMins > 0 ? `${totalMins} mins` : `${totalSec}s`;
-      document.getElementById('att-total-days').innerText = `${activeDaysSet.size} Days`;
+      const todaySeconds = getTodayElapsedSeconds();
+      const combinedSec = Math.max(totalSec, todaySeconds);
+      const totalMins = Math.round(combinedSec / 60);
+
+      document.getElementById('att-total-time').innerText = totalMins > 0 ? `${totalMins} mins` : `${combinedSec}s`;
+      document.getElementById('att-total-days').innerText = `${Math.max(1, activeDaysSet.size)} Days`;
 
       const tbody = document.getElementById('portfolio-attendance-body');
       if (attLogs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No attendance sessions logged yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No past attendance records found. Practice sessions will appear here!</td></tr>';
         return;
       }
 
@@ -2747,61 +2565,14 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
           <td>${item.timestamp?.split(',')[1] || item.timestamp || '-'}</td>
           <td><span class="badge">${escapeHtml(item.activity)}</span></td>
           <td><b>${item.duration_text || Math.round((item.duration_seconds || 0)/60) + 'm'}</b></td>
-          <td>${item.questions_attended || 0}</td>
+          <td><b>${verifiedTotalQuestions !== undefined ? verifiedTotalQuestions : (item.questions_attended || 0)}</b></td>
           <td><b>${item.score || '-'}</b></td>
         </tr>
       `).join('');
     }
 
     function renderStudentDashboardAndOverview(resData, totalElId, accElId, strongContainerId, weakContainerId, overviewTbodyId, trialBoxId, trialContainerId, auditTbodyId) {
-      let combinedAnswers = [];
-      let seenQKeys = new Set();
-
-      if (resData.detailedAnswers) {
-        resData.detailedAnswers.forEach(a => {
-          const uniqueKey = `${a.QuestionID || a.QuestionText}`;
-          if (!seenQKeys.has(uniqueKey)) {
-            seenQKeys.add(uniqueKey);
-            combinedAnswers.push({
-              Subject: getFullSubjectName(a.Subject),
-              SubjectCode: a.Subject,
-              QuestionID: a.QuestionID,
-              QuestionText: a.QuestionText,
-              UserAnswer: a.UserAnswer,
-              CorrectAnswer: a.CorrectAnswer,
-              IsCorrect: a.IsCorrect === 'YES' || a.IsCorrect === true,
-              Timestamp: a.Timestamp
-            });
-          }
-        });
-      }
-
-      if (resData.trialExams) {
-        resData.trialExams.forEach(tr => {
-          let tAns = typeof tr.AnswersJson === 'string' ? JSON.parse(tr.AnswersJson || '[]') : (tr.AnswersJson || []);
-          tAns.forEach(ta => {
-            const uniqueKey = `${ta.QuestionID || ta.QuestionText}`;
-            if (!seenQKeys.has(uniqueKey)) {
-              seenQKeys.add(uniqueKey);
-              combinedAnswers.push({
-                Subject: getFullSubjectName(ta.Subject),
-                SubjectCode: ta.Subject,
-                QuestionID: ta.QuestionID,
-                QuestionText: ta.QuestionText,
-                OptionA: ta.OptionA,
-                OptionB: ta.OptionB,
-                OptionC: ta.OptionC,
-                OptionD: ta.OptionD,
-                UserAnswer: ta.UserAnswer,
-                CorrectAnswer: ta.CorrectAnswer,
-                IsCorrect: ta.IsCorrect === true || ta.IsCorrect === 'YES',
-                Timestamp: tr.Timestamp
-              });
-            }
-          });
-        });
-      }
-
+      const combinedAnswers = resData.detailedAnswers || [];
       const totalAnswered = combinedAnswers.length;
       const totalCorrect = combinedAnswers.filter(a => a.IsCorrect).length;
       const overallAccuracy = totalAnswered ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
@@ -2811,7 +2582,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
       const subjectStats = {};
       combinedAnswers.forEach(a => {
-        const sName = a.Subject;
+        const sName = getFullSubjectName(a.Subject);
         if (!subjectStats[sName]) subjectStats[sName] = { total: 0, correct: 0, wrong: 0, lastDate: a.Timestamp };
         subjectStats[sName].total++;
         if (a.IsCorrect) subjectStats[sName].correct++;
@@ -2926,25 +2697,14 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
       if (document.getElementById(auditTbodyId) && resData.detailedAnswers) {
         const auditBody = document.getElementById(auditTbodyId);
-        const uniqueAuditLogs = [];
-        const auditSeenKeys = new Set();
-
-        resData.detailedAnswers.forEach(item => {
-          const key = `${item.QuestionID || item.QuestionText}`;
-          if (!auditSeenKeys.has(key)) {
-            auditSeenKeys.add(key);
-            uniqueAuditLogs.push(item);
-          }
-        });
-
-        auditBody.innerHTML = uniqueAuditLogs.map((item, idx) => `
+        auditBody.innerHTML = combinedAnswers.map((item, idx) => `
           <tr>
             <td>${idx + 1}</td>
             <td><span class="badge">${getFullSubjectName(item.Subject)}</span></td>
             <td>${escapeHtml(item.QuestionText)}</td>
             <td><b>${escapeHtml(item.UserAnswer)}</b></td>
             <td><b style="color:var(--success);">${escapeHtml(item.CorrectAnswer)}</b></td>
-            <td><span class="badge ${item.IsCorrect === 'YES' || item.IsCorrect === true ? 'badge-success' : 'badge-danger'}">${item.IsCorrect === 'YES' || item.IsCorrect === true ? 'Correct' : 'Wrong'}</span></td>
+            <td><span class="badge ${item.IsCorrect ? 'badge-success' : 'badge-danger'}">${item.IsCorrect ? 'Correct' : 'Wrong'}</span></td>
           </tr>
         `).join('') || '<tr><td colspan="6">No practice audit records found.</td></tr>';
       }
@@ -2955,7 +2715,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     // =========================================================================
     async function loadNotifications() {
       let query = supabaseClient.from('notifications').select('*').order('created_at', { ascending: false });
-
       const permittedTabs = parseTabAccessList(currentUser?.tabAccess || currentUser?.role || '1,2,3,4');
       const isPrivileged = permittedTabs.some(t => Number(t) >= 5);
 
@@ -3013,7 +2772,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
             </div>
           </div>
         `;
-
         container.appendChild(card);
       });
 
@@ -3117,7 +2875,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     // =========================================================================
-    // ADMIN DATA & OPTIMIZATION RANKING & AUDIT LOG GROUPING
+    // ADMIN DATA & HARMONIZED MODULE SYNC
     // =========================================================================
     async function loadAdminData() {
       const { data: users } = await supabaseClient.from('users').select('*');
@@ -3135,14 +2893,12 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
       cachedAdminData = { users, questions, logs, allAnswers, allTrialExams, resetRequests, allAttendance };
 
+      // Filter out Admin and Question Master from Student Selection
       const studentChipsContainer = document.getElementById('student-chips-container');
-      const students = (users || []).filter(u => {
-        const tList = parseTabAccessList(u.role || u.tab_access || '1,2,3,4');
-        return !tList.some(t => Number(t) >= 5);
-      });
+      const studentsOnly = (users || []).filter(u => !isStaffOrAdminUser(u));
 
       studentChipsContainer.innerHTML = '';
-      students.forEach(s => {
+      studentsOnly.forEach(s => {
         const chip = document.createElement('div');
         chip.className = 'student-chip';
         chip.innerText = `${s.name} (${s.class || '10'}-${s.division || 'A'}) [${s.phone}]`;
@@ -3158,13 +2914,22 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         studentChipsContainer.appendChild(chip);
       });
 
-      // 1. ATTENDANCE TRACKER
+      // 1. ATTENDANCE TRACKER (HARMONIZED QUESTION COUNT DEDUPLICATION)
       const adminAttBody = document.getElementById('admin-attendance-body');
       if (adminAttBody) {
         const dailyGroups = {};
+
+        // Process only student accounts
         allAttendance.forEach(a => {
+          const matchedUser = (users || []).find(u => String(u.phone).trim() === String(a.phone).trim());
+          if (matchedUser && isStaffOrAdminUser(matchedUser)) return;
+
           const dateKey = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : 'Unknown Date');
           const groupKey = `${dateKey}_${String(a.phone).trim()}`;
+
+          // Calculate verified questions answered using the unified deduplication engine
+          const metrics = getStudentUniqueAnswerRecords(a.phone, allAnswers, allTrialExams);
+
           if (!dailyGroups[groupKey]) {
             dailyGroups[groupKey] = {
               student_name: a.student_name,
@@ -3173,13 +2938,12 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
               division: a.division || 'A',
               date: dateKey,
               total_seconds: 0,
-              total_questions: 0,
+              verified_questions: metrics.total,
               activitiesSet: new Set(),
               timestamp: a.timestamp
             };
           }
           dailyGroups[groupKey].total_seconds += (Number(a.duration_seconds) || 0);
-          dailyGroups[groupKey].total_questions += (Number(a.questions_attended) || 0);
           if (a.activity) dailyGroups[groupKey].activitiesSet.add(a.activity);
         });
 
@@ -3214,7 +2978,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
             <td><b>${escapeHtml(row.student_name)}</b></td>
             <td>${escapeHtml(row.class)}-${escapeHtml(row.division)}</td>
             <td style="text-align:center;">
-              <button onclick="sendAttendanceWhatsappAlert('${escapeHtml(row.student_name)}', '${row.phone}', '${row.date}', '${escapeHtml(row.activitiesString)}', '${row.durationFormatted}', '${row.remainingFormatted}', '${row.total_questions}')" class="btn btn-outline" style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;">
+              <button onclick="sendAttendanceWhatsappAlert('${escapeHtml(row.student_name)}', '${row.phone}', '${row.date}', '${escapeHtml(row.activitiesString)}', '${row.durationFormatted}', '${row.remainingFormatted}', '${row.verified_questions}')" class="btn btn-outline" style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;">
                 💬
               </button>
             </td>
@@ -3222,15 +2986,15 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
             <td><strong style="color:var(--primary); font-size:14px;">${row.durationFormatted}</strong></td>
             <td><span class="badge ${row.isBlocked ? 'badge-danger' : (row.isWarned ? 'badge-warning' : 'badge-success')}">${row.remainingFormatted}</span></td>
             <td><small>${escapeHtml(row.activitiesString)}</small></td>
-            <td><b>${row.total_questions}</b> Qs</td>
+            <td><b>${row.verified_questions}</b> Qs</td>
             <td><span class="badge ${row.isBlocked ? 'badge-danger' : 'badge-success'}">${row.isBlocked ? '🛑 60m Limit Reached' : 'Active Practicing'}</span></td>
           </tr>
-        `).join('') || '<tr><td colspan="10" style="text-align:center;">No records found.</td></tr>';
+        `).join('') || '<tr><td colspan="10" style="text-align:center;">No student attendance records found.</td></tr>';
       }
 
-      // 2. EVALUATION REPORTS (TAB 6) - ALPHABETICAL
+      // 2. EVALUATION REPORTS (TAB 6) - ALPHABETICAL (STUDENTS ONLY)
       const reportAccordion = document.getElementById('admin-student-accordion-list');
-      const alphabeticalStudents = [...(users || [])].sort((a, b) => {
+      const alphabeticalStudents = [...studentsOnly].sort((a, b) => {
         return String(a.name || a.username).trim().localeCompare(String(b.name || b.username).trim());
       });
 
@@ -3247,11 +3011,8 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       `).join('');
 
       alphabeticalStudents.forEach((st, idx) => {
-        const stPhone = String(st.phone).trim();
-        const stAnswers = (allAnswers || []).filter(a => String(a.phone).trim() === stPhone).map(a => ({
-          QuestionID: a.question_id, QuestionText: a.question_text, Subject: a.subject, UserAnswer: a.user_answer, CorrectAnswer: a.correct_answer, IsCorrect: a.is_correct === 'YES' || a.is_correct === true, Timestamp: a.timestamp
-        }));
-        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === stPhone).map(t => ({
+        const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
+        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(st.phone).trim()).map(t => ({
           Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
         }));
 
@@ -3277,33 +3038,27 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
             <h4 style="margin-top:20px; color:var(--primary);">Practice Audit Log</h4>
             <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Status</th></tr></thead><tbody id="admin-rep-audit-${idx}"></tbody></table></div>
           `;
-          renderStudentDashboardAndOverview({ detailedAnswers: stAnswers, trialExams: stTrials }, null, null, null, null, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
+          renderStudentDashboardAndOverview({ 
+            detailedAnswers: metrics.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
+            trialExams: stTrials 
+          }, null, null, null, null, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
         }
       });
 
-      // 3. STUDENT OPTIMIZATION ANALYTICS (TAB 9) - SORTED BY TOP SCORER METRIC: (Overall Accuracy / Total Answered * 100)
+      // 3. STUDENT OPTIMIZATION ANALYTICS (TAB 9) - HARMONIZED ACCURACY / QUESTIONS
       const optAccordion = document.getElementById('manage-users-analytics-accordion');
       
-      const scoredStudents = (users || []).map(st => {
-        const stPhone = String(st.phone).trim();
-        const stAnswers = (allAnswers || []).filter(a => String(a.phone).trim() === stPhone);
-        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === stPhone);
-
-        let total = stAnswers.length;
-        stTrials.forEach(t => { try { total += (typeof t.answers_json === 'string' ? JSON.parse(t.answers_json) : t.answers_json).length; }catch(e){} });
-        let correct = stAnswers.filter(a => a.is_correct === 'YES' || a.is_correct === true).length;
-        stTrials.forEach(t => { try { correct += (typeof t.answers_json === 'string' ? JSON.parse(t.answers_json) : t.answers_json).filter(x=>x.IsCorrect).length; }catch(e){} });
-
-        const accuracy = total ? Math.round((correct / total) * 100) : 0;
-        // Formula: Overall Accuracy / Total Answered * 100 (top scorers on top)
-        const scoreMetric = total > 0 ? Number(((accuracy / total) * 100).toFixed(2)) : 0;
+      const scoredStudents = studentsOnly.map(st => {
+        const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
+        const scoreMetric = metrics.total > 0 ? Number(((metrics.accuracy / metrics.total) * 100).toFixed(2)) : 0;
 
         return {
           user: st,
-          total,
-          correct,
-          accuracy,
-          scoreMetric
+          total: metrics.total,
+          correct: metrics.correct,
+          accuracy: metrics.accuracy,
+          scoreMetric,
+          combined: metrics.combined
         };
       }).sort((a, b) => (b.scoreMetric - a.scoreMetric) || (b.accuracy - a.accuracy) || (b.total - a.total));
 
@@ -3339,30 +3094,19 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       `).join('');
 
       scoredStudents.forEach((item, idx) => {
-        const stPhone = String(item.user.phone).trim();
-        const stAnswers = (allAnswers || []).filter(a => String(a.phone).trim() === stPhone).map(a => ({
-          QuestionID: a.question_id, QuestionText: a.question_text, Subject: a.subject, UserAnswer: a.user_answer, CorrectAnswer: a.correct_answer, IsCorrect: a.is_correct === 'YES' || a.is_correct === true, Timestamp: a.timestamp
-        }));
-        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === stPhone).map(t => ({
+        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(item.user.phone).trim()).map(t => ({
           Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
         }));
 
-        renderStudentDashboardAndOverview({ detailedAnswers: stAnswers, trialExams: stTrials }, `opt-tot-${idx}`, `opt-acc-val-${idx}`, `opt-strong-${idx}`, `opt-weak-${idx}`, `opt-overview-${idx}`);
+        renderStudentDashboardAndOverview({ 
+          detailedAnswers: item.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
+          trialExams: stTrials 
+        }, `opt-tot-${idx}`, `opt-acc-val-${idx}`, `opt-strong-${idx}`, `opt-weak-${idx}`, `opt-overview-${idx}`);
       });
 
-      // 4. PERFORMANCE CONSOLIDATED SUMMARY (DEFAULT ALPHABETICAL BY NAME A-Z WITH WHATSAPP DETAILS BUTTON)
-      consolidatedStudentsList = (users || []).map((st, index) => {
-        const stPhone = String(st.phone).trim();
-        const stAnswers = (allAnswers || []).filter(a => String(a.phone).trim() === stPhone);
-        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === stPhone);
-        
-        let total = stAnswers.length;
-        stTrials.forEach(t => { try { total += (typeof t.answers_json === 'string' ? JSON.parse(t.answers_json) : t.answers_json).length; }catch(e){} });
-        let correct = stAnswers.filter(a => a.is_correct === 'YES' || a.is_correct === true).length;
-        stTrials.forEach(t => { try { correct += (typeof t.answers_json === 'string' ? JSON.parse(t.answers_json) : t.answers_json).filter(x=>x.IsCorrect).length; }catch(e){} });
-
-        const accuracy = total ? Math.round((correct / total) * 100) : 0;
-
+      // 4. PERFORMANCE CONSOLIDATED SUMMARY (DEFAULT ALPHABETICAL BY NAME A-Z)
+      consolidatedStudentsList = studentsOnly.map((st, index) => {
+        const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
         return {
           sno: index + 1,
           name: st.name || st.username,
@@ -3371,12 +3115,11 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
           div: st.division || 'A',
           firstLanguage: st.first_language || 'MI',
           phone: st.phone,
-          accuracy: accuracy,
-          totalAttempted: total
+          accuracy: metrics.accuracy,
+          totalAttempted: metrics.total
         };
       });
 
-      // Set default sorting to Alphabetical by Name (A to Z)
       sortColumn = 'name';
       sortAscending = true;
       renderConsolidatedTable();
@@ -3455,13 +3198,76 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       `).join('') || '<tr><td colspan="6" style="text-align:center;">No questions found.</td></tr>';
 
       updateUsersTableLiveStatus();
-
-      // 8. REARRANGED AUDIT ACCESS LOGS: GROUP SAME USERS TOGETHER
       renderGroupedAuditLogs(logs || []);
     }
 
     // =========================================================================
-    // AUDIT LOGS GROUPED BY USER
+    // ENROLLED USERS TABLE
+    // =========================================================================
+    function updateUsersTableLiveStatus() {
+      const uBody = document.getElementById('admin-users-body');
+      if (!uBody || !cachedAdminData?.users) return;
+
+      let presenceMap = {};
+      try {
+        if (presenceChannel) {
+          const state = presenceChannel.presenceState();
+          for (const key in state) {
+            const list = state[key];
+            if (list && list.length > 0) presenceMap[key] = list[list.length - 1];
+          }
+        }
+      } catch (e) {
+        presenceMap = {};
+      }
+
+      const users = cachedAdminData.users;
+      uBody.innerHTML = users.map(u => {
+        const pres = presenceMap[u.username];
+        const isOnline = navigator.onLine && Boolean(pres && pres.isGreen);
+        const tabAccessList = parseTabAccessList(u.role || u.tab_access || '1,2,3,4');
+        const isStaff = isStaffOrAdminUser(u);
+
+        return `
+          <tr>
+            <td><b>${escapeHtml(u.name)}</b> ${isStaff ? '<span class="badge badge-warning" style="font-size:10px;">STAFF</span>' : ''}</td>
+            <td>${u.gender || 'Male'}</td>
+            <td>${u.class || '10'}</td>
+            <td>${u.division || 'A'}</td>
+            <td><span class="badge badge-success">${u.first_language || 'MI'}</span></td>
+            <td>${u.phone}</td>
+            <td>${escapeHtml(u.username)}</td>
+            <td><span class="badge" style="background:#e0e7ff; color:#3730a3;">Tabs: ${tabAccessList.join(', ')}</span></td>
+            <td>
+              <span class="status-pill" style="padding:4px 10px; background:${isOnline ? '#dcfce7' : '#fee2e2'}; color:${isOnline ? '#15803d' : '#b91c1c'}; border:1px solid ${isOnline ? '#86efac' : '#fca5a5'};">
+                <span class="led-dot ${isOnline ? 'led-green' : 'led-red'}" style="width:9px; height:9px;"></span>
+                <b>${isOnline ? 'Online' : 'Offline'}</b>
+              </span>
+            </td>
+            <td style="display:flex; gap:6px; align-items:center;">
+              <button onclick="sendUserCredentialsWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.password || '')}', '${escapeHtml(u.class || '10')}', '${escapeHtml(u.division || 'A')}')" 
+                      class="btn btn-outline" 
+                      style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" 
+                      title="Send Login Credentials via WhatsApp">
+                💬
+              </button>
+              <button onclick="editUserByUsername('${u.username}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
+              <button onclick="confirmDeleteEntireUser('${u.username}', '${u.phone}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Permanently Delete User & All Data">🗑️ Delete</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function sendUserCredentialsWhatsapp(name, phone, username, password, userClass, div) {
+      const portalUrl = window.location.href.split('#')[0];
+      const text = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*\n📋 *YOUR LOGIN CREDENTIALS*\n\nDear *${name}*,\nHere are your credentials to access the USS Training Portal:\n\n👤 *Username:* ${username}\n🔑 *Password:* ${password}\n🏫 *Class & Div:* ${userClass}-${div}\n🌐 *Portal URL:* ${portalUrl}\n\n⚠️ *Daily Practice Notice:* The portal is open daily with an allotted 60-minute continuous practice allowance. Please log in every day to complete your sessions!`;
+      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    // =========================================================================
+    // AUDIT ACCESS LOGS (GROUPED BY USER)
     // =========================================================================
     function renderGroupedAuditLogs(logs) {
       const container = document.getElementById('admin-logs-cards-container');
@@ -3472,7 +3278,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         return;
       }
 
-      // Group logs by identifier (username)
       const grouped = {};
       logs.forEach(l => {
         const userKey = l.identifier || 'Unknown User';
@@ -3562,7 +3367,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     // =========================================================================
-    // CONSOLIDATED TABLE SORTING & RENDERING (ALPHABETICAL DEFAULT PRESERVED)
+    // PERFORMANCE CONSOLIDATED TABLE SORTING & RENDERING
     // =========================================================================
     function sortConsolidatedTable(key) {
       if (sortColumn === key) sortAscending = !sortAscending;
@@ -3597,12 +3402,72 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
             <button onclick="sendConsolidatedStudentWhatsapp('${item.phone}', '${escapeHtml(item.name)}', '${item.userClass}', '${item.div}')" 
                     class="btn btn-outline" 
                     style="padding:5px 10px; background:#dcfce7; color:#15803d; border-color:#86efac; font-size:15px; font-weight:800;" 
-                    title="Send Consolidated Subject Practice & Trial Exam Report via WhatsApp">
+                    title="Send Consolidated Report via WhatsApp">
               💬
             </button>
           </td>
         </tr>
       `).join('');
+    }
+
+    function sendConsolidatedStudentWhatsapp(phone, name, userClass, div) {
+      if (!cachedAdminData) return;
+      const { allAnswers, allTrialExams } = cachedAdminData;
+
+      const metrics = getStudentUniqueAnswerRecords(phone, allAnswers, allTrialExams);
+
+      // Subject-wise practice breakdown
+      const subjectStats = {};
+      metrics.combined.forEach(a => {
+        const s = a.subject || 'General';
+        if (!subjectStats[s]) subjectStats[s] = { total: 0, correct: 0 };
+        subjectStats[s].total++;
+        if (a.is_correct) subjectStats[s].correct++;
+      });
+
+      let subPracticeLines = [];
+      SUBJECT_ORDER.forEach(code => {
+        if (subjectStats[code]) {
+          const st = subjectStats[code];
+          const pct = Math.round((st.correct / st.total) * 100);
+          subPracticeLines.push(`• ${SUBJECT_MAP[code] || code}: ${st.correct}/${st.total} (${pct}%)`);
+        }
+      });
+
+      let msg = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*\n`;
+      msg += `📊 *CONSOLIDATED PERFORMANCE REPORT*\n\n`;
+      msg += `Student: *${name}*\n`;
+      msg += `Class & Div: ${userClass}-${div}\n`;
+      msg += `Phone: ${phone}\n`;
+      msg += `─────────────────────────\n`;
+      msg += `🏆 Overall Score: *${metrics.correct}/${metrics.total} (${metrics.accuracy}%)*\n\n`;
+      
+      msg += `📖 *SUBJECT PRACTICE BREAKDOWN:*\n`;
+      if (subPracticeLines.length > 0) {
+        msg += subPracticeLines.join('\n') + '\n';
+      } else {
+        msg += `• No subject practice recorded yet.\n`;
+      }
+
+      msg += `\n⭐ *TRIAL EXAM SUMMARY:*\n`;
+      msg += `• Total Trials Taken: ${metrics.trialsCount}\n`;
+      msg += `─────────────────────────\n`;
+      msg += `Keep practicing daily to secure top honors in USS 2026-27!`;
+
+      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    }
+
+    function sendAttendanceWhatsappAlert(name, phone, date, activities, duration, remaining, questions) {
+      const text = `Hi ${name}! Here is your TDTTI USS Training Portal Daily Attendance Report for ${date}:
+• Activities: ${activities}
+• Daily Practice Time: ${duration}
+• Remaining Allowance Today: ${remaining}
+• Questions Practiced: ${questions}
+Keep up the daily practice!`;
+
+      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
     }
 
     function printConsolidatedTable() {
@@ -3645,7 +3510,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     // =========================================================================
-    // CSV PARSING & IMPORTS
+    // CSV IMPORTS & USER CRUD
     // =========================================================================
     function parseCSVLine(line) {
       const result = [];
@@ -3963,9 +3828,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       showToast('Diagram deleted!', 'success');
     }
 
-    // =========================================================================
-    // USER MANAGEMENT & CASCADING PURGE
-    // =========================================================================
     function editUserByUsername(username) {
       const users = cachedAdminData?.users || [];
       const u = users.find(item => item.username === username);
@@ -4017,9 +3879,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       );
     }
 
-    // =========================================================================
-    // QUESTION STORAGE & CRUD
-    // =========================================================================
     async function uploadToSupabaseStorage(input) {
       if (!input.files || !input.files[0]) return;
       const file = input.files[0];
@@ -4029,29 +3888,19 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       const fileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
       const filePath = `diagrams/${fileName}`;
 
-      const { error } = await supabaseClient
-        .storage
-        .from('question-images')
-        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+      const { error } = await supabaseClient.storage.from('question-images').upload(filePath, file, { cacheControl: '3600', upsert: true });
 
       if (error) {
         showToast('Storage Upload Failed: ' + error.message, 'danger');
         return;
       }
 
-      const { data: publicUrlData } = supabaseClient
-        .storage
-        .from('question-images')
-        .getPublicUrl(filePath);
-
-      const publicUrl = publicUrlData.publicUrl;
-
-      document.getElementById('q-img-url').value = publicUrl;
+      const { data: publicUrlData } = supabaseClient.storage.from('question-images').getPublicUrl(filePath);
+      document.getElementById('q-img-url').value = publicUrlData.publicUrl;
       const preview = document.getElementById('q-img-preview');
-      preview.src = publicUrl;
+      preview.src = publicUrlData.publicUrl;
       preview.style.display = 'block';
       document.getElementById('q-img-delete-btn').style.display = 'inline-flex';
-
       showToast('Diagram uploaded successfully!', 'success');
     }
 
@@ -4060,7 +3909,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       if (!imgUrl) return;
 
       showToast('Deleting diagram...', 'info');
-
       try {
         if (imgUrl.includes('/question-images/')) {
           const filePath = imgUrl.split('/question-images/')[1];
@@ -4075,7 +3923,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       preview.src = '';
       preview.style.display = 'none';
       document.getElementById('q-img-delete-btn').style.display = 'none';
-
       showToast('Diagram deleted successfully!', 'success');
     }
 
@@ -4147,6 +3994,10 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       }
     }
 
+    function setTabPreset(val) {
+      document.getElementById('u-tab-access').value = val;
+    }
+
     function toggleKeepLoggedPill() {
       const pill = document.getElementById('keep-logged-pill');
       const text = document.getElementById('keep-logged-text');
@@ -4180,13 +4031,9 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       }
     }
 
-    // =========================================================================
-    // AUDIT LOG DELETION
-    // =========================================================================
     async function deleteSingleLog(logId) {
       showConfirmModal('Delete Access Log', 'Permanently delete this access log record?', async () => {
         let query = supabaseClient.from('logs').delete();
-
         if (typeof logId === 'string' && logId.startsWith('LOG-')) {
           query = query.eq('log_id', logId);
         } else if (!isNaN(logId)) {
@@ -4196,7 +4043,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         }
 
         const { error } = await query;
-
         if (!error) {
           showToast('Log deleted successfully!', 'success');
           loadAdminData();
@@ -4208,11 +4054,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
     async function clearAllLogs() {
       showConfirmModal('Clear All Access Logs', 'Are you sure you want to permanently delete ALL access logs?', async () => {
-        const { error } = await supabaseClient
-          .from('logs')
-          .delete()
-          .neq('id', 0);
-
+        const { error } = await supabaseClient.from('logs').delete().neq('id', 0);
         if (!error) {
           showToast('All access logs cleared!', 'success');
           loadAdminData();
@@ -4222,28 +4064,187 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       });
     }
 
-    function sendUserCredentialsWhatsapp(name, phone, username, password, userClass, div) {
-  const portalUrl = window.location.href.split('#')[0];
-  
-  const text = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*
-📋 *YOUR LOGIN CREDENTIALS*
+    function toggleUserPasswordVisibility() {
+      const passInput = document.getElementById('u-password');
+      if (!passInput) return;
+      passInput.type = (passInput.type === 'password') ? 'text' : 'password';
+    }
 
-Dear *${name}*,
-Here are your login credentials to access the USS Training Portal:
+    function openCSVGuideModal() { document.getElementById('csv-guide-modal').style.display = 'flex'; }
+    function closeCSVGuideModal() { document.getElementById('csv-guide-modal').style.display = 'none'; }
 
-👤 *Username:* ${username}
-🔑 *Password:* ${password}
-🏫 *Class & Div:* ${userClass}-${div}
-🌐 *Portal URL:* ${portalUrl}
+    function downloadSampleCSV() {
+      const sampleCSVContent = 
+`subject,question,option_a,option_b,option_c,option_d,correct_answer,image_url
+BS,"What is the powerhouse of the cell?",Mitochondria,Nucleus,Ribosome,Golgi Body,A,
+MM,"What is the value of Pi (approx)?",3.14,2.71,1.41,1.73,A,
+EN,"Choose the correct synonym of 'Huge':",Tiny,Gigantic,Narrow,Fragile,B,
+SS,"Who is known as the Father of the Indian Constitution?",Mahatma Gandhi,Dr. B.R. Ambedkar,Jawaharlal Nehru,Sardar Patel,B,
+MI,"കേരളത്തിന്റെ തലസ്ഥാനം ഏത്?",തിരുവനന്തപുരം,കൊച്ചി,കോഴിക്കോട്,കണ്ണൂർ,A,
+AR,"ما هو الحرف الأول في الأبجدية؟",ألف,باء,تاء,ثاء,A,
+SK,"सूर्यः कस्यां दिशि उदेति?",पूर्वस्याम्,पश्चिमस्याम्,उत्तरस्याम्,दक्षिणस्याम्,A,`;
 
-⚠️ *Notice:* Please keep your password safe and log in daily to complete your practice sessions!`;
+      const blob = new Blob([sampleCSVContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'uss_questions_sample.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Sample CSV template downloaded!', 'success');
+    }
 
-  const url = phone 
-    ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}`
-    : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    function getRelativeTime(dateStr) {
+      if (!dateStr || dateStr === '-') return 'N/A';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const now = new Date();
+      const diffMs = now - d;
+      const diffSec = Math.floor(diffMs / 1000);
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHr = Math.floor(diffMin / 60);
+      const diffDay = Math.floor(diffHr / 24);
 
-  window.open(url, '_blank');
-}
+      if (diffSec < 60) return 'Just now';
+      if (diffMin < 60) return `${diffMin} min ago`;
+      if (diffHr < 24) return `${diffHr} hr${diffHr > 1 ? 's' : ''} ago`;
+      return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+    }
+
+    async function refreshCurrentView() {
+      const icon = document.getElementById('global-refresh-icon');
+      if (icon) icon.classList.add('spinning');
+
+      const activeSec = document.querySelector('.section[style*="display: block"]');
+      const activeId = activeSec ? activeSec.id : 'practice-sec';
+
+      try {
+        if (activeId === 'portfolio-sec') await loadPortfolio();
+        else if (activeId === 'notif-sec') await loadNotifications();
+        else if (activeId === 'admin-online-sec') renderAllUsersOnlineCards();
+        else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(activeId)) await loadAdminData();
+      } catch (err) {}
+
+      setTimeout(() => {
+        if (icon) icon.classList.remove('spinning');
+        showToast('Data refreshed successfully!', 'success');
+      }, 500);
+    }
+
+    function getFullSubjectName(code) {
+      return SUBJECT_MAP[code] || code || 'General';
+    }
+
+    function updateNetworkStatus() {
+      const led = document.getElementById('network-led');
+      const text = document.getElementById('network-status-text');
+
+      if (!navigator.onLine) {
+        led.className = 'led-dot led-red';
+        text.innerText = 'Offline';
+      } else {
+        led.className = 'led-dot led-green';
+        text.innerText = 'Online';
+      }
+      renderAllUsersOnlineCards();
+      updateUsersTableLiveStatus();
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function showConfirmModal(title, msg, onConfirm) {
+      document.getElementById('modal-title').innerText = title;
+      document.getElementById('modal-msg').innerText = msg;
+      confirmCallback = onConfirm;
+      document.getElementById('confirm-modal').style.display = 'flex';
+      document.getElementById('modal-confirm-btn').onclick = () => { closeConfirmModal(true); };
+    }
+
+    function closeConfirmModal(isConfirmed) {
+      document.getElementById('confirm-modal').style.display = 'none';
+      if (isConfirmed && confirmCallback) confirmCallback();
+      confirmCallback = null;
+    }
+
+    function openSettingsModal() {
+      document.getElementById('set-name').innerText = currentUser.name || currentUser.username;
+      document.getElementById('set-gender').innerText = currentUser.gender || 'Male';
+      document.getElementById('set-class').innerText = currentUser.userClass || '10';
+      document.getElementById('set-div').innerText = currentUser.division || 'A';
+      document.getElementById('set-first-lang').innerText = currentUser.firstLanguage || 'MI';
+      document.getElementById('set-phone').innerText = currentUser.phone;
+      document.getElementById('set-username-display').innerText = currentUser.username;
+      document.getElementById('settings-modal').style.display = 'flex';
+    }
+
+    function formatDateStrict(dateStr) {
+      if (!dateStr || dateStr === '-' || dateStr === 'Active Now') return dateStr;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yyyy = d.getFullYear();
+      let hours = d.getHours();
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      const seconds = String(d.getSeconds()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const hh = String(hours).padStart(2, '0');
+
+      return `${dd}/${mm}/${yyyy}, ${hh}:${minutes}:${seconds} ${ampm}`;
+    }
+
+    function getDeviceInfo() {
+      const ua = navigator.userAgent;
+      const platform = navigator.platform || 'Unknown';
+      let os = "Unknown OS";
+      if (ua.includes("Win")) os = "Windows PC";
+      else if (ua.includes("Android")) os = "Android Device";
+      else if (ua.includes("iPhone")) os = "Apple iPhone";
+      else if (ua.includes("Mac")) os = "macOS";
+      else if (ua.includes("Linux")) os = "Linux Desktop";
+
+      let browser = "Browser";
+      if (ua.includes("Edg")) browser = "Edge";
+      else if (ua.includes("Chrome")) browser = "Chrome";
+      else if (ua.includes("Safari")) browser = "Safari";
+      else if (ua.includes("Firefox")) browser = "Firefox";
+
+      return `${os} | ${browser} (${platform})`;
+    }
+
+    function setProgress(percent) {
+      const bar = document.getElementById('progress-bar');
+      if (!bar) return;
+      bar.style.width = percent + '%';
+      if (percent >= 100) {
+        setTimeout(() => { 
+          bar.style.opacity = '0'; 
+          setTimeout(() => { 
+            bar.style.width = '0%'; 
+            bar.style.opacity = '1'; 
+          }, 250); 
+        }, 300);
+      } else {
+        bar.style.opacity = '1';
+      }
+    }
   </script>
 </body>
 </html>
