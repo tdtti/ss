@@ -1515,7 +1515,7 @@
     }
 
     function getTodayKey(phoneOrUser) {
-      const id = phoneOrUser || currentUser?.phone || currentUser?.username || 'user';
+      const id = phoneOrUser || currentUser?.username || currentUser?.phone || 'user';
       return `usage_${id}_${getTodayDateIso()}`;
     }
 
@@ -1525,11 +1525,11 @@
       return Math.max(localVal, cachedTodayUsedSeconds);
     }
 
-    async function fetchSupabaseDailyUsage(phone) {
-      if (!phone) return 0;
+    async function fetchSupabaseDailyUsage(username) {
+      if (!username) return 0;
       try {
         const todayIso = getTodayDateIso();
-        const dailyAttId = `ATT-${String(phone).trim()}-${todayIso}-DAILY`;
+        const dailyAttId = `ATT-${String(username).trim()}-${todayIso}-DAILY`;
         
         const { data } = await supabaseClient
           .from('attendance')
@@ -1675,8 +1675,9 @@
       const mins = Math.floor(totalSecondsToday / 60);
       const secs = totalSecondsToday % 60;
 
+      // Unique ID keyed by username so siblings sharing a phone number don't overwrite each other
       const attendanceEntry = {
-        attendance_id: `ATT-${String(currentUser.phone).trim()}-${todayIso}-DAILY`,
+        attendance_id: `ATT-${String(currentUser.username).trim()}-${todayIso}-DAILY`,
         student_name: currentUser.name || currentUser.username,
         phone: String(currentUser.phone || '').trim(),
         class: String(currentUser.userClass || '10'),
@@ -1732,8 +1733,9 @@
           }
 
           // 3. Clear in Supabase attendance table
+          // In adminResetStudentQuota:
           try {
-            const dailyAttId = `ATT-${cleanPhone}-${todayIso}-DAILY`;
+            const dailyAttId = `ATT-${cleanUser}-${todayIso}-DAILY`;
             await supabaseClient
               .from('attendance')
               .upsert([{
@@ -1743,7 +1745,7 @@
                 date: cleanDate,
                 duration_seconds: 0,
                 duration_text: '0m 00s',
-                score: 'Active'
+                score: 'Reset by Admin'
               }], { onConflict: 'attendance_id' });
           } catch (e) {}
 
