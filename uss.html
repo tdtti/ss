@@ -1511,18 +1511,16 @@
       if (!currentUser) return;
 
       const quotaPill = document.getElementById('header-quota-pill');
-      const quotaText = document.getElementById('header-quota-text');
 
+      // HIDE DAILY LIMIT TIMER COMPLETELY FOR NON-STUDENTS (ADMIN & QUESTION MASTER)
       if (isStaffOrAdminUser(currentUser)) {
         if (quotaPill) {
-          quotaPill.style.display = 'inline-flex';
-          quotaPill.style.borderColor = '#10b981';
-          quotaPill.style.color = '#a7f3d0';
-          if (quotaText) quotaText.innerText = 'Staff (Unlimited)';
+          quotaPill.style.display = 'none';
         }
         return;
       }
 
+      // SHOW ONLY FOR STUDENTS
       if (quotaPill) quotaPill.style.display = 'inline-flex';
 
       const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone);
@@ -1813,6 +1811,7 @@
           renderAllUsersOnlineCards();
           updateUsersTableLiveStatus();
         })
+        // INSTANT BROADCAST LISTENER
         .on('broadcast', { event: 'heartbeat_ping' }, (payload) => {
           if (payload && payload.payload) {
             window._liveHeartbeats = window._liveHeartbeats || {};
@@ -1830,17 +1829,19 @@
             
             clearInterval(presenceHeartbeatInterval);
             presenceHeartbeatInterval = setInterval(() => {
-              if (navigator.onLine && !isUserCurrentlyIdle && document.visibilityState === 'visible') {
+              if (navigator.onLine && !isUserCurrentlyIdle && document.visibilityState === 'visible' && isWindowCurrentlyFocused) {
                 broadcastLivePulse('Online & Active', true);
               }
-            }, 10000);
+            }, 8000); // 8s heartbeat
           }
         });
 
+      // 1. INSTANT TAB SWITCH / MINIMIZE DETECTION
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
           isWindowCurrentlyFocused = false;
           updatePausedQuotaUI();
+          // Instantly send leave event to admin feed
           broadcastLivePulse('Switched Tab / Opened Another Page', false);
           updatePresenceLiveState('Switched Tab / Opened Another Page');
         } else {
@@ -1851,13 +1852,12 @@
         }
       });
 
+      // 2. WINDOW BLUR / APP SWITCH / MINIMIZE
       window.addEventListener('blur', () => {
         isWindowCurrentlyFocused = false;
         updatePausedQuotaUI();
-        if (document.visibilityState !== 'hidden') {
-          broadcastLivePulse('Opened Another App / Window Inactive', false);
-          updatePresenceLiveState('Opened Another App / Window Inactive');
-        }
+        broadcastLivePulse('Opened Another App / Window Inactive', false);
+        updatePresenceLiveState('Opened Another App / Window Inactive');
       });
 
       window.addEventListener('focus', () => {
@@ -1868,6 +1868,7 @@
         updatePresenceLiveState('Online & Active');
       });
 
+      // 3. IDLE DETECTION (>90s OF INACTIVITY)
       const resetIdleTimer = () => {
         if (isUserCurrentlyIdle) {
           isUserCurrentlyIdle = false;
@@ -1889,6 +1890,7 @@
       });
       resetIdleTimer();
 
+      // 4. INSTANT APP EXIT / WINDOW CLOSE
       const handleAppExit = () => {
         broadcastLivePulse('Left / Closed the Portal', false);
         try {
@@ -1971,6 +1973,7 @@
       const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
       const cleanDate = new Date().toLocaleDateString('en-GB');
 
+      // Collect presence entries
       let presenceEntries = [];
       try {
         if (presenceChannel) {
@@ -1984,6 +1987,7 @@
         presenceEntries = [];
       }
 
+      // Merge broadcasted pings (overrides socket presence with highest priority)
       const livePings = window._liveHeartbeats || {};
       for (const k in livePings) {
         const ping = livePings[k];
@@ -2028,15 +2032,22 @@
           statusText = pres.liveStatus;
         }
 
+        // STRICT ACCURACY: User is Active ONLY if explicitly "Online & Active" and isGreen is TRUE
+        // If statusText is "Switched Tab...", "Opened Another App...", "Inactive / Idle...", or "Left...", isOnlineAndActive is FALSE
         const isOnlineAndActive = adminIsOnline && Boolean(
           pres && pres.isGreen === true && (statusText === 'Online & Active')
         );
 
-        // TRANSITION SOUND & TOAST ALERT
+        // =============================================================
+        // ADMIN-ONLY NOTIFICATION (CHIMES & TOASTS SUPPRESSED FOR STUDENTS)
+        // =============================================================
         const studentUniqueKey = cleanDbPhone || cleanDbUser;
         const previousState = window._previousUserStates[studentUniqueKey];
 
-        if (window._hasInitialPresenceSynced && previousState !== undefined && previousState !== isOnlineAndActive) {
+        // Only trigger alerts if CURRENT USER is Admin or Staff
+        const amIAdminOrStaff = isStaffOrAdminUser(currentUser);
+
+        if (amIAdminOrStaff && window._hasInitialPresenceSynced && previousState !== undefined && previousState !== isOnlineAndActive) {
           const stName = u.name || u.username;
           const stClass = u.class || '10';
           const stDiv = u.division || 'A';
@@ -2632,7 +2643,7 @@
 
       const upsertRows = sessionAnswersLog.map(q => ({
         timestamp: formattedDT,
-        phone: currentUser.phone,
+        phone: String(currentUser.phone || '').trim(),
         student_name: currentUser.name || currentUser.username,
         class: currentUser.userClass || '10',
         division: currentUser.division || 'A',
@@ -2653,7 +2664,7 @@
       await supabaseClient.from('attendance').upsert([{
         attendance_id: attId,
         student_name: currentUser.name || currentUser.username,
-        phone: String(currentUser.phone || ''),
+        phone: String(currentUser.phone || '').trim(),
         class: String(currentUser.userClass || '10'),
         division: String(currentUser.division || 'A'),
         date: cleanDate,
@@ -2664,6 +2675,21 @@
         questions_attended: total,
         score: `${score} / ${total}`
       }], { onConflict: 'attendance_id' });
+
+      // DISPATCH NOTIFICATION ON EARLY EXIT
+      try {
+        const notifId = 'NOTIF-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        const subjName = sessionAnswersLog[0]?.Subject || 'Subject Practice';
+        await supabaseClient.from('notifications').insert([{
+          notification_id: notifId,
+          timestamp: formattedDT,
+          recipient_phone: String(currentUser.phone || '').trim(),
+          title: `${subjName} Practice Summary`,
+          message: `Dear ${currentUser.name || currentUser.username},\nYou concluded your practice session in ${subjName} with ${total} question(s) completed.\n• Correct: ${score}\n• Incorrect: ${total - score}`,
+          sender: 'Practice Monitor'
+        }]);
+        loadNotifications();
+      } catch (err) {}
 
       showToast(`Saved ${total} completed question(s) to Subject Overview & Attendance!`, 'success');
     }
@@ -2912,7 +2938,7 @@
     }
 
     // =========================================================================
-    // CONSOLIDATION VIEW
+    // CONSOLIDATION VIEW WITH WORKING NOTIFICATION DISPATCH
     // =========================================================================
     async function showConsolidationView() {
       clearInterval(timerInterval);
@@ -2921,7 +2947,6 @@
       const total = sessionAnswersLog.length;
       const score = sessionAnswersLog.filter(a => a.IsCorrect).length;
       const victoryRate = total ? Math.round((score / total) * 100) : 0;
-
       const formattedDT = formatDateStrict(new Date().toISOString());
 
       document.getElementById('summary-score-val').innerText = `${score} / ${total}`;
@@ -2942,17 +2967,45 @@
 
       document.getElementById('consolidation-card').style.display = 'block';
 
+      // 1. SAVE TRIAL EXAM RECORD IF IN TRIAL MODE
       if (isTrialMode) {
-        await supabaseClient.from('trial_exams').insert([{
+        try {
+          await supabaseClient.from('trial_exams').insert([{
+            timestamp: formattedDT,
+            phone: String(currentUser.phone || '').trim(),
+            student_name: currentUser.name || currentUser.username,
+            class: currentUser.userClass || '10',
+            division: currentUser.division || 'A',
+            score: score,
+            total_questions: total,
+            answers_json: sessionAnswersLog
+          }]);
+        } catch (e) {
+          console.warn("Trial exam insert warning:", e);
+        }
+      }
+
+      // 2. DISPATCH NOTIFICATION TO SUPABASE (FIX FOR MISSING NOTIFICATIONS)
+      const studentPlainInfo = `${currentUser.name || currentUser.username} (Class ${currentUser.userClass || '10'}-${currentUser.division || 'A'})`;
+      const subjName = isTrialMode ? 'Trial Exam' : (sessionAnswersLog[0]?.Subject || 'Subject Practice');
+      const notifTitle = `${subjName} Activity Summary`;
+      const notifMsg = `Dear ${currentUser.name || currentUser.username},\nYou completed a ${subjName} session on ${formattedDT}.\n\n• Total Attended: ${total} Questions\n• Correct Answers: ${score}\n• Incorrect Answers: ${total - score}\n• Accuracy Rate: ${victoryRate}%`;
+
+      try {
+        const notifId = 'NOTIF-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+        await supabaseClient.from('notifications').insert([{
+          notification_id: notifId,
           timestamp: formattedDT,
-          phone: currentUser.phone,
-          student_name: currentUser.name || currentUser.username,
-          class: currentUser.userClass || '10',
-          division: currentUser.division || 'A',
-          score: score,
-          total_questions: total,
-          answers_json: sessionAnswersLog
+          recipient_phone: String(currentUser.phone || '').trim(),
+          title: notifTitle,
+          message: notifMsg,
+          sender: 'Practice Monitor'
         }]);
+
+        // Auto-refresh notification badge
+        loadNotifications();
+      } catch (err) {
+        console.warn("Notification insert error:", err);
       }
     }
 
@@ -3190,8 +3243,9 @@
       const permittedTabs = parseTabAccessList(currentUser?.tabAccess || currentUser?.role || '1,2,3,4');
       const isPrivileged = permittedTabs.some(t => Number(t) >= 5);
 
-      if (!isPrivileged) {
-        query = query.or(`recipient_phone.eq.ALL,recipient_phone.eq.${currentUser.phone}`);
+      if (!isPrivileged && currentUser && currentUser.phone) {
+        const cleanPhone = String(currentUser.phone).trim();
+        query = query.or(`recipient_phone.eq.ALL,recipient_phone.eq.${cleanPhone},recipient_phone.ilike.%${cleanPhone}%`);
       }
 
       const { data: rawNotifications } = await query;
