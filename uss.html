@@ -644,6 +644,25 @@
         <button class="mode-btn" onclick="switchPracticeMode('TRIAL')">⭐ Trial Exam Mode</button>
       </div>
 
+      <!-- TRIAL VERSION ANNOUNCEMENT BANNER -->
+      <div id="portal-trial-banner" class="card" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1.5px solid #f59e0b; padding: 16px 20px; border-radius: 14px; margin-bottom: 16px; box-shadow: var(--shadow-sm);">
+        <div style="display:flex; align-items:flex-start; gap:12px;">
+          <span style="font-size:24px; line-height:1;">⚠️</span>
+          <div style="font-size:13.5px; line-height:1.6; color:#92400e;">
+            <div style="font-weight:800; font-size:14px; color:#78350f; margin-bottom:2px;">
+              PORTAL VERSION 1.0 (2026) — TRIAL VERSION ACTIVE
+            </div>
+            <div>
+              This is a trial version of the portal. <strong>All Data will be erased on Sunday, 08/11/2026</strong>. Please test all tabs and verify that all features are running successfully.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MALAYALAM INSTRUCTIONS SECTION -->
+      <div id="practice-instructions-section" class="card" style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; padding: 22px 24px; margin-bottom: 24px; border-radius: 16px; box-shadow: var(--shadow-sm);">
+        <!-- ... existing Malayalam content ... -->
+
       <!-- MALAYALAM INSTRUCTIONS SECTION (VISIBLE BY DEFAULT, HIDDEN IN EXAM/PRACTICE MODES) -->
       <div id="practice-instructions-section" class="card" style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; padding: 22px 24px; margin-bottom: 24px; border-radius: 16px; box-shadow: var(--shadow-sm);">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
@@ -2066,7 +2085,6 @@
     async function renderAllUsersOnlineCards() {
       const activeFeed = document.getElementById('online-active-feed');
       const inactiveFeed = document.getElementById('online-inactive-feed');
-      if (!activeFeed || !inactiveFeed) return;
 
       if (!cachedAdminData || !cachedAdminData.users || cachedAdminData.users.length === 0) {
         const { data: quickUsers } = await supabaseClient.from('users').select('*');
@@ -2085,7 +2103,7 @@
       const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
       const cleanDate = new Date().toLocaleDateString('en-GB');
 
-      // Collect presence entries
+      // 1. Gather live presence entries
       let presenceEntries = [];
       try {
         if (presenceChannel) {
@@ -2099,7 +2117,6 @@
         presenceEntries = [];
       }
 
-      // Merge broadcasted pings (overrides socket presence with highest priority)
       const livePings = window._liveHeartbeats || {};
       for (const k in livePings) {
         const ping = livePings[k];
@@ -2115,11 +2132,55 @@
         }
       }
 
-      const activeList = [];
-      const inactiveList = [];
       const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-      // Exclude Admin & Question Master from Student Radar
+      // =======================================================================
+      // 2. CHECK IF ANY ADMIN/TEACHER IS CURRENTLY ONLINE (FOR STUDENT SCREENS)
+      // =======================================================================
+      const staffUsers = usersList.filter(u => isStaffOrAdminUser(u));
+      let isAdminCurrentlyOnline = false;
+
+      staffUsers.forEach(adminUser => {
+        const aUser = cleanString(adminUser.username);
+        const aName = cleanString(adminUser.name);
+        const isOnline = presenceEntries.some(p => {
+          const pUser = cleanString(p.username);
+          const pName = cleanString(p.name);
+          return (p.isGreen === true) && (pUser === aUser || pName === aName);
+        });
+        if (isOnline) isAdminCurrentlyOnline = true;
+      });
+
+      // Update the student's sub-header pill
+      const studentAdminPill = document.getElementById('student-admin-status-pill');
+      const adminLed = document.getElementById('admin-live-led');
+      const adminText = document.getElementById('admin-live-status-text');
+
+      if (studentAdminPill) {
+        // Shown only if logged-in user is a student
+        if (!isStaffOrAdminUser(currentUser)) {
+          studentAdminPill.style.display = 'inline-flex';
+          if (isAdminCurrentlyOnline) {
+            adminLed.className = 'led-dot led-green';
+            adminText.innerText = 'Teacher / Admin Active';
+            studentAdminPill.style.borderColor = '#86efac';
+            studentAdminPill.style.color = '#86efac';
+          } else {
+            adminLed.className = 'led-dot led-red';
+            adminText.innerText = 'Teacher / Admin Offline';
+            studentAdminPill.style.borderColor = '#60a5fa';
+            studentAdminPill.style.color = '#bfdbfe';
+          }
+        } else {
+          studentAdminPill.style.display = 'none';
+        }
+      }
+
+      // If feeds aren't present (e.g., student view), stop here
+      if (!activeFeed || !inactiveFeed) return;
+
+      const activeList = [];
+      const inactiveList = [];
       const onlyStudents = usersList.filter(u => !isStaffOrAdminUser(u));
 
       onlyStudents.forEach(u => {
@@ -2144,32 +2205,26 @@
           statusText = pres.liveStatus;
         }
 
-        // STRICT ACCURACY: User is Active ONLY if explicitly "Online & Active" and isGreen is TRUE
-        // If statusText is "Switched Tab...", "Opened Another App...", "Inactive / Idle...", or "Left...", isOnlineAndActive is FALSE
         const isOnlineAndActive = adminIsOnline && Boolean(
           pres && pres.isGreen === true && (statusText === 'Online & Active')
         );
 
-        // =============================================================
-        // ADMIN-ONLY NOTIFICATION (CHIMES & TOASTS SUPPRESSED FOR STUDENTS)
-        // =============================================================
+        // =====================================================================
+        // 3. ADMIN-ONLY SHORTENED NOTIFICATION: "<NAME> ACTIVE" / "<NAME> INACTIVE"
+        // =====================================================================
         const studentUniqueKey = cleanDbPhone || cleanDbUser;
         const previousState = window._previousUserStates[studentUniqueKey];
-
-        // Only trigger alerts if CURRENT USER is Admin or Staff
         const amIAdminOrStaff = isStaffOrAdminUser(currentUser);
 
         if (amIAdminOrStaff && window._hasInitialPresenceSynced && previousState !== undefined && previousState !== isOnlineAndActive) {
-          const stName = u.name || u.username;
-          const stClass = u.class || '10';
-          const stDiv = u.division || 'A';
+          const formattedName = String(u.name || u.username).trim().toUpperCase();
 
           if (isOnlineAndActive) {
-            playEntryChime(); // ENTRY SOUND
-            showToast(`🟢 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) entered the portal!`, 'success');
+            playEntryChime();
+            showToast(`🟢 ${escapeHtml(formattedName)} ACTIVE`, 'success');
           } else {
-            playExitChime(); // EXIT SOUND
-            showToast(`🔴 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) left the app (${escapeHtml(statusText)})`, 'danger');
+            playExitChime();
+            showToast(`🔴 ${escapeHtml(formattedName)} INACTIVE`, 'danger');
           }
         }
 
@@ -2280,11 +2335,9 @@
                 <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                   <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
                     <span>${isAct ? '⚡' : '💤'}</span>
-                    <!-- SHOWS REAL-TIME PRESENT ACTIVITY WHEN ACTIVE, OR STATUS WHEN INACTIVE -->
                     <span>${escapeHtml(isAct ? u.activeContext : u.statusText)}</span>
                   </span>
 
-                  <!-- TIME LEFT BADGE -->
                   <span class="badge ${u.timeLeftBadgeClass}" style="display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:11px; padding:3px 8px;">
                     <span>⏳</span>
                     <span>${escapeHtml(u.timeLeftFormatted)}</span>
@@ -2307,7 +2360,6 @@
                 <div><strong>Login:</strong> ${u.loginTime}</div>
                 <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
                 
-                <!-- NEW SVG RESTORE QUOTA BUTTON -->
                 <div style="grid-column: span 2; margin-top: 8px;">
                   <button onclick="event.stopPropagation(); adminResetStudentQuota('${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.name || u.username)}')" 
                           class="btn btn-outline" 
@@ -2707,6 +2759,8 @@
         // SHOW INSTRUCTIONS SECTION
         const instrSec = document.getElementById('practice-instructions-section');
         if (instrSec) instrSec.style.display = 'block';
+        const banner = document.getElementById('portal-trial-banner');
+        if (banner) banner.style.display = 'block';
 
         document.getElementById('subject-practice-box').style.display = 'none';
         document.getElementById('trial-exam-box').style.display = 'none';
@@ -2751,6 +2805,9 @@
       const instrSec = document.getElementById('practice-instructions-section');
       if (instrSec) instrSec.style.display = 'none';
 
+      const banner = document.getElementById('portal-trial-banner');
+      if (banner) banner.style.display = 'none';
+
       document.getElementById('quiz-card').style.display = 'none';
       document.getElementById('no-questions-card').style.display = 'none';
       document.getElementById('no-trial-card').style.display = 'none';
@@ -2784,6 +2841,8 @@
       // RESTORE MALAYALAM INSTRUCTIONS SECTION
       const instrSec = document.getElementById('practice-instructions-section');
       if (instrSec) instrSec.style.display = 'block';
+      const banner = document.getElementById('portal-trial-banner');
+      if (banner) banner.style.display = 'block';
 
       document.getElementById('subject-practice-box').style.display = 'none';
       document.getElementById('trial-exam-box').style.display = 'none';
