@@ -547,48 +547,59 @@
   <!-- NUMBERED TAB NAVIGATION BAR -->
   <div class="tab-bar-container" id="tab-bar-container" style="display: none;">
     <button class="icon-tab-btn active tab-permission-item" data-tab-no="1" id="tab-practice" onclick="showSection('practice-sec')" title="Practice Center">
+      <span class="tab-no-pill">1</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Practice</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="2" id="tab-portfolio" onclick="showSection('portfolio-sec')" title="My Dashboard & Portfolio">
+      <span class="tab-no-pill">2</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Portfolio</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="3" id="tab-notif" onclick="showSection('notif-sec')" title="Notification Center">
+      <span class="tab-no-pill">3</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Notifs</span>
       <span class="tab-badge-dot" id="notif-badge-dot" style="display:none;"></span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="4" id="tab-refresh" onclick="refreshCurrentView()" title="Refresh Data">
+      <span class="tab-no-pill">4</span>
       <svg id="global-refresh-icon" viewBox="0 0 24 24" fill="none"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Refresh</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="5" id="tab-attendance" onclick="showSection('admin-attendance-sec')" title="Student Attendance Tracker">
+      <span class="tab-no-pill">5</span>
       <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/></svg>
       <span>Attendance</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="6" id="tab-student-reports" onclick="showSection('admin-report-sec')" title="Student Reports">
+      <span class="tab-no-pill">6</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Reports</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="7" id="tab-resets" onclick="showSection('admin-resets-sec')" title="Reset Requests">
+      <span class="tab-no-pill">7</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8m0 0V3m0 5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Resets</span>
       <span class="tab-badge-dot" id="reset-badge-dot" style="display:none;"></span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="8" id="tab-manage-qs" onclick="showSection('manage-qs-sec')" title="Manage Questions">
+      <span class="tab-no-pill">8</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Questions</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="9" id="tab-manage-users" onclick="showSection('manage-users-sec')" title="Manage Users & Optimization">
+      <span class="tab-no-pill">9</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Users</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="10" id="tab-online" onclick="showSection('admin-online-sec')" title="Live Online & Active Status">
+      <span class="tab-no-pill">10</span>
       <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>
       <span>Online</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="11" id="tab-logs" onclick="showSection('admin-logs-sec')" title="Audit Access Logs">
+      <span class="tab-no-pill">11</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Logs</span>
     </button>
@@ -624,16 +635,17 @@
     </section>
 
     <!-- 1. PRACTICE TAB -->
+    <!-- 1. PRACTICE TAB -->
     <section id="practice-sec" class="section" style="display:none;">
       <div id="practice-daily-limit-banner" style="display:none;"></div>
       
       <!-- HEADER WITH TITLE ON LEFT AND GRAND TOTAL QUESTIONS ON RIGHT -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-        <h3 style="margin: 0; color: var(--primary);">Practice Center </h3>
+        <h3 style="margin: 0; color: var(--primary);">Practice Center (Tab 1)</h3>
         
         <!-- GRAND TOTAL QUESTION BANK BADGE -->
         <div id="grand-total-questions-badge" style="display: inline-flex; align-items: center; gap: 8px; background: #eff6ff; color: #1e40af; border: 1.5px solid #bfdbfe; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 13px; box-shadow: var(--shadow-sm);">
-          <span>📚 </span>
+          <span>📚 Total Questions in Bank:</span>
           <span id="grand-total-q-count" class="badge badge-success" style="font-size: 13px; padding: 3px 9px;">Loading...</span>
         </div>
       </div>
@@ -643,25 +655,6 @@
         <button class="mode-btn" onclick="switchPracticeMode('PRACTICE')">📖 Subject Practice</button>
         <button class="mode-btn" onclick="switchPracticeMode('TRIAL')">⭐ Trial Exam Mode</button>
       </div>
-
-      <!-- TRIAL VERSION ANNOUNCEMENT BANNER -->
-      <div id="portal-trial-banner" class="card" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1.5px solid #f59e0b; padding: 16px 20px; border-radius: 14px; margin-bottom: 16px; box-shadow: var(--shadow-sm);">
-        <div style="display:flex; align-items:flex-start; gap:12px;">
-          <span style="font-size:24px; line-height:1;">⚠️</span>
-          <div style="font-size:13.5px; line-height:1.6; color:#92400e;">
-            <div style="font-weight:800; font-size:14px; color:#78350f; margin-bottom:2px;">
-              PORTAL VERSION 1.0 (2026) — TRIAL VERSION ACTIVE
-            </div>
-            <div>
-              This is a trial version of the portal. <strong>All Data will be erased on Sunday, 08/11/2026</strong>. Please test all tabs and verify that all features are running successfully.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- MALAYALAM INSTRUCTIONS SECTION -->
-      <div id="practice-instructions-section" class="card" style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; padding: 22px 24px; margin-bottom: 24px; border-radius: 16px; box-shadow: var(--shadow-sm);">
-        <!-- ... existing Malayalam content ... -->
 
       <!-- MALAYALAM INSTRUCTIONS SECTION (VISIBLE BY DEFAULT, HIDDEN IN EXAM/PRACTICE MODES) -->
       <div id="practice-instructions-section" class="card" style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; padding: 22px 24px; margin-bottom: 24px; border-radius: 16px; box-shadow: var(--shadow-sm);">
@@ -691,6 +684,11 @@
             ✨ എല്ലാ ദിവസവും കൃത്യമായി പരിശീലിക്കുക, മികച്ച വിജയം നേടുക!
           </div>
         </div>
+      </div>
+
+      <div class="mode-selector-group" id="practice-mode-selector">
+        <button class="mode-btn" onclick="switchPracticeMode('PRACTICE')">📖 Subject Practice</button>
+        <button class="mode-btn" onclick="switchPracticeMode('TRIAL')">⭐ Trial Exam Mode</button>
       </div>
 
       <div id="subject-practice-box" class="card" style="display:none;">
@@ -797,12 +795,11 @@
         </div>
       </div>
     </section>
-    
 
     <!-- 2. MY DASHBOARD & PORTFOLIO SECTION -->
     <section id="portfolio-sec" class="section" style="display:none;">
-      <h3 style="margin-top:0; color:var(--primary); display:flex; align-items:center; gap:8px;">📅 My Attendance & Practice Time</h3>
       <div id="portfolio-attendance-section" class="card" style="background:#ffffff; border:1px solid var(--border-color); margin-bottom:25px;">
+        <h3 style="margin-top:0; color:var(--primary); display:flex; align-items:center; gap:8px;">📅 My Attendance & Practice Time</h3>
         <div id="portfolio-daily-allowance-box" style="margin-bottom:16px;"></div>
         
         <div class="stats-grid" style="margin-bottom:18px;">
@@ -827,7 +824,7 @@
         </div>
       </div>
 
-      <h3 style="margin-top:0; color:var(--primary);">My Performance Dashboard</h3>
+      <h3 style="margin-top:0; color:var(--primary);">My Performance Dashboard (Tab 2)</h3>
       <div class="stats-grid">
         <div class="card" style="margin:0;">
           <p style="margin:0; color:var(--text-muted); font-size:13px; font-weight:700;">Total Answered Questions</p>
@@ -881,7 +878,7 @@
     <!-- 3. NOTIFICATION CENTER TAB -->
     <section id="notif-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin:0; color: #1B257D;">Notification Center</h2>
+        <h2 style="margin:0; color: #1B257D;">Notification Center (Tab 3)</h2>
         <button class="btn btn-outline" onclick="markAllNotifsAsRead()">Mark All Read ✓</button>
       </div>
       
@@ -931,12 +928,12 @@
     <section id="admin-attendance-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
         <div>
-          <h2 style="margin:0; color: #1B257D;">Student Daily Attendance Tracker</h2>
-          
+          <h2 style="margin:0; color: #1B257D;">Student Daily Attendance Tracker (Tab 5)</h2>
+          <p style="color:var(--text-muted); font-size:13px; margin:4px 0 0 0;">Unified deduplication across practice and trial exams. Non-students excluded.</p>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button onclick="syncPastActivitiesToSupabase()" class="btn btn-outline" title="Scan practice and trial exams to populate attendance in Supabase">⚡ </button>
-          <button onclick="loadAdminData()" class="btn btn-primary">🔄 </button>
+          <button onclick="syncPastActivitiesToSupabase()" class="btn btn-outline" title="Scan practice and trial exams to populate attendance in Supabase">⚡ Sync Past Activities</button>
+          <button onclick="loadAdminData()" class="btn btn-primary">🔄 Refresh Attendance</button>
         </div>
       </div>
 
@@ -964,7 +961,8 @@
     <!-- TAB 6: EVALUATION REPORTS -->
     <section id="admin-report-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h2 style="margin:0; color: #1B257D;">Evaluation Reports </h2>
+        <h2 style="margin:0; color: #1B257D;">Evaluation Reports (Tab 6)</h2>
+        <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700;">Alphabetical Order (A to Z)</span>
       </div>
       <div id="admin-student-accordion-list"></div>
     </section>
@@ -972,8 +970,8 @@
     <!-- TAB 7: RESET REQUESTS -->
     <section id="admin-resets-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h2 style="margin:0; color: #1B257D;">Reset Requests </h2>
-        <button onclick="refreshResetRequests()" class="btn btn-outline" title="Refresh Requests">🔄 </button>
+        <h2 style="margin:0; color: #1B257D;">Reset Requests (Tab 7)</h2>
+        <button onclick="refreshResetRequests()" class="btn btn-outline" title="Refresh Requests">🔄 Refresh</button>
       </div>
       <div class="table-responsive">
         <table class="data-table">
@@ -988,12 +986,12 @@
     <!-- TAB 8: MANAGE QUESTIONS -->
     <section id="manage-qs-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
-        <h2 style="margin:0; color: #1B257D;">Manage Questions </h2>
+        <h2 style="margin:0; color: #1B257D;">Manage Questions (Tab 8)</h2>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <button type="button" class="btn btn-outline" onclick="openCSVGuideModal()" style="padding:8px 14px;" title="View CSV formatting guide and sample">💡 </button>
+          <button type="button" class="btn btn-outline" onclick="openCSVGuideModal()" style="padding:8px 14px;" title="View CSV formatting guide and sample">💡 CSV Guide & Example</button>
           <label class="btn btn-primary" title="Import Questions from CSV" style="cursor:pointer; padding:8px 14px;">
             <input type="file" accept=".csv" onchange="handleCSVQuestionsImport(this)" hidden>
-            📥
+            📥 Bulk Import CSV
           </label>
         </div>
       </div>
@@ -1093,7 +1091,8 @@
     <section id="manage-users-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:8px;">
         <div>
-          <h2 style="margin:0; color: #1B257D;">Student Optimization Analytics</h2>
+          <h2 style="margin:0; color: #1B257D;">Student Optimization Analytics (Tab 9)</h2>
+          <small style="color:var(--text-muted); font-weight:700;">Ranked by Top Scorer Metric: (Accuracy % / Total Answered × 100) • Strictly students only</small>
         </div>
       </div>
       <div id="manage-users-analytics-accordion"></div>
@@ -1105,8 +1104,9 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
           <div>
             <h3 style="margin:0; color: #1B257D;">Performance Consolidated Summary</h3>
+            <small style="color:var(--text-muted); font-weight:600;">Default Ordered: Alphabetical (A to Z) • Tap column headers to sort</small>
           </div>
-          <button class="btn btn-outline print-icon-btn no-print" onclick="printConsolidatedTable()">🖨️</button>
+          <button class="btn btn-outline print-icon-btn no-print" onclick="printConsolidatedTable()">🖨️ Print Report</button>
         </div>
 
         <div class="table-responsive">
@@ -1208,15 +1208,15 @@
           <div style="display:flex; align-items:center; gap:10px;">
             <div class="radar-pulse-ring"><span class="radar-dot"></span></div>
             <div>
-              <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a; letter-spacing:-0.3px;">Live Activity Radar </h3>
-              
+              <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a; letter-spacing:-0.3px;">Live Activity Radar (Tab 10)</h3>
+              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Student Activity Radar • Staff & Admin excluded</span>
             </div>
           </div>
           <button onclick="renderAllUsersOnlineCards()" class="btn btn-outline" style="padding:6px 12px; font-size:13px;" title="Refresh Live State">🔄 Refresh</button>
         </div>
 
         <div style="margin-top:14px; position:relative;">
-          <input type="text" id="online-user-search" oninput="renderAllUsersOnlineCards()" placeholder="Search student name, class, or phone..." style="padding:10px 14px 10px 38px; font-size:13px; border-radius:12px; background:#ffffff; border:1px solid #cbd5e1;">
+          <input type="text" id="online-user-search" oninput="renderAllUsersOnlineCards()" placeholder="🔍 Search student name, class, or phone..." style="padding:10px 14px 10px 38px; font-size:13px; border-radius:12px; background:#ffffff; border:1px solid #cbd5e1;">
           <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px; color:#94a3b8;">🔍</span>
         </div>
       </div>
@@ -1226,7 +1226,7 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="led-dot led-green"></span>
-            <h3 style="margin:0; font-size:16px; color:#15803d;">ACTIVE STUDENTS (Online Now)</h3>
+            <h3 style="margin:0; font-size:16px; color:#15803d;">🟢 ACTIVE STUDENTS (Online Now)</h3>
           </div>
           <span class="badge badge-success" id="badge-active-count">0 Active</span>
         </div>
@@ -1238,7 +1238,7 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="led-dot led-red"></span>
-            <h3 style="margin:0; font-size:16px; color:#b91c1c;">INACTIVE / OFFLINE STUDENTS</h3>
+            <h3 style="margin:0; font-size:16px; color:#b91c1c;">🔴 INACTIVE / OFFLINE STUDENTS</h3>
           </div>
           <span class="badge badge-danger" id="badge-inactive-count">0 Offline</span>
         </div>
@@ -1250,10 +1250,11 @@
     <section id="admin-logs-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
         <div>
-          <h2 style="margin:0; color: #1B257D;"> Logs </h2> 
+          <h2 style="margin:0; color: #1B257D;">Audit Access Logs (Tab 11)</h2>
+          <small style="color:var(--text-muted); font-weight:600;">Grouped by user account with consolidated login sessions</small>
         </div>
         <button class="btn btn-outline" style="color:var(--danger); border-color:#fca5a5; padding:6px 14px;" onclick="clearAllLogs()">
-          🗑️ 
+          🗑️ Clear All Logs
         </button>
       </div>
       <div id="admin-logs-cards-container" style="width: 100%;"></div>
@@ -1349,9 +1350,7 @@
     let selectedQuestionIds = new Set();
     let securityProtectionActive = true;
 
-    // =========================================================================
-    // CLEAR SYNTHESIZED SOUND CHIMES (WEB AUDIO API)
-    // =========================================================================
+    // SYNTHESIZED WEB AUDIO API SYSTEM
     window._previousUserStates = window._previousUserStates || {};
     window._hasInitialPresenceSynced = window._hasInitialPresenceSynced || false;
 
@@ -1455,8 +1454,6 @@
         });
       } catch (e) {}
     }
-
-    
 
     ['click', 'touchstart', 'keydown'].forEach(evt => {
       window.addEventListener(evt, () => getAudioContext(), { once: true });
@@ -1752,7 +1749,6 @@
           }
 
           // 3. Clear in Supabase attendance table
-          // In adminResetStudentQuota:
           try {
             const dailyAttId = `ATT-${cleanUser}-${todayIso}-DAILY`;
             await supabaseClient
@@ -2080,11 +2076,12 @@
     }
 
     // =========================================================================
-    // LIVE ACTIVITY RADAR (STRICTLY STUDENTS; SOUND ALERTS & SVG RESTORE BUTTON)
+    // INSTANT LIVE RADAR RENDERER (STRICT LEAVE SEPARATION & ADMIN-ONLY ALERTS)
     // =========================================================================
     async function renderAllUsersOnlineCards() {
       const activeFeed = document.getElementById('online-active-feed');
       const inactiveFeed = document.getElementById('online-inactive-feed');
+      if (!activeFeed || !inactiveFeed) return;
 
       if (!cachedAdminData || !cachedAdminData.users || cachedAdminData.users.length === 0) {
         const { data: quickUsers } = await supabaseClient.from('users').select('*');
@@ -2103,7 +2100,7 @@
       const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
       const cleanDate = new Date().toLocaleDateString('en-GB');
 
-      // 1. Gather live presence entries
+      // Collect presence entries
       let presenceEntries = [];
       try {
         if (presenceChannel) {
@@ -2117,6 +2114,7 @@
         presenceEntries = [];
       }
 
+      // Merge broadcasted pings (overrides socket presence with highest priority)
       const livePings = window._liveHeartbeats || {};
       for (const k in livePings) {
         const ping = livePings[k];
@@ -2132,55 +2130,11 @@
         }
       }
 
-      const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-      // =======================================================================
-      // 2. CHECK IF ANY ADMIN/TEACHER IS CURRENTLY ONLINE (FOR STUDENT SCREENS)
-      // =======================================================================
-      const staffUsers = usersList.filter(u => isStaffOrAdminUser(u));
-      let isAdminCurrentlyOnline = false;
-
-      staffUsers.forEach(adminUser => {
-        const aUser = cleanString(adminUser.username);
-        const aName = cleanString(adminUser.name);
-        const isOnline = presenceEntries.some(p => {
-          const pUser = cleanString(p.username);
-          const pName = cleanString(p.name);
-          return (p.isGreen === true) && (pUser === aUser || pName === aName);
-        });
-        if (isOnline) isAdminCurrentlyOnline = true;
-      });
-
-      // Update the student's sub-header pill
-      const studentAdminPill = document.getElementById('student-admin-status-pill');
-      const adminLed = document.getElementById('admin-live-led');
-      const adminText = document.getElementById('admin-live-status-text');
-
-      if (studentAdminPill) {
-        // Shown only if logged-in user is a student
-        if (!isStaffOrAdminUser(currentUser)) {
-          studentAdminPill.style.display = 'inline-flex';
-          if (isAdminCurrentlyOnline) {
-            adminLed.className = 'led-dot led-green';
-            adminText.innerText = 'Teacher / Admin Active';
-            studentAdminPill.style.borderColor = '#86efac';
-            studentAdminPill.style.color = '#86efac';
-          } else {
-            adminLed.className = 'led-dot led-red';
-            adminText.innerText = 'Teacher / Admin Offline';
-            studentAdminPill.style.borderColor = '#60a5fa';
-            studentAdminPill.style.color = '#bfdbfe';
-          }
-        } else {
-          studentAdminPill.style.display = 'none';
-        }
-      }
-
-      // If feeds aren't present (e.g., student view), stop here
-      if (!activeFeed || !inactiveFeed) return;
-
       const activeList = [];
       const inactiveList = [];
+      const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      // Exclude Admin & Question Master from Student Radar
       const onlyStudents = usersList.filter(u => !isStaffOrAdminUser(u));
 
       onlyStudents.forEach(u => {
@@ -2205,26 +2159,32 @@
           statusText = pres.liveStatus;
         }
 
+        // STRICT ACCURACY: User is Active ONLY if explicitly "Online & Active" and isGreen is TRUE
+        // If statusText is "Switched Tab...", "Opened Another App...", "Inactive / Idle...", or "Left...", isOnlineAndActive is FALSE
         const isOnlineAndActive = adminIsOnline && Boolean(
           pres && pres.isGreen === true && (statusText === 'Online & Active')
         );
 
-        // =====================================================================
-        // 3. ADMIN-ONLY SHORTENED NOTIFICATION: "<NAME> ACTIVE" / "<NAME> INACTIVE"
-        // =====================================================================
+        // =============================================================
+        // ADMIN-ONLY NOTIFICATION (CHIMES & TOASTS SUPPRESSED FOR STUDENTS)
+        // =============================================================
         const studentUniqueKey = cleanDbPhone || cleanDbUser;
         const previousState = window._previousUserStates[studentUniqueKey];
+
+        // Only trigger alerts if CURRENT USER is Admin or Staff
         const amIAdminOrStaff = isStaffOrAdminUser(currentUser);
 
         if (amIAdminOrStaff && window._hasInitialPresenceSynced && previousState !== undefined && previousState !== isOnlineAndActive) {
-          const formattedName = String(u.name || u.username).trim().toUpperCase();
+          const stName = u.name || u.username;
+          const stClass = u.class || '10';
+          const stDiv = u.division || 'A';
 
           if (isOnlineAndActive) {
-            playEntryChime();
-            showToast(`🟢 ${escapeHtml(formattedName)} ACTIVE`, 'success');
+            playEntryChime(); // ENTRY SOUND
+            showToast(`🟢 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) entered the portal!`, 'success');
           } else {
-            playExitChime();
-            showToast(`🔴 ${escapeHtml(formattedName)} INACTIVE`, 'danger');
+            playExitChime(); // EXIT SOUND
+            showToast(`🔴 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) left the app (${escapeHtml(statusText)})`, 'danger');
           }
         }
 
@@ -2335,9 +2295,11 @@
                 <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                   <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
                     <span>${isAct ? '⚡' : '💤'}</span>
+                    <!-- SHOWS REAL-TIME PRESENT ACTIVITY WHEN ACTIVE, OR STATUS WHEN INACTIVE -->
                     <span>${escapeHtml(isAct ? u.activeContext : u.statusText)}</span>
                   </span>
 
+                  <!-- TIME LEFT BADGE -->
                   <span class="badge ${u.timeLeftBadgeClass}" style="display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:11px; padding:3px 8px;">
                     <span>⏳</span>
                     <span>${escapeHtml(u.timeLeftFormatted)}</span>
@@ -2360,6 +2322,7 @@
                 <div><strong>Login:</strong> ${u.loginTime}</div>
                 <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
                 
+                <!-- NEW SVG RESTORE QUOTA BUTTON -->
                 <div style="grid-column: span 2; margin-top: 8px;">
                   <button onclick="event.stopPropagation(); adminResetStudentQuota('${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.name || u.username)}')" 
                           class="btn btn-outline" 
@@ -2619,7 +2582,6 @@
       applyUserTabPermissions();
       checkAdminPendingAlerts();
       loadNotifications();
-      
       loadGrandTotalQuestionsCount();
     }
 
@@ -2739,16 +2701,16 @@
       document.getElementById('tab-bar-container').style.display = 'flex';
 
       const sectionContextMap = {
-        'practice-sec': 'Practice Center',
-        'portfolio-sec': 'My Dashboard & Portfolio',
-        'notif-sec': 'Notification Center',
-        'admin-attendance-sec': 'Attendance Tracker',
-        'admin-report-sec': 'Student Reports ',
-        'admin-resets-sec': 'Reset Requests ',
-        'manage-qs-sec': 'Manage Questions ',
-        'manage-users-sec': 'Manage Users ',
-        'admin-online-sec': 'Online Monitor ',
-        'admin-logs-sec': 'Audit Logs '
+        'practice-sec': 'Practice Center (Tab 1)',
+        'portfolio-sec': 'My Dashboard & Portfolio (Tab 2)',
+        'notif-sec': 'Notification Center (Tab 3)',
+        'admin-attendance-sec': 'Attendance Tracker (Tab 5)',
+        'admin-report-sec': 'Student Reports (Tab 6)',
+        'admin-resets-sec': 'Reset Requests (Tab 7)',
+        'manage-qs-sec': 'Manage Questions (Tab 8)',
+        'manage-users-sec': 'Manage Users (Tab 9)',
+        'admin-online-sec': 'Online Monitor (Tab 10)',
+        'admin-logs-sec': 'Audit Logs (Tab 11)'
       };
       currentActiveContext = sectionContextMap[sectionId] || 'Portal Dashboard';
       updatePresenceLiveState('Online & Active');
@@ -2759,8 +2721,6 @@
         // SHOW INSTRUCTIONS SECTION
         const instrSec = document.getElementById('practice-instructions-section');
         if (instrSec) instrSec.style.display = 'block';
-        const banner = document.getElementById('portal-trial-banner');
-        if (banner) banner.style.display = 'block';
 
         document.getElementById('subject-practice-box').style.display = 'none';
         document.getElementById('trial-exam-box').style.display = 'none';
@@ -2805,9 +2765,6 @@
       const instrSec = document.getElementById('practice-instructions-section');
       if (instrSec) instrSec.style.display = 'none';
 
-      const banner = document.getElementById('portal-trial-banner');
-      if (banner) banner.style.display = 'none';
-
       document.getElementById('quiz-card').style.display = 'none';
       document.getElementById('no-questions-card').style.display = 'none';
       document.getElementById('no-trial-card').style.display = 'none';
@@ -2841,8 +2798,6 @@
       // RESTORE MALAYALAM INSTRUCTIONS SECTION
       const instrSec = document.getElementById('practice-instructions-section');
       if (instrSec) instrSec.style.display = 'block';
-      const banner = document.getElementById('portal-trial-banner');
-      if (banner) banner.style.display = 'block';
 
       document.getElementById('subject-practice-box').style.display = 'none';
       document.getElementById('trial-exam-box').style.display = 'none';
@@ -3195,6 +3150,9 @@
       }
     }
 
+    // =========================================================================
+    // CONSOLIDATION VIEW
+    // =========================================================================
     // =========================================================================
     // CONSOLIDATION VIEW WITH WORKING NOTIFICATION DISPATCH
     // =========================================================================
@@ -3565,7 +3523,6 @@
         playNotificationChime();
         window._hasPlayedNotifSound = true;
       }
-    
     }
 
     function toggleNotifRead(notifId) {
@@ -3789,8 +3746,8 @@
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                   <path d="M3 3v5h5"/>
-                </svg> Restore
-                
+                </svg>
+                Restore Quota
               </button>
             </td>
           </tr>
@@ -4116,7 +4073,7 @@
                   ${isOnlineNow ? '🟢 Active Now' : 'Last: ' + getRelativeTime(latestLog.timestamp || latestLog.login_time)}
                 </span>
                 <button onclick="event.stopPropagation(); deleteUserAllLogs('${escapeHtml(username)}')" class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete all logs for this user">
-                  🗑️ 
+                  🗑️ Purge User Logs
                 </button>
                 <span>▾</span>
               </div>
@@ -5066,7 +5023,6 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         if (countEl) countEl.innerText = '-';
       }
     }
-    
   </script>
 </body>
 </html>
