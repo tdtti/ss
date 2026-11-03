@@ -563,59 +563,48 @@
   <!-- NUMBERED TAB NAVIGATION BAR -->
   <div class="tab-bar-container" id="tab-bar-container" style="display: none;">
     <button class="icon-tab-btn active tab-permission-item" data-tab-no="1" id="tab-practice" onclick="showSection('practice-sec')" title="Practice Center">
-      <span class="tab-no-pill">1</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Practice</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="2" id="tab-portfolio" onclick="showSection('portfolio-sec')" title="My Dashboard & Portfolio">
-      <span class="tab-no-pill">2</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Portfolio</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="3" id="tab-notif" onclick="showSection('notif-sec')" title="Notification Center">
-      <span class="tab-no-pill">3</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Notifs</span>
       <span class="tab-badge-dot" id="notif-badge-dot" style="display:none;"></span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="4" id="tab-refresh" onclick="refreshCurrentView()" title="Refresh Data">
-      <span class="tab-no-pill">4</span>
       <svg id="global-refresh-icon" viewBox="0 0 24 24" fill="none"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Refresh</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="5" id="tab-attendance" onclick="showSection('admin-attendance-sec')" title="Student Attendance Tracker">
-      <span class="tab-no-pill">5</span>
       <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/></svg>
       <span>Attendance</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="6" id="tab-student-reports" onclick="showSection('admin-report-sec')" title="Student Reports">
-      <span class="tab-no-pill">6</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Reports</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="7" id="tab-resets" onclick="showSection('admin-resets-sec')" title="Reset Requests">
-      <span class="tab-no-pill">7</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8m0 0V3m0 5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Resets</span>
       <span class="tab-badge-dot" id="reset-badge-dot" style="display:none;"></span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="8" id="tab-manage-qs" onclick="showSection('manage-qs-sec')" title="Manage Questions">
-      <span class="tab-no-pill">8</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 1 1-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Questions</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="9" id="tab-manage-users" onclick="showSection('manage-users-sec')" title="Manage Users & Optimization">
-      <span class="tab-no-pill">9</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Users</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="10" id="tab-online" onclick="showSection('admin-online-sec')" title="Live Online & Active Status">
-      <span class="tab-no-pill">10</span>
       <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>
       <span>Online</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="11" id="tab-logs" onclick="showSection('admin-logs-sec')" title="Audit Access Logs">
-      <span class="tab-no-pill">11</span>
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Logs</span>
     </button>
@@ -732,30 +721,42 @@
               <input type="text" id="reg-class" required value="7" placeholder="e.g. 7 or 10">
             </div>
 
+            <!-- RESTRICTED DIVISION DROPDOWN: A, B, C, D ONLY -->
             <div class="form-group">
-            <label>Division *</label>
-            <input type="text" id="reg-div" required placeholder="E.G. A" maxlength="2"
-            style="text-transform: uppercase;" 
-            oninput="this.value = this.value.toUpperCase()">
+              <label>Division *</label>
+              <select id="reg-div" required>
+                <option value="A">Division A</option>
+                <option value="B">Division B</option>
+                <option value="C">Division C</option>
+                <option value="D">Division D</option>
+              </select>
             </div>
           </div>
 
+          <!-- STRICT 10-DIGIT COMPULSORY PHONE INPUT -->
           <div class="form-group">
             <label>Phone Number (WhatsApp) *</label>
             <div style="display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #ffffff;">
               <span style="background: #f1f5f9; padding: 12px 14px; font-weight: 800; color: #1e40af; border-right: 1px solid var(--border-color); font-size: 14px; user-select: none;">
-                +91
+                🇮🇳 +91
               </span>
               <input type="tel" 
                      id="reg-phone" 
                      required 
                      placeholder="Enter 10-digit mobile number" 
-                     maxlength="14"
+                     minlength="10"
+                     maxlength="10"
+                     pattern="[0-9]{10}"
+                     inputmode="numeric"
                      oninput="formatPhoneNumberInput(this)"
                      style="border: none; background: transparent; padding: 12px 14px; width: 100%; outline: none; font-size: 14px; font-weight: 700;">
             </div>
-            
+            <small style="color: var(--text-muted); font-size: 11.5px; margin-top: 4px; display: block;">
+              Exactly 10 digits compulsory (e.g. 8086749424).
+            </small>
           </div>
+            
+          
 
           <div class="form-group">
             <label>Choose a Username *</label>
@@ -791,7 +792,7 @@
       
       <!-- HEADER WITH TITLE ON LEFT AND GRAND TOTAL QUESTIONS ON RIGHT -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-        <h3 style="margin: 0; color: var(--primary);">Practice Center (Tab 1)</h3>
+        <h3 style="margin: 0; color: var(--primary);">Practice Center</h3>
         
         <!-- GRAND TOTAL QUESTION BANK BADGE -->
         <div id="grand-total-questions-badge" style="display: inline-flex; align-items: center; gap: 8px; background: #eff6ff; color: #1e40af; border: 1.5px solid #bfdbfe; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 13px; box-shadow: var(--shadow-sm);">
@@ -844,7 +845,7 @@
         <div style="font-size: 13.5px; line-height: 1.7; color: #1e293b;">
           <p style="font-weight: 800; color: #1e40af; margin: 0 0 8px 0; font-size: 14px;">പോർട്ടലിൽ എന്തൊക്കെ ചെയ്യാം:</p>
           <ul style="margin: 0 0 16px 20px; padding: 0;">
-            <li style="margin-bottom: 6px;"><strong>Subject Practice:</strong> ഓരോ വിഷയവും തിരഞ്ഞെടുത്ത് പരിശീലിക്കാം. ഓരോ ചോദ്യത്തിനും 30 സെക്കൻഡ് സമയമുണ്ട്. എല്ലാ ചോദ്യങ്ങൾക്കും നിർബന്ധമായും ഉത്തരം നൽകണം. അവസാനം ശരിയുത്തരങ്ങളും പരിശോധിക്കാം.</li>
+            <li style="margin-bottom: 6px;"><strong>Subject Practice:</strong> ഓരോ വിഷയവും തിരഞ്ഞെടുത്ത് പരിശീലിക്കാം. ഓരോ തവണയും പുതിയ 25 ചോദ്യങ്ങളാണ് ലഭിക്കുക.ഓരോ ചോദ്യത്തിനും 30 സെക്കൻഡ് സമയമുണ്ട്. എല്ലാ ചോദ്യങ്ങൾക്കും നിർബന്ധമായും ഉത്തരം നൽകണം. അവസാനം ശരിയുത്തരങ്ങളും പരിശോധിക്കാം.</li>
             <li style="margin-bottom: 6px;"><strong>Trial Exam:</strong> യഥാർത്ഥ പരീക്ഷ പോലെ എല്ലാ വിഷയങ്ങളും ഉൾപ്പെടുത്തിയുള്ള മോഡൽ പരീക്ഷ. ഇടയ്ക്ക് വെച്ച് പുറത്തുകടക്കാൻ കഴിയില്ല.</li>
             <li style="margin-bottom: 6px;"><strong>Dashboard:</strong> ദിവസേനയുള്ള പഠന സമയം, ഹാജർ, മാർക്ക് എന്നിവ കാണാം. മികച്ച പ്രകടനത്തിന് പച്ച നിറവും (≥70%), കൂടുതൽ ശ്രദ്ധിക്കേണ്ട വിഷയങ്ങൾക്ക് മഞ്ഞ/ഓറഞ്ച് നിറവും കാണിക്കും.</li>
             <li><strong>Notifications:</strong> അധ്യാപകർ നൽകുന്ന അറിയിപ്പുകളും നിർദ്ദേശങ്ങളും ഇവിടെ വായിക്കാം.</li>
@@ -1005,8 +1006,8 @@
 
     <!-- 2. MY DASHBOARD & PORTFOLIO SECTION -->
     <section id="portfolio-sec" class="section" style="display:none;">
+      <h3 style="margin-top:0; color:var(--primary); display:flex; align-items:center; gap:8px;">📅 My Attendance & Practice Time</h3>
       <div id="portfolio-attendance-section" class="card" style="background:#ffffff; border:1px solid var(--border-color); margin-bottom:25px;">
-        <h3 style="margin-top:0; color:var(--primary); display:flex; align-items:center; gap:8px;">📅 My Attendance & Practice Time</h3>
         <div id="portfolio-daily-allowance-box" style="margin-bottom:16px;"></div>
         
         <div class="stats-grid" style="margin-bottom:18px;">
@@ -1031,7 +1032,7 @@
         </div>
       </div>
 
-      <h3 style="margin-top:0; color:var(--primary);">My Performance Dashboard (Tab 2)</h3>
+      <h3 style="margin-top:0; color:var(--primary);">My Performance Dashboard</h3>
       <div class="stats-grid">
         <div class="card" style="margin:0;">
           <p style="margin:0; color:var(--text-muted); font-size:13px; font-weight:700;">Total Answered Questions</p>
@@ -1085,7 +1086,7 @@
     <!-- 3. NOTIFICATION CENTER TAB -->
     <section id="notif-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin:0; color: #1B257D;">Notification Center (Tab 3)</h2>
+        <h2 style="margin:0; color: #1B257D;">Notification Center </h2>
         <button class="btn btn-outline" onclick="markAllNotifsAsRead()">Mark All Read ✓</button>
       </div>
       
@@ -1135,12 +1136,11 @@
     <section id="admin-attendance-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
         <div>
-          <h2 style="margin:0; color: #1B257D;">Student Daily Attendance Tracker (Tab 5)</h2>
-          <p style="color:var(--text-muted); font-size:13px; margin:4px 0 0 0;">Unified deduplication across practice and trial exams. Non-students excluded.</p>
-        </div>
+          <h2 style="margin:0; color: #1B257D;">Student Daily Attendance Tracker </h2>
+          </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button onclick="syncPastActivitiesToSupabase()" class="btn btn-outline" title="Scan practice and trial exams to populate attendance in Supabase">⚡ Sync Past Activities</button>
-          <button onclick="loadAdminData()" class="btn btn-primary">🔄 Refresh Attendance</button>
+          <button onclick="syncPastActivitiesToSupabase()" class="btn btn-outline" title="Scan practice and trial exams to populate attendance in Supabase">⚡ </button>
+          <button onclick="loadAdminData()" class="btn btn-primary">🔄</button>
         </div>
       </div>
 
@@ -1168,8 +1168,7 @@
     <!-- TAB 6: EVALUATION REPORTS -->
     <section id="admin-report-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <h2 style="margin:0; color: #1B257D;">Evaluation Reports (Tab 6)</h2>
-        <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700;">Alphabetical Order (A to Z)</span>
+        <h2 style="margin:0; color: #1B257D;">Evaluation Reports</h2>
       </div>
       <div id="admin-student-accordion-list"></div>
     </section>
@@ -1177,7 +1176,7 @@
     <!-- TAB 7: RESET REQUESTS -->
     <section id="admin-resets-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h2 style="margin:0; color: #1B257D;">Reset Requests (Tab 7)</h2>
+        <h2 style="margin:0; color: #1B257D;">Reset Requests</h2>
         <button onclick="refreshResetRequests()" class="btn btn-outline" title="Refresh Requests">🔄 Refresh</button>
       </div>
       <div class="table-responsive">
@@ -1193,12 +1192,12 @@
     <!-- TAB 8: MANAGE QUESTIONS -->
     <section id="manage-qs-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
-        <h2 style="margin:0; color: #1B257D;">Manage Questions (Tab 8)</h2>
+        <h2 style="margin:0; color: #1B257D;">Manage Questions</h2>
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <button type="button" class="btn btn-outline" onclick="openCSVGuideModal()" style="padding:8px 14px;" title="View CSV formatting guide and sample">💡 CSV Guide & Example</button>
+          <button type="button" class="btn btn-outline" onclick="openCSVGuideModal()" style="padding:8px 14px;" title="View CSV formatting guide and sample">💡</button>
           <label class="btn btn-primary" title="Import Questions from CSV" style="cursor:pointer; padding:8px 14px;">
             <input type="file" accept=".csv" onchange="handleCSVQuestionsImport(this)" hidden>
-            📥 Bulk Import CSV
+            📥 
           </label>
         </div>
       </div>
@@ -1298,8 +1297,7 @@
     <section id="manage-users-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:8px;">
         <div>
-          <h2 style="margin:0; color: #1B257D;">Student Optimization Analytics (Tab 9)</h2>
-          <small style="color:var(--text-muted); font-weight:700;">Ranked by Top Scorer Metric: (Accuracy % / Total Answered × 100) • Strictly students only</small>
+          <h2 style="margin:0; color: #1B257D;">Student Optimization Analytics</h2>
         </div>
       </div>
       <div id="manage-users-analytics-accordion"></div>
@@ -1311,9 +1309,8 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
           <div>
             <h3 style="margin:0; color: #1B257D;">Performance Consolidated Summary</h3>
-            <small style="color:var(--text-muted); font-weight:600;">Default Ordered: Alphabetical (A to Z) • Tap column headers to sort</small>
           </div>
-          <button class="btn btn-outline print-icon-btn no-print" onclick="printConsolidatedTable()">🖨️ Print Report</button>
+          <button class="btn btn-outline print-icon-btn no-print" onclick="printConsolidatedTable()">🖨️ </button>
         </div>
 
         <div class="table-responsive">
@@ -1392,9 +1389,7 @@
               </div>
             </div>
             <input type="text" id="u-tab-access" placeholder="e.g. 1,2,3,4 or 1,2,3,4,5,6,7,8,9,10,11" required value="1,2,3,4" style="font-weight:700; background:#fff; border:1.5px solid var(--primary);">
-            <small style="color:var(--text-muted); font-size:11.5px; display:block; margin-top:4px;">
-              Tabs: 1:Practice | 2:Portfolio | 3:Notifs | 4:Refresh | 5:Attendance | 6:Reports | 7:Resets | 8:Questions | 9:Users | 10:Online | 11:Logs
-            </small>
+            
           </div>
 
           <div>
@@ -1426,16 +1421,16 @@
           <div style="display:flex; align-items:center; gap:10px;">
             <div class="radar-pulse-ring"><span class="radar-dot"></span></div>
             <div>
-              <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a; letter-spacing:-0.3px;">Live Activity Radar (Tab 10)</h3>
-              <span style="font-size:12px; color:var(--text-muted); font-weight:600;">Student Activity Radar • Staff & Admin excluded</span>
+              <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a; letter-spacing:-0.3px;">Live</h3>
+              
             </div>
           </div>
-          <button onclick="renderAllUsersOnlineCards()" class="btn btn-outline" style="padding:6px 12px; font-size:13px;" title="Refresh Live State">🔄 Refresh</button>
+          <button onclick="renderAllUsersOnlineCards()" class="btn btn-outline" style="padding:6px 12px; font-size:13px;" title="Refresh Live State">🔄 </button>
         </div>
 
         <div style="margin-top:14px; position:relative;">
           <input type="text" id="online-user-search" oninput="renderAllUsersOnlineCards()" placeholder="🔍 Search student name, class, or phone..." style="padding:10px 14px 10px 38px; font-size:13px; border-radius:12px; background:#ffffff; border:1px solid #cbd5e1;">
-          <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px; color:#94a3b8;">🔍</span>
+          <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px; color:#94a3b8;"></span>
         </div>
       </div>
 
@@ -1444,7 +1439,7 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="led-dot led-green"></span>
-            <h3 style="margin:0; font-size:16px; color:#15803d;">🟢 ACTIVE STUDENTS (Online Now)</h3>
+            <h3 style="margin:0; font-size:16px; color:#15803d;">ACTIVE STUDENTS (Online Now)</h3>
           </div>
           <span class="badge badge-success" id="badge-active-count">0 Active</span>
         </div>
@@ -1456,7 +1451,7 @@
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="led-dot led-red"></span>
-            <h3 style="margin:0; font-size:16px; color:#b91c1c;">🔴 INACTIVE / OFFLINE STUDENTS</h3>
+            <h3 style="margin:0; font-size:16px; color:#b91c1c;">INACTIVE / OFFLINE STUDENTS</h3>
           </div>
           <span class="badge badge-danger" id="badge-inactive-count">0 Offline</span>
         </div>
@@ -1468,11 +1463,11 @@
     <section id="admin-logs-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
         <div>
-          <h2 style="margin:0; color: #1B257D;">Audit Access Logs (Tab 11)</h2>
-          <small style="color:var(--text-muted); font-weight:600;">Grouped by user account with consolidated login sessions</small>
+          <h2 style="margin:0; color: #1B257D;">Logs</h2>
+          
         </div>
         <button class="btn btn-outline" style="color:var(--danger); border-color:#fca5a5; padding:6px 14px;" onclick="clearAllLogs()">
-          🗑️ Clear All Logs
+          🗑️
         </button>
       </div>
       <div id="admin-logs-cards-container" style="width: 100%;"></div>
@@ -3074,16 +3069,16 @@
       document.getElementById('tab-bar-container').style.display = 'flex';
 
       const sectionContextMap = {
-        'practice-sec': 'Practice Center (Tab 1)',
-        'portfolio-sec': 'My Dashboard & Portfolio (Tab 2)',
-        'notif-sec': 'Notification Center (Tab 3)',
-        'admin-attendance-sec': 'Attendance Tracker (Tab 5)',
-        'admin-report-sec': 'Student Reports (Tab 6)',
-        'admin-resets-sec': 'Reset Requests (Tab 7)',
-        'manage-qs-sec': 'Manage Questions (Tab 8)',
-        'manage-users-sec': 'Manage Users (Tab 9)',
-        'admin-online-sec': 'Online Monitor (Tab 10)',
-        'admin-logs-sec': 'Audit Logs (Tab 11)'
+        'practice-sec': 'Practice Center',
+        'portfolio-sec': 'My Dashboard & Portfolio',
+        'notif-sec': 'Notification Center',
+        'admin-attendance-sec': 'Attendance Tracker',
+        'admin-report-sec': 'Student Reports',
+        'admin-resets-sec': 'Reset Requests',
+        'manage-qs-sec': 'Manage Questions',
+        'manage-users-sec': 'Manage Users',
+        'admin-online-sec': 'Online Monitor',
+        'admin-logs-sec': 'Audit Logs'
       };
       currentActiveContext = sectionContextMap[sectionId] || 'Portal Dashboard';
       updatePresenceLiveState('Online & Active');
@@ -4418,8 +4413,8 @@
           <td>${escapeHtml(q.question)} ${q.image_url ? '📷' : ''}</td>
           <td><b>${q.correct_answer}</b></td>
           <td style="display:flex; gap:8px;">
-            <button onclick="openInstantEditModalById('${q.id}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
-            <button onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;">🗑️ Delete</button>
+            <button onclick="openInstantEditModalById('${q.id}')" class="btn btn-outline" style="padding:4px 8px;">✏️ </button>
+            <button onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;">🗑️</button>
           </td>
         </tr>
       `).join('') || '<tr><td colspan="6" style="text-align:center;">No questions found.</td></tr>';
@@ -4478,8 +4473,8 @@
                       title="Send Login Credentials via WhatsApp">
                 💬
               </button>
-              <button onclick="editUserByUsername('${u.username}')" class="btn btn-outline" style="padding:4px 8px;">✏️ Edit</button>
-              <button onclick="confirmDeleteEntireUser('${u.username}', '${u.phone}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Permanently Delete User & All Data">🗑️ Delete</button>
+              <button onclick="editUserByUsername('${u.username}')" class="btn btn-outline" style="padding:4px 8px;">✏️</button>
+              <button onclick="confirmDeleteEntireUser('${u.username}', '${u.phone}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Permanently Delete User & All Data">🗑️</button>
             </td>
           </tr>
         `;
@@ -4612,7 +4607,7 @@
                   ${isOnlineNow ? '🟢 Active Now' : 'Last: ' + getRelativeTime(latestLog.timestamp || latestLog.login_time)}
                 </span>
                 <button onclick="event.stopPropagation(); deleteUserAllLogs('${escapeHtml(username)}')" class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete all logs for this user">
-                  🗑️ Purge User Logs
+                  🗑️ 
                 </button>
                 <span>▾</span>
               </div>
@@ -5742,31 +5737,34 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       e.preventDefault();
 
       const name = document.getElementById('reg-name').value.trim().toUpperCase();
-      const division = document.getElementById('reg-div').value.trim().toUpperCase() || 'A';
+      const division = document.getElementById('reg-div').value.trim().toUpperCase();
       const gender = document.getElementById('reg-gender').value;
       const userClass = document.getElementById('reg-class').value.trim() || '7';
       const firstLang = document.getElementById('reg-first-lang').value;
       
-      // AUTO-ADD COUNTRY CODE (+91)
-      const rawPhoneInput = document.getElementById('reg-phone').value.trim();
-      const cleanPhoneDigits = rawPhoneInput.replace(/[^0-9]/g, '');
-
-      if (cleanPhoneDigits.length < 10) {
-        showToast('Please enter a valid 10-digit mobile number.', 'danger');
+      // 1. STRICT DIVISION VALIDATION (A, B, C, D ONLY)
+      const allowedDivisions = ['A', 'B', 'C', 'D'];
+      if (!allowedDivisions.includes(division)) {
+        showToast('Division must be A, B, C, or D only.', 'danger');
         return;
       }
 
-      const formattedPhone = sanitizePhoneNumberWithCountryCode(cleanPhoneDigits);
-      // Example: '+918086749424'
+      // 2. STRICT 10-DIGIT PHONE VALIDATION
+      const rawPhoneInput = document.getElementById('reg-phone').value.trim();
+      const cleanPhoneDigits = rawPhoneInput.replace(/[^0-9]/g, '');
+
+      if (cleanPhoneDigits.length !== 10) {
+        showToast('⚠️ Mobile number must be exactly 10 digits.', 'danger');
+        document.getElementById('reg-phone').focus();
+        return;
+      }
+
+      // Format with +91 country code for database consistency
+      const formattedPhone = '+91' + cleanPhoneDigits;
 
       const username = document.getElementById('reg-username').value.trim().toLowerCase().replace(/\s+/g, '');
       const password = document.getElementById('reg-password').value.trim();
 
-      // ... keep duplicate checks and proceed with formattedPhone:
-      // In newStudent object, use:
-      // phone: formattedPhone
-
-      // Basic input validation
       if (!username || username.length < 3) {
         showToast('Username must be at least 3 characters with no spaces.', 'danger');
         return;
@@ -5775,20 +5773,16 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         showToast('Password must be at least 4 characters long.', 'danger');
         return;
       }
-      if (!phone || phone.length < 10) {
-        showToast('Please enter a valid 10-digit mobile number.', 'danger');
-        return;
-      }
 
       setProgress(40);
       showToast('Creating student account...', 'info');
 
       try {
-        // 1. Check if username or phone already exists
+        // Check if username or 10-digit phone already exists in Supabase
         const { data: existingUser } = await supabaseClient
           .from('users')
           .select('username, phone')
-          .or(`username.ilike.${username},phone.eq.${phone}`)
+          .or(`username.ilike.${username},phone.eq.${formattedPhone},phone.eq.${cleanPhoneDigits}`)
           .maybeSingle();
 
         if (existingUser) {
@@ -5802,17 +5796,17 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
           return;
         }
 
-        // 2. Insert new student account with student permissions (Tabs 1,2,3,4)
+        // Insert new student record
         const newStudent = {
           name: name,
           gender: gender,
           class: userClass,
           division: division,
           first_language: firstLang,
-          phone: phone,
+          phone: formattedPhone,
           username: username,
           password: password,
-          role: '1,2,3,4', // Standard Student Tab Access
+          role: '1,2,3,4', // Standard student access
           status: 'Active'
         };
 
@@ -5821,6 +5815,8 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
           .insert([newStudent]);
 
         if (regErr) throw regErr;
+
+        // ... rest of handleStudentRegistration (logging, session establishment) remains unchanged
 
         // 3. Log initial registration entry
         const nowStr = formatDateStrict(new Date().toISOString());
@@ -5947,18 +5943,18 @@ function fallbackCopyText(text, count, prevSecurityState) {
     // PHONE NUMBER AUTO-FORMATTER & SANITIZER (INDIA +91 DEFAULT)
     // =========================================================================
     function formatPhoneNumberInput(input) {
-      let val = input.value.replace(/[^0-9]/g, ''); // strip non-digits
+      let val = input.value.replace(/[^0-9]/g, ''); // Allow digits only
 
-      // If user pasted 0XXXXXXXXXX (11 digits with leading 0)
+      // If user pasted 11 digits with leading 0 (e.g. 08086749424)
       if (val.length === 11 && val.startsWith('0')) {
         val = val.substring(1);
       }
-      // If user pasted 91XXXXXXXXXX (12 digits with country code)
+      // If user pasted 12 digits with 91 (e.g. 918086749424)
       else if (val.length === 12 && val.startsWith('91')) {
         val = val.substring(2);
       }
 
-      // Restrict to max 10 digits in the box
+      // Restrict strictly to 10 digits
       if (val.length > 10) {
         val = val.slice(0, 10);
       }
