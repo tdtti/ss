@@ -669,8 +669,10 @@
           </div>
 
           <div class="form-group">
-            <label>Full Name *</label>
-            <input type="text" id="reg-name" required placeholder="Enter your full name (e.g. Rahul K)">
+          <label>Full Name *</label>
+          <input type="text" id="reg-name" required placeholder="ENTER YOUR FULL NAME (E.G. RAHUL K)" 
+          style="text-transform: uppercase;" 
+          oninput="this.value = this.value.toUpperCase()">
           </div>
 
           <div class="grid-2">
@@ -699,8 +701,10 @@
             </div>
 
             <div class="form-group">
-              <label>Division *</label>
-              <input type="text" id="reg-div" required placeholder="e.g. A, B, C">
+            <label>Division *</label>
+            <input type="text" id="reg-div" required placeholder="E.G. A" maxlength="2"
+            style="text-transform: uppercase;" 
+            oninput="this.value = this.value.toUpperCase()">
             </div>
           </div>
 
@@ -5605,14 +5609,18 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     async function handleStudentRegistration(e) {
       e.preventDefault();
 
-      const name = document.getElementById('reg-name').value.trim();
+      // ALWAYS CAPITALIZE NAME AND DIVISION
+      const name = document.getElementById('reg-name').value.trim().toUpperCase();
+      const division = document.getElementById('reg-div').value.trim().toUpperCase() || 'A';
+
       const gender = document.getElementById('reg-gender').value;
       const userClass = document.getElementById('reg-class').value.trim() || '7';
-      const division = document.getElementById('reg-div').value.trim().toUpperCase() || 'A';
       const firstLang = document.getElementById('reg-first-lang').value;
       const phone = document.getElementById('reg-phone').value.trim();
       const username = document.getElementById('reg-username').value.trim().toLowerCase().replace(/\s+/g, '');
       const password = document.getElementById('reg-password').value.trim();
+
+      
 
       // Basic input validation
       if (!username || username.length < 3) {
