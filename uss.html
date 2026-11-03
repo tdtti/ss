@@ -474,14 +474,30 @@
           <span>⚙️ System & Security Settings</span>
           <span>▾</span>
         </div>
+        <!-- Inside #settings-modal -> #modal-admin-sec-accordion -> #modal-collapsible-sys -->
         <div class="accordion-body" id="modal-collapsible-sys">
+          <!-- EXISTING: SECURITY MODE -->
           <label style="font-size: 13px; font-weight: 700; display: block; margin-bottom: 6px;">Portal Security Protection Mode:</label>
           <div id="security-pill-btn" class="tap-toggle-pill enabled" onclick="toggleSecurityModePill()">
             <span id="security-pill-icon">🛡️</span>
             <span id="security-pill-status">Security Active: ENABLED</span>
           </div>
-          <small style="color:var(--text-muted); font-size:12px; display:block; margin-top:8px;">
+          <small style="color:var(--text-muted); font-size:12px; display:block; margin-top:4px; margin-bottom: 16px;">
             Prevents right-clicking, inspection shortcuts, and disables all text selection across the portal.
+          </small>
+
+          <hr style="border:none; border-top:1px dashed var(--border-color); margin: 14px 0;">
+
+          <!-- NEW: STUDENT REGISTRATION TOGGLE (ADMIN ONLY) -->
+          <label style="font-size: 13px; font-weight: 700; display: block; margin-bottom: 6px; color: var(--primary);">
+            Public Student Registration Control:
+          </label>
+          <div id="registration-toggle-pill" class="tap-toggle-pill enabled" onclick="toggleRegistrationControlPill()">
+            <span id="reg-toggle-icon">📝</span>
+            <span id="reg-toggle-status">Student Registration: ENABLED</span>
+          </div>
+          <small style="color:var(--text-muted); font-size:12px; display:block; margin-top:4px;">
+            Enables or disables the "Register / New Student" tab and "Create your account here" links on the login screen.
           </small>
         </div>
       </div>
@@ -655,7 +671,7 @@
             Sign In →
           </button>
           
-          <p style="text-align: center; margin: 16px 0 0 0; font-size: 13px; color: var(--text-muted);">
+          <p id="login-create-account-container" style="text-align: center; margin: 16px 0 0 0; font-size: 13px; color: var(--text-muted);">
             New student? <a href="javascript:void(0)" onclick="switchAuthMode('REGISTER')" style="color: var(--primary); font-weight: 800; text-decoration: none;">Create your account here</a>
           </p>
         </form>
@@ -663,6 +679,22 @@
         <!-- ========================================== -->
         <!-- 2. REGISTRATION / SIGN UP FORM -->
         <!-- ========================================== -->
+        <form id="register-form" style="display: none;">
+          <!-- CLOSED NOTICE (SHOWN IF REGISTRATION IS DISABLED) -->
+          <div id="reg-closed-banner" style="display:none; background:#fee2e2; border:1.5px solid #ef4444; border-radius:12px; padding:16px; margin-bottom:16px; text-align:center;">
+            <div style="font-size:32px; margin-bottom:6px;">🚫</div>
+            <strong style="color:#991b1b; font-size:14px; display:block; margin-bottom:6px;">Student Registration is Currently Closed</strong>
+            <p style="color:#7f1d1d; font-size:13px; line-height:1.5; margin:0 0 10px 0;">
+              Public student self-registration has been temporarily disabled by the Administrator. Please contact your school administrator or teacher to obtain your login credentials.
+            </p>
+            <button type="button" class="btn btn-outline" onclick="switchAuthMode('LOGIN')" style="padding:6px 14px; font-size:12px;">
+              ← Back to Sign In
+            </button>
+          </div>
+
+          <div id="reg-inputs-wrapper">
+             <!-- All existing reg form inputs go here -->
+
         <form id="register-form" style="display: none;">
           <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 12.5px; color: #1e40af; line-height: 1.5;">
             ✨ Fill in your student details to instantly register for the USS Training Portal 2026-27.
@@ -1666,6 +1698,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
+      applyRegistrationVisibilityUI();
       if (currentUser) {
         if (!isStaffOrAdminUser(currentUser)) {
           const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone);
@@ -5675,6 +5708,11 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     // SWITCH BETWEEN LOGIN & REGISTER FORMS
     // =========================================================================
     function switchAuthMode(mode) {
+      if (mode === 'REGISTER' && !isStudentRegistrationAllowed) {
+        showToast('⚠️ Student self-registration is closed by Administrator. Please contact your school.', 'danger');
+        return;
+      }
+      
       const loginForm = document.getElementById('login-form');
       const regForm = document.getElementById('register-form');
       const tabLogin = document.getElementById('auth-tab-login');
@@ -5683,19 +5721,15 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       if (mode === 'REGISTER') {
         loginForm.style.display = 'none';
         regForm.style.display = 'block';
-
         tabLogin.style.background = 'transparent';
         tabLogin.style.color = 'var(--text-muted)';
-
         tabReg.style.background = 'var(--primary)';
         tabReg.style.color = '#ffffff';
       } else {
         loginForm.style.display = 'block';
         regForm.style.display = 'none';
-
         tabLogin.style.background = 'var(--primary)';
         tabLogin.style.color = '#ffffff';
-
         tabReg.style.background = 'transparent';
         tabReg.style.color = 'var(--text-muted)';
       }
@@ -5951,6 +5985,62 @@ function fallbackCopyText(text, count, prevSecurityState) {
       }
       // Return with + if valid
       return clean.startsWith('+') ? clean : ('+' + clean);
+    }
+
+    // =========================================================================
+    // STUDENT REGISTRATION PERMISSION CONTROLLER (ADMIN EXCLUSIVE)
+    // =========================================================================
+    let isStudentRegistrationAllowed = localStorage.getItem('allow_student_registration') !== 'false'; // Default TRUE
+
+    function applyRegistrationVisibilityUI() {
+      const regTabBtn = document.getElementById('auth-tab-register');
+      const createAccLink = document.getElementById('login-create-account-container');
+      const closedBanner = document.getElementById('reg-closed-banner');
+      const inputsWrapper = document.getElementById('reg-inputs-wrapper');
+      const pill = document.getElementById('registration-toggle-pill');
+      const statusText = document.getElementById('reg-toggle-status');
+
+      if (isStudentRegistrationAllowed) {
+        // ALLOWED: Show buttons & input forms
+        if (regTabBtn) regTabBtn.style.display = 'block';
+        if (createAccLink) createAccLink.style.display = 'block';
+        if (closedBanner) closedBanner.style.display = 'none';
+        if (inputsWrapper) inputsWrapper.style.display = 'block';
+
+        if (pill) {
+          pill.className = 'tap-toggle-pill enabled';
+          if (statusText) statusText.innerText = 'Student Registration: ENABLED';
+        }
+      } else {
+        // DISABLED: Hide tab or show closed notice
+        if (regTabBtn) regTabBtn.style.display = 'none';
+        if (createAccLink) createAccLink.style.display = 'none';
+        if (closedBanner) closedBanner.style.display = 'block';
+        if (inputsWrapper) inputsWrapper.style.display = 'none';
+
+        if (pill) {
+          pill.className = 'tap-toggle-pill disabled';
+          if (statusText) statusText.innerText = 'Student Registration: DISABLED';
+        }
+      }
+    }
+
+    function toggleRegistrationControlPill() {
+      if (!isStaffOrAdminUser(currentUser)) {
+        showToast('⚠️ Unauthorized: Admin privilege required.', 'danger');
+        return;
+      }
+
+      isStudentRegistrationAllowed = !isStudentRegistrationAllowed;
+      localStorage.setItem('allow_student_registration', isStudentRegistrationAllowed ? 'true' : 'false');
+
+      applyRegistrationVisibilityUI();
+
+      if (isStudentRegistrationAllowed) {
+        showToast('✅ Student Self-Registration is now ENABLED.', 'success');
+      } else {
+        showToast('🛑 Student Self-Registration is now DISABLED.', 'warning');
+      }
     }
   </script>
 </body>
