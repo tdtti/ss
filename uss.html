@@ -3729,33 +3729,53 @@
     }
 
     // =========================================================================
-    // NOTIFICATIONS
+    // NOTIFICATIONS LOADER (STRICT PRIVATE RECIPIENT FILTERING)
     // =========================================================================
     async function loadNotifications() {
-      let query = supabaseClient.from('notifications').select('*').order('created_at', { ascending: false });
-      const permittedTabs = parseTabAccessList(currentUser?.tabAccess || currentUser?.role || '1,2,3,4');
-      const isPrivileged = permittedTabs.some(t => Number(t) >= 5);
+      if (!currentUser) return;
 
-      if (!isPrivileged && currentUser && currentUser.phone) {
-        const cleanPhone = String(currentUser.phone).trim();
-        query = query.or(`recipient_phone.eq.ALL,recipient_phone.eq.${cleanPhone},recipient_phone.ilike.%${cleanPhone}%`);
+      const permittedTabs = parseTabAccessList(currentUser?.tabAccess || currentUser?.role || '1,2,3,4');
+      const isPrivileged = permittedTabs.some(t => Number(t) >= 5) || isStaffOrAdminUser(currentUser);
+
+      let query = supabaseClient.from('notifications').select('*').order('created_at', { ascending: false });
+
+      // STRICT FILTER: Students ONLY see broadcast ('ALL') OR notifications sent to their EXACT phone
+      if (!isPrivileged) {
+        const studentPhone = String(currentUser.phone || '').trim();
+        if (studentPhone) {
+          // Strict equality: recipient_phone is either 'ALL' or the student's exact phone
+          query = query.or(`recipient_phone.eq.ALL,recipient_phone.eq."${studentPhone}"`);
+        } else {
+          query = query.eq('recipient_phone', 'ALL');
+        }
       }
 
-      const { data: rawNotifications } = await query;
+      const { data: rawNotifications, error } = await query;
       const container = document.getElementById('notifications-list-container');
       const readSet = new Set(JSON.parse(localStorage.getItem('read_notifs_' + currentUser.username) || '[]'));
 
-      if (!rawNotifications || rawNotifications.length === 0) {
-        container.innerHTML = `<p style="color:var(--text-muted); font-size:14px;">No notifications yet.</p>`;
-        document.getElementById('notif-badge-dot').style.display = 'none';
+      if (error || !rawNotifications || rawNotifications.length === 0) {
+        if (container) container.innerHTML = `<p style="color:var(--text-muted); font-size:14px;">No notifications yet.</p>`;
+        const notifBadge = document.getElementById('notif-badge-dot');
+        if (notifBadge) notifBadge.style.display = 'none';
         return;
       }
 
+      // Secondary client-side guard for 100% privacy guarantee
+      const studentPhone = String(currentUser.phone || '').trim();
+      const safeNotifications = isPrivileged 
+        ? rawNotifications 
+        : rawNotifications.filter(n => {
+            const rPhone = String(n.recipient_phone || '').trim();
+            return rPhone === 'ALL' || rPhone === studentPhone;
+          });
+
+      // Deduplicate notifications by signature
       const seenSignatures = new Set();
       const notifications = [];
 
-      rawNotifications.forEach(n => {
-        const sig = `${n.title}_${n.timestamp}_${n.message}`.trim();
+      safeNotifications.forEach(n => {
+        const sig = `${n.title}_${n.timestamp}_${n.message}_${n.recipient_phone}`.trim();
         if (!seenSignatures.has(sig)) {
           seenSignatures.add(sig);
           notifications.push(n);
@@ -3763,7 +3783,7 @@
       });
 
       let unreadCount = 0;
-      container.innerHTML = '';
+      if (container) container.innerHTML = '';
       selectedNotifIds.clear();
 
       notifications.forEach(n => {
@@ -3791,13 +3811,12 @@
             </div>
           </div>
         `;
-        container.appendChild(card);
+        if (container) container.appendChild(card);
       });
 
-      document.getElementById('notif-badge-dot').style.display = unreadCount > 0 ? 'block' : 'none';
-      if (unreadCount > 0 && !window._hasPlayedNotifSound) {
-        playNotificationChime();
-        window._hasPlayedNotifSound = true;
+      const notifBadge = document.getElementById('notif-badge-dot');
+      if (notifBadge) {
+        notifBadge.style.display = unreadCount > 0 ? 'block' : 'none';
       }
     }
 
@@ -4528,20 +4547,23 @@ Keep up the daily practice!`;
     async function handleReset(requestId, decision, phone, subject) {
       await supabaseClient.from('reset_requests').update({ status: decision }).eq('request_id', requestId);
 
+      const targetPhone = String(phone || '').trim();
+
       if (decision === 'Accepted') {
-        // Deletes answered history for that subject so questions become available again
         await supabaseClient
           .from('student_answers')
           .delete()
-          .eq('phone', String(phone).trim())
+          .eq('phone', targetPhone)
           .eq('subject', subject);
       }
 
       const formattedDT = formatDateStrict(new Date().toISOString());
+
+      // STRICTLY SEND ONLY TO THE SPECIFIC STUDENT'S PHONE NUMBER
       await supabaseClient.from('notifications').insert([{
-        notification_id: 'NOTIF-' + Date.now(),
+        notification_id: 'NOTIF-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
         timestamp: formattedDT,
-        recipient_phone: String(phone).trim(),
+        recipient_phone: targetPhone, // STRICT: Specific student phone only
         title: `Subject Reset Request ${decision}`,
         message: decision === 'Accepted'
           ? `Your reset request for '${getFullSubjectName(subject)}' has been accepted by Admin! You can now re-practice all questions in this subject.`
