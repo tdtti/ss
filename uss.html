@@ -2384,13 +2384,14 @@
     }
 
     // =========================================================================
-    // INSTANT LIVE RADAR RENDERER (STRICT LEAVE SEPARATION & ADMIN-ONLY ALERTS)
+    // FULL UPDATED LIVE RADAR RENDERER (ACTIVE ACTIVITY + INACTIVE LAST SEEN)
     // =========================================================================
     async function renderAllUsersOnlineCards() {
       const activeFeed = document.getElementById('online-active-feed');
       const inactiveFeed = document.getElementById('online-inactive-feed');
       if (!activeFeed || !inactiveFeed) return;
 
+      // Auto-fetch if admin data cache is not ready
       if (!cachedAdminData || !cachedAdminData.users || cachedAdminData.users.length === 0) {
         const { data: quickUsers } = await supabaseClient.from('users').select('*');
         const { data: quickLogs } = await supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(60);
@@ -2408,7 +2409,7 @@
       const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
       const cleanDate = new Date().toLocaleDateString('en-GB');
 
-      // Collect presence entries
+      // 1. Collect presence state entries
       let presenceEntries = [];
       try {
         if (presenceChannel) {
@@ -2422,7 +2423,7 @@
         presenceEntries = [];
       }
 
-      // Merge broadcasted pings (overrides socket presence with highest priority)
+      // 2. Merge broadcast heartbeats
       const livePings = window._liveHeartbeats || {};
       for (const k in livePings) {
         const ping = livePings[k];
@@ -2442,7 +2443,7 @@
       const inactiveList = [];
       const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-      // Exclude Admin & Question Master from Student Radar
+      // Strictly Students Only (Exclude Admin & Question Master)
       const onlyStudents = usersList.filter(u => !isStaffOrAdminUser(u));
 
       onlyStudents.forEach(u => {
@@ -2460,45 +2461,49 @@
                  (cleanDbName && pName && (cleanDbName.includes(pName) || pName.includes(cleanDbName)));
         });
 
+        const userLastLog = logsList.find(l => {
+          const lId = cleanString(l.identifier);
+          return lId === cleanDbUser || lId === cleanDbName;
+        });
+
+        const studentAttLogs = allAtt.filter(a => String(a.phone).trim() === cleanDbPhone);
+
+        // Strict active check
+        const isPresActive = pres && pres.isGreen === true && pres.liveStatus === 'Online & Active';
+        const isOnlineAndActive = adminIsOnline && Boolean(isPresActive);
+
+        // Resolve Status Text
         let statusText = 'Offline';
         if (!adminIsOnline) {
           statusText = 'Offline (Admin Disconnected)';
-        } else if (pres && pres.liveStatus) {
-          statusText = pres.liveStatus;
+        } else if (isOnlineAndActive) {
+          statusText = 'Online & Active';
+        } else {
+          statusText = getStudentLastSeenTime(pres, userLastLog, studentAttLogs);
         }
 
-        // STRICT ACCURACY: User is Active ONLY if explicitly "Online & Active" and isGreen is TRUE
-        // If statusText is "Switched Tab...", "Opened Another App...", "Inactive / Idle...", or "Left...", isOnlineAndActive is FALSE
-        const isOnlineAndActive = adminIsOnline && Boolean(
-          pres && pres.isGreen === true && (statusText === 'Online & Active')
-        );
-
-        // =============================================================
-        // ADMIN-ONLY NOTIFICATION (CHIMES & TOASTS SUPPRESSED FOR STUDENTS)
-        // =============================================================
+        // State transition sounds and alerts (Admin-only)
         const studentUniqueKey = cleanDbPhone || cleanDbUser;
         const previousState = window._previousUserStates[studentUniqueKey];
-
-        // Only trigger alerts if CURRENT USER is Admin or Staff
         const amIAdminOrStaff = isStaffOrAdminUser(currentUser);
 
         if (amIAdminOrStaff && window._hasInitialPresenceSynced && previousState !== undefined && previousState !== isOnlineAndActive) {
           const stName = u.name || u.username;
-          const stClass = u.class || '10';
+          const stClass = u.class || '7';
           const stDiv = u.division || 'A';
 
           if (isOnlineAndActive) {
-            playEntryChime(); // ENTRY SOUND
+            if (typeof playEntryChime === 'function') playEntryChime();
             showToast(`🟢 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) entered the portal!`, 'success');
           } else {
-            playExitChime(); // EXIT SOUND
+            if (typeof playExitChime === 'function') playExitChime();
             showToast(`🔴 <strong>${escapeHtml(stName)}</strong> (Class ${escapeHtml(stClass)}-${escapeHtml(stDiv)}) left the app (${escapeHtml(statusText)})`, 'danger');
           }
         }
 
         window._previousUserStates[studentUniqueKey] = isOnlineAndActive;
 
-        // Calculate student's remaining time today
+        // Calculate student's remaining practice time today
         let usedSeconds = 0;
         if (pres && typeof pres.todaySeconds === 'number') {
           usedSeconds = Math.max(usedSeconds, pres.todaySeconds);
@@ -2507,8 +2512,7 @@
         const localUsed = getTodayElapsedSeconds(u.phone || u.username);
         if (localUsed > usedSeconds) usedSeconds = localUsed;
 
-        const studentTodayAtt = allAtt.filter(a => 
-          String(a.phone).trim() === cleanDbPhone && 
+        const studentTodayAtt = studentAttLogs.filter(a => 
           (a.date === cleanDate || (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate))
         );
         let dbTotalSec = 0;
@@ -2540,11 +2544,6 @@
         const usedMins = Math.floor(usedSeconds / 60);
         const usedFormatted = `${usedMins}m ${usedSeconds % 60}s`;
 
-        const userLastLog = logsList.find(l => {
-          const lId = cleanString(l.identifier);
-          return lId === cleanDbUser || lId === cleanDbName;
-        });
-
         const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
         const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
         const activeContext = pres?.currentContext || (isOnlineAndActive ? 'Practice Center' : 'Offline / Inactive');
@@ -2575,6 +2574,27 @@
 
       window._hasInitialPresenceSynced = true;
 
+      // =======================================================================
+      // 1. ACTIVE STUDENTS: SORT BY LATEST LOGIN TIME (NEWEST AT THE TOP)
+      // =======================================================================
+      activeList.sort((a, b) => {
+        const dateA = parseCustomDate(a.loginTime);
+        const dateB = parseCustomDate(b.loginTime);
+        const timeA = dateA ? dateA.getTime() : 0;
+        const timeB = dateB ? dateB.getTime() : 0;
+        return timeB - timeA; // Descending order
+      });
+
+      // =======================================================================
+      // 2. INACTIVE STUDENTS: SORT STRICTLY ALPHABETICAL BY NAME (A TO Z)
+      // =======================================================================
+      inactiveList.sort((a, b) => {
+        const nameA = String(a.name || a.username || '').trim().toLowerCase();
+        const nameB = String(b.name || b.username || '').trim().toLowerCase();
+        return nameA.localeCompare(nameB); // Ascending alphabetical order
+      });
+
+      // Update header counters
       const actEl = document.getElementById('badge-active-count');
       const inactEl = document.getElementById('badge-inactive-count');
       if (actEl) actEl.innerText = `${activeList.length} Active`;
@@ -2597,13 +2617,12 @@
                   <strong style="font-size:15px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                     ${escapeHtml(u.name || u.username)}
                   </strong>
-                  <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '10')}-${escapeHtml(u.division || 'A')}</span>
+                  <span class="badge" style="font-size:11px; padding:2px 7px;">Class ${escapeHtml(u.class || '7')}-${escapeHtml(u.division || 'A')}</span>
                 </div>
                 
                 <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
                   <span class="live-activity-capsule ${isAct ? 'active-capsule' : 'inactive-capsule'}">
                     <span>${isAct ? '⚡' : '💤'}</span>
-                    <!-- SHOWS REAL-TIME PRESENT ACTIVITY WHEN ACTIVE, OR STATUS WHEN INACTIVE -->
                     <span>${escapeHtml(isAct ? u.activeContext : u.statusText)}</span>
                   </span>
 
@@ -2615,7 +2634,7 @@
                 </div>
               </div>
 
-              <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(u.activeContext)}', '${escapeHtml(u.timeLeftFormatted)}')" 
+              <button onclick="event.stopPropagation(); sendTailoredRadarWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', ${isAct}, '${escapeHtml(isAct ? u.activeContext : u.statusText)}', '${escapeHtml(u.timeLeftFormatted)}')" 
                       class="mobile-whatsapp-btn" title="${isAct ? 'Encourage Student' : 'Alert Student to Practice'}">
                 💬
               </button>
@@ -2630,7 +2649,7 @@
                 <div><strong>Login:</strong> ${u.loginTime}</div>
                 <div><strong>Logout:</strong> ${u.logoutTime === 'Active Now' ? '<span class="badge badge-success" style="font-size:11px;">Active Now</span>' : u.logoutTime}</div>
                 
-                <!-- NEW SVG RESTORE QUOTA BUTTON -->
+                <!-- SVG RESTORE QUOTA BUTTON -->
                 <div style="grid-column: span 2; margin-top: 8px;">
                   <button onclick="event.stopPropagation(); adminResetStudentQuota('${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.name || u.username)}')" 
                           class="btn btn-outline" 
@@ -2658,13 +2677,32 @@
     }
 
     function sendTailoredRadarWhatsapp(name, phone, isActive, context, timeLeft) {
+      const validPhone = getCleanWhatsappPhone(phone);
       let text = '';
+
       if (isActive) {
-        text = `🌟 TDTTI USS TRAINING PORTAL\n\nDear ${name},\nGreat job! You are currently ACTIVE and practicing in [${context}].\n⏳ Remaining Practice Allowance Today: ${timeLeft || 'Active'}\nKeep up the steady focus toward your USS Exam success! 🚀📚`;
+        text = `🌟 *TDTTI USS TRAINING PORTAL*
+
+Dear *${name}*,
+Great job! You are currently *ACTIVE* and practicing in:
+📍 [${context}]
+⏳ *Time Left Today:* ${timeLeft || 'Active'}
+
+Keep up the steady focus toward your USS Exam success! 🚀📚`;
       } else {
-        text = `⚠️ TDTTI USS PORTAL - URGENT PRACTICE REMINDER\n\nDear ${name},\nYou are currently OFFLINE / INACTIVE on the USS Training Portal.\n⏳ Practice Allowance Left Today: ${timeLeft || '60m available'}\nDaily continuous practice is essential to qualify for the USS Scholarship! Please log in now and complete today's sessions. ✍️🎯`;
+        text = `⚠️ *TDTTI USS PORTAL - URGENT PRACTICE REMINDER*
+
+Dear *${name}*,
+You are currently *INACTIVE* on the USS Training Portal (${context || 'Last seen recently'}).
+⏳ *Practice Allowance Remaining Today:* ${timeLeft || '60m available'}
+
+Daily continuous practice is essential to qualify for the USS Scholarship! Please log in now and complete today's Subject Practice & Trial Exam sessions. ✍️🎯`;
       }
-      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
+      const url = validPhone
+        ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(validPhone)}&text=${encodeURIComponent(text)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
       window.open(url, '_blank');
     }
 
@@ -4491,7 +4529,10 @@
     
 
     // =========================================================================
-    // AUDIT ACCESS LOGS (TAB 11) - WITH ACTIVITY HISTORY & TIMESTAMPS
+    // AUDIT ACCESS LOGS (TAB 11) - DISPLAY FULL NAME INSTEAD OF USERNAME
+    // =========================================================================
+    // =========================================================================
+    // AUDIT ACCESS LOGS (TAB 11) - SORTED BY LAST LOGGED IN AT THE TOP
     // =========================================================================
     function renderGroupedAuditLogs(logs) {
       const container = document.getElementById('admin-logs-cards-container');
@@ -4502,17 +4543,11 @@
         return;
       }
 
-      const allAtt = (cachedAdminData && Array.isArray(cachedAdminData.allAttendance)) 
-        ? cachedAdminData.allAttendance 
-        : [];
-      const allTrials = (cachedAdminData && Array.isArray(cachedAdminData.allTrialExams)) 
-        ? cachedAdminData.allTrialExams 
-        : [];
-      const allUsers = (cachedAdminData && Array.isArray(cachedAdminData.users)) 
-        ? cachedAdminData.users 
-        : [];
+      const allAtt = (cachedAdminData && Array.isArray(cachedAdminData.allAttendance)) ? cachedAdminData.allAttendance : [];
+      const allTrials = (cachedAdminData && Array.isArray(cachedAdminData.allTrialExams)) ? cachedAdminData.allTrialExams : [];
+      const allUsers = (cachedAdminData && Array.isArray(cachedAdminData.users)) ? cachedAdminData.users : [];
 
-      // Group logs by identifier (username)
+      // 1. Group logs by identifier (username)
       const grouped = {};
       logs.forEach(l => {
         const userKey = l.identifier || 'Unknown User';
@@ -4520,27 +4555,56 @@
         grouped[userKey].push(l);
       });
 
-      const userKeys = Object.keys(grouped).sort();
+      // 2. Sort internal sessions for each user: Newest login at the top
+      Object.keys(grouped).forEach(uKey => {
+        grouped[uKey].sort((a, b) => {
+          const dateA = parseCustomDate(a.login_time || a.timestamp);
+          const dateB = parseCustomDate(b.login_time || b.timestamp);
+          const timeA = dateA ? dateA.getTime() : 0;
+          const timeB = dateB ? dateB.getTime() : 0;
+          return timeB - timeA; // Descending (latest session first)
+        });
+      });
+
+      // 3. SORT USER GROUP CARDS: User with the MOST RECENT login appears at the very top
+      const userKeys = Object.keys(grouped).sort((uKeyA, uKeyB) => {
+        const latestLogA = grouped[uKeyA][0];
+        const latestLogB = grouped[uKeyB][0];
+
+        // "Active Now" takes absolute top priority
+        const aIsActive = latestLogA.logout_time === 'Active Now' ? 1 : 0;
+        const bIsActive = latestLogB.logout_time === 'Active Now' ? 1 : 0;
+        if (aIsActive !== bIsActive) return bIsActive - aIsActive;
+
+        const dateA = parseCustomDate(latestLogA.login_time || latestLogA.timestamp);
+        const dateB = parseCustomDate(latestLogB.login_time || latestLogB.timestamp);
+        const timeA = dateA ? dateA.getTime() : 0;
+        const timeB = dateB ? dateB.getTime() : 0;
+
+        return timeB - timeA; // Most recent user at the top
+      });
 
       container.innerHTML = userKeys.map((username, gIdx) => {
         const userLogs = grouped[username];
         const latestLog = userLogs[0];
         const isOnlineNow = navigator.onLine && (latestLog.logout_time === 'Active Now');
 
-        // Find user's phone for activity linkage
+        // Look up student details
         const matchedUser = allUsers.find(u => 
           String(u.username || '').toLowerCase() === String(username).toLowerCase() ||
           String(u.name || '').toLowerCase() === String(username).toLowerCase()
         );
+
+        const displayName = matchedUser && matchedUser.name ? matchedUser.name : username;
         const userPhone = matchedUser ? String(matchedUser.phone || '').trim() : '';
 
-        // Pull all recorded activities for this student across Attendance & Trials
+        // Pull recorded activities for this student
         const userActivities = [];
 
-        // 1. From Attendance Table
         allAtt.filter(a => 
           (userPhone && String(a.phone || '').trim() === userPhone) ||
-          (String(a.student_name || '').toLowerCase() === String(username).toLowerCase())
+          (String(a.student_name || '').toLowerCase() === String(username).toLowerCase()) ||
+          (String(a.student_name || '').toLowerCase() === String(displayName).toLowerCase())
         ).forEach(att => {
           userActivities.push({
             type: 'ATTENDANCE',
@@ -4550,10 +4614,10 @@
           });
         });
 
-        // 2. From Trial Exams Table
         allTrials.filter(t => 
           (userPhone && String(t.phone || '').trim() === userPhone) ||
-          (String(t.student_name || '').toLowerCase() === String(username).toLowerCase())
+          (String(t.student_name || '').toLowerCase() === String(username).toLowerCase()) ||
+          (String(t.student_name || '').toLowerCase() === String(displayName).toLowerCase())
         ).forEach(tr => {
           userActivities.push({
             type: 'TRIAL',
@@ -4569,10 +4633,10 @@
               <div style="display:flex; align-items:center; gap:12px;">
                 <span class="led-dot ${isOnlineNow ? 'led-green' : 'led-red'}"></span>
                 <div>
-                  <strong style="font-size:15px; color:var(--primary);">${escapeHtml(username)}</strong>
+                  <strong style="font-size:15.5px; color:var(--primary);">${escapeHtml(displayName)}</strong>
                   ${matchedUser ? `<span class="badge" style="margin-left:6px; font-size:11px;">Class ${matchedUser.class || '7'}-${matchedUser.division || 'A'}</span>` : ''}
                   <span style="font-size:12px; color:var(--text-muted); margin-left:8px;">
-                    (${userLogs.length} session${userLogs.length > 1 ? 's' : ''} logged)
+                    (${userLogs.length} session${userLogs.length > 1 ? 's' : ''})
                   </span>
                 </div>
               </div>
@@ -4597,7 +4661,6 @@
                       <th style="width: 90px;">Status</th>
                       <th style="min-width: 140px;">Login Time</th>
                       <th style="min-width: 140px;">Logout Time</th>
-                      <!-- ACTIVITY HISTORY WITH TIME COLUMN -->
                       <th style="min-width: 250px;">Activity History (With Time)</th>
                       <th>Device Specifications</th>
                       <th style="width: 50px;">Action</th>
@@ -4609,57 +4672,45 @@
                       const loginStr = l.login_time || l.timestamp || '';
                       const logoutStr = l.logout_time || '';
 
-                      // Parse session bounds for activity pairing
-                      const loginDate = new Date(loginStr);
+                      const loginDate = parseCustomDate(loginStr) || new Date();
                       const logoutDate = (sessionActive || !logoutStr || logoutStr === '-') 
                         ? new Date() 
-                        : new Date(logoutStr);
+                        : (parseCustomDate(logoutStr) || new Date());
 
-                      // Match activities belonging around this session or matching the date
                       const sessionActivities = userActivities.filter(act => {
-                        const actDate = new Date(act.time);
-                        if (!isNaN(loginDate.getTime()) && !isNaN(actDate.getTime())) {
-                          // Activity occurred within 2 hours before login or up to logout
+                        const actDate = parseCustomDate(act.time);
+                        if (actDate && !isNaN(loginDate.getTime())) {
                           return (actDate >= new Date(loginDate.getTime() - 7200000)) && (actDate <= new Date(logoutDate.getTime() + 1800000));
                         }
-                        // Fallback matching by date string (DD/MM/YYYY)
                         return act.time && loginStr && act.time.split(',')[0].trim() === loginStr.split(',')[0].trim();
                       });
 
-                      // REPLACE WITH THIS:
-let activityListHTML = '';
-if (sessionActivities.length > 0) {
-  activityListHTML = sessionActivities.map(act => `
-    <div style="font-size: 11.5px; line-height: 1.4; margin-bottom: 6px; padding: 6px 8px; background: #f8fafc; border-left: 3px solid var(--primary); border-radius: 6px; border: 1px solid #e2e8f0; border-left-width: 3px;">
-      <div style="color: #64748b; font-weight: 700;">⏱️ ${formatDateStrict(act.time)}</div>
-      <div style="color: #0f172a; font-weight: 800; margin: 1px 0;">${escapeHtml(act.label)}</div>
-      <div style="color: #475569; font-weight: 600;">${escapeHtml(act.details)}</div>
-    </div>
-  `).join('');
-} else {
-  // CALCULATE LIVE / RECORDED DURATION FOR THIS SESSION
-  let sessionDurationFormatted = '0m 00s';
-  const startMs = !isNaN(loginDate.getTime()) ? loginDate.getTime() : 0;
-  const endMs = (sessionActive || !logoutStr || logoutStr === '-') 
-    ? Date.now() 
-    : (!isNaN(logoutDate.getTime()) ? logoutDate.getTime() : startMs);
+                      let activityListHTML = '';
+                      if (sessionActivities.length > 0) {
+                        activityListHTML = sessionActivities.map(act => `
+                          <div style="font-size: 11.5px; line-height: 1.4; margin-bottom: 6px; padding: 6px 8px; background: #f8fafc; border-left: 3px solid var(--primary); border-radius: 6px; border: 1px solid #e2e8f0; border-left-width: 3px;">
+                            <div style="color: #64748b; font-weight: 700;">⏱️ ${formatDateStrict(act.time)}</div>
+                            <div style="color: #0f172a; font-weight: 800; margin: 1px 0;">${escapeHtml(act.label)}</div>
+                            <div style="color: #475569; font-weight: 600;">${escapeHtml(act.details)}</div>
+                          </div>
+                        `).join('');
+                      } else {
+                        let sessionDurationFormatted = '0m 00s';
+                        const startMs = loginDate ? loginDate.getTime() : 0;
+                        const endMs = logoutDate ? logoutDate.getTime() : startMs;
+                        if (startMs > 0 && endMs >= startMs) {
+                          const diffSec = Math.max(1, Math.round((endMs - startMs) / 1000));
+                          sessionDurationFormatted = `${Math.floor(diffSec / 60)}m ${diffSec % 60}s`;
+                        }
 
-  if (startMs > 0 && endMs >= startMs) {
-    const diffSec = Math.max(1, Math.round((endMs - startMs) / 1000));
-    const mins = Math.floor(diffSec / 60);
-    const secs = diffSec % 60;
-    sessionDurationFormatted = `${mins}m ${secs}s`;
-  }
-
-  // DYNAMIC CARD INSTEAD OF GENERIC "NO SPECIFIC ACTIVITIES" TEXT
-  activityListHTML = `
-    <div style="font-size: 11.5px; line-height: 1.4; padding: 6px 8px; background: #f8fafc; border-left: 3px solid #3b82f6; border-radius: 6px; border: 1px solid #e2e8f0; border-left-width: 3px;">
-      <div style="color: #64748b; font-weight: 700;">⏱️ ${formatDateStrict(loginStr)}</div>
-      <div style="color: #1e40af; font-weight: 800; margin: 1px 0;">Daily USS Training Session</div>
-      <div style="color: #475569; font-weight: 600;">0 Qs • ${sessionDurationFormatted} • Result: <span class="badge ${sessionActive ? 'badge-success' : ''}" style="font-size: 10.5px; padding: 1px 6px;">${sessionActive ? 'Active' : 'Completed'}</span></div>
-    </div>
-  `;
-}
+                        activityListHTML = `
+                          <div style="font-size: 11.5px; line-height: 1.4; padding: 6px 8px; background: #f8fafc; border-left: 3px solid #3b82f6; border-radius: 6px; border: 1px solid #e2e8f0; border-left-width: 3px;">
+                            <div style="color: #64748b; font-weight: 700;">⏱️ ${formatDateStrict(loginStr)}</div>
+                            <div style="color: #1e40af; font-weight: 800; margin: 1px 0;">Daily USS Training Session</div>
+                            <div style="color: #475569; font-weight: 600;">0 Qs • ${sessionDurationFormatted} • Result: <span class="badge ${sessionActive ? 'badge-success' : ''}" style="font-size: 10.5px; padding: 1px 6px;">${sessionActive ? 'Active' : 'Completed'}</span></div>
+                          </div>
+                        `;
+                      }
 
                       return `
                         <tr>
@@ -5432,20 +5483,29 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
 
     function getRelativeTime(dateStr) {
-      if (!dateStr || dateStr === '-') return 'N/A';
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      const now = new Date();
-      const diffMs = now - d;
-      const diffSec = Math.floor(diffMs / 1000);
-      const diffMin = Math.floor(diffSec / 60);
-      const diffHr = Math.floor(diffMin / 60);
-      const diffDay = Math.floor(diffHr / 24);
+      if (!dateStr || dateStr === '-' || dateStr === 'Active Now') return 'Just now';
+      
+      const d = parseCustomDate(dateStr);
+      if (!d) return dateStr;
 
+      const now = new Date();
+      const diffMs = now.getTime() - d.getTime();
+      const diffSec = Math.floor(diffMs / 1000);
+
+      // Handle clock slight mismatch / future offsets
       if (diffSec < 60) return 'Just now';
-      if (diffMin < 60) return `${diffMin} min ago`;
-      if (diffHr < 24) return `${diffHr} hr${diffHr > 1 ? 's' : ''} ago`;
-      return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin === 1) return '1 min ago';
+      if (diffMin < 60) return `${diffMin} mins ago`;
+
+      const diffHr = Math.floor(diffMin / 60);
+      if (diffHr === 1) return '1 hr ago';
+      if (diffHr < 24) return `${diffHr} hrs ago`;
+
+      const diffDay = Math.floor(diffHr / 24);
+      if (diffDay === 1) return '1 day ago';
+      return `${diffDay} days ago`;
     }
 
 
@@ -6074,6 +6134,108 @@ function fallbackCopyText(text, count, prevSecurityState) {
         showToast('🛑 Student Self-Registration is now DISABLED.', 'warning');
       }
     }
+
+    // =========================================================================
+    // ACCURATE "LAST SEEN" RELATIVE TIME FORMATTER
+    // =========================================================================
+    function getStudentLastSeenTime(pres, userLastLog, userAttendanceLogs) {
+      let lastTimestamp = 0;
+
+      if (pres && (pres.timestamp || pres.receivedAt)) {
+        const pTime = Number(pres.timestamp || pres.receivedAt);
+        if (!isNaN(pTime) && pTime > lastTimestamp) {
+          lastTimestamp = pTime;
+        }
+      }
+
+      if (userLastLog) {
+        const timeCand = userLastLog.logout_time && userLastLog.logout_time !== 'Active Now' && userLastLog.logout_time !== '-'
+          ? userLastLog.logout_time 
+          : (userLastLog.login_time || userLastLog.timestamp);
+        
+        if (timeCand) {
+          const lDate = parseCustomDate(timeCand);
+          if (lDate && lDate.getTime() > lastTimestamp) {
+            lastTimestamp = lDate.getTime();
+          }
+        }
+      }
+
+      if (Array.isArray(userAttendanceLogs) && userAttendanceLogs.length > 0) {
+        userAttendanceLogs.forEach(a => {
+          if (a.timestamp) {
+            const aDate = parseCustomDate(a.timestamp);
+            if (aDate && aDate.getTime() > lastTimestamp) {
+              lastTimestamp = aDate.getTime();
+            }
+          }
+        });
+      }
+
+      if (lastTimestamp === 0) return 'Never active';
+
+      const diffSec = Math.floor((Date.now() - lastTimestamp) / 1000);
+      if (diffSec < 60) return 'Last seen just now';
+
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin === 1) return 'Last seen 1 min ago';
+      if (diffMin < 60) return `Last seen ${diffMin} mins ago`;
+
+      const diffHr = Math.floor(diffMin / 60);
+      if (diffHr === 1) return 'Last seen 1 hr ago';
+      if (diffHr < 24) return `Last seen ${diffHr} hrs ago`;
+
+      const diffDay = Math.floor(diffHr / 24);
+      if (diffDay === 1) return 'Last seen 1 day ago';
+      return `Last seen ${diffDay} days ago`;
+    }
+
+
+    // =========================================================================
+    // SAFE STRICT DATE PARSER FOR DD/MM/YYYY FORMAT (FIXES 237 DAYS AGO BUG)
+    // =========================================================================
+    function parseCustomDate(dateStr) {
+      if (!dateStr || dateStr === '-' || dateStr === 'Active Now') return null;
+      if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+
+      const str = String(dateStr).trim();
+      const parts = str.split(',');
+      const datePart = parts[0].trim();
+      const dateSegments = datePart.split('/');
+
+      if (dateSegments.length === 3) {
+        const day = parseInt(dateSegments[0], 10);
+        const month = parseInt(dateSegments[1], 10) - 1;
+        const year = parseInt(dateSegments[2], 10);
+
+        let hours = 0, minutes = 0, seconds = 0;
+
+        if (parts[1]) {
+          const timeStr = parts[1].trim();
+          const isPM = timeStr.toUpperCase().includes('PM');
+          const isAM = timeStr.toUpperCase().includes('AM');
+          const cleanTime = timeStr.replace(/(AM|PM)/gi, '').trim();
+          const timeSegments = cleanTime.split(':');
+
+          if (timeSegments.length >= 2) {
+            hours = parseInt(timeSegments[0], 10);
+            minutes = parseInt(timeSegments[1], 10);
+            seconds = timeSegments[2] ? parseInt(timeSegments[2], 10) : 0;
+
+            if (isPM && hours < 12) hours += 12;
+            if (isAM && hours === 12) hours = 0;
+          }
+        }
+
+        const parsed = new Date(year, month, day, hours, minutes, seconds);
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
+
+      const standardDate = new Date(str);
+      return isNaN(standardDate.getTime()) ? null : standardDate;
+    }
+
+
   </script>
 </body>
 </html>
