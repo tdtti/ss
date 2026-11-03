@@ -607,7 +607,7 @@
 
   <div class="container">
 
-    <!-- LOGIN SCREEN -->
+    <!-- LOGIN & REGISTRATION SCREEN -->
     <section id="login-sec">
       <div class="login-hero-header">
         <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6dWKvrSQKybNS-C8s5KIFwaCI7GbTTMt1QavDq1yKrA&s=10" alt="School Logo" class="school-logo-img">
@@ -615,22 +615,124 @@
         <span class="login-hero-subtitle">ACADEMIC SESSION 2026-27</span>
       </div>
 
+      <!-- AUTH MODE SWITCHER (SIGN IN vs REGISTER) -->
+      <div style="display: flex; background: #f8fafc; border-bottom: 1px solid var(--border-color); padding: 8px;">
+        <button id="auth-tab-login" type="button" onclick="switchAuthMode('LOGIN')" class="btn btn-block" style="flex: 1; border-radius: 10px; background: var(--primary); color: #fff; font-weight: 800; font-size: 13.5px; padding: 10px;">
+          🔐 Sign In
+        </button>
+        <button id="auth-tab-register" type="button" onclick="switchAuthMode('REGISTER')" class="btn btn-block" style="flex: 1; border-radius: 10px; background: transparent; color: var(--text-muted); font-weight: 800; font-size: 13.5px; padding: 10px;">
+          📝 Register / New Student
+        </button>
+      </div>
+
       <div class="login-form-body">
+        
+        <!-- ========================================== -->
+        <!-- 1. SIGN IN FORM -->
+        <!-- ========================================== -->
         <form id="login-form">
           <div class="form-group">
             <label>Username</label>
-            <input type="text" id="login-username" required placeholder="Enter username">
+            <input type="text" id="login-username" required placeholder="Enter username" autocomplete="username">
           </div>
+
           <div class="form-group">
             <label>Password</label>
-            <input type="password" id="login-password" required placeholder="Enter password">
+            <div style="position: relative;">
+              <input type="password" id="login-password" required placeholder="Enter password" autocomplete="current-password" style="padding-right: 46px;">
+              <button type="button" onclick="togglePasswordVisibility('login-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 17px; padding: 4px; color: var(--text-muted);" title="Show/Hide Password">
+                👁️
+              </button>
+            </div>
           </div>
+
           <div id="keep-logged-pill" class="keep-logged-pill active" onclick="toggleKeepLoggedPill()">
             <span class="pill-indicator-dot"></span>
             <span id="keep-logged-text">Keep Me Logged In: ON</span>
           </div>
-          <button type="submit" class="btn btn-primary btn-block" style="padding:14px; font-weight:800;">Sign In →</button>
+
+          <button type="submit" class="btn btn-primary btn-block" style="padding:14px; font-weight:800; font-size: 15px;">
+            Sign In →
+          </button>
+          
+          <p style="text-align: center; margin: 16px 0 0 0; font-size: 13px; color: var(--text-muted);">
+            New student? <a href="javascript:void(0)" onclick="switchAuthMode('REGISTER')" style="color: var(--primary); font-weight: 800; text-decoration: none;">Create your account here</a>
+          </p>
         </form>
+
+        <!-- ========================================== -->
+        <!-- 2. REGISTRATION / SIGN UP FORM -->
+        <!-- ========================================== -->
+        <form id="register-form" style="display: none;">
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 12.5px; color: #1e40af; line-height: 1.5;">
+            ✨ Fill in your student details to instantly register for the USS Training Portal 2026-27.
+          </div>
+
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" id="reg-name" required placeholder="Enter your full name (e.g. Rahul K)">
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Gender *</label>
+              <select id="reg-gender" required>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>First Language *</label>
+              <select id="reg-first-lang" required>
+                <option value="MI">Malayalam I (MI)</option>
+                <option value="AR">Arabic - العربية (AR)</option>
+                <option value="SK">Sanskrit - संस्कृतम् (SK)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Class *</label>
+              <input type="text" id="reg-class" required value="7" placeholder="e.g. 7 or 10">
+            </div>
+
+            <div class="form-group">
+              <label>Division *</label>
+              <input type="text" id="reg-div" required placeholder="e.g. A, B, C">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Phone Number (WhatsApp) *</label>
+            <input type="tel" id="reg-phone" required placeholder="10-digit mobile number" maxlength="10">
+          </div>
+
+          <div class="form-group">
+            <label>Choose a Username *</label>
+            <input type="text" id="reg-username" required placeholder="e.g. rahul2026 (lowercase, no spaces)" autocomplete="username">
+          </div>
+
+          <div class="form-group">
+            <label>Create a Password *</label>
+            <div style="position: relative;">
+              <input type="password" id="reg-password" required minlength="4" placeholder="Enter password (min 4 characters)" autocomplete="new-password" style="padding-right: 46px;">
+              <button type="button" onclick="togglePasswordVisibility('reg-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 17px; padding: 4px; color: var(--text-muted);" title="Show/Hide Password">
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" style="padding:14px; font-weight:800; font-size: 15px; background: #059669;">
+            ✅ Complete Registration & Sign In →
+          </button>
+
+          <p style="text-align: center; margin: 16px 0 0 0; font-size: 13px; color: var(--text-muted);">
+            Already have an account? <a href="javascript:void(0)" onclick="switchAuthMode('LOGIN')" style="color: var(--primary); font-weight: 800; text-decoration: none;">Sign in here</a>
+          </p>
+        </form>
+
       </div>
     </section>
 
@@ -1553,6 +1655,13 @@
       }
 
       document.getElementById('login-form').addEventListener('submit', handleLogin);
+      
+      // ATTACH STUDENT REGISTRATION LISTENER
+      const regFormEl = document.getElementById('register-form');
+      if (regFormEl) {
+        regFormEl.addEventListener('submit', handleStudentRegistration);
+      }
+
       document.getElementById('question-form').addEventListener('submit', handleSaveQuestion);
       document.getElementById('modal-edit-question-form').addEventListener('submit', handleSaveEditedQuestionModal);
       document.getElementById('user-form').addEventListener('submit', handleSaveUser);
@@ -5441,6 +5550,181 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         bar.style.color = '#64748b';
         led.className = 'led-dot led-red';
         text.innerHTML = `🛡️ Admin is currently offline`;
+      }
+    }
+
+    // =========================================================================
+    // UNIVERSAL PASSWORD VISIBILITY TOGGLE (EYE ICON)
+    // =========================================================================
+    function togglePasswordVisibility(inputId, toggleBtn) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (toggleBtn) toggleBtn.innerText = '🙈';
+      } else {
+        input.type = 'password';
+        if (toggleBtn) toggleBtn.innerText = '👁️';
+      }
+    }
+
+    // =========================================================================
+    // SWITCH BETWEEN LOGIN & REGISTER FORMS
+    // =========================================================================
+    function switchAuthMode(mode) {
+      const loginForm = document.getElementById('login-form');
+      const regForm = document.getElementById('register-form');
+      const tabLogin = document.getElementById('auth-tab-login');
+      const tabReg = document.getElementById('auth-tab-register');
+
+      if (mode === 'REGISTER') {
+        loginForm.style.display = 'none';
+        regForm.style.display = 'block';
+
+        tabLogin.style.background = 'transparent';
+        tabLogin.style.color = 'var(--text-muted)';
+
+        tabReg.style.background = 'var(--primary)';
+        tabReg.style.color = '#ffffff';
+      } else {
+        loginForm.style.display = 'block';
+        regForm.style.display = 'none';
+
+        tabLogin.style.background = 'var(--primary)';
+        tabLogin.style.color = '#ffffff';
+
+        tabReg.style.background = 'transparent';
+        tabReg.style.color = 'var(--text-muted)';
+      }
+    }
+
+    // =========================================================================
+    // HANDLE NEW STUDENT REGISTRATION
+    // =========================================================================
+    async function handleStudentRegistration(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('reg-name').value.trim();
+      const gender = document.getElementById('reg-gender').value;
+      const userClass = document.getElementById('reg-class').value.trim() || '7';
+      const division = document.getElementById('reg-div').value.trim().toUpperCase() || 'A';
+      const firstLang = document.getElementById('reg-first-lang').value;
+      const phone = document.getElementById('reg-phone').value.trim();
+      const username = document.getElementById('reg-username').value.trim().toLowerCase().replace(/\s+/g, '');
+      const password = document.getElementById('reg-password').value.trim();
+
+      // Basic input validation
+      if (!username || username.length < 3) {
+        showToast('Username must be at least 3 characters with no spaces.', 'danger');
+        return;
+      }
+      if (!password || password.length < 4) {
+        showToast('Password must be at least 4 characters long.', 'danger');
+        return;
+      }
+      if (!phone || phone.length < 10) {
+        showToast('Please enter a valid 10-digit mobile number.', 'danger');
+        return;
+      }
+
+      setProgress(40);
+      showToast('Creating student account...', 'info');
+
+      try {
+        // 1. Check if username or phone already exists
+        const { data: existingUser } = await supabaseClient
+          .from('users')
+          .select('username, phone')
+          .or(`username.ilike.${username},phone.eq.${phone}`)
+          .maybeSingle();
+
+        if (existingUser) {
+          setProgress(100);
+          if (String(existingUser.username).toLowerCase() === username) {
+            showToast('Username is already taken. Please choose another username.', 'danger');
+          } else {
+            showToast('An account with this phone number already exists! Please sign in.', 'danger');
+            switchAuthMode('LOGIN');
+          }
+          return;
+        }
+
+        // 2. Insert new student account with student permissions (Tabs 1,2,3,4)
+        const newStudent = {
+          name: name,
+          gender: gender,
+          class: userClass,
+          division: division,
+          first_language: firstLang,
+          phone: phone,
+          username: username,
+          password: password,
+          role: '1,2,3,4', // Standard Student Tab Access
+          status: 'Active'
+        };
+
+        const { error: regErr } = await supabaseClient
+          .from('users')
+          .insert([newStudent]);
+
+        if (regErr) throw regErr;
+
+        // 3. Log initial registration entry
+        const nowStr = formatDateStrict(new Date().toISOString());
+        const logId = 'LOG-' + Date.now();
+        const newSessionId = 'SESS-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+
+        await supabaseClient.from('logs').insert([{ 
+          timestamp: nowStr, 
+          log_id: logId, 
+          identifier: username, 
+          role: '1,2,3,4', 
+          login_status: 'SUCCESS', 
+          login_time: nowStr, 
+          logout_time: 'Active Now', 
+          device: getDeviceInfo() 
+        }]);
+
+        // 4. Send Welcome notification to the student's Notification Center
+        await supabaseClient.from('notifications').insert([{
+          notification_id: 'NOTIF-' + Date.now(),
+          timestamp: nowStr,
+          recipient_phone: phone,
+          title: '🎓 Welcome to TDTTI USS Training Portal!',
+          message: `Dear ${name},\nWelcome to the TDTTI USS Training Portal 2026-27!\n\nYour account has been registered successfully.\n• Class: ${userClass}-${division}\n• First Language: ${firstLang}\n• Daily Practice Quota: 60 minutes\n\nPracticing every day is the key to qualifying for the USS Scholarship. Best wishes!`,
+          sender: 'TDTTI Administration'
+        }]);
+
+        // 5. Establish current session
+        currentUser = {
+          name: name,
+          gender: gender,
+          userClass: userClass,
+          division: division,
+          firstLanguage: firstLang,
+          phone: phone,
+          role: '1,2,3,4',
+          tabAccess: '1,2,3,4',
+          username: username,
+          isDefaultPass: false,
+          loginTimeStr: nowStr,
+          sessionId: newSessionId,
+          logId: logId
+        };
+
+        localStorage.setItem('USS_USER', JSON.stringify(currentUser));
+
+        setProgress(100);
+        showToast(`Welcome, ${name}! Registration successful.`, 'success');
+
+        initializeSession();
+        setupPresenceTracker();
+        setupSingleSessionGuard();
+
+      } catch (err) {
+        setProgress(100);
+        showToast('Registration failed: ' + err.message, 'danger');
       }
     }
   </script>
