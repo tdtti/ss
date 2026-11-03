@@ -638,13 +638,13 @@
         <form id="login-form">
           <div class="form-group">
             <label>Username</label>
-            <input type="text" id="login-username" required placeholder="Enter username" autocomplete="username">
+            <input type="text" id="login-username" name="username" required placeholder="Enter username" autocomplete="username">
           </div>
 
           <div class="form-group">
             <label>Password</label>
             <div style="position: relative;">
-              <input type="password" id="login-password" required placeholder="Enter password" autocomplete="current-password" style="padding-right: 46px;">
+              <input type="password" id="login-password" name="password" required placeholder="Enter password" autocomplete="current-password" style="padding-right: 46px;">
               <button type="button" onclick="togglePasswordVisibility('login-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 17px; padding: 4px; color: var(--text-muted);" title="Show/Hide Password">
                 👁️
               </button>
@@ -669,7 +669,7 @@
         <!-- 2. REGISTRATION / SIGN UP FORM -->
         <!-- ========================================== -->
         <form id="register-form" style="display: none;">
-          <!-- CLOSED NOTICE (SHOWN IF REGISTRATION IS DISABLED) -->
+          <!-- CLOSED NOTICE -->
           <div id="reg-closed-banner" style="display:none; background:#fee2e2; border:1.5px solid #ef4444; border-radius:12px; padding:16px; margin-bottom:16px; text-align:center;">
             <div style="font-size:32px; margin-bottom:6px;">🚫</div>
             <strong style="color:#991b1b; font-size:14px; display:block; margin-bottom:6px;">Student Registration is Currently Closed</strong>
@@ -682,19 +682,16 @@
           </div>
 
           <div id="reg-inputs-wrapper">
-             <!-- All existing reg form inputs go here -->
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 12.5px; color: #1e40af; line-height: 1.5;">
+              ✨ Fill in your student details to instantly register for the USS Training Portal 2026-27.
+            </div>
 
-        <form id="register-form" style="display: none;">
-          <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 12.5px; color: #1e40af; line-height: 1.5;">
-            ✨ Fill in your student details to instantly register for the USS Training Portal 2026-27.
-          </div>
-
-          <div class="form-group">
-          <label>Full Name *</label>
-          <input type="text" id="reg-name" required placeholder="ENTER YOUR FULL NAME (E.G. RAHUL K)" 
-          style="text-transform: uppercase;" 
-          oninput="this.value = this.value.toUpperCase()">
-          </div>
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input type="text" id="reg-name" required placeholder="ENTER YOUR FULL NAME (E.G. RAHUL K)" 
+                     style="text-transform: uppercase;" 
+                     oninput="this.value = this.value.toUpperCase()">
+            </div>
 
           <div class="grid-2">
             <div class="form-group">
@@ -711,6 +708,7 @@
                 <option value="MI">Malayalam I (MI)</option>
                 <option value="AR">Arabic - العربية (AR)</option>
                 <option value="SK">Sanskrit - संस्कृतम् (SK)</option>
+                <option value="NA"></option>
               </select>
             </div>
           </div>
@@ -1819,71 +1817,7 @@
       return `usage_${id}_${getTodayDateIso()}`;
     }
 
-    // =========================================================================
-    // FULL UPDATED GET TODAY ELAPSED SECONDS (CROSS-DEVICE & SUPABASE BACKED)
-    // =========================================================================
-    function getTodayElapsedSeconds(phoneOrUser) {
-      const todayIso = typeof getTodayDateIso === 'function' ? getTodayDateIso() : (() => {
-        const d = new Date();
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-      })();
-
-      const cleanDate = new Date().toLocaleDateString('en-GB');
-
-      // 1. Identify Target Identifier(s)
-      const targetPhone = String(
-        phoneOrUser || currentUser?.phone || ''
-      ).trim();
-
-      const targetUsername = String(
-        phoneOrUser || currentUser?.username || ''
-      ).trim();
-
-      let maxSeconds = 0;
-
-      // 2. Read from in-memory accumulator (active ticking clock)
-      if (typeof cachedTodayUsedSeconds === 'number' && cachedTodayUsedSeconds > 0) {
-        // Only credit in-memory seconds if querying the logged-in student
-        if (!phoneOrUser || phoneOrUser === currentUser?.phone || phoneOrUser === currentUser?.username) {
-          maxSeconds = Math.max(maxSeconds, cachedTodayUsedSeconds);
-        }
-      }
-
-      // 3. Check LocalStorage across both phone and username keys
-      if (targetPhone) {
-        const localPhoneSec = parseInt(localStorage.getItem(`usage_${targetPhone}_${todayIso}`) || '0', 10);
-        if (!isNaN(localPhoneSec)) maxSeconds = Math.max(maxSeconds, localPhoneSec);
-      }
-      if (targetUsername) {
-        const localUserSec = parseInt(localStorage.getItem(`usage_${targetUsername}_${todayIso}`) || '0', 10);
-        if (!isNaN(localUserSec)) maxSeconds = Math.max(maxSeconds, localUserSec);
-      }
-
-      // 4. Cross-check cached Supabase Attendance Table (Prevent reset on device switch)
-      if (window.cachedAdminData && Array.isArray(cachedAdminData.allAttendance)) {
-        const studentTodayLogs = cachedAdminData.allAttendance.filter(a => {
-          const matchPhone = targetPhone && String(a.phone || '').trim() === targetPhone;
-          const matchDate = (a.date === cleanDate) || 
-                            (a.attendance_id && a.attendance_id.includes(todayIso)) ||
-                            (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate);
-          return matchPhone && matchDate;
-        });
-
-        let dbSumSec = 0;
-        studentTodayLogs.forEach(a => {
-          dbSumSec += (Number(a.duration_seconds) || 0);
-        });
-
-        if (dbSumSec > 0) {
-          maxSeconds = Math.max(maxSeconds, dbSumSec);
-        }
-      }
-
-      return maxSeconds;
-    }
+    
 
     // =========================================================================
     // BACKWARD COMPATIBILITY HELPERS FOR DAILY QUOTA CHECKS
@@ -1904,20 +1838,35 @@
       checkAndEnforceQuota(getTodayElapsedSeconds());
     }
 
-    async function fetchSupabaseDailyUsage(username) {
-      if (!username) return 0;
+    async function fetchSupabaseDailyUsage(userOrPhone) {
+      if (!userOrPhone) return 0;
       try {
         const todayIso = getTodayDateIso();
-        const dailyAttId = `ATT-${String(username).trim()}-${todayIso}-DAILY`;
+        const cleanId = String(userOrPhone).trim();
         
-        const { data } = await supabaseClient
+        // Check primary attendance_id by username
+        let { data } = await supabaseClient
           .from('attendance')
           .select('duration_seconds')
-          .eq('attendance_id', dailyAttId)
+          .eq('attendance_id', `ATT-${cleanId}-${todayIso}-DAILY`)
           .maybeSingle();
 
         if (data && typeof data.duration_seconds === 'number') {
           return data.duration_seconds;
+        }
+
+        // Fallback check by phone if user passed phone
+        if (/^\+?[0-9]{10,13}$/.test(cleanId)) {
+          let { data: phoneData } = await supabaseClient
+            .from('attendance')
+            .select('duration_seconds')
+            .eq('phone', cleanId)
+            .eq('date', new Date().toLocaleDateString('en-GB'))
+            .maybeSingle();
+
+          if (phoneData && typeof phoneData.duration_seconds === 'number') {
+            return phoneData.duration_seconds;
+          }
         }
       } catch (err) {}
       return 0;
@@ -2300,7 +2249,7 @@
               if (navigator.onLine && !isUserCurrentlyIdle && document.visibilityState === 'visible' && isWindowCurrentlyFocused) {
                 broadcastLivePulse('Online & Active', true);
               }
-            }, 8000);
+            }, 20000);
           }
         });
 
@@ -4080,9 +4029,7 @@
       });
     }
 
-    // =========================================================================
-    // ADMIN DATA & HARMONIZED MODULE SYNC
-    // =========================================================================
+    
     // =========================================================================
     // LOAD ADMIN DATA & HARMONIZED MODULE SYNC
     // =========================================================================
@@ -4552,7 +4499,7 @@
     
 
     // =========================================================================
-    // AUDIT ACCESS LOGS (TAB 11) - GROUPED BY IDENTIFIER
+    // AUDIT ACCESS LOGS (TAB 11) - WITH ACTIVITY HISTORY & TIMESTAMPS
     // =========================================================================
     function renderGroupedAuditLogs(logs) {
       const container = document.getElementById('admin-logs-cards-container');
@@ -4563,6 +4510,17 @@
         return;
       }
 
+      const allAtt = (cachedAdminData && Array.isArray(cachedAdminData.allAttendance)) 
+        ? cachedAdminData.allAttendance 
+        : [];
+      const allTrials = (cachedAdminData && Array.isArray(cachedAdminData.allTrialExams)) 
+        ? cachedAdminData.allTrialExams 
+        : [];
+      const allUsers = (cachedAdminData && Array.isArray(cachedAdminData.users)) 
+        ? cachedAdminData.users 
+        : [];
+
+      // Group logs by identifier (username)
       const grouped = {};
       logs.forEach(l => {
         const userKey = l.identifier || 'Unknown User';
@@ -4577,6 +4535,42 @@
         const latestLog = userLogs[0];
         const isOnlineNow = navigator.onLine && (latestLog.logout_time === 'Active Now');
 
+        // Find user's phone for activity linkage
+        const matchedUser = allUsers.find(u => 
+          String(u.username || '').toLowerCase() === String(username).toLowerCase() ||
+          String(u.name || '').toLowerCase() === String(username).toLowerCase()
+        );
+        const userPhone = matchedUser ? String(matchedUser.phone || '').trim() : '';
+
+        // Pull all recorded activities for this student across Attendance & Trials
+        const userActivities = [];
+
+        // 1. From Attendance Table
+        allAtt.filter(a => 
+          (userPhone && String(a.phone || '').trim() === userPhone) ||
+          (String(a.student_name || '').toLowerCase() === String(username).toLowerCase())
+        ).forEach(att => {
+          userActivities.push({
+            type: 'ATTENDANCE',
+            time: att.timestamp || att.date,
+            label: att.activity || 'Practice Session',
+            details: `${att.questions_attended || 0} Qs • ${att.duration_text || '0m'} • Result: ${att.score || 'Recorded'}`
+          });
+        });
+
+        // 2. From Trial Exams Table
+        allTrials.filter(t => 
+          (userPhone && String(t.phone || '').trim() === userPhone) ||
+          (String(t.student_name || '').toLowerCase() === String(username).toLowerCase())
+        ).forEach(tr => {
+          userActivities.push({
+            type: 'TRIAL',
+            time: tr.timestamp,
+            label: '⭐ Trial Exam Mode',
+            details: `Score: ${tr.score}/${tr.total_questions} (${Math.round((tr.score / (tr.total_questions || 1)) * 100)}%)`
+          });
+        });
+
         return `
           <div class="user-logs-card">
             <div class="user-logs-header" onclick="toggleAccordion('log-group-${gIdx}')">
@@ -4584,6 +4578,7 @@
                 <span class="led-dot ${isOnlineNow ? 'led-green' : 'led-red'}"></span>
                 <div>
                   <strong style="font-size:15px; color:var(--primary);">${escapeHtml(username)}</strong>
+                  ${matchedUser ? `<span class="badge" style="margin-left:6px; font-size:11px;">Class ${matchedUser.class || '7'}-${matchedUser.division || 'A'}</span>` : ''}
                   <span style="font-size:12px; color:var(--text-muted); margin-left:8px;">
                     (${userLogs.length} session${userLogs.length > 1 ? 's' : ''} logged)
                   </span>
@@ -4606,24 +4601,60 @@
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>S.No</th>
-                      <th>Status</th>
-                      <th>Login Time</th>
-                      <th>Logout Time</th>
+                      <th style="width: 45px;">S.No</th>
+                      <th style="width: 90px;">Status</th>
+                      <th style="min-width: 140px;">Login Time</th>
+                      <th style="min-width: 140px;">Logout Time</th>
+                      <!-- ACTIVITY HISTORY WITH TIME COLUMN -->
+                      <th style="min-width: 250px;">Activity History (With Time)</th>
                       <th>Device Specifications</th>
-                      <th>Action</th>
+                      <th style="width: 50px;">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${userLogs.map((l, lIdx) => {
                       const sessionActive = (l.logout_time === 'Active Now');
+                      const loginStr = l.login_time || l.timestamp || '';
+                      const logoutStr = l.logout_time || '';
+
+                      // Parse session bounds for activity pairing
+                      const loginDate = new Date(loginStr);
+                      const logoutDate = (sessionActive || !logoutStr || logoutStr === '-') 
+                        ? new Date() 
+                        : new Date(logoutStr);
+
+                      // Match activities belonging around this session or matching the date
+                      const sessionActivities = userActivities.filter(act => {
+                        const actDate = new Date(act.time);
+                        if (!isNaN(loginDate.getTime()) && !isNaN(actDate.getTime())) {
+                          // Activity occurred within 2 hours before login or up to logout
+                          return (actDate >= new Date(loginDate.getTime() - 7200000)) && (actDate <= new Date(logoutDate.getTime() + 1800000));
+                        }
+                        // Fallback matching by date string (DD/MM/YYYY)
+                        return act.time && loginStr && act.time.split(',')[0].trim() === loginStr.split(',')[0].trim();
+                      });
+
+                      let activityListHTML = '';
+                      if (sessionActivities.length > 0) {
+                        activityListHTML = sessionActivities.map(act => `
+                          <div style="font-size: 11.5px; line-height: 1.4; margin-bottom: 6px; padding: 4px 6px; background: #f8fafc; border-left: 3px solid var(--primary); border-radius: 4px;">
+                            <div style="color: #64748b; font-weight: 700;">⏱️ ${formatDateStrict(act.time)}</div>
+                            <div style="color: #0f172a; font-weight: 700;">${escapeHtml(act.label)}</div>
+                            <div style="color: #475569;">${escapeHtml(act.details)}</div>
+                          </div>
+                        `).join('');
+                      } else {
+                        activityListHTML = `<span style="font-size: 11.5px; color: var(--text-muted); font-style: italic;">No specific practice activities recorded during this session window.</span>`;
+                      }
+
                       return `
                         <tr>
                           <td>${lIdx + 1}</td>
                           <td><span class="badge ${l.login_status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}">${l.login_status}</span></td>
-                          <td>${formatDateStrict(l.login_time || l.timestamp)}</td>
-                          <td>${sessionActive ? '<span class="badge badge-success">Active Now</span>' : formatDateStrict(l.logout_time)}</td>
-                          <td><small style="color:var(--text-muted); font-family:monospace;">${escapeHtml(l.device || 'N/A')}</small></td>
+                          <td><b>${formatDateStrict(loginStr)}</b></td>
+                          <td>${sessionActive ? '<span class="badge badge-success">Active Now</span>' : formatDateStrict(logoutStr)}</td>
+                          <td>${activityListHTML}</td>
+                          <td><small style="color:var(--text-muted); font-family:monospace; font-size:11px;">${escapeHtml(l.device || 'N/A')}</small></td>
                           <td>
                             <button onclick="deleteSingleLog('${l.log_id || l.id}')" class="btn btn-outline" style="padding:3px 8px; color:var(--danger); font-size:12px;" title="Delete Entry">🗑️</button>
                           </td>
@@ -5454,11 +5485,13 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       container.appendChild(toast);
 
       setTimeout(() => toast.classList.add('show'), 10);
-      setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-      }, 3500);
-    }function showConfirmModal(title, msg, onConfirm) {
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+
+  function showConfirmModal(title, msg, onConfirm) {
       document.getElementById('modal-title').innerText = title;
       document.getElementById('modal-msg').innerText = msg;
       confirmCallback = onConfirm;
@@ -5651,7 +5684,9 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       const isAdminOnline = presenceEntries.some(p => {
         const u = String(p.username || '').toLowerCase();
         const r = String(p.role || '').toLowerCase();
-        const isStaff = u.includes('admin') || r.includes('admin') || (p.tabAccess && parseTabAccessList(p.tabAccess).includes('9'));
+        const isStaff = u.includes('admin') || 
+                r.includes('admin') || 
+                (p.tabAccess ? parseTabAccessList(p.tabAccess).includes('9') : false);
         return isStaff && (p.isGreen === true || p.liveStatus === 'Online & Active');
       });
 
