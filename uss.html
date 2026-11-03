@@ -1138,16 +1138,15 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>S.No</th>
+              <th style="width: 50px;">S.No</th>
               <th>Student Name</th>
               <th>Class & Div</th>
-              <th>WhatsApp Report</th>
-              <th>Date</th>
+              <th style="text-align: center; width: 60px;">WhatsApp</th>
               <th>Cumulative Usage</th>
               <th>Time Left Today</th>
               <th>Activities Covered</th>
               <th>Questions Attended</th>
-              <th>Status / Action</th>
+              <th style="min-width: 130px;">Status / Action</th>
             </tr>
           </thead>
           <tbody id="admin-attendance-body"></tbody>
@@ -1339,6 +1338,10 @@
       <!-- ENROLLED USERS WITH GRANULAR TAB NO ACCESS -->
       <h3 style="margin-top:0; color: #1B257D;">Enrolled Users & Tab Permission Management</h3>
       <form id="user-form" class="card">
+        <!-- HIDDEN IDENTIFIERS FOR ACCURATE SUPABASE UPDATES -->
+        <input type="hidden" id="u-db-id">
+        <input type="hidden" id="u-original-username">
+
         <div class="grid-2">
           <div><label style="font-size:12px; font-weight:700;">Full Name</label><input type="text" placeholder="Name" id="u-name" required></div>
           <div><label style="font-size:12px; font-weight:700;">Gender</label>
@@ -1347,7 +1350,7 @@
               <option value="Female">Female</option>
             </select>
           </div>
-          <div><label style="font-size:12px; font-weight:700;">Class</label><input type="text" placeholder="Class (e.g. 10)" id="u-class" required></div>
+          <div><label style="font-size:12px; font-weight:700;">Class</label><input type="text" placeholder="Class (e.g. 7)" id="u-class" required></div>
           <div><label style="font-size:12px; font-weight:700;">Division</label><input type="text" placeholder="Division (e.g. A)" id="u-div" required></div>
           <div><label style="font-size:12px; font-weight:700;">First Language</label>
             <select id="u-first-lang" required>
@@ -1379,7 +1382,6 @@
               </div>
             </div>
             <input type="text" id="u-tab-access" placeholder="e.g. 1,2,3,4 or 1,2,3,4,5,6,7,8,9,10,11" required value="1,2,3,4" style="font-weight:700; background:#fff; border:1.5px solid var(--primary);">
-            
           </div>
 
           <div>
@@ -1390,14 +1392,61 @@
             </select>
           </div>
         </div>
-        <button type="submit" class="btn btn-primary" style="margin-top:15px; font-weight:800;">Save User Credentials & Tab Access</button>
+        <button id="u-save-btn" type="submit" class="btn btn-primary" style="margin-top:15px; font-weight:800;">Save User Credentials & Tab Access</button>
       </form>
 
-      <h3 style="margin-top:30px; color: #1B257D;">Enrolled Users List</h3>
-      <div class="table-responsive">
+      <!-- 1. STAFF & ADMINISTRATORS TABLE (BEFORE STUDENTS TABLE) -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 35px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🛡️</span>
+          <h3 style="margin: 0; color: #1B257D;">Staff & Administrators</h3>
+        </div>
+        
+      </div>
+
+      <div class="table-responsive" style="margin-top: 0; margin-bottom: 30px;">
         <table class="data-table">
           <thead>
-            <tr><th>Name</th><th>Gender</th><th>Class</th><th>Div</th><th>Language</th><th>Phone</th><th>Username</th><th>Tab Access</th><th>Live Status</th><th>Action</th></tr>
+            <tr>
+              <th style="width: 45px;">S.No</th>
+              <th>Name</th>
+              <th>Designation / Role</th>
+              <th>Language</th>
+              <th>Phone</th>
+              <th>Username</th>
+              <th>Tab Access</th>
+              <th>Live Status</th>
+              <th style="min-width: 140px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-staff-body"></tbody>
+        </table>
+      </div>
+
+      <!-- 2. ENROLLED STUDENTS TABLE (ALPHABETICAL ORDER) -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 25px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🎓</span>
+          <h3 style="margin: 0; color: #1B257D;">Enrolled Students</h3>
+        </div>
+        
+      </div>
+
+      <div class="table-responsive" style="margin-top: 0;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 45px;">S.No</th>
+              <th>Name</th>
+              <th>Gender</th>
+              <th>Class</th>
+              <th>Div</th>
+              <th>Language</th>
+              <th>Phone</th>
+              <th>Username</th>
+              <th>Live Status</th>
+              <th style="min-width: 140px;">Action</th>
+            </tr>
           </thead>
           <tbody id="admin-users-body"></tbody>
         </table>
@@ -2069,15 +2118,19 @@
           } catch (e) {}
 
           // 4. Remote unlock signal to student device
-          try {
-            const studentGuardChannel = supabaseClient.channel('guard_' + cleanUser);
-            await studentGuardChannel.subscribe();
-            await studentGuardChannel.send({
-              type: 'broadcast',
-              event: 'admin_reset_quota',
-              payload: { phone: cleanPhone, username: cleanUser }
-            });
-          } catch (e) {}
+          // AFTER (Explicit REST Delivery via httpSend):
+try {
+  const studentGuardChannel = supabaseClient.channel('guard_' + cleanUser);
+  if (typeof studentGuardChannel.httpSend === 'function') {
+    await studentGuardChannel.httpSend('admin_reset_quota', { phone: cleanPhone, username: cleanUser });
+  } else {
+    await studentGuardChannel.send({
+      type: 'broadcast',
+      event: 'admin_reset_quota',
+      payload: { phone: cleanPhone, username: cleanUser }
+    });
+  }
+} catch (e) {}
 
           // 5. Send notification to student's inbox
           try {
@@ -2337,27 +2390,37 @@
       window.addEventListener('beforeunload', handleAppExit);
     }
 
-    async function broadcastLivePulse(statusMsg, isGreenFlag) {
-      if (!presenceChannel || !currentUser) return;
-      try {
-        await presenceChannel.send({
-          type: 'broadcast',
-          event: 'heartbeat_ping',
-          payload: {
-            username: currentUser.username,
-            name: currentUser.name || currentUser.username,
-            userClass: currentUser.userClass || '10',
-            division: currentUser.division || 'A',
-            phone: currentUser.phone || '',
-            liveStatus: statusMsg,
-            isGreen: (isGreenFlag === true),
-            currentContext: currentActiveContext || 'Portal Dashboard',
-            todaySeconds: getTodayElapsedSeconds(),
-            timestamp: Date.now()
-          }
-        });
-      } catch (err) {}
+    // REPLACE broadcastLivePulse() WITH THIS:
+async function broadcastLivePulse(statusMsg, isGreenFlag) {
+  if (!presenceChannel || !currentUser) return;
+
+  const payload = {
+    username: currentUser.username,
+    name: currentUser.name || currentUser.username,
+    userClass: currentUser.userClass || '7',
+    division: currentUser.division || 'A',
+    phone: currentUser.phone || '',
+    liveStatus: statusMsg,
+    isGreen: (isGreenFlag === true),
+    currentContext: currentActiveContext || 'Portal Dashboard',
+    todaySeconds: getTodayElapsedSeconds(),
+    timestamp: Date.now()
+  };
+
+  try {
+    // If the WebSocket is joined, send over WebSocket without fallback
+    if (presenceChannel.state === 'joined') {
+      await presenceChannel.send({
+        type: 'broadcast',
+        event: 'heartbeat_ping',
+        payload: payload
+      });
+    } else if (typeof presenceChannel.httpSend === 'function') {
+      // If WebSocket is not yet connected/joined, use httpSend explicitly
+      await presenceChannel.httpSend('heartbeat_ping', payload);
     }
+  } catch (err) {}
+}
 
     async function updatePresenceLiveState(statusMessage) {
       if (!presenceChannel || !currentUser) return;
@@ -2760,15 +2823,17 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
     }
 
     // =========================================================================
-    // AUTHENTICATION & LOGIN (CROSS-DEVICE DAILY RESTRICTION)
+    // FULL UPDATED AUTHENTICATION & LOGIN HANDLER
     // =========================================================================
     async function handleLogin(e) {
       e.preventDefault();
+
       const usernameInput = document.getElementById('login-username').value.trim();
       const passwordInput = document.getElementById('login-password').value.trim();
       setProgress(50);
 
       try {
+        // 1. Authenticate against Supabase users table (Case-insensitive username)
         const { data: user, error } = await supabaseClient
           .from('users')
           .select('*')
@@ -2790,9 +2855,10 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
 
         const isStaff = isStaffOrAdminUser(user);
 
-        // Cross-device quota check via Supabase
+        // 2. Cross-Device Quota Enforcement (Students Only)
+        // Checks database usage to prevent resetting quota by changing phones/browsers
         if (!isStaff) {
-          const remoteSec = await fetchSupabaseDailyUsage(user.phone);
+          const remoteSec = await fetchSupabaseDailyUsage(user.phone || user.username);
           const localSec = getTodayElapsedSeconds(user.phone || user.username);
           const actualUsage = Math.max(remoteSec, localSec);
 
@@ -2801,29 +2867,60 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
               name: user.name, 
               phone: user.phone, 
               username: user.username,
-              userClass: user.class,
-              division: user.division
+              userClass: user.class || '7',
+              division: user.division || 'A'
             };
             triggerAppLockout();
             return;
           }
         }
 
+        const nowStr = formatDateStrict(new Date().toISOString());
+        const logId = 'LOG-' + Date.now();
+        const newSessionId = 'SESS-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+        const deviceStr = getDeviceInfo();
+
+        // 3. Account Blocked Check
         if (String(user.status).toLowerCase() === 'blocked') {
+          await supabaseClient.from('logs').insert([{ 
+            timestamp: nowStr, 
+            log_id: logId, 
+            identifier: user.username, 
+            role: user.role, 
+            login_status: 'BLOCKED', 
+            login_time: nowStr, 
+            logout_time: '-', 
+            device: deviceStr 
+          }]);
           showToast('Your account is blocked. Contact Admin.', 'danger');
           return;
         }
 
-        const nowStr = formatDateStrict(new Date().toISOString());
-        const logId = 'LOG-' + Date.now();
-        const newSessionId = 'SESS-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
-
+        // 4. Mark any previous unclosed session in logs as Auto Logged Out
         await supabaseClient
           .from('logs')
           .update({ logout_time: 'Auto Logged Out (New Login)' })
           .eq('identifier', user.username)
           .eq('logout_time', 'Active Now');
 
+        // 5. Force logout on other devices/tabs (Fixes Realtime send() deprecation warning)
+        try {
+          const guardBroadcast = supabaseClient.channel('guard_' + user.username);
+          if (typeof guardBroadcast.httpSend === 'function') {
+            await guardBroadcast.httpSend('force_logout', { newSessionId: newSessionId });
+          } else {
+            await guardBroadcast.subscribe();
+            await guardBroadcast.send({
+              type: 'broadcast',
+              event: 'force_logout',
+              payload: { newSessionId: newSessionId }
+            });
+          }
+        } catch (broadcastErr) {
+          console.warn("Session guard broadcast note:", broadcastErr);
+        }
+
+        // 6. Record this new successful login in audit logs
         await supabaseClient.from('logs').insert([{ 
           timestamp: nowStr, 
           log_id: logId, 
@@ -2832,7 +2929,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
           login_status: 'SUCCESS', 
           login_time: nowStr, 
           logout_time: 'Active Now', 
-          device: getDeviceInfo() 
+          device: deviceStr 
         }]);
 
         const isDefaultPass = (passwordInput === 'admin123' || passwordInput === 'student123' || passwordInput === usernameInput);
@@ -2840,7 +2937,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
         currentUser = {
           name: user.name || user.username,
           gender: user.gender || 'Male',
-          userClass: user.class || '10',
+          userClass: user.class || '7',
           division: user.division || 'A',
           firstLanguage: (user.first_language || 'MI').toUpperCase(),
           phone: user.phone,
@@ -2853,22 +2950,31 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
           logId: logId
         };
 
+        // 7. Prompt mandatory password change if still using default credentials
         if (isDefaultPass) {
           document.getElementById('first-time-pass-modal').style.display = 'flex';
           return;
         }
 
-        if (document.getElementById('keep-logged-pill').classList.contains('active')) {
+        // 8. Session Persistence (Local vs Session Storage)
+        const keepPill = document.getElementById('keep-logged-pill');
+        if (keepPill && keepPill.classList.contains('active')) {
           localStorage.setItem('USS_USER', JSON.stringify(currentUser));
         } else {
           sessionStorage.setItem('USS_USER', JSON.stringify(currentUser));
         }
 
+        // 9. Initialize portal session & play arrival sound
         initializeSession();
-          setupPresenceTracker();
-          setupSingleSessionGuard();
-          playEntryChime(); // 🎵 Play Entry chime on successful login
-          showToast('Logged in successfully!', 'success');
+        setupPresenceTracker();
+        setupSingleSessionGuard();
+
+        if (typeof playEntryChime === 'function') {
+          playEntryChime();
+        }
+
+        showToast('Logged in successfully!', 'success');
+
       } catch (err) {
         setProgress(100);
         showToast(`System Error: ${err.message}`, 'danger');
@@ -3182,7 +3288,9 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
     }
 
     async function saveCompletedSessionOnExit() {
-      if (sessionAnswersLog.length === 0) return;
+      if (sessionAnswersLog.length > 0) {
+      updateStudentProgressSummary(sessionAnswersLog[0]?.SubjectCode);
+      }
       const cleanDate = new Date().toLocaleDateString('en-GB');
       const formattedDT = formatDateStrict(new Date().toISOString());
 
@@ -3234,6 +3342,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
           sender: 'Practice Monitor'
         }]);
         loadNotifications();
+
       } catch (err) {}
 
       showToast(`Saved ${total} completed question(s) to Subject Overview & Attendance!`, 'success');
@@ -3523,7 +3632,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
         showToast('⚠️ Please select an answer! All questions are compulsory.', 'danger');
         return;
       }
-
+      
       clearInterval(timerInterval);
       const q = currentQuestions[qIndex];
       const userChoice = selectedOption;
@@ -3567,6 +3676,8 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
         document.getElementById('quiz-card').style.display = 'none';
         showConsolidationView();
       }
+      updateStudentProgressSummary(q.Subject);
+
     }
 
     // =========================================================================
@@ -4102,37 +4213,102 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
         });
       }
 
-      // 2. ATTENDANCE TRACKER (TAB 5) - HARMONIZED DEDUPLICATION
+      // =========================================================================
+      // 2. ATTENDANCE TRACKER (TAB 5) - STRICT ONE-ROW-PER-STUDENT DEDUPLICATION
+      // =========================================================================
       const adminAttBody = document.getElementById('admin-attendance-body');
       if (adminAttBody) {
         const dailyGroups = {};
 
+        // Helper to normalize phone numbers (e.g. "+91 8086749424" -> "8086749424")
+        const getPhone10Digit = (ph) => {
+          if (!ph) return '';
+          const digits = String(ph).replace(/[^0-9]/g, '');
+          return digits.length >= 10 ? digits.slice(-10) : digits;
+        };
+
         allAttendance.forEach(a => {
-          const matchedUser = (users || []).find(u => String(u.phone).trim() === String(a.phone).trim());
+          const rawPhone = String(a.phone || '').trim();
+          const phone10 = getPhone10Digit(rawPhone);
+
+          // Find student profile from cached users list
+          const matchedUser = (users || []).find(u => {
+            const uPhone10 = getPhone10Digit(u.phone);
+            const uName = String(u.name || '').trim().toLowerCase();
+            const aName = String(a.student_name || '').trim().toLowerCase();
+            const uUser = String(u.username || '').trim().toLowerCase();
+            const aUser = String(a.username || '').trim().toLowerCase();
+
+            return (phone10 && uPhone10 && phone10 === uPhone10) ||
+                   (aUser && uUser && aUser === uUser) ||
+                   (aName && uName && aName === uName);
+          });
+
+          // Exclude Admin or Staff
           if (matchedUser && isStaffOrAdminUser(matchedUser)) return;
 
-          const dateKey = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : 'Unknown Date');
-          const groupKey = `${dateKey}_${String(a.phone).trim()}`;
-          const metrics = getStudentUniqueAnswerRecords(a.phone, allAnswers, allTrialExams);
+          // Standardize date into DD/MM/YYYY format so date variations merge together
+          let cleanDateStr = '';
+          const rawDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+          const parsedD = parseCustomDate(rawDate) || parseCustomDate(a.timestamp);
+          
+          if (parsedD && !isNaN(parsedD.getTime())) {
+            const dd = String(parsedD.getDate()).padStart(2, '0');
+            const mm = String(parsedD.getMonth() + 1).padStart(2, '0');
+            const yyyy = parsedD.getFullYear();
+            cleanDateStr = `${dd}/${mm}/${yyyy}`;
+          } else {
+            cleanDateStr = rawDate || new Date().toLocaleDateString('en-GB');
+          }
+
+          // STRICT UNIFIED STUDENT IDENTIFIER
+          const studentIdentifier = matchedUser 
+            ? matchedUser.username.toLowerCase() 
+            : (phone10 || String(a.student_name || '').trim().toLowerCase());
+
+          // GROUPING KEY: Exactly ONE key per student per date
+          const groupKey = `${cleanDateStr}__${studentIdentifier}`;
+
+          const resolvedName = matchedUser?.name || a.student_name || 'Student';
+          const resolvedPhone = matchedUser?.phone || a.phone || '';
+          const resolvedClass = matchedUser?.class || a.class || '7';
+          const resolvedDiv = matchedUser?.division || a.division || 'A';
+          const resolvedUsername = matchedUser ? matchedUser.username : (a.username || a.student_name);
+
+          const metrics = getStudentUniqueAnswerRecords(resolvedPhone, allAnswers, allTrialExams);
 
           if (!dailyGroups[groupKey]) {
             dailyGroups[groupKey] = {
-              student_name: a.student_name,
-              phone: a.phone,
-              class: a.class || '7',
-              division: a.division || 'A',
-              date: dateKey,
+              student_name: resolvedName,
+              username: resolvedUsername,
+              phone: resolvedPhone,
+              class: resolvedClass,
+              division: resolvedDiv,
+              date: cleanDateStr,
               total_seconds: 0,
               verified_questions: metrics.total,
               activitiesSet: new Set(),
               timestamp: a.timestamp
             };
           }
-          dailyGroups[groupKey].total_seconds += (Number(a.duration_seconds) || 0);
-          if (a.activity) dailyGroups[groupKey].activitiesSet.add(a.activity);
+
+          // Merge cumulative seconds and distinct activities
+          dailyGroups[groupKey].total_seconds = Math.max(
+            dailyGroups[groupKey].total_seconds,
+            Number(a.duration_seconds) || 0
+          );
+
+          if (a.activity && a.activity.trim() !== '') {
+            dailyGroups[groupKey].activitiesSet.add(a.activity.trim());
+          }
         });
 
-        const aggregatedList = Object.values(dailyGroups).map(g => {
+        // 1. Group records by Date
+        const groupedByDate = {};
+        Object.values(dailyGroups).forEach(g => {
+          const dateKey = g.date;
+          if (!groupedByDate[dateKey]) groupedByDate[dateKey] = [];
+
           const practicedSec = g.total_seconds;
           const maxSec = 3600;
           const remainingSec = Math.max(0, maxSec - practicedSec);
@@ -4143,56 +4319,101 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
           const rSecs = remainingSec % 60;
           const remainingFormatted = practicedSec >= maxSec ? '0m (Blocked)' : (rMins > 0 ? `${rMins}m ${rSecs}s` : `${rSecs}s`);
 
-          return {
+          groupedByDate[dateKey].push({
             ...g,
             practicedSec,
             durationFormatted,
             remainingFormatted,
             isBlocked: practicedSec >= maxSec,
             isWarned: practicedSec >= 1800 && practicedSec < maxSec,
-            activitiesString: Array.from(g.activitiesSet).join(', ')
-          };
-        }).sort((a, b) => {
-          if (b.date !== a.date) return b.date.localeCompare(a.date);
-          return b.practicedSec - a.practicedSec;
+            activitiesString: Array.from(g.activitiesSet).join(', ') || 'Portal Learning'
+          });
         });
 
-        adminAttBody.innerHTML = aggregatedList.map((row, idx) => {
-          const matchedUser = (users || []).find(u => String(u.phone).trim() === String(row.phone).trim());
-          const targetUsername = matchedUser ? matchedUser.username : row.student_name;
+        // 2. Sort Dates Descending (Latest date on top)
+        const sortedDates = Object.keys(groupedByDate).sort((dateA, dateB) => {
+          const dA = parseCustomDate(dateA);
+          const dB = parseCustomDate(dateB);
+          const timeA = dA ? dA.getTime() : 0;
+          const timeB = dB ? dB.getTime() : 0;
+          return timeB - timeA;
+        });
 
-          return `
-          <tr style="${row.isBlocked ? 'background:#fff1f2;' : (row.isWarned ? 'background:#fffbeb;' : '')}">
-            <td>${idx + 1}</td>
-            <td><b>${escapeHtml(row.student_name)}</b></td>
-            <td>${escapeHtml(row.class)}-${escapeHtml(row.division)}</td>
-            <td style="text-align:center;">
-              <button onclick="sendAttendanceWhatsappAlert('${escapeHtml(row.student_name)}', '${row.phone}', '${row.date}', '${escapeHtml(row.activitiesString)}', '${row.durationFormatted}', '${row.remainingFormatted}', '${row.verified_questions}')" class="btn btn-outline" style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;">
-                💬
-              </button>
-            </td>
-            <td><b>${row.date}</b></td>
-            <td><strong style="color:var(--primary); font-size:14px;">${row.durationFormatted}</strong></td>
-            <td><span class="badge ${row.isBlocked ? 'badge-danger' : (row.isWarned ? 'badge-warning' : 'badge-success')}">${row.remainingFormatted}</span></td>
-            <td><small>${escapeHtml(row.activitiesString)}</small></td>
-            <td><b>${row.verified_questions}</b> Qs</td>
-            <td>
-              <span class="badge ${row.isBlocked ? 'badge-danger' : 'badge-success'}">
-                ${row.isBlocked ? '🛑 60m Limit Reached' : 'Active Practicing'}
-              </span>
-              <button onclick="adminResetStudentQuota('${row.phone}', '${escapeHtml(targetUsername)}', '${escapeHtml(row.student_name)}')" 
-                      class="btn btn-outline" 
-                      style="display:inline-flex; align-items:center; margin-top:5px; padding:4px 8px; font-size:11.5px; font-weight:700; color:var(--primary); border-color:#bfdbfe; background:#eff6ff; border-radius:8px;" 
-                      title="Restore 60m Practice Quota">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
-                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                  <path d="M3 3v5h5"/>
-                </svg>
-                Restore Quota
-              </button>
-            </td>
-          </tr>
-        `;}).join('') || '<tr><td colspan="10" style="text-align:center;">No student attendance records found.</td></tr>';
+        if (sortedDates.length === 0) {
+          adminAttBody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 25px; color:var(--text-muted);">No student attendance records logged yet.</td></tr>';
+        } else {
+          let fullTableHtml = '';
+
+          sortedDates.forEach(dateStr => {
+            const studentEntries = groupedByDate[dateStr];
+
+            // Sort students under this date: Highest practice duration at the top
+            studentEntries.sort((a, b) => b.practicedSec - a.practicedSec);
+
+            // DATE-WISE SUB-HEADER ROW
+            fullTableHtml += `
+              <tr style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: #ffffff;">
+                <td colspan="9" style="padding: 10px 16px; font-weight: 800; font-size: 13.5px; letter-spacing: 0.3px; border-top: 2px solid #3b82f6 !important;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <span>📅 Date: ${escapeHtml(dateStr)}</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span class="badge" style="background: rgba(255,255,255,0.2); color:#ffffff; font-size: 11.5px;">
+                        ${studentEntries.length} Student${studentEntries.length > 1 ? 's' : ''} Attended
+                      </span>
+                      <button type="button" 
+                              onclick="copyDailyAttendedStudentNames(event, '${escapeHtml(dateStr)}')" 
+                              class="btn btn-outline no-print" 
+                              style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 6px; background: #ffffff; color: var(--primary); border: 1px solid #bfdbfe; cursor: pointer;" 
+                              title="Copy student names for ${escapeHtml(dateStr)} in alphabetical order">
+                        📋 Copy Names
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            `;
+
+            // ONE ROW PER STUDENT FOR THIS DATE
+            studentEntries.forEach((row, idx) => {
+              fullTableHtml += `
+                <tr style="${row.isBlocked ? 'background:#fff1f2;' : (row.isWarned ? 'background:#fffbeb;' : '')}">
+                  <td style="text-align:center; font-weight:700;">${idx + 1}</td>
+                  <td><b>${escapeHtml(row.student_name)}</b></td>
+                  <td>${escapeHtml(row.class)}-${escapeHtml(row.division)}</td>
+                  <td style="text-align:center;">
+                    <button onclick="sendAttendanceWhatsappAlert('${escapeHtml(row.student_name)}', '${row.phone}', '${row.date}', '${escapeHtml(row.activitiesString)}', '${row.durationFormatted}', '${row.remainingFormatted}', '${row.verified_questions}')" 
+                            class="btn btn-outline" 
+                            style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" 
+                            title="Send WhatsApp Report">
+                      💬
+                    </button>
+                  </td>
+                  <td><strong style="color:var(--primary); font-size:14px;">${row.durationFormatted}</strong></td>
+                  <td><span class="badge ${row.isBlocked ? 'badge-danger' : (row.isWarned ? 'badge-warning' : 'badge-success')}">${row.remainingFormatted}</span></td>
+                  <td><small>${escapeHtml(row.activitiesString)}</small></td>
+                  <td><b>${row.verified_questions}</b> Qs</td>
+                  <td>
+                    <span class="badge ${row.isBlocked ? 'badge-danger' : 'badge-success'}">
+                      ${row.isBlocked ? '🛑 60m Limit Reached' : 'Active Practicing'}
+                    </span>
+                    <button onclick="adminResetStudentQuota('${row.phone}', '${escapeHtml(row.username)}', '${escapeHtml(row.student_name)}')" 
+                            class="btn btn-outline" 
+                            style="display:inline-flex; align-items:center; margin-top:5px; padding:4px 8px; font-size:11.5px; font-weight:700; color:var(--primary); border-color:#bfdbfe; background:#eff6ff; border-radius:8px;" 
+                            title="Restore 60m Practice Quota">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                      </svg>
+                      Restore Quota
+                    </button>
+                  </td>
+                </tr>
+              `;
+            });
+          });
+
+          adminAttBody.innerHTML = fullTableHtml;
+        }
       }
 
       // 3. EVALUATION REPORTS (TAB 6) - ALPHABETICAL (STUDENTS ONLY)
@@ -4414,11 +4635,12 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
 
 
     // =========================================================================
-    // ENROLLED USERS TABLE (TAB 9)
+    // UPDATE ENROLLED USERS: SEPARATED STAFF TABLE & ALPHABETICAL STUDENTS TABLE
     // =========================================================================
     function updateUsersTableLiveStatus() {
-      const uBody = document.getElementById('admin-users-body');
-      if (!uBody || !cachedAdminData?.users) return;
+      const staffBody = document.getElementById('admin-staff-body');
+      const studentBody = document.getElementById('admin-users-body');
+      if (!cachedAdminData?.users) return;
 
       let presenceMap = {};
       try {
@@ -4433,42 +4655,114 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
         presenceMap = {};
       }
 
-      const users = cachedAdminData.users;
-      uBody.innerHTML = users.map(u => {
-        const pres = presenceMap[u.username];
-        const isOnline = navigator.onLine && Boolean(pres && pres.isGreen);
-        const tabAccessList = parseTabAccessList(u.role || u.tab_access || '1,2,3,4');
-        const isStaff = isStaffOrAdminUser(u);
+      const users = cachedAdminData.users || [];
 
-        return `
-          <tr>
-            <td><b>${escapeHtml(u.name)}</b> ${isStaff ? '<span class="badge badge-warning" style="font-size:10px;">STAFF</span>' : ''}</td>
-            <td>${u.gender || 'Male'}</td>
-            <td>${u.class || '7'}</td>
-            <td>${u.division || 'A'}</td>
-            <td><span class="badge badge-success">${u.first_language || 'MI'}</span></td>
-            <td>${u.phone}</td>
-            <td>${escapeHtml(u.username)}</td>
-            <td><span class="badge" style="background:#e0e7ff; color:#3730a3;">Tabs: ${tabAccessList.join(', ')}</span></td>
-            <td>
-              <span class="status-pill" style="padding:4px 10px; background:${isOnline ? '#dcfce7' : '#fee2e2'}; color:${isOnline ? '#15803d' : '#b91c1c'}; border:1px solid ${isOnline ? '#86efac' : '#fca5a5'};">
-                <span class="led-dot ${isOnline ? 'led-green' : 'led-red'}" style="width:9px; height:9px;"></span>
-                <b>${isOnline ? 'Online' : 'Offline'}</b>
-              </span>
-            </td>
-            <td style="display:flex; gap:6px; align-items:center;">
-              <button onclick="sendUserCredentialsWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.password || '')}', '${escapeHtml(u.class || '7')}', '${escapeHtml(u.division || 'A')}')" 
-                      class="btn btn-outline" 
-                      style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" 
-                      title="Send Login Credentials via WhatsApp">
-                💬
-              </button>
-              <button onclick="editUserByUsername('${u.username}')" class="btn btn-outline" style="padding:4px 8px;">✏️</button>
-              <button onclick="confirmDeleteEntireUser('${u.username}', '${u.phone}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Permanently Delete User & All Data">🗑️</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+      // 1. SEPARATE INTO STAFF AND STUDENTS
+      const staffList = users.filter(u => isStaffOrAdminUser(u));
+      const studentList = users.filter(u => !isStaffOrAdminUser(u));
+
+      // 2. SORT BOTH LISTS ALPHABETICALLY BY NAME (A TO Z)
+      staffList.sort((a, b) => {
+        const nameA = String(a.name || a.username || '').trim().toLowerCase();
+        const nameB = String(b.name || b.username || '').trim().toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      studentList.sort((a, b) => {
+        const nameA = String(a.name || a.username || '').trim().toLowerCase();
+        const nameB = String(b.name || b.username || '').trim().toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      // 3. RENDER STAFF & ADMINISTRATORS TABLE
+      if (staffBody) {
+        if (staffList.length === 0) {
+          staffBody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:16px;">No staff accounts registered.</td></tr>';
+        } else {
+          staffBody.innerHTML = staffList.map((u, idx) => {
+            const pres = presenceMap[u.username];
+            const isOnline = navigator.onLine && Boolean(pres && pres.isGreen);
+            const tabAccessList = parseTabAccessList(u.role || u.tab_access || '1,2,3,4');
+
+            let designation = 'Staff';
+            const rStr = String(u.role || u.username).toLowerCase();
+            if (rStr.includes('admin') || String(u.username).toLowerCase().includes('admin')) {
+              designation = 'Administrator';
+            } else if (rStr.includes('question') || rStr.includes('qm')) {
+              designation = 'Question Master';
+            }
+
+            return `
+              <tr style="background: #fffdf5;">
+                <td style="text-align:center; font-weight:700;">${idx + 1}</td>
+                <td><b>${escapeHtml(u.name)}</b></td>
+                <td><span class="badge" style="background:#fef3c7; color:#92400e; font-weight:800;">${designation}</span></td>
+                <td><span class="badge badge-success">${u.first_language || 'MI'}</span></td>
+                <td>${u.phone}</td>
+                <td>${escapeHtml(u.username)}</td>
+                <td><span class="badge" style="background:#e0e7ff; color:#3730a3;">Tabs: ${tabAccessList.join(', ')}</span></td>
+                <td>
+                  <span class="status-pill" style="padding:4px 10px; background:${isOnline ? '#dcfce7' : '#fee2e2'}; color:${isOnline ? '#15803d' : '#b91c1c'}; border:1px solid ${isOnline ? '#86efac' : '#fca5a5'};">
+                    <span class="led-dot ${isOnline ? 'led-green' : 'led-red'}" style="width:9px; height:9px;"></span>
+                    <b>${isOnline ? 'Online' : 'Offline'}</b>
+                  </span>
+                </td>
+                <td style="display:flex; gap:6px; align-items:center;">
+                  <button onclick="sendUserCredentialsWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.password || '')}', '${escapeHtml(u.class || 'Admin')}', '${escapeHtml(u.division || 'HQ')}')" 
+                          class="btn btn-outline" 
+                          style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" 
+                          title="Send Credentials via WhatsApp">
+                    💬
+                  </button>
+                  <button onclick="editUserByUsername('${u.username}')" class="btn btn-outline" style="padding:4px 8px;" title="Edit Staff Access">✏️</button>
+                  <button onclick="confirmDeleteEntireUser('${u.username}', '${u.phone}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Permanently Delete Staff">🗑️</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      // 4. RENDER ENROLLED STUDENTS TABLE (ALPHABETICAL A TO Z)
+      if (studentBody) {
+        if (studentList.length === 0) {
+          studentBody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:var(--text-muted); padding:16px;">No students enrolled yet.</td></tr>';
+        } else {
+          studentBody.innerHTML = studentList.map((u, idx) => {
+            const pres = presenceMap[u.username];
+            const isOnline = navigator.onLine && Boolean(pres && pres.isGreen);
+
+            return `
+              <tr>
+                <td style="text-align:center; font-weight:700;">${idx + 1}</td>
+                <td><b>${escapeHtml(u.name)}</b></td>
+                <td>${u.gender || 'Male'}</td>
+                <td>${u.class || '7'}</td>
+                <td>${u.division || 'A'}</td>
+                <td><span class="badge badge-success">${u.first_language || 'MI'}</span></td>
+                <td>${u.phone}</td>
+                <td>${escapeHtml(u.username)}</td>
+                <td>
+                  <span class="status-pill" style="padding:4px 10px; background:${isOnline ? '#dcfce7' : '#fee2e2'}; color:${isOnline ? '#15803d' : '#b91c1c'}; border:1px solid ${isOnline ? '#86efac' : '#fca5a5'};">
+                    <span class="led-dot ${isOnline ? 'led-green' : 'led-red'}" style="width:9px; height:9px;"></span>
+                    <b>${isOnline ? 'Online' : 'Offline'}</b>
+                  </span>
+                </td>
+                <td style="display:flex; gap:6px; align-items:center;">
+                  <button onclick="sendUserCredentialsWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.password || '')}', '${escapeHtml(u.class || '7')}', '${escapeHtml(u.division || 'A')}')" 
+                          class="btn btn-outline" 
+                          style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" 
+                          title="Send Login Credentials via WhatsApp">
+                    💬
+                  </button>
+                  <button onclick="editUserByUsername('${u.username}')" class="btn btn-outline" style="padding:4px 8px;" title="Edit Student">✏️</button>
+                  <button onclick="confirmDeleteEntireUser('${u.username}', '${u.phone}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;" title="Permanently Delete User & All Data">🗑️</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
     }
 
     // =========================================================================
@@ -5209,22 +5503,46 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
 
     function editUserByUsername(username) {
       const users = cachedAdminData?.users || [];
-      const u = users.find(item => item.username === username);
-      if (!u) return;
+      const cleanTarget = String(username || '').trim().toLowerCase();
+      
+      const u = users.find(item => 
+        String(item.username || '').trim().toLowerCase() === cleanTarget ||
+        String(item.name || '').trim().toLowerCase() === cleanTarget
+      );
+      if (!u) {
+        showToast('User record not found.', 'danger');
+        return;
+      }
 
       showSection('manage-users-sec');
+
+      // Scroll smoothly to the edit form
+      const formEl = document.getElementById('user-form');
+      if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Populate hidden IDs
+      document.getElementById('u-db-id').value = u.id || '';
+      document.getElementById('u-original-username').value = u.username || '';
+
+      // Populate form fields
       document.getElementById('u-name').value = u.name || '';
       document.getElementById('u-gender').value = u.gender || 'Male';
       document.getElementById('u-phone').value = u.phone || '';
       document.getElementById('u-class').value = u.class || '7';
       document.getElementById('u-div').value = u.division || 'A';
       document.getElementById('u-first-lang').value = u.first_language || 'MI';
-      document.getElementById('u-username').value = u.username;
+      document.getElementById('u-username').value = u.username || '';
       document.getElementById('u-password').value = u.password || '';
       
       const tabAccessList = parseTabAccessList(u.role || u.tab_access || '1,2,3,4');
       document.getElementById('u-tab-access').value = tabAccessList.join(',');
       document.getElementById('u-status').value = u.status || 'Active';
+
+      // Update button text to make editing clear
+      const saveBtn = document.getElementById('u-save-btn');
+      if (saveBtn) saveBtn.innerText = `💾 Update User (${u.name || u.username})`;
+
+      showToast(`Editing user: ${u.name || u.username}`, 'info');
     }
 
 
@@ -5342,37 +5660,156 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
     }
 
     // =========================================================================
-    // USER CREDENTIALS & TAB ACCESS ADMIN FORM (TAB 9)
+    // ROBUST USER SAVE & UPDATE (PREVENTS 23505 DUPLICATE KEY ERROR)
     // =========================================================================
     async function handleSaveUser(e) {
       e.preventDefault();
+
+      const dbIdInput = document.getElementById('u-db-id');
+      const origUserInput = document.getElementById('u-original-username');
+
+      const dbId = dbIdInput ? dbIdInput.value.trim() : '';
+      const originalUsername = origUserInput ? origUserInput.value.trim() : '';
+
       const rawAccess = document.getElementById('u-tab-access').value.trim();
       const tabAccessList = parseTabAccessList(rawAccess);
       const tabAccessStr = tabAccessList.join(',');
 
+      const newUsername = document.getElementById('u-username').value.trim().toLowerCase().replace(/\s+/g, '');
+      const newPhone = sanitizePhoneNumberWithCountryCode(document.getElementById('u-phone').value.trim());
+
       const userData = {
         name: document.getElementById('u-name').value.trim().toUpperCase(),
         gender: document.getElementById('u-gender').value,
-        phone: sanitizePhoneNumberWithCountryCode(document.getElementById('u-phone').value.trim()),
-        class: document.getElementById('u-class').value.trim(),
-        division: document.getElementById('u-div').value.trim().toUpperCase(),
+        phone: newPhone,
+        class: document.getElementById('u-class').value.trim() || '7',
+        division: document.getElementById('u-div').value.trim().toUpperCase() || 'A',
         first_language: document.getElementById('u-first-lang').value,
-        username: document.getElementById('u-username').value.trim().toLowerCase(),
+        username: newUsername,
         password: document.getElementById('u-password').value.trim(),
         role: tabAccessStr,
         status: document.getElementById('u-status').value
       };
 
-      const { error } = await supabaseClient.from('users').upsert([userData], { onConflict: 'username' });
-      if (!error) {
-        showToast('User credentials & tab access saved!', 'success');
+      setProgress(40);
+      showToast('Saving user to Supabase...', 'info');
+
+      try {
+        let saveError = null;
+
+        // 1. DETERMINE IF THIS USER ALREADY EXISTS IN SUPABASE
+        let existingRecord = null;
+
+        if (dbId) {
+          const { data } = await supabaseClient
+            .from('users')
+            .select('id, username')
+            .eq('id', dbId)
+            .maybeSingle();
+          existingRecord = data;
+        }
+
+        // If no dbId found, fallback check via original username or new username
+        if (!existingRecord) {
+          const checkUser = originalUsername || newUsername;
+          const { data } = await supabaseClient
+            .from('users')
+            .select('id, username')
+            .ilike('username', checkUser)
+            .maybeSingle();
+          existingRecord = data;
+        }
+
+        // -------------------------------------------------------------
+        // BRANCH A: UPDATE EXISTING USER
+        // -------------------------------------------------------------
+        if (existingRecord) {
+          // If username is being changed, ensure the new username isn't taken by someone else
+          if (existingRecord.username.toLowerCase() !== newUsername) {
+            const { data: conflictUser } = await supabaseClient
+              .from('users')
+              .select('id')
+              .ilike('username', newUsername)
+              .neq('id', existingRecord.id)
+              .maybeSingle();
+
+            if (conflictUser) {
+              setProgress(100);
+              showToast(`Username "${newUsername}" is already taken by another account!`, 'danger');
+              return;
+            }
+          }
+
+          // Execute UPDATE targeting their unique ID
+          const { error } = await supabaseClient
+            .from('users')
+            .update(userData)
+            .eq('id', existingRecord.id);
+
+          saveError = error;
+
+          // If username changed, update references in access logs
+          if (!saveError && existingRecord.username.toLowerCase() !== newUsername) {
+            await supabaseClient
+              .from('logs')
+              .update({ identifier: newUsername })
+              .eq('identifier', existingRecord.username);
+          }
+        } 
+        // -------------------------------------------------------------
+        // BRANCH B: INSERT NEW USER
+        // -------------------------------------------------------------
+        else {
+          // Verify new username is not in use
+          const { data: duplicateUser } = await supabaseClient
+            .from('users')
+            .select('id')
+            .ilike('username', newUsername)
+            .maybeSingle();
+
+          if (duplicateUser) {
+            setProgress(100);
+            showToast(`Username "${newUsername}" is already registered! Click Edit to modify their account.`, 'danger');
+            return;
+          }
+
+          const { error } = await supabaseClient
+            .from('users')
+            .insert([userData]);
+
+          saveError = error;
+        }
+
+        setProgress(100);
+
+        if (saveError) {
+          console.error("Supabase Save Error:", saveError);
+          showToast(`Save Error (${saveError.code}): ${saveError.message}`, 'danger');
+          return;
+        }
+
+        showToast('✅ User credentials updated successfully in Supabase!', 'success');
+
+        // Reset form & state
         document.getElementById('user-form').reset();
+        if (dbIdInput) dbIdInput.value = '';
+        if (origUserInput) origUserInput.value = '';
         document.getElementById('u-tab-access').value = '1,2,3,4';
-        loadAdminData();
-      } else {
-        showToast('Failed to save user: ' + error.message, 'danger');
+
+        const saveBtn = document.getElementById('u-save-btn');
+        if (saveBtn) saveBtn.innerText = 'Save User Credentials & Tab Access';
+
+        // Refresh all tables and views
+        await loadAdminData();
+        renderAllUsersOnlineCards();
+
+      } catch (err) {
+        setProgress(100);
+        console.error("Unexpected Save Error:", err);
+        showToast(`Unexpected error: ${err.message}`, 'danger');
       }
     }
+
 
     function setTabPreset(val) {
       document.getElementById('u-tab-access').value = val;
@@ -5973,10 +6410,9 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     }
 
     // =========================================================================
-// COPY ALL STUDENT NAMES FROM CONSOLIDATED SUMMARY
+// COPY ALL STUDENT NAMES WITH SERIAL NUMBERS (CONSOLIDATED SUMMARY)
 // =========================================================================
 function copyAllStudentNames(event) {
-  // Prevent column sort trigger when clicking the copy button
   if (event) event.stopPropagation();
 
   if (!consolidatedStudentsList || consolidatedStudentsList.length === 0) {
@@ -5984,19 +6420,26 @@ function copyAllStudentNames(event) {
     return;
   }
 
-  // Extract names in their currently active sorted order
-  const namesList = consolidatedStudentsList
-    .map(item => String(item.name || '').trim())
-    .filter(name => name.length > 0);
+  // Extract names in their currently active sorted order with serial numbers
+  const formattedLines = [];
+  let counter = 1;
 
-  if (namesList.length === 0) {
-    showToast('No names found.', 'warning');
+  consolidatedStudentsList.forEach(item => {
+    const rawName = String(item.name || '').trim();
+    if (rawName.length > 0) {
+      formattedLines.push(`${counter}. ${rawName}`);
+      counter++;
+    }
+  });
+
+  if (formattedLines.length === 0) {
+    showToast('No student names found.', 'warning');
     return;
   }
 
-  const formattedText = namesList.join('\n');
+  const formattedText = formattedLines.join('\n');
 
-  // Temporarily bypass portal security restriction so the copy succeeds
+  // Temporarily bypass portal security clipboard lock
   const prevSecurityState = securityProtectionActive;
   securityProtectionActive = false;
 
@@ -6004,13 +6447,13 @@ function copyAllStudentNames(event) {
     navigator.clipboard.writeText(formattedText)
       .then(() => {
         securityProtectionActive = prevSecurityState;
-        showToast(`📋 Copied ${namesList.length} student names to clipboard!`, 'success');
+        showToast(`📋 Copied ${formattedLines.length} student names with S.No!`, 'success');
       })
       .catch(() => {
-        fallbackCopyText(formattedText, namesList.length, prevSecurityState);
+        fallbackCopyText(formattedText, formattedLines.length, prevSecurityState);
       });
   } else {
-    fallbackCopyText(formattedText, namesList.length, prevSecurityState);
+    fallbackCopyText(formattedText, formattedLines.length, prevSecurityState);
   }
 }
 
@@ -6235,6 +6678,100 @@ function fallbackCopyText(text, count, prevSecurityState) {
       return isNaN(standardDate.getTime()) ? null : standardDate;
     }
 
+    // =========================================================================
+    // COPY DAILY ATTENDANCE STUDENT NAMES (WITH S.NO & ALPHABETICAL ORDER)
+    // =========================================================================
+    function copyDailyAttendedStudentNames(event, dateStr) {
+      if (event) event.stopPropagation();
+
+      if (!cachedAdminData || !Array.isArray(cachedAdminData.allAttendance)) {
+        showToast('No attendance data available to copy.', 'warning');
+        return;
+      }
+
+      const allAtt = cachedAdminData.allAttendance;
+      const allUsers = cachedAdminData.users || [];
+
+      // 1. Gather all student names who attended on this specific date
+      const matchedNamesSet = new Set();
+
+      allAtt.forEach(a => {
+        const itemDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+        if (itemDate === dateStr) {
+          // Exclude Admin or Staff
+          const matchedUser = allUsers.find(u => String(u.phone).trim() === String(a.phone).trim());
+          if (matchedUser && isStaffOrAdminUser(matchedUser)) return;
+
+          const studentName = (a.student_name || (matchedUser ? matchedUser.name : '')).trim();
+          if (studentName) {
+            matchedNamesSet.add(studentName);
+          }
+        }
+      });
+
+      if (matchedNamesSet.size === 0) {
+        showToast(`No student names found for ${dateStr}.`, 'warning');
+        return;
+      }
+
+      // 2. Sort names strictly in Alphabetical Order (A to Z)
+      const sortedNames = Array.from(matchedNamesSet).sort((a, b) => a.localeCompare(b));
+
+      // 3. Format with Serial Numbers (1. NAME, 2. NAME ...)
+      const formattedLines = sortedNames.map((name, idx) => `${idx + 1}. ${name}`);
+      const clipboardText = `📅 Attendance List (${dateStr}):\n` + formattedLines.join('\n');
+
+      // 4. Temporarily bypass portal security restriction
+      const prevSecurityState = securityProtectionActive;
+      securityProtectionActive = false;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(clipboardText)
+          .then(() => {
+            securityProtectionActive = prevSecurityState;
+            showToast(`📋 Copied ${sortedNames.length} names for ${dateStr} in alphabetical order!`, 'success');
+          })
+          .catch(() => {
+            fallbackCopyText(clipboardText, sortedNames.length, prevSecurityState);
+          });
+      } else {
+        fallbackCopyText(clipboardText, sortedNames.length, prevSecurityState);
+      }
+    }
+    // =========================================================================
+    // SYNC AGGREGATED METRICS TO student_progress TABLE
+    // =========================================================================
+    async function updateStudentProgressSummary(subjectCode) {
+      if (!currentUser || !subjectCode) return;
+      const phone = String(currentUser.phone || '').trim();
+
+      // Query answers for this subject
+      const { data: answers } = await supabaseClient
+        .from('student_answers')
+        .select('is_correct')
+        .eq('phone', phone)
+        .eq('subject', subjectCode);
+
+      if (!answers) return;
+
+      const total = answers.length;
+      const correct = answers.filter(a => a.is_correct === 'YES' || a.is_correct === true).length;
+      const wrong = total - correct;
+      const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+      await supabaseClient.from('student_progress').upsert([{
+        phone: phone,
+        student_name: currentUser.name || currentUser.username,
+        class: currentUser.userClass || '7',
+        division: currentUser.division || 'A',
+        subject: subjectCode,
+        total_answered: total,
+        total_correct: correct,
+        total_wrong: wrong,
+        accuracy_percentage: accuracy,
+        last_updated: new Date().toISOString()
+      }], { onConflict: 'phone,subject' });
+    }
 
   </script>
 </body>
