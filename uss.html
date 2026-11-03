@@ -632,9 +632,7 @@
 
       <div class="login-form-body">
         
-        <!-- ========================================== -->
         <!-- 1. SIGN IN FORM -->
-        <!-- ========================================== -->
         <form id="login-form">
           <div class="form-group">
             <label>Username</label>
@@ -665,9 +663,7 @@
           </p>
         </form>
 
-        <!-- ========================================== -->
-        <!-- 2. REGISTRATION / SIGN UP FORM -->
-        <!-- ========================================== -->
+        <!-- 2. REGISTRATION FORM (CLEAN, SINGLE FORM) -->
         <form id="register-form" style="display: none;">
           <!-- CLOSED NOTICE -->
           <div id="reg-closed-banner" style="display:none; background:#fee2e2; border:1.5px solid #ef4444; border-radius:12px; padding:16px; margin-bottom:16px; text-align:center;">
@@ -693,91 +689,87 @@
                      oninput="this.value = this.value.toUpperCase()">
             </div>
 
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Gender *</label>
-              <select id="reg-gender" required>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Gender *</label>
+                <select id="reg-gender" required>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>First Language *</label>
+                <select id="reg-first-lang" required>
+                  <option value="MI">Malayalam I (MI)</option>
+                  <option value="AR">Arabic - العربية (AR)</option>
+                  <option value="SK">Sanskrit - संस्कृतम् (SK)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Class *</label>
+                <input type="text" id="reg-class" required value="7" placeholder="e.g. 7">
+              </div>
+
+              <div class="form-group">
+                <label>Division *</label>
+                <select id="reg-div" required>
+                  <option value="A">Division A</option>
+                  <option value="B">Division B</option>
+                  <option value="C">Division C</option>
+                  <option value="D">Division D</option>
+                </select>
+              </div>
             </div>
 
             <div class="form-group">
-              <label>First Language *</label>
-              <select id="reg-first-lang" required>
-                <option value="MI">Malayalam I (MI)</option>
-                <option value="AR">Arabic - العربية (AR)</option>
-                <option value="SK">Sanskrit - संस्कृतम् (SK)</option>
-                <option value="NA"></option>
-              </select>
+              <label>Phone Number (WhatsApp) *</label>
+              <div style="display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #ffffff;">
+                <span style="background: #f1f5f9; padding: 12px 14px; font-weight: 800; color: #1e40af; border-right: 1px solid var(--border-color); font-size: 14px; user-select: none;">
+                  🇮🇳 +91
+                </span>
+                <input type="tel" 
+                       id="reg-phone" 
+                       required 
+                       placeholder="Enter 10-digit mobile number" 
+                       minlength="10"
+                       maxlength="10"
+                       pattern="[0-9]{10}"
+                       inputmode="numeric"
+                       oninput="formatPhoneNumberInput(this)"
+                       style="border: none; background: transparent; padding: 12px 14px; width: 100%; outline: none; font-size: 14px; font-weight: 700;">
+              </div>
+              <small style="color: var(--text-muted); font-size: 11.5px; margin-top: 4px; display: block;">
+                Exactly 10 digits compulsory (e.g. 8086749424).
+              </small>
             </div>
-          </div>
 
-          <div class="grid-2">
             <div class="form-group">
-              <label>Class *</label>
-              <input type="text" id="reg-class" required value="7" placeholder="e.g. 7 or 10">
+              <label>Choose a Username *</label>
+              <input type="text" id="reg-username" required placeholder="e.g. rahul2026 (lowercase, no spaces)" autocomplete="username">
             </div>
 
-            <!-- RESTRICTED DIVISION DROPDOWN: A, B, C, D ONLY -->
             <div class="form-group">
-              <label>Division *</label>
-              <select id="reg-div" required>
-                <option value="A">Division A</option>
-                <option value="B">Division B</option>
-                <option value="C">Division C</option>
-                <option value="D">Division D</option>
-              </select>
+              <label>Create a Password *</label>
+              <div style="position: relative;">
+                <input type="password" id="reg-password" required minlength="4" placeholder="Enter password (min 4 characters)" autocomplete="new-password" style="padding-right: 46px;">
+                <button type="button" onclick="togglePasswordVisibility('reg-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 17px; padding: 4px; color: var(--text-muted);" title="Show/Hide Password">
+                  👁️
+                </button>
+              </div>
             </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="padding:14px; font-weight:800; font-size: 15px; background: #059669;">
+              ✅ Complete Registration & Sign In →
+            </button>
+
+            <p style="text-align: center; margin: 16px 0 0 0; font-size: 13px; color: var(--text-muted);">
+              Already have an account? <a href="javascript:void(0)" onclick="switchAuthMode('LOGIN')" style="color: var(--primary); font-weight: 800; text-decoration: none;">Sign in here</a>
+            </p>
           </div>
-
-          <!-- STRICT 10-DIGIT COMPULSORY PHONE INPUT -->
-          <div class="form-group">
-            <label>Phone Number (WhatsApp) *</label>
-            <div style="display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #ffffff;">
-              <span style="background: #f1f5f9; padding: 12px 14px; font-weight: 800; color: #1e40af; border-right: 1px solid var(--border-color); font-size: 14px; user-select: none;">
-                🇮🇳 +91
-              </span>
-              <input type="tel" 
-                     id="reg-phone" 
-                     required 
-                     placeholder="Enter 10-digit mobile number" 
-                     minlength="10"
-                     maxlength="10"
-                     pattern="[0-9]{10}"
-                     inputmode="numeric"
-                     oninput="formatPhoneNumberInput(this)"
-                     style="border: none; background: transparent; padding: 12px 14px; width: 100%; outline: none; font-size: 14px; font-weight: 700;">
-            </div>
-            <small style="color: var(--text-muted); font-size: 11.5px; margin-top: 4px; display: block;">
-              Exactly 10 digits compulsory (e.g. 8086749424).
-            </small>
-          </div>
-            
-          
-
-          <div class="form-group">
-            <label>Choose a Username *</label>
-            <input type="text" id="reg-username" required placeholder="e.g. rahul2026 (lowercase, no spaces)" autocomplete="username">
-          </div>
-
-          <div class="form-group">
-            <label>Create a Password *</label>
-            <div style="position: relative;">
-              <input type="password" id="reg-password" required minlength="4" placeholder="Enter password (min 4 characters)" autocomplete="new-password" style="padding-right: 46px;">
-              <button type="button" onclick="togglePasswordVisibility('reg-password', this)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; font-size: 17px; padding: 4px; color: var(--text-muted);" title="Show/Hide Password">
-                👁️
-              </button>
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary btn-block" style="padding:14px; font-weight:800; font-size: 15px; background: #059669;">
-            ✅ Complete Registration & Sign In →
-          </button>
-
-          <p style="text-align: center; margin: 16px 0 0 0; font-size: 13px; color: var(--text-muted);">
-            Already have an account? <a href="javascript:void(0)" onclick="switchAuthMode('LOGIN')" style="color: var(--primary); font-weight: 800; text-decoration: none;">Sign in here</a>
-          </p>
         </form>
 
       </div>
@@ -1844,7 +1836,7 @@
         const todayIso = getTodayDateIso();
         const cleanId = String(userOrPhone).trim();
         
-        // Check primary attendance_id by username
+        // Match primary attendance_id by clean username
         let { data } = await supabaseClient
           .from('attendance')
           .select('duration_seconds')
@@ -1855,20 +1847,20 @@
           return data.duration_seconds;
         }
 
-        // Fallback check by phone if user passed phone
-        if (/^\+?[0-9]{10,13}$/.test(cleanId)) {
-          let { data: phoneData } = await supabaseClient
-            .from('attendance')
-            .select('duration_seconds')
-            .eq('phone', cleanId)
-            .eq('date', new Date().toLocaleDateString('en-GB'))
-            .maybeSingle();
+        // Fallback match by phone number
+        let { data: phoneData } = await supabaseClient
+          .from('attendance')
+          .select('duration_seconds')
+          .eq('phone', cleanId)
+          .eq('date', new Date().toLocaleDateString('en-GB'))
+          .maybeSingle();
 
-          if (phoneData && typeof phoneData.duration_seconds === 'number') {
-            return phoneData.duration_seconds;
-          }
+        if (phoneData && typeof phoneData.duration_seconds === 'number') {
+          return phoneData.duration_seconds;
         }
-      } catch (err) {}
+      } catch (err) {
+        console.warn("Daily usage fetch note:", err);
+      }
       return 0;
     }
 
@@ -2002,13 +1994,13 @@
       const todayIso = getTodayDateIso();
       const mins = Math.floor(totalSecondsToday / 60);
       const secs = totalSecondsToday % 60;
+      const cleanUser = String(currentUser.username || '').trim();
 
-      // Unique ID keyed by username so siblings sharing a phone number don't overwrite each other
       const attendanceEntry = {
-        attendance_id: `ATT-${String(currentUser.username).trim()}-${todayIso}-DAILY`,
+        attendance_id: `ATT-${cleanUser}-${todayIso}-DAILY`,
         student_name: currentUser.name || currentUser.username,
         phone: String(currentUser.phone || '').trim(),
-        class: String(currentUser.userClass || '10'),
+        class: String(currentUser.userClass || '7'),
         division: String(currentUser.division || 'A'),
         date: cleanDate,
         timestamp: formatDateStrict(new Date().toISOString()),
@@ -4634,18 +4626,40 @@
                         return act.time && loginStr && act.time.split(',')[0].trim() === loginStr.split(',')[0].trim();
                       });
 
-                      let activityListHTML = '';
-                      if (sessionActivities.length > 0) {
-                        activityListHTML = sessionActivities.map(act => `
-                          <div style="font-size: 11.5px; line-height: 1.4; margin-bottom: 6px; padding: 4px 6px; background: #f8fafc; border-left: 3px solid var(--primary); border-radius: 4px;">
-                            <div style="color: #64748b; font-weight: 700;">⏱️ ${formatDateStrict(act.time)}</div>
-                            <div style="color: #0f172a; font-weight: 700;">${escapeHtml(act.label)}</div>
-                            <div style="color: #475569;">${escapeHtml(act.details)}</div>
-                          </div>
-                        `).join('');
-                      } else {
-                        activityListHTML = `<span style="font-size: 11.5px; color: var(--text-muted); font-style: italic;">No specific practice activities recorded during this session window.</span>`;
-                      }
+                      // REPLACE WITH THIS:
+let activityListHTML = '';
+if (sessionActivities.length > 0) {
+  activityListHTML = sessionActivities.map(act => `
+    <div style="font-size: 11.5px; line-height: 1.4; margin-bottom: 6px; padding: 6px 8px; background: #f8fafc; border-left: 3px solid var(--primary); border-radius: 6px; border: 1px solid #e2e8f0; border-left-width: 3px;">
+      <div style="color: #64748b; font-weight: 700;">⏱️ ${formatDateStrict(act.time)}</div>
+      <div style="color: #0f172a; font-weight: 800; margin: 1px 0;">${escapeHtml(act.label)}</div>
+      <div style="color: #475569; font-weight: 600;">${escapeHtml(act.details)}</div>
+    </div>
+  `).join('');
+} else {
+  // CALCULATE LIVE / RECORDED DURATION FOR THIS SESSION
+  let sessionDurationFormatted = '0m 00s';
+  const startMs = !isNaN(loginDate.getTime()) ? loginDate.getTime() : 0;
+  const endMs = (sessionActive || !logoutStr || logoutStr === '-') 
+    ? Date.now() 
+    : (!isNaN(logoutDate.getTime()) ? logoutDate.getTime() : startMs);
+
+  if (startMs > 0 && endMs >= startMs) {
+    const diffSec = Math.max(1, Math.round((endMs - startMs) / 1000));
+    const mins = Math.floor(diffSec / 60);
+    const secs = diffSec % 60;
+    sessionDurationFormatted = `${mins}m ${secs}s`;
+  }
+
+  // DYNAMIC CARD INSTEAD OF GENERIC "NO SPECIFIC ACTIVITIES" TEXT
+  activityListHTML = `
+    <div style="font-size: 11.5px; line-height: 1.4; padding: 6px 8px; background: #f8fafc; border-left: 3px solid #3b82f6; border-radius: 6px; border: 1px solid #e2e8f0; border-left-width: 3px;">
+      <div style="color: #64748b; font-weight: 700;">⏱️ ${formatDateStrict(loginStr)}</div>
+      <div style="color: #1e40af; font-weight: 800; margin: 1px 0;">Daily USS Training Session</div>
+      <div style="color: #475569; font-weight: 600;">0 Qs • ${sessionDurationFormatted} • Result: <span class="badge ${sessionActive ? 'badge-success' : ''}" style="font-size: 10.5px; padding: 1px 6px;">${sessionActive ? 'Active' : 'Completed'}</span></div>
+    </div>
+  `;
+}
 
                       return `
                         <tr>
