@@ -634,7 +634,7 @@
       </div>
     </section>
 
-    <!-- 1. PRACTICE TAB -->
+    
     <!-- 1. PRACTICE TAB -->
     <section id="practice-sec" class="section" style="display:none;">
       <div id="practice-daily-limit-banner" style="display:none;"></div>
@@ -645,7 +645,7 @@
         
         <!-- GRAND TOTAL QUESTION BANK BADGE -->
         <div id="grand-total-questions-badge" style="display: inline-flex; align-items: center; gap: 8px; background: #eff6ff; color: #1e40af; border: 1.5px solid #bfdbfe; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 13px; box-shadow: var(--shadow-sm);">
-          <span>📚 Total Questions in Bank:</span>
+          <span>📚 </span>
           <span id="grand-total-q-count" class="badge badge-success" style="font-size: 13px; padding: 3px 9px;">Loading...</span>
         </div>
       </div>
@@ -654,6 +654,34 @@
       <div class="mode-selector-group" id="practice-mode-selector">
         <button class="mode-btn" onclick="switchPracticeMode('PRACTICE')">📖 Subject Practice</button>
         <button class="mode-btn" onclick="switchPracticeMode('TRIAL')">⭐ Trial Exam Mode</button>
+      </div>
+
+      <!-- 1. LIVE ADMIN SUPERVISION STATUS BADGE (SHOWN ONLY TO STUDENTS) -->
+      <div id="student-admin-supervision-bar" style="display: none; align-items: center; justify-content: space-between; padding: 10px 16px; border-radius: 12px; margin-bottom: 14px; font-size: 13px; font-weight: 700; transition: all 0.3s ease; box-shadow: var(--shadow-sm);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="supervision-led" class="led-dot" style="width: 10px; height: 10px; background: #94a3b8;"></span>
+          <span id="supervision-text">Checking Admin status...</span>
+        </div>
+        <small style="opacity: 0.8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Live Monitor</small>
+      </div>
+
+      <!-- 2. PORTAL VERSION 1.0 TRIAL TEST NOTICE (NEW SECTION BEFORE MALAYALAM INSTRUCTIONS) -->
+      <div id="portal-version-trial-banner" class="card" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1.5px solid #f59e0b; padding: 16px 20px; border-radius: 14px; margin-bottom: 16px; box-shadow: var(--shadow-sm);">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+          <span style="font-size: 26px; line-height: 1;">⚠️</span>
+          <div style="flex: 1; font-size: 13.5px; line-height: 1.6; color: #92400e;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+              <strong style="color: #b45309; font-size: 14.5px;">PORTAL VERSION 1.0 (2026) — TRIAL RELEASE</strong>
+              <span class="badge" style="background: #f59e0b; color: #ffffff; font-size: 11px; padding: 2px 7px;">TEST ENVIRONMENT</span>
+            </div>
+            <p style="margin: 0 0 6px 0;">
+              You are currently using the <strong>trial version</strong> of the portal. Please explore and test all tabs to confirm that every feature runs successfully.
+            </p>
+            <div style="background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; padding: 6px 10px; border-radius: 6px; font-weight: 800; color: #991b1b; font-size: 13px;">
+              🛑 <strong>Important Notice:</strong> All test practice data, trial exam scores, and attendance records will be <strong>erased on Sunday, 08/11/2026</strong>.
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- MALAYALAM INSTRUCTIONS SECTION (VISIBLE BY DEFAULT, HIDDEN IN EXAM/PRACTICE MODES) -->
@@ -686,10 +714,7 @@
         </div>
       </div>
 
-      <div class="mode-selector-group" id="practice-mode-selector">
-        <button class="mode-btn" onclick="switchPracticeMode('PRACTICE')">📖 Subject Practice</button>
-        <button class="mode-btn" onclick="switchPracticeMode('TRIAL')">⭐ Trial Exam Mode</button>
-      </div>
+      
 
       <div id="subject-practice-box" class="card" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -736,6 +761,38 @@
         <p style="color:var(--text-muted); font-size:14px; margin:0 0 20px 0;">No questions found to attend for this subject yet.</p>
         <button class="btn btn-primary" onclick="exitPracticeMode()">Return to Subjects</button>
       </div>
+
+      <!-- SUBJECT COMPLETED & RESET REQUEST CARD (TAB 1) -->
+      <div id="subject-exhausted-card" class="card" style="display:none; text-align:center; padding:45px 22px; max-width:620px; margin:20px auto;">
+        <div style="font-size:52px; margin-bottom:12px;">🎉</div>
+        <h3 style="color:var(--primary); margin:0 0 10px 0; font-size:20px;">All Questions Completed!</h3>
+        <p style="color:var(--text-main); font-size:14.5px; line-height:1.6; margin:0 0 16px 0;">
+          Congratulations! You have successfully answered all available questions for <strong id="exhausted-subject-name" style="color:var(--primary);">-</strong> in the question bank.
+        </p>
+        <div style="background:#eff6ff; border:1.5px dashed #93c5fd; padding:14px; border-radius:12px; margin-bottom:22px; font-size:13px; color:#1e40af; text-align:left;">
+          ℹ️ <strong>Want to practice this subject again?</strong><br>
+          To maintain study discipline, re-attempting answered questions requires an administrator reset. Tap below to send a formal reset request to <strong>Tab 7 (Reset Requests)</strong>.
+        </div>
+
+        <div id="reset-request-action-box" style="display:flex; flex-direction:column; gap:10px; align-items:center;">
+          <button id="send-subject-reset-btn" class="btn btn-primary" style="padding:12px 24px; font-weight:800; font-size:14px;" onclick="sendSubjectResetRequestFromStudent()">
+            📨 Request Admin Reset to Re-practice (Tab 7)
+          </button>
+          <button class="btn btn-outline" onclick="exitPracticeMode()" style="padding:8px 18px; font-size:13px;">
+            ← Return to Choose Another Subject
+          </button>
+        </div>
+
+        <!-- SHOWN IF A REQUEST IS ALREADY PENDING -->
+        <div id="reset-request-pending-box" style="display:none; background:#fef3c7; border:1px solid #f59e0b; padding:12px 16px; border-radius:10px; color:#92400e; font-size:13px; font-weight:700;">
+          ⏳ A reset request for this subject is currently <strong>Pending Admin Approval</strong> in Tab 7. Please wait for the teacher/administrator to accept it.
+          <div style="margin-top:10px;">
+            <button class="btn btn-outline" onclick="exitPracticeMode()" style="padding:6px 14px; font-size:12px;">← Choose Another Subject</button>
+          </div>
+        </div>
+      </div>
+
+      
 
       <!-- QUIZ CARD -->
       <div id="quiz-card" class="card" style="display:none;">
@@ -1520,8 +1577,71 @@
     });
 
     // =========================================================================
-    // DAILY TIME QUOTA ENGINE (CROSS-DEVICE WITH SUPABASE & SMART PAUSE)
+    // FULL UPDATED GET TODAY ELAPSED SECONDS (CROSS-DEVICE & SUPABASE BACKED)
     // =========================================================================
+    function getTodayElapsedSeconds(phoneOrUser) {
+      const todayIso = typeof getTodayDateIso === 'function' ? getTodayDateIso() : (() => {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      })();
+
+      const cleanDate = new Date().toLocaleDateString('en-GB');
+
+      // 1. Identify Target Identifier(s)
+      const targetPhone = String(
+        phoneOrUser || currentUser?.phone || ''
+      ).trim();
+
+      const targetUsername = String(
+        phoneOrUser || currentUser?.username || ''
+      ).trim();
+
+      let maxSeconds = 0;
+
+      // 2. Read from in-memory accumulator (active ticking clock)
+      if (typeof cachedTodayUsedSeconds === 'number' && cachedTodayUsedSeconds > 0) {
+        // Only credit in-memory seconds if querying the logged-in student
+        if (!phoneOrUser || phoneOrUser === currentUser?.phone || phoneOrUser === currentUser?.username) {
+          maxSeconds = Math.max(maxSeconds, cachedTodayUsedSeconds);
+        }
+      }
+
+      // 3. Check LocalStorage across both phone and username keys
+      if (targetPhone) {
+        const localPhoneSec = parseInt(localStorage.getItem(`usage_${targetPhone}_${todayIso}`) || '0', 10);
+        if (!isNaN(localPhoneSec)) maxSeconds = Math.max(maxSeconds, localPhoneSec);
+      }
+      if (targetUsername) {
+        const localUserSec = parseInt(localStorage.getItem(`usage_${targetUsername}_${todayIso}`) || '0', 10);
+        if (!isNaN(localUserSec)) maxSeconds = Math.max(maxSeconds, localUserSec);
+      }
+
+      // 4. Cross-check cached Supabase Attendance Table (Prevent reset on device switch)
+      if (window.cachedAdminData && Array.isArray(cachedAdminData.allAttendance)) {
+        const studentTodayLogs = cachedAdminData.allAttendance.filter(a => {
+          const matchPhone = targetPhone && String(a.phone || '').trim() === targetPhone;
+          const matchDate = (a.date === cleanDate) || 
+                            (a.attendance_id && a.attendance_id.includes(todayIso)) ||
+                            (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate);
+          return matchPhone && matchDate;
+        });
+
+        let dbSumSec = 0;
+        studentTodayLogs.forEach(a => {
+          dbSumSec += (Number(a.duration_seconds) || 0);
+        });
+
+        if (dbSumSec > 0) {
+          maxSeconds = Math.max(maxSeconds, dbSumSec);
+        }
+      }
+
+      return maxSeconds;
+    }
+    
     function getTodayDateIso() {
       const d = new Date();
       const yyyy = d.getFullYear();
@@ -1531,14 +1651,93 @@
     }
 
     function getTodayKey(phoneOrUser) {
-      const id = phoneOrUser || currentUser?.username || currentUser?.phone || 'user';
+      const id = phoneOrUser || currentUser?.phone || currentUser?.username || 'user';
       return `usage_${id}_${getTodayDateIso()}`;
     }
 
+    // =========================================================================
+    // FULL UPDATED GET TODAY ELAPSED SECONDS (CROSS-DEVICE & SUPABASE BACKED)
+    // =========================================================================
     function getTodayElapsedSeconds(phoneOrUser) {
-      const key = getTodayKey(phoneOrUser);
-      const localVal = parseInt(localStorage.getItem(key) || '0', 10);
-      return Math.max(localVal, cachedTodayUsedSeconds);
+      const todayIso = typeof getTodayDateIso === 'function' ? getTodayDateIso() : (() => {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      })();
+
+      const cleanDate = new Date().toLocaleDateString('en-GB');
+
+      // 1. Identify Target Identifier(s)
+      const targetPhone = String(
+        phoneOrUser || currentUser?.phone || ''
+      ).trim();
+
+      const targetUsername = String(
+        phoneOrUser || currentUser?.username || ''
+      ).trim();
+
+      let maxSeconds = 0;
+
+      // 2. Read from in-memory accumulator (active ticking clock)
+      if (typeof cachedTodayUsedSeconds === 'number' && cachedTodayUsedSeconds > 0) {
+        // Only credit in-memory seconds if querying the logged-in student
+        if (!phoneOrUser || phoneOrUser === currentUser?.phone || phoneOrUser === currentUser?.username) {
+          maxSeconds = Math.max(maxSeconds, cachedTodayUsedSeconds);
+        }
+      }
+
+      // 3. Check LocalStorage across both phone and username keys
+      if (targetPhone) {
+        const localPhoneSec = parseInt(localStorage.getItem(`usage_${targetPhone}_${todayIso}`) || '0', 10);
+        if (!isNaN(localPhoneSec)) maxSeconds = Math.max(maxSeconds, localPhoneSec);
+      }
+      if (targetUsername) {
+        const localUserSec = parseInt(localStorage.getItem(`usage_${targetUsername}_${todayIso}`) || '0', 10);
+        if (!isNaN(localUserSec)) maxSeconds = Math.max(maxSeconds, localUserSec);
+      }
+
+      // 4. Cross-check cached Supabase Attendance Table (Prevent reset on device switch)
+      if (window.cachedAdminData && Array.isArray(cachedAdminData.allAttendance)) {
+        const studentTodayLogs = cachedAdminData.allAttendance.filter(a => {
+          const matchPhone = targetPhone && String(a.phone || '').trim() === targetPhone;
+          const matchDate = (a.date === cleanDate) || 
+                            (a.attendance_id && a.attendance_id.includes(todayIso)) ||
+                            (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate);
+          return matchPhone && matchDate;
+        });
+
+        let dbSumSec = 0;
+        studentTodayLogs.forEach(a => {
+          dbSumSec += (Number(a.duration_seconds) || 0);
+        });
+
+        if (dbSumSec > 0) {
+          maxSeconds = Math.max(maxSeconds, dbSumSec);
+        }
+      }
+
+      return maxSeconds;
+    }
+
+    // =========================================================================
+    // BACKWARD COMPATIBILITY HELPERS FOR DAILY QUOTA CHECKS
+    // =========================================================================
+    function checkDailyPracticeLimit() {
+      if (!currentUser || isStaffOrAdminUser(currentUser)) {
+        return { isBlocked: false, isWarned: false, practicedSec: 0, remainingSec: 3600 };
+      }
+      const practicedSec = getTodayElapsedSeconds();
+      const isBlocked = practicedSec >= DAILY_MAX_QUOTA_SECONDS;
+      const isWarned = practicedSec >= 1800 && !isBlocked;
+      const remainingSec = Math.max(0, DAILY_MAX_QUOTA_SECONDS - practicedSec);
+
+      return { isBlocked, isWarned, practicedSec, remainingSec };
+    }
+
+    function updatePracticeLimitUI() {
+      checkAndEnforceQuota(getTodayElapsedSeconds());
     }
 
     async function fetchSupabaseDailyUsage(username) {
@@ -1901,14 +2100,17 @@
         .on('presence', { event: 'sync' }, () => {
           renderAllUsersOnlineCards();
           updateUsersTableLiveStatus();
+          updateStudentAdminSupervisionUI();
         })
         .on('presence', { event: 'join' }, () => {
           renderAllUsersOnlineCards();
           updateUsersTableLiveStatus();
+          updateStudentAdminSupervisionUI();
         })
         .on('presence', { event: 'leave' }, () => {
           renderAllUsersOnlineCards();
           updateUsersTableLiveStatus();
+          updateStudentAdminSupervisionUI();
         })
         .on('broadcast', { event: 'heartbeat_ping' }, (payload) => {
           if (payload && payload.payload) {
@@ -1919,6 +2121,7 @@
               window._liveHeartbeats[peerKey] = { ...item, receivedAt: Date.now() };
             }
             renderAllUsersOnlineCards();
+            updateStudentAdminSupervisionUI();
           }
         })
         .subscribe(async (status) => {
@@ -2583,6 +2786,7 @@
       checkAdminPendingAlerts();
       loadNotifications();
       loadGrandTotalQuestionsCount();
+      updateStudentAdminSupervisionUI();
     }
 
     async function checkAdminPendingAlerts() {
@@ -2752,10 +2956,11 @@
     // =========================================================================
     // PRACTICE & TRIAL WITH COMPLETED QUESTIONS SAVED ON EXIT
     // =========================================================================
-    function switchPracticeMode(mode) {
+      function switchPracticeMode(mode) {
       if (!isStaffOrAdminUser(currentUser) && getTodayElapsedSeconds() >= DAILY_MAX_QUOTA_SECONDS) {
-        triggerAppLockout();
-        return;
+      showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
+      triggerAppLockout();
+      return;
       }
 
       document.getElementById('tab-bar-container').style.display = 'none';
@@ -2764,6 +2969,14 @@
       // HIDE MALAYALAM INSTRUCTIONS ON MODE SELECT
       const instrSec = document.getElementById('practice-instructions-section');
       if (instrSec) instrSec.style.display = 'none';
+      const exhCard = document.getElementById('subject-exhausted-card');
+      if (exhCard) exhCard.style.display = 'none';
+      // Inside switchPracticeMode():
+      const trialBanner = document.getElementById('portal-version-trial-banner');
+      if (trialBanner) trialBanner.style.display = 'none';
+
+      const supBar = document.getElementById('student-admin-supervision-bar');
+      if (supBar) supBar.style.display = 'none';
 
       document.getElementById('quiz-card').style.display = 'none';
       document.getElementById('no-questions-card').style.display = 'none';
@@ -2798,6 +3011,10 @@
       // RESTORE MALAYALAM INSTRUCTIONS SECTION
       const instrSec = document.getElementById('practice-instructions-section');
       if (instrSec) instrSec.style.display = 'block';
+      const exhCard = document.getElementById('subject-exhausted-card');
+      if (exhCard) exhCard.style.display = 'none';
+      const trialBanner = document.getElementById('portal-version-trial-banner');
+      if (trialBanner) trialBanner.style.display = 'block';
 
       document.getElementById('subject-practice-box').style.display = 'none';
       document.getElementById('trial-exam-box').style.display = 'none';
@@ -2808,6 +3025,7 @@
       document.getElementById('subject-select').value = '';
       currentActiveContext = 'Practice Center';
       updatePresenceLiveState('Online & Active');
+      updateStudentAdminSupervisionUI();
     }
 
     async function triggerEarlyExitPractice() {
@@ -2878,54 +3096,112 @@
       showToast(`Saved ${total} completed question(s) to Subject Overview & Attendance!`, 'success');
     }
 
+   // Tracks the current subject for reset requests
+    let currentExhaustedSubjectCode = '';
+
+    // =========================================================================
+    // LOAD PRACTICE SUBJECT (25 UNSEEN QUESTIONS CAP & EXHAUSTION DETECTOR)
+    // =========================================================================
     async function loadPracticeSubject() {
+  // Check if non-admin has finished their daily 60 minutes
+  if (!isStaffOrAdminUser(currentUser) && getTodayElapsedSeconds() >= DAILY_MAX_QUOTA_SECONDS) {
+    showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
+    triggerAppLockout();
+    return;
+  }
+
       const subject = document.getElementById('subject-select').value;
       if (!subject) return;
 
       sessionAnswersLog = [];
       sessionStartTime = Date.now();
       isTrialMode = false;
+      currentExhaustedSubjectCode = subject;
+
       currentActiveContext = `Practice Center > ${getFullSubjectName(subject)}`;
       updatePresenceLiveState('Online & Active');
 
       document.getElementById('no-questions-card').style.display = 'none';
+      document.getElementById('subject-exhausted-card').style.display = 'none';
       document.getElementById('no-trial-card').style.display = 'none';
       document.getElementById('consolidation-card').style.display = 'none';
       document.getElementById('quiz-card').style.display = 'none';
       document.getElementById('practice-spinner').style.display = 'flex';
 
-      const { data: allQuestions } = await supabaseClient.from('questions').select('*').eq('subject', subject);
-      const { data: answered } = await supabaseClient.from('student_answers').select('question_id').eq('phone', currentUser.phone);
+      // 1. Fetch all questions for this subject
+      const { data: allQuestions } = await supabaseClient
+        .from('questions')
+        .select('*')
+        .eq('subject', subject);
+
+      // 2. Fetch all questions already answered by this student
+      const { data: answered } = await supabaseClient
+        .from('student_answers')
+        .select('question_id')
+        .eq('phone', String(currentUser.phone || '').trim())
+        .eq('subject', subject);
       
       document.getElementById('practice-spinner').style.display = 'none';
 
+      // Zero questions in the question bank for this subject
       if (!allQuestions || allQuestions.length === 0) {
         document.getElementById('no-questions-card').style.display = 'block';
         return;
       }
 
-      const answeredIds = new Set((answered || []).map(a => a.question_id));
-      const unattended = allQuestions.filter(q => !answeredIds.has(q.id));
+      const answeredIds = new Set((answered || []).map(a => String(a.question_id)));
+      
+      // Filter out already answered questions (NO REPEATS)
+      const unattended = allQuestions.filter(q => !answeredIds.has(String(q.id)));
 
+      // 3. ALL QUESTIONS HAVE BEEN ANSWERED: PROMPT RESET REQUEST TO TAB 7
       if (unattended.length === 0) {
-        document.getElementById('no-questions-card').style.display = 'block';
-      } else {
-        currentQuestions = unattended.map(q => ({
-          ID: q.id,
-          Subject: q.subject,
-          Question: q.question,
-          OptionA: q.option_a,
-          OptionB: q.option_b,
-          OptionC: q.option_c,
-          OptionD: q.option_d,
-          CorrectAnswer: q.correct_answer,
-          ImageUrl: q.image_url
-        }));
-        qIndex = 0;
-        enterExamFocusMode();
-        renderQuestion();
-        document.getElementById('quiz-card').style.display = 'block';
+        document.getElementById('exhausted-subject-name').innerText = getFullSubjectName(subject);
+        
+        // Check if student already submitted a pending reset request for this subject
+        const { data: existingPending } = await supabaseClient
+          .from('reset_requests')
+          .select('*')
+          .eq('phone', String(currentUser.phone || '').trim())
+          .eq('subject', subject)
+          .eq('status', 'Pending')
+          .maybeSingle();
+
+        const actionBox = document.getElementById('reset-request-action-box');
+        const pendingBox = document.getElementById('reset-request-pending-box');
+
+        if (existingPending) {
+          actionBox.style.display = 'none';
+          pendingBox.style.display = 'block';
+        } else {
+          actionBox.style.display = 'flex';
+          pendingBox.style.display = 'none';
+        }
+
+        document.getElementById('subject-exhausted-card').style.display = 'block';
+        return;
       }
+
+      // 4. RANDOMIZE & CAP AT EXACTLY 25 UNSEEN QUESTIONS
+      const shuffled = unattended.sort(() => 0.5 - Math.random());
+      const selectedBatch = shuffled.slice(0, 25); // Limit 25 questions per session
+
+      currentQuestions = selectedBatch.map(q => ({
+        ID: q.id,
+        Subject: q.subject,
+        Question: q.question,
+        OptionA: q.option_a,
+        OptionB: q.option_b,
+        OptionC: q.option_c,
+        OptionD: q.option_d,
+        CorrectAnswer: q.correct_answer,
+        ImageUrl: q.image_url
+      }));
+
+      qIndex = 0;
+      enterExamFocusMode();
+      renderQuestion();
+      document.getElementById('quiz-card').style.display = 'block';
     }
 
     // =========================================================================
@@ -3068,7 +3344,7 @@
 
       const subjTitle = isTrialMode ? `TRIAL: ${getFullSubjectName(q.Subject)}` : getFullSubjectName(q.Subject);
       document.getElementById('quiz-subject').innerText = subjTitle;
-      document.getElementById('quiz-progress').innerText = `Question ${qIndex + 1} of ${currentQuestions.length} (Compulsory)`;
+      document.getElementById('quiz-progress').innerText = `Question ${qIndex + 1} of ${currentQuestions.length}`;
       document.getElementById('quiz-question').innerText = q.Question;
 
       currentActiveContext = `Practice: ${subjTitle} (Q${qIndex + 1}/${currentQuestions.length})`;
@@ -4253,17 +4529,23 @@ Keep up the daily practice!`;
       await supabaseClient.from('reset_requests').update({ status: decision }).eq('request_id', requestId);
 
       if (decision === 'Accepted') {
-        await supabaseClient.from('student_answers').delete().eq('phone', phone).eq('subject', subject);
-        await supabaseClient.from('student_progress').delete().eq('phone', phone).eq('subject', subject);
+        // Deletes answered history for that subject so questions become available again
+        await supabaseClient
+          .from('student_answers')
+          .delete()
+          .eq('phone', String(phone).trim())
+          .eq('subject', subject);
       }
 
       const formattedDT = formatDateStrict(new Date().toISOString());
       await supabaseClient.from('notifications').insert([{
         notification_id: 'NOTIF-' + Date.now(),
         timestamp: formattedDT,
-        recipient_phone: phone,
+        recipient_phone: String(phone).trim(),
         title: `Subject Reset Request ${decision}`,
-        message: `Your request to reset attempts for '${subject || 'Subject'}' has been ${decision.toLowerCase()} by Admin.`,
+        message: decision === 'Accepted'
+          ? `Your reset request for '${getFullSubjectName(subject)}' has been accepted by Admin! You can now re-practice all questions in this subject.`
+          : `Your request to reset '${getFullSubjectName(subject)}' was declined by Admin.`,
         sender: 'System Admin'
       }]);
 
@@ -5021,6 +5303,122 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       } catch (e) {
         const countEl = document.getElementById('grand-total-q-count');
         if (countEl) countEl.innerText = '-';
+      }
+    }
+
+    // =========================================================================
+    // STUDENT SENDS RESET REQUEST FOR EXHAUSTED SUBJECT TO TAB 7
+    // =========================================================================
+    async function sendSubjectResetRequestFromStudent() {
+      if (!currentUser || !currentExhaustedSubjectCode) return;
+
+      const subCode = currentExhaustedSubjectCode;
+      const subFullName = getFullSubjectName(subCode);
+      const studentPhone = String(currentUser.phone || '').trim();
+      const requestId = 'REQ-' + Date.now();
+      const formattedDT = formatDateStrict(new Date().toISOString());
+
+      setProgress(40);
+      showToast('Sending reset request to Admin...', 'info');
+
+      try {
+        // 1. Insert into reset_requests table (Tab 7)
+        const { error: reqErr } = await supabaseClient
+          .from('reset_requests')
+          .insert([{
+            request_id: requestId,
+            timestamp: formattedDT,
+            phone: studentPhone,
+            student_name: currentUser.name || currentUser.username,
+            class: currentUser.userClass || '10',
+            division: currentUser.division || 'A',
+            subject: subCode,
+            status: 'Pending'
+          }]);
+
+        if (reqErr) throw reqErr;
+
+        // 2. Notify Admin via notifications table
+        await supabaseClient.from('notifications').insert([{
+          notification_id: 'NOTIF-' + Date.now(),
+          timestamp: formattedDT,
+          recipient_phone: 'ALL',
+          title: `🔔 New Reset Request: ${subFullName}`,
+          message: `${currentUser.name || currentUser.username} (Class ${currentUser.userClass || '10'}-${currentUser.division || 'A'}) has answered all questions in '${subFullName}' and requested a reset in Tab 7 to re-practice.`,
+          sender: 'System Monitor'
+        }]);
+
+        setProgress(100);
+        showToast('✅ Reset request sent to Admin! Check Tab 7 updates.', 'success');
+
+        // Toggle UI on student screen to pending state
+        document.getElementById('reset-request-action-box').style.display = 'none';
+        document.getElementById('reset-request-pending-box').style.display = 'block';
+
+      } catch (err) {
+        setProgress(100);
+        showToast('Failed to send request: ' + err.message, 'danger');
+      }
+    }
+
+    // =========================================================================
+    // STUDENT-SIDE LIVE ADMIN SUPERVISION DETECTOR
+    // =========================================================================
+    function updateStudentAdminSupervisionUI() {
+      // Only show to students; hide for admin/staff logins
+      const bar = document.getElementById('student-admin-supervision-bar');
+      if (!bar) return;
+
+      if (isStaffOrAdminUser(currentUser)) {
+        bar.style.display = 'none';
+        return;
+      }
+
+      bar.style.display = 'flex';
+
+      const led = document.getElementById('supervision-led');
+      const text = document.getElementById('supervision-text');
+
+      // Check current presence entries for an active Admin
+      let presenceEntries = [];
+      try {
+        if (presenceChannel) {
+          const state = presenceChannel.presenceState();
+          for (const key in state) {
+            const list = state[key];
+            if (list && list.length > 0) presenceEntries.push(list[list.length - 1]);
+          }
+        }
+      } catch (e) {}
+
+      // Include peer broadcast pings
+      const livePings = window._liveHeartbeats || {};
+      for (const k in livePings) {
+        if (Date.now() - livePings[k].receivedAt < 40000) {
+          presenceEntries.push(livePings[k]);
+        }
+      }
+
+      // Check if any presence entry belongs to an Admin/Staff member who is active
+      const isAdminOnline = presenceEntries.some(p => {
+        const u = String(p.username || '').toLowerCase();
+        const r = String(p.role || '').toLowerCase();
+        const isStaff = u.includes('admin') || r.includes('admin') || (p.tabAccess && parseTabAccessList(p.tabAccess).includes('9'));
+        return isStaff && (p.isGreen === true || p.liveStatus === 'Online & Active');
+      });
+
+      if (isAdminOnline) {
+        bar.style.background = '#dcfce7';
+        bar.style.border = '1.5px solid #86efac';
+        bar.style.color = '#15803d';
+        led.className = 'led-dot led-green';
+        text.innerHTML = `🛡️ <strong>You are under active Admin supervision</strong>`;
+      } else {
+        bar.style.background = '#f1f5f9';
+        bar.style.border = '1.5px solid #cbd5e1';
+        bar.style.color = '#64748b';
+        led.className = 'led-dot led-red';
+        text.innerHTML = `🛡️ Admin is currently offline`;
       }
     }
   </script>
