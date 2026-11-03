@@ -4083,6 +4083,9 @@
     // =========================================================================
     // ADMIN DATA & HARMONIZED MODULE SYNC
     // =========================================================================
+    // =========================================================================
+    // LOAD ADMIN DATA & HARMONIZED MODULE SYNC
+    // =========================================================================
     async function loadAdminData() {
       const { data: users } = await supabaseClient.from('users').select('*');
       const { data: questions } = await supabaseClient.from('questions').select('*');
@@ -4095,31 +4098,34 @@
       try {
         const { data: dbAtt } = await supabaseClient.from('attendance').select('*').order('id', { ascending: false });
         allAttendance = dbAtt || [];
-      } catch(e) {}
+      } catch (e) {}
 
       cachedAdminData = { users, questions, logs, allAnswers, allTrialExams, resetRequests, allAttendance };
 
+      // 1. POPULATE STUDENT CHIPS FOR NOTIFICATION COMPOSER (EXCLUDE ADMIN/STAFF)
       const studentChipsContainer = document.getElementById('student-chips-container');
       const studentsOnly = (users || []).filter(u => !isStaffOrAdminUser(u));
 
-      studentChipsContainer.innerHTML = '';
-      studentsOnly.forEach(s => {
-        const chip = document.createElement('div');
-        chip.className = 'student-chip';
-        chip.innerText = `${s.name} (${s.class || '10'}-${s.division || 'A'}) [${s.phone}]`;
-        chip.onclick = () => {
-          if (selectedStudentPhones.has(s.phone)) {
-            selectedStudentPhones.delete(s.phone);
-            chip.classList.remove('selected');
-          } else {
-            selectedStudentPhones.add(s.phone);
-            chip.classList.add('selected');
-          }
-        };
-        studentChipsContainer.appendChild(chip);
-      });
+      if (studentChipsContainer) {
+        studentChipsContainer.innerHTML = '';
+        studentsOnly.forEach(s => {
+          const chip = document.createElement('div');
+          chip.className = 'student-chip';
+          chip.innerText = `${s.name} (${s.class || '7'}-${s.division || 'A'}) [${s.phone}]`;
+          chip.onclick = () => {
+            if (selectedStudentPhones.has(s.phone)) {
+              selectedStudentPhones.delete(s.phone);
+              chip.classList.remove('selected');
+            } else {
+              selectedStudentPhones.add(s.phone);
+              chip.classList.add('selected');
+            }
+          };
+          studentChipsContainer.appendChild(chip);
+        });
+      }
 
-      // 1. ATTENDANCE TRACKER (HARMONIZED QUESTION COUNT DEDUPLICATION)
+      // 2. ATTENDANCE TRACKER (TAB 5) - HARMONIZED DEDUPLICATION
       const adminAttBody = document.getElementById('admin-attendance-body');
       if (adminAttBody) {
         const dailyGroups = {};
@@ -4136,7 +4142,7 @@
             dailyGroups[groupKey] = {
               student_name: a.student_name,
               phone: a.phone,
-              class: a.class || '10',
+              class: a.class || '7',
               division: a.division || 'A',
               date: dateKey,
               total_seconds: 0,
@@ -4197,7 +4203,6 @@
               <span class="badge ${row.isBlocked ? 'badge-danger' : 'badge-success'}">
                 ${row.isBlocked ? '🛑 60m Limit Reached' : 'Active Practicing'}
               </span>
-              <!-- REPLACED SVG RESTORE QUOTA BUTTON -->
               <button onclick="adminResetStudentQuota('${row.phone}', '${escapeHtml(targetUsername)}', '${escapeHtml(row.student_name)}')" 
                       class="btn btn-outline" 
                       style="display:inline-flex; align-items:center; margin-top:5px; padding:4px 8px; font-size:11.5px; font-weight:700; color:var(--primary); border-color:#bfdbfe; background:#eff6ff; border-radius:8px;" 
@@ -4213,127 +4218,129 @@
         `;}).join('') || '<tr><td colspan="10" style="text-align:center;">No student attendance records found.</td></tr>';
       }
 
-      // 2. EVALUATION REPORTS (TAB 6) - ALPHABETICAL (STUDENTS ONLY)
+      // 3. EVALUATION REPORTS (TAB 6) - ALPHABETICAL (STUDENTS ONLY)
       const reportAccordion = document.getElementById('admin-student-accordion-list');
-      const alphabeticalStudents = [...studentsOnly].sort((a, b) => {
-        return String(a.name || a.username).trim().localeCompare(String(b.name || b.username).trim());
-      });
+      if (reportAccordion) {
+        const alphabeticalStudents = [...studentsOnly].sort((a, b) => {
+          return String(a.name || a.username).trim().localeCompare(String(b.name || b.username).trim());
+        });
 
-      reportAccordion.innerHTML = alphabeticalStudents.map((st, idx) => `
-        <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion('report-acc-${idx}')">
-            <div><strong>${idx + 1}. ${escapeHtml(st.name)}</strong> — Class ${st.class || '10'}-${st.division || 'A'} [FL: ${st.first_language || 'MI'}] [${st.phone}]</div>
-            <div>▾</div>
-          </div>
-          <div class="accordion-body" id="report-acc-${idx}">
-            <div id="admin-rep-container-${idx}"></div>
-          </div>
-        </div>
-      `).join('');
-
-      alphabeticalStudents.forEach((st, idx) => {
-        const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
-        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(st.phone).trim()).map(t => ({
-          Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
-        }));
-
-        const container = document.getElementById(`admin-rep-container-${idx}`);
-        if (container) {
-          container.innerHTML = `
-            <h4 style="margin-top:0; color:var(--primary);">Subject Overview</h4>
-            <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="admin-rep-overview-${idx}"></tbody></table></div>
-            <h4 style="margin-top:20px; color:var(--primary);">Trial Exam Consolidations</h4>
-            <div id="admin-rep-trial-box-${idx}">
-              ${stTrials.length > 0 ? stTrials.map(t => {
-                let tAns = typeof t.AnswersJson === 'string' ? JSON.parse(t.AnswersJson || '[]') : (t.AnswersJson || []);
-                return `
-                  <div style="background:#f8fafc; border:1px solid var(--border-color); padding:12px; border-radius:8px; margin-bottom:12px;">
-                    <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Date: ${formatDateStrict(t.Timestamp)} | Score: ${t.Score} / ${t.TotalQuestions}</div>
-                    <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>User Choice</th><th>Correct Choice</th></tr></thead><tbody>
-                      ${tAns.map((a, aIdx) => `<tr><td>${aIdx + 1}</td><td>${getFullSubjectName(a.Subject)}</td><td>${escapeHtml(a.QuestionText)}</td><td><b>${escapeHtml(a.UserAnswer)}</b></td><td><b style="color:var(--success);">${escapeHtml(a.CorrectAnswer)}</b></td></tr>`).join('')}
-                    </tbody></table></div>
-                  </div>
-                `;
-              }).join('') : '<p style="font-size:13px; color:var(--text-muted);">No trial exams recorded.</p>'}
+        reportAccordion.innerHTML = alphabeticalStudents.map((st, idx) => `
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion('report-acc-${idx}')">
+              <div><strong>${idx + 1}. ${escapeHtml(st.name)}</strong> — Class ${st.class || '7'}-${st.division || 'A'} [FL: ${st.first_language || 'MI'}] [${st.phone}]</div>
+              <div>▾</div>
             </div>
-            <h4 style="margin-top:20px; color:var(--primary);">Practice Audit Log</h4>
-            <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Status</th></tr></thead><tbody id="admin-rep-audit-${idx}"></tbody></table></div>
-          `;
-          renderStudentDashboardAndOverview({ 
-            detailedAnswers: metrics.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
-            trialExams: stTrials 
-          }, null, null, null, null, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
-        }
-      });
+            <div class="accordion-body" id="report-acc-${idx}">
+              <div id="admin-rep-container-${idx}"></div>
+            </div>
+          </div>
+        `).join('');
 
-      // 3. STUDENT OPTIMIZATION ANALYTICS (TAB 9)
+        alphabeticalStudents.forEach((st, idx) => {
+          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
+          const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(st.phone).trim()).map(t => ({
+            Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
+          }));
+
+          const container = document.getElementById(`admin-rep-container-${idx}`);
+          if (container) {
+            container.innerHTML = `
+              <h4 style="margin-top:0; color:var(--primary);">Subject Overview</h4>
+              <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="admin-rep-overview-${idx}"></tbody></table></div>
+              <h4 style="margin-top:20px; color:var(--primary);">Trial Exam Consolidations</h4>
+              <div id="admin-rep-trial-box-${idx}">
+                ${stTrials.length > 0 ? stTrials.map(t => {
+                  let tAns = typeof t.AnswersJson === 'string' ? JSON.parse(t.AnswersJson || '[]') : (t.AnswersJson || []);
+                  return `
+                    <div style="background:#f8fafc; border:1px solid var(--border-color); padding:12px; border-radius:8px; margin-bottom:12px;">
+                      <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Date: ${formatDateStrict(t.Timestamp)} | Score: ${t.Score} / ${t.TotalQuestions}</div>
+                      <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>User Choice</th><th>Correct Choice</th></tr></thead><tbody>
+                        ${tAns.map((a, aIdx) => `<tr><td>${aIdx + 1}</td><td>${getFullSubjectName(a.Subject)}</td><td>${escapeHtml(a.QuestionText)}</td><td><b>${escapeHtml(a.UserAnswer)}</b></td><td><b style="color:var(--success);">${escapeHtml(a.CorrectAnswer)}</b></td></tr>`).join('')}
+                      </tbody></table></div>
+                    </div>
+                  `;
+                }).join('') : '<p style="font-size:13px; color:var(--text-muted);">No trial exams recorded.</p>'}
+              </div>
+              <h4 style="margin-top:20px; color:var(--primary);">Practice Audit Log</h4>
+              <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Status</th></tr></thead><tbody id="admin-rep-audit-${idx}"></tbody></table></div>
+            `;
+            renderStudentDashboardAndOverview({ 
+              detailedAnswers: metrics.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
+              trialExams: stTrials 
+            }, null, null, null, null, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
+          }
+        });
+      }
+
+      // 4. STUDENT OPTIMIZATION ANALYTICS (TAB 9)
       const optAccordion = document.getElementById('manage-users-analytics-accordion');
-      
-      const scoredStudents = studentsOnly.map(st => {
-        const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
-        const scoreMetric = metrics.total > 0 ? Number(((metrics.accuracy / metrics.total) * 100).toFixed(2)) : 0;
+      if (optAccordion) {
+        const scoredStudents = studentsOnly.map(st => {
+          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
+          const scoreMetric = metrics.total > 0 ? Number(((metrics.accuracy / metrics.total) * 100).toFixed(2)) : 0;
 
-        return {
-          user: st,
-          total: metrics.total,
-          correct: metrics.correct,
-          accuracy: metrics.accuracy,
-          scoreMetric,
-          combined: metrics.combined
-        };
-      }).sort((a, b) => (b.scoreMetric - a.scoreMetric) || (b.accuracy - a.accuracy) || (b.total - a.total));
+          return {
+            user: st,
+            total: metrics.total,
+            correct: metrics.correct,
+            accuracy: metrics.accuracy,
+            scoreMetric,
+            combined: metrics.combined
+          };
+        }).sort((a, b) => (b.scoreMetric - a.scoreMetric) || (b.accuracy - a.accuracy) || (b.total - a.total));
 
-      optAccordion.innerHTML = scoredStudents.map((item, idx) => `
-        <div class="accordion-item">
-          <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')">
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-              <span class="badge ${idx < 3 ? 'badge-success' : 'badge-warning'}" style="font-weight:900;">#${idx + 1} Top Scorer</span>
-              <strong>${escapeHtml(item.user.name)}</strong> — Class ${item.user.class || '10'}-${item.user.division || 'A'}
-              <span class="badge" style="background:#eff6ff; color:#1e40af;">Metric: ${item.scoreMetric}</span>
-            </div>
-            <div>▾</div>
-          </div>
-          <div class="accordion-body" id="opt-acc-${idx}">
-            <div class="stats-grid">
-              <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Total Answered</p><h3 id="opt-tot-${idx}">${item.total}</h3></div>
-              <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Overall Accuracy</p><h3 id="opt-acc-val-${idx}">${item.accuracy}%</h3></div>
-            </div>
-            <div class="grid-2" style="margin-bottom:20px;">
-              <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px;">
-                <h5 style="margin:0 0 10px 0; color:#166534;">🌟 Strengths (≥70%)</h5>
-                <div id="opt-strong-${idx}"></div>
+        optAccordion.innerHTML = scoredStudents.map((item, idx) => `
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')">
+              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span class="badge ${idx < 3 ? 'badge-success' : 'badge-warning'}" style="font-weight:900;">#${idx + 1} Top Scorer</span>
+                <strong>${escapeHtml(item.user.name)}</strong> — Class ${item.user.class || '7'}-${item.user.division || 'A'}
+                <span class="badge" style="background:#eff6ff; color:#1e40af;">Metric: ${item.scoreMetric}</span>
               </div>
-              <div style="background:#fffbe0; border:1px solid #fef08a; padding:12px; border-radius:10px;">
-                <h5 style="margin:0 0 10px 0; color:#92400e;">⚠️ Priorities (&lt;70%)</h5>
-                <div id="opt-weak-${idx}"></div>
-              </div>
+              <div>▾</div>
             </div>
-            <h4 style="margin:20px 0 8px 0; color:var(--primary); font-weight:800;">Subject Overview</h4>
-            <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="opt-overview-${idx}"></tbody></table></div>
+            <div class="accordion-body" id="opt-acc-${idx}">
+              <div class="stats-grid">
+                <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Total Answered</p><h3 id="opt-tot-${idx}">${item.total}</h3></div>
+                <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Overall Accuracy</p><h3 id="opt-acc-val-${idx}">${item.accuracy}%</h3></div>
+              </div>
+              <div class="grid-2" style="margin-bottom:20px;">
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px;">
+                  <h5 style="margin:0 0 10px 0; color:#166534;">🌟 Strengths (≥70%)</h5>
+                  <div id="opt-strong-${idx}"></div>
+                </div>
+                <div style="background:#fffbe0; border:1px solid #fef08a; padding:12px; border-radius:10px;">
+                  <h5 style="margin:0 0 10px 0; color:#92400e;">⚠️ Priorities (&lt;70%)</h5>
+                  <div id="opt-weak-${idx}"></div>
+                </div>
+              </div>
+              <h4 style="margin:20px 0 8px 0; color:var(--primary); font-weight:800;">Subject Overview</h4>
+              <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="opt-overview-${idx}"></tbody></table></div>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `).join('');
 
-      scoredStudents.forEach((item, idx) => {
-        const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(item.user.phone).trim()).map(t => ({
-          Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
-        }));
+        scoredStudents.forEach((item, idx) => {
+          const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(item.user.phone).trim()).map(t => ({
+            Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
+          }));
 
-        renderStudentDashboardAndOverview({ 
-          detailedAnswers: item.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
-          trialExams: stTrials 
-        }, `opt-tot-${idx}`,
-        `opt-acc-val-${idx}`, `opt-strong-${idx}`, `opt-weak-${idx}`, `opt-overview-${idx}`);
-      });
+          renderStudentDashboardAndOverview({ 
+            detailedAnswers: item.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
+            trialExams: stTrials 
+          }, `opt-tot-${idx}`, `opt-acc-val-${idx}`, `opt-strong-${idx}`, `opt-weak-${idx}`, `opt-overview-${idx}`);
+        });
+      }
 
-      // 4. PERFORMANCE CONSOLIDATED SUMMARY (ALPHABETICAL)
+      // 5. PERFORMANCE CONSOLIDATED SUMMARY (TAB 9)
       consolidatedStudentsList = studentsOnly.map((st, index) => {
         const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
         return {
           sno: index + 1,
           name: st.name || st.username,
           gender: st.gender || 'Male',
-          userClass: st.class || '10',
+          userClass: st.class || '7',
           div: st.division || 'A',
           firstLanguage: st.first_language || 'MI',
           phone: st.phone,
@@ -4346,50 +4353,53 @@
       sortAscending = true;
       renderConsolidatedTable();
 
-      // 5. RESET REQUESTS (TAB 7)
+      // 6. RESET REQUESTS (TAB 7)
       const resetBody = document.getElementById('admin-resets-body');
-      resetBody.innerHTML = (resetRequests || []).map(r => `
-        <tr>
-          <td><small>${r.request_id}</small></td>
-          <td>${formatDateStrict(r.timestamp)}</td>
-          <td><b>${escapeHtml(r.student_name)}</b></td>
-          <td>${r.class || '10'}-${r.division || 'A'}</td>
-          <td>${r.phone}</td>
-          <td><span class="badge">${r.subject}</span></td>
-          <td><b>${r.status}</b></td>
-          <td>
-            ${r.status === 'Pending' ? `
-              <button onclick="handleReset('${r.request_id}', 'Accepted', '${r.phone}', '${r.subject}')" class="btn btn-primary" style="padding:4px 8px; font-size:12px;">Accept</button>
-              <button onclick="handleReset('${r.request_id}', 'Rejected', '${r.phone}', '${r.subject}')" class="btn btn-danger" style="padding:4px 8px; font-size:12px;">Reject</button>
-            ` : '-'}
-          </td>
-        </tr>
-      `).join('');
+      if (resetBody) {
+        resetBody.innerHTML = (resetRequests || []).map(r => `
+          <tr>
+            <td><small>${r.request_id}</small></td>
+            <td>${formatDateStrict(r.timestamp)}</td>
+            <td><b>${escapeHtml(r.student_name)}</b></td>
+            <td>${r.class || '7'}-${r.division || 'A'}</td>
+            <td>${r.phone}</td>
+            <td><span class="badge">${r.subject}</span></td>
+            <td><b>${r.status}</b></td>
+            <td>
+              ${r.status === 'Pending' ? `
+                <button onclick="handleReset('${r.request_id}', 'Accepted', '${r.phone}', '${r.subject}')" class="btn btn-primary" style="padding:4px 8px; font-size:12px;">Accept</button>
+                <button onclick="handleReset('${r.request_id}', 'Rejected', '${r.phone}', '${r.subject}')" class="btn btn-danger" style="padding:4px 8px; font-size:12px;">Reject</button>
+              ` : '-'}
+            </td>
+          </tr>
+        `).join('') || '<tr><td colspan="8" style="text-align:center;">No reset requests logged.</td></tr>';
+      }
 
-      // 6. QUESTION SUMMARY
+      // 7. QUESTION SUMMARY (TAB 8)
       const qsList = questions || [];
       const summaryBody = document.getElementById('admin-questions-summary-body');
-      let grandTotalQs = 0;
-
-      summaryBody.innerHTML = SUBJECT_ORDER.map((code, idx) => {
-        const count = qsList.filter(q => String(q.subject).trim().toUpperCase() === code).length;
-        grandTotalQs += count;
-        return `
-          <tr>
-            <td>${idx + 1}</td>
-            <td><span class="badge">${code}</span></td>
-            <td><b>${SUBJECT_MAP[code]}</b></td>
-            <td><b>${count}</b> Questions</td>
+      if (summaryBody) {
+        let grandTotalQs = 0;
+        summaryBody.innerHTML = SUBJECT_ORDER.map((code, idx) => {
+          const count = qsList.filter(q => String(q.subject).trim().toUpperCase() === code).length;
+          grandTotalQs += count;
+          return `
+            <tr>
+              <td>${idx + 1}</td>
+              <td><span class="badge">${code}</span></td>
+              <td><b>${SUBJECT_MAP[code]}</b></td>
+              <td><b>${count}</b> Questions</td>
+            </tr>
+          `;
+        }).join('') + `
+          <tr style="background:#eff6ff; font-weight:800; border-top:2px solid var(--primary) !important;">
+            <td colspan="3">GRAND TOTAL</td>
+            <td><span class="badge badge-success" style="font-size:13px;">${grandTotalQs} Total Questions</span></td>
           </tr>
         `;
-      }).join('') + `
-        <tr style="background:#eff6ff; font-weight:800; border-top:2px solid var(--primary) !important;">
-          <td colspan="3">GRAND TOTAL</td>
-          <td><span class="badge badge-success" style="font-size:13px;">${grandTotalQs} Total Questions</span></td>
-        </tr>
-      `;
+      }
 
-      // 7. QUESTION BANK
+      // 8. QUESTION BANK (TAB 8)
       selectedQuestionIds.clear();
       updateBulkDeleteQsButton();
       const selectAllCheckbox = document.getElementById('select-all-qs');
@@ -4405,26 +4415,29 @@
       });
 
       const qBody = document.getElementById('admin-questions-body');
-      qBody.innerHTML = sortedQuestions.map((q, idx) => `
-        <tr>
-          <td style="text-align:center;"><input type="checkbox" class="q-checkbox" data-id="${q.id}" onchange="toggleSelectQuestion('${q.id}', this.checked)"></td>
-          <td>${idx + 1}</td>
-          <td><span class="badge">${q.subject}</span></td>
-          <td>${escapeHtml(q.question)} ${q.image_url ? '📷' : ''}</td>
-          <td><b>${q.correct_answer}</b></td>
-          <td style="display:flex; gap:8px;">
-            <button onclick="openInstantEditModalById('${q.id}')" class="btn btn-outline" style="padding:4px 8px;">✏️ </button>
-            <button onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;">🗑️</button>
-          </td>
-        </tr>
-      `).join('') || '<tr><td colspan="6" style="text-align:center;">No questions found.</td></tr>';
+      if (qBody) {
+        qBody.innerHTML = sortedQuestions.map((q, idx) => `
+          <tr>
+            <td style="text-align:center;"><input type="checkbox" class="q-checkbox" data-id="${q.id}" onchange="toggleSelectQuestion('${q.id}', this.checked)"></td>
+            <td>${idx + 1}</td>
+            <td><span class="badge">${q.subject}</span></td>
+            <td>${escapeHtml(q.question)} ${q.image_url ? '📷' : ''}</td>
+            <td><b>${q.correct_answer}</b></td>
+            <td style="display:flex; gap:8px;">
+              <button onclick="openInstantEditModalById('${q.id}')" class="btn btn-outline" style="padding:4px 8px;">✏️</button>
+              <button onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;">🗑️</button>
+            </td>
+          </tr>
+        `).join('') || '<tr><td colspan="6" style="text-align:center;">No questions found in bank.</td></tr>';
+      }
 
       updateUsersTableLiveStatus();
       renderGroupedAuditLogs(logs || []);
     }
 
+
     // =========================================================================
-    // ENROLLED USERS TABLE
+    // ENROLLED USERS TABLE (TAB 9)
     // =========================================================================
     function updateUsersTableLiveStatus() {
       const uBody = document.getElementById('admin-users-body');
@@ -4454,7 +4467,7 @@
           <tr>
             <td><b>${escapeHtml(u.name)}</b> ${isStaff ? '<span class="badge badge-warning" style="font-size:10px;">STAFF</span>' : ''}</td>
             <td>${u.gender || 'Male'}</td>
-            <td>${u.class || '10'}</td>
+            <td>${u.class || '7'}</td>
             <td>${u.division || 'A'}</td>
             <td><span class="badge badge-success">${u.first_language || 'MI'}</span></td>
             <td>${u.phone}</td>
@@ -4467,7 +4480,7 @@
               </span>
             </td>
             <td style="display:flex; gap:6px; align-items:center;">
-              <button onclick="sendUserCredentialsWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.password || '')}', '${escapeHtml(u.class || '10')}', '${escapeHtml(u.division || 'A')}')" 
+              <button onclick="sendUserCredentialsWhatsapp('${escapeHtml(u.name || u.username)}', '${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.password || '')}', '${escapeHtml(u.class || '7')}', '${escapeHtml(u.division || 'A')}')" 
                       class="btn btn-outline" 
                       style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" 
                       title="Send Login Credentials via WhatsApp">
@@ -4502,25 +4515,13 @@
     }
 
     // =========================================================================
-    // 1. FULL UPDATED: SEND USER CREDENTIALS VIA WHATSAPP
+    // WHATSAPP NOTIFICATION DISPATCHERS
     // =========================================================================
     function sendUserCredentialsWhatsapp(name, phone, username, password, userClass, div) {
       const portalUrl = window.location.href.split('#')[0];
       const validPhone = getCleanWhatsappPhone(phone);
 
-      const text = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*
-      📋 *YOUR LOGIN CREDENTIALS*
-
-      Dear *${name}*,
-      Here are your credentials to access the USS Training Portal:
-
-      👤 *Username:* ${username}
-      🔑 *Password:* ${password}
-      🏫 *Class & Div:* ${userClass}-${div}
-      🌐 *Portal URL:* ${portalUrl}
-
-      ⚠️ *Daily Practice Notice:*
-      The portal allows up to 60 minutes of practice daily. Please log in every day to complete your sessions and prepare for the USS Examination! ✨`;
+      const text = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*\n📋 *YOUR LOGIN CREDENTIALS*\n\nDear *${name}*,\nHere are your credentials to access the USS Training Portal:\n\n👤 *Username:* ${username}\n🔑 *Password:* ${password}\n🏫 *Class & Div:* ${userClass}-${div}\n🌐 *Portal URL:* ${portalUrl}\n\n⚠️ *Daily Practice Notice:*\nThe portal allows up to 60 minutes of practice daily. Please log in every day to complete your sessions and prepare for the USS Examination! ✨`;
 
       const url = validPhone
         ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(validPhone)}&text=${encodeURIComponent(text)}`
@@ -4537,22 +4538,9 @@
       let text = '';
 
       if (isActive) {
-        text = `🌟 *TDTTI USS TRAINING PORTAL*
-
-      Dear *${name}*,
-      Great job! You are currently *ACTIVE* and practicing in:
-      📍 [${context}]
-      ⏳ *Time Left Today:* ${timeLeft || 'Active'}
-
-      Keep up the steady focus and dedication toward your USS Exam success! 🚀📚`;
+        text = `🌟 *TDTTI USS TRAINING PORTAL*\n\nDear *${name}*,\nGreat job! You are currently *ACTIVE* and practicing in:\n📍 [${context}]\n⏳ *Time Left Today:* ${timeLeft || 'Active'}\n\nKeep up the steady focus toward your USS Exam success! 🚀📚`;
       } else {
-        text = `⚠️ *TDTTI USS PORTAL - URGENT PRACTICE REMINDER*
-
-      Dear *${name}*,
-      You are currently *OFFLINE / INACTIVE* on the USS Training Portal.
-      ⏳ *Practice Allowance Remaining Today:* ${timeLeft || '60m available'}
-
-      Daily continuous practice is essential to qualify for the USS Scholarship! Please log in now and complete today's Subject Practice & Trial Exam sessions. ✍️🎯`;
+        text = `⚠️ *TDTTI USS PORTAL - URGENT PRACTICE REMINDER*\n\nDear *${name}*,\nYou are currently *OFFLINE / INACTIVE* on the USS Training Portal.\n⏳ *Practice Allowance Remaining Today:* ${timeLeft || '60m available'}\n\nDaily continuous practice is essential to qualify for the USS Scholarship! Please log in now and complete today's Subject Practice & Trial Exam sessions. ✍️🎯`;
       }
 
       const url = validPhone
@@ -4564,13 +4552,13 @@
     
 
     // =========================================================================
-    // AUDIT ACCESS LOGS (GROUPED BY USER)
+    // AUDIT ACCESS LOGS (TAB 11) - GROUPED BY IDENTIFIER
     // =========================================================================
     function renderGroupedAuditLogs(logs) {
       const container = document.getElementById('admin-logs-cards-container');
       if (!container) return;
 
-      if (logs.length === 0) {
+      if (!logs || logs.length === 0) {
         container.innerHTML = '<p style="color:var(--text-muted); font-size:14px;">No access logs recorded yet.</p>';
         return;
       }
@@ -4607,7 +4595,7 @@
                   ${isOnlineNow ? '🟢 Active Now' : 'Last: ' + getRelativeTime(latestLog.timestamp || latestLog.login_time)}
                 </span>
                 <button onclick="event.stopPropagation(); deleteUserAllLogs('${escapeHtml(username)}')" class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete all logs for this user">
-                  🗑️ 
+                  🗑️
                 </button>
                 <span>▾</span>
               </div>
@@ -4664,7 +4652,7 @@
     }
 
     // =========================================================================
-    // PERFORMANCE CONSOLIDATED TABLE SORTING & RENDERING
+    // PERFORMANCE CONSOLIDATED TABLE SORTING & RENDERING (TAB 9)
     // =========================================================================
     function sortConsolidatedTable(key) {
       if (sortColumn === key) sortAscending = !sortAscending;
@@ -4730,46 +4718,33 @@
         }
       });
 
-      let msg = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*\n`;
-      msg += `📊 *CONSOLIDATED PERFORMANCE REPORT*\n\n`;
-      msg += `Student: *${name}*\n`;
-      msg += `Class & Div: ${userClass}-${div}\n`;
-      msg += `Phone: ${phone}\n`;
-      msg += `─────────────────────────\n`;
-      msg += `🏆 Overall Score: *${metrics.correct}/${metrics.total} (${metrics.accuracy}%)*\n\n`;
-      
-      msg += `📖 *SUBJECT PRACTICE BREAKDOWN:*\n`;
-      if (subPracticeLines.length > 0) {
-        msg += subPracticeLines.join('\n') + '\n';
-      } else {
-        msg += `• No subject practice recorded yet.\n`;
-      }
+      let msg = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*\n📊 *CONSOLIDATED PERFORMANCE REPORT*\n\nStudent: *${name}*\nClass & Div: ${userClass}-${div}\nPhone: ${phone}\n─────────────────────────\n🏆 Overall Score: *${metrics.correct}/${metrics.total} (${metrics.accuracy}%)*\n\n📖 *SUBJECT PRACTICE BREAKDOWN:*\n`;
+      msg += subPracticeLines.length > 0 ? subPracticeLines.join('\n') + '\n' : '• No subject practice recorded yet.\n';
+      msg += `\n⭐ *TRIAL EXAM SUMMARY:*\n• Total Trials Taken: ${metrics.trialsCount}\n─────────────────────────\nKeep practicing daily to secure top honors in USS 2026-27!`;
 
-      msg += `\n⭐ *TRIAL EXAM SUMMARY:*\n`;
-      msg += `• Total Trials Taken: ${metrics.trialsCount}\n`;
-      msg += `─────────────────────────\n`;
-      msg += `Keep practicing daily to secure top honors in USS 2026-27!`;
+      const validPhone = getCleanWhatsappPhone(phone);
+      const url = validPhone
+        ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(validPhone)}&text=${encodeURIComponent(msg)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
 
-      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(msg)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
       window.open(url, '_blank');
     }
 
     function sendAttendanceWhatsappAlert(name, phone, date, activities, duration, remaining, questions) {
-      const text = `Hi ${name}! Here is your TDTTI USS Training Portal Daily Attendance Report for ${date}:
-• Activities: ${activities}
-• Daily Practice Time: ${duration}
-• Remaining Allowance Today: ${remaining}
-• Questions Practiced: ${questions}
-Keep up the daily practice!`;
+      const validPhone = getCleanWhatsappPhone(phone);
+      const text = `Hi ${name}!\nHere is your TDTTI USS Training Portal Daily Attendance Report for ${date}:\n• Activities: ${activities}\n• Daily Practice Time: ${duration}\n• Remaining Allowance Today: ${remaining}\n• Questions Practiced: ${questions}\n\nKeep up the daily practice!`;
 
-      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      const url = validPhone
+        ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(validPhone)}&text=${encodeURIComponent(text)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
       window.open(url, '_blank');
     }
 
     function printConsolidatedTable() {
       const printableContent = document.getElementById('printable-consolidated-area').outerHTML;
       const modalContent = document.getElementById('print-modal-content');
-      modalContent.innerHTML = printableContent;
+      if (modalContent) modalContent.innerHTML = printableContent;
       document.getElementById('print-modal').style.display = 'flex';
     }
 
@@ -4798,11 +4773,10 @@ Keep up the daily practice!`;
 
       const formattedDT = formatDateStrict(new Date().toISOString());
 
-      // STRICTLY SEND ONLY TO THE SPECIFIC STUDENT'S PHONE NUMBER
       await supabaseClient.from('notifications').insert([{
         notification_id: 'NOTIF-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
         timestamp: formattedDT,
-        recipient_phone: targetPhone, // STRICT: Specific student phone only
+        recipient_phone: targetPhone,
         title: `Subject Reset Request ${decision}`,
         message: decision === 'Accepted'
           ? `Your reset request for '${getFullSubjectName(subject)}' has been accepted by Admin! You can now re-practice all questions in this subject.`
@@ -4979,6 +4953,9 @@ Keep up the daily practice!`;
       }
     }
 
+    // =========================================================================
+    // QUESTIONS MANAGEMENT & BULK OPERATIONS (TAB 8)
+    // =========================================================================
     function toggleSelectQuestion(id, isChecked) {
       if (isChecked) selectedQuestionIds.add(id);
       else selectedQuestionIds.delete(id);
@@ -4994,6 +4971,7 @@ Keep up the daily practice!`;
       });
       updateBulkDeleteQsButton();
     }
+
 
     function updateBulkDeleteQsButton() {
       const btn = document.getElementById('admin-bulk-delete-qs-btn');
@@ -5061,6 +5039,7 @@ Keep up the daily practice!`;
       document.getElementById('edit-question-modal').style.display = 'none';
     }
 
+
     async function handleSaveEditedQuestionModal(e) {
       e.preventDefault();
       const qId = document.getElementById('modal-q-id').value;
@@ -5121,9 +5100,7 @@ Keep up the daily practice!`;
           const filePath = imgUrl.split('/question-images/')[1];
           if (filePath) await supabaseClient.storage.from('question-images').remove([filePath]);
         }
-      } catch (err) {
-        console.error("Delete diagram error:", err);
-      }
+      } catch (err) {}
 
       document.getElementById('modal-q-img-url').value = '';
       const preview = document.getElementById('modal-q-img-preview');
@@ -5132,6 +5109,7 @@ Keep up the daily practice!`;
       document.getElementById('modal-q-img-delete-btn').style.display = 'none';
       showToast('Diagram deleted!', 'success');
     }
+
 
     function editUserByUsername(username) {
       const users = cachedAdminData?.users || [];
@@ -5142,7 +5120,7 @@ Keep up the daily practice!`;
       document.getElementById('u-name').value = u.name || '';
       document.getElementById('u-gender').value = u.gender || 'Male';
       document.getElementById('u-phone').value = u.phone || '';
-      document.getElementById('u-class').value = u.class || '10';
+      document.getElementById('u-class').value = u.class || '7';
       document.getElementById('u-div').value = u.division || 'A';
       document.getElementById('u-first-lang').value = u.first_language || 'MI';
       document.getElementById('u-username').value = u.username;
@@ -5153,13 +5131,14 @@ Keep up the daily practice!`;
       document.getElementById('u-status').value = u.status || 'Active';
     }
 
+
     function confirmDeleteEntireUser(username, phone) {
       showConfirmModal(
         '⚠️ Delete User & All Data',
-        `Are you sure you want to permanently delete "${username}" (${phone})? This will completely ERASE this user and ALL their related practice logs, answers, trial exam records, reset requests, and logs from the database!`,
+        `Permanently delete "${username}" (${phone})? This will completely ERASE this user and ALL their related practice logs, answers, trial exam records, reset requests, and logs from the database!`,
         async () => {
           setProgress(25);
-          showToast(`Deleting user ${username} and all records...`, 'info');
+          showToast(`Deleting user ${username}...`, 'info');
 
           try {
             await Promise.all([
@@ -5173,12 +5152,11 @@ Keep up the daily practice!`;
             ]);
 
             setProgress(100);
-            showToast(`User ${username} and all associated data permanently deleted.`, 'success');
+            showToast(`User ${username} and all records permanently deleted.`, 'success');
             loadAdminData();
           } catch (err) {
             setProgress(100);
-            console.error("Purge Error:", err);
-            showToast('Failed to completely delete user: ' + err.message, 'danger');
+            showToast('Failed to delete user: ' + err.message, 'danger');
           }
         }
       );
@@ -5239,7 +5217,7 @@ Keep up the daily practice!`;
         id: qId,
         subject: document.getElementById('q-subject').value,
         question: document.getElementById('q-text').value,
-        image_url: document.getElementById('q-img-url').value,
+        image_url: document.getElementById('modal-q-img-url') ? document.getElementById('modal-q-img-url').value : '',
         option_a: document.getElementById('q-optA').value,
         option_b: document.getElementById('q-optB').value,
         option_c: document.getElementById('q-optC').value,
@@ -5252,14 +5230,12 @@ Keep up the daily practice!`;
         showToast('Question saved successfully!', 'success');
         document.getElementById('question-form').reset();
         document.getElementById('q-id').value = '';
-        document.getElementById('q-img-url').value = '';
-        document.getElementById('q-img-preview').style.display = 'none';
-        document.getElementById('q-img-delete-btn').style.display = 'none';
         loadAdminData();
       } else {
         showToast('Failed to save question: ' + error.message, 'danger');
       }
     }
+
 
     function confirmDeleteQuestion(id) {
       showConfirmModal('Delete Question', 'Permanently delete this question?', async () => {
@@ -5269,6 +5245,9 @@ Keep up the daily practice!`;
       });
     }
 
+    // =========================================================================
+    // USER CREDENTIALS & TAB ACCESS ADMIN FORM (TAB 9)
+    // =========================================================================
     async function handleSaveUser(e) {
       e.preventDefault();
       const rawAccess = document.getElementById('u-tab-access').value.trim();
@@ -5276,14 +5255,14 @@ Keep up the daily practice!`;
       const tabAccessStr = tabAccessList.join(',');
 
       const userData = {
-        name: document.getElementById('u-name').value,
+        name: document.getElementById('u-name').value.trim().toUpperCase(),
         gender: document.getElementById('u-gender').value,
-        phone: document.getElementById('u-phone').value,
-        class: document.getElementById('u-class').value,
-        division: document.getElementById('u-div').value,
+        phone: sanitizePhoneNumberWithCountryCode(document.getElementById('u-phone').value.trim()),
+        class: document.getElementById('u-class').value.trim(),
+        division: document.getElementById('u-div').value.trim().toUpperCase(),
         first_language: document.getElementById('u-first-lang').value,
-        username: document.getElementById('u-username').value,
-        password: document.getElementById('u-password').value,
+        username: document.getElementById('u-username').value.trim().toLowerCase(),
+        password: document.getElementById('u-password').value.trim(),
         role: tabAccessStr,
         status: document.getElementById('u-status').value
       };
@@ -5375,8 +5354,13 @@ Keep up the daily practice!`;
       passInput.type = (passInput.type === 'password') ? 'text' : 'password';
     }
 
-    function openCSVGuideModal() { document.getElementById('csv-guide-modal').style.display = 'flex'; }
-    function closeCSVGuideModal() { document.getElementById('csv-guide-modal').style.display = 'none'; }
+    function openCSVGuideModal() {
+      document.getElementById('csv-guide-modal').style.display = 'flex';
+    }
+
+    function closeCSVGuideModal() {
+      document.getElementById('csv-guide-modal').style.display = 'none';
+    }
 
     function downloadSampleCSV() {
       const sampleCSVContent = 
@@ -5401,6 +5385,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       showToast('Sample CSV template downloaded!', 'success');
     }
 
+
     function getRelativeTime(dateStr) {
       if (!dateStr || dateStr === '-') return 'N/A';
       const d = new Date(dateStr);
@@ -5417,6 +5402,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       if (diffHr < 24) return `${diffHr} hr${diffHr > 1 ? 's' : ''} ago`;
       return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
     }
+
 
     async function refreshCurrentView() {
       const icon = document.getElementById('global-refresh-icon');
@@ -5438,6 +5424,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       }, 500);
     }
 
+
     function getFullSubjectName(code) {
       return SUBJECT_MAP[code] || code || 'General';
     }
@@ -5447,18 +5434,20 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       const text = document.getElementById('network-status-text');
 
       if (!navigator.onLine) {
-        led.className = 'led-dot led-red';
-        text.innerText = 'Offline';
+        if (led) led.className = 'led-dot led-red';
+        if (text) text.innerText = 'Offline';
       } else {
-        led.className = 'led-dot led-green';
-        text.innerText = 'Online';
+        if (led) led.className = 'led-dot led-green';
+        if (text) text.innerText = 'Online';
       }
       renderAllUsersOnlineCards();
       updateUsersTableLiveStatus();
     }
 
+
     function showToast(message, type = 'info') {
       const container = document.getElementById('toast-container');
+      if (!container) return;
       const toast = document.createElement('div');
       toast.className = `toast toast-${type}`;
       toast.innerHTML = `<span>${message}</span>`;
@@ -5469,9 +5458,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
       }, 3500);
-    }
-
-    function showConfirmModal(title, msg, onConfirm) {
+    }function showConfirmModal(title, msg, onConfirm) {
       document.getElementById('modal-title').innerText = title;
       document.getElementById('modal-msg').innerText = msg;
       confirmCallback = onConfirm;
@@ -5488,7 +5475,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     function openSettingsModal() {
       document.getElementById('set-name').innerText = currentUser.name || currentUser.username;
       document.getElementById('set-gender').innerText = currentUser.gender || 'Male';
-      document.getElementById('set-class').innerText = currentUser.userClass || '10';
+      document.getElementById('set-class').innerText = currentUser.userClass || '7';
       document.getElementById('set-div').innerText = currentUser.division || 'A';
       document.getElementById('set-first-lang').innerText = currentUser.firstLanguage || 'MI';
       document.getElementById('set-phone').innerText = currentUser.phone;
