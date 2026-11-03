@@ -710,7 +710,19 @@
 
           <div class="form-group">
             <label>Phone Number (WhatsApp) *</label>
-            <input type="tel" id="reg-phone" required placeholder="10-digit mobile number" maxlength="10">
+            <div style="display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #ffffff;">
+              <span style="background: #f1f5f9; padding: 12px 14px; font-weight: 800; color: #1e40af; border-right: 1px solid var(--border-color); font-size: 14px; user-select: none;">
+                +91
+              </span>
+              <input type="tel" 
+                     id="reg-phone" 
+                     required 
+                     placeholder="Enter 10-digit mobile number" 
+                     maxlength="14"
+                     oninput="formatPhoneNumberInput(this)"
+                     style="border: none; background: transparent; padding: 12px 14px; width: 100%; outline: none; font-size: 14px; font-weight: 700;">
+            </div>
+            
           </div>
 
           <div class="form-group">
@@ -1277,7 +1289,18 @@
             <thead>
               <tr>
                 <th class="sortable-header" onclick="sortConsolidatedTable('sno')">Sn ↕</th>
-                <th class="sortable-header" onclick="sortConsolidatedTable('name')">Name ↕</th>
+                <th style="white-space: nowrap;">
+                <span class="sortable-header" onclick="sortConsolidatedTable('name')" style="cursor: pointer;">
+                 Name ↕
+                </span>
+                <button type="button" 
+                onclick="copyAllStudentNames(event)" 
+                class="btn btn-outline no-print" 
+                style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; margin-left: 6px; font-size: 11px; font-weight: 700; border-radius: 6px; background: #ffffff; color: var(--primary); border: 1px solid #93c5fd; vertical-align: middle;" 
+                title="Copy all student names to clipboard">
+                📋
+                </button>
+                </th>
                 <th class="sortable-header" onclick="sortConsolidatedTable('gender')">G ↕</th>
                 <th class="sortable-header" onclick="sortConsolidatedTable('userClass')">C ↕</th>
                 <th class="sortable-header" onclick="sortConsolidatedTable('div')">D ↕</th>
@@ -4430,12 +4453,87 @@
       }).join('');
     }
 
+    // =========================================================================
+    // WHATSAPP PHONE SANITIZER HELPER (E.164 without symbols, defaults to 91)
+    // =========================================================================
+    function getCleanWhatsappPhone(rawPhone) {
+      if (!rawPhone) return '';
+      let clean = String(rawPhone).replace(/[^0-9]/g, ''); // strip non-digits
+
+      // If entered with leading zero (e.g. 08086749424 -> 8086749424)
+      if (clean.length === 11 && clean.startsWith('0')) {
+        clean = clean.substring(1);
+      }
+
+      // If standard 10-digit number without country code, prepend India's '91'
+      if (clean.length === 10) {
+        clean = '91' + clean;
+      }
+
+      return clean;
+    }
+
+    // =========================================================================
+    // 1. FULL UPDATED: SEND USER CREDENTIALS VIA WHATSAPP
+    // =========================================================================
     function sendUserCredentialsWhatsapp(name, phone, username, password, userClass, div) {
       const portalUrl = window.location.href.split('#')[0];
-      const text = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*\n📋 *YOUR LOGIN CREDENTIALS*\n\nDear *${name}*,\nHere are your credentials to access the USS Training Portal:\n\n👤 *Username:* ${username}\n🔑 *Password:* ${password}\n🏫 *Class & Div:* ${userClass}-${div}\n🌐 *Portal URL:* ${portalUrl}\n\n⚠️ *Daily Practice Notice:* The portal is open daily with an allotted 60-minute continuous practice allowance. Please log in every day to complete your sessions!`;
-      const url = phone ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      const validPhone = getCleanWhatsappPhone(phone);
+
+      const text = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*
+      📋 *YOUR LOGIN CREDENTIALS*
+
+      Dear *${name}*,
+      Here are your credentials to access the USS Training Portal:
+
+      👤 *Username:* ${username}
+      🔑 *Password:* ${password}
+      🏫 *Class & Div:* ${userClass}-${div}
+      🌐 *Portal URL:* ${portalUrl}
+
+      ⚠️ *Daily Practice Notice:*
+      The portal allows up to 60 minutes of practice daily. Please log in every day to complete your sessions and prepare for the USS Examination! ✨`;
+
+      const url = validPhone
+        ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(validPhone)}&text=${encodeURIComponent(text)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
       window.open(url, '_blank');
     }
+
+    // =========================================================================
+    // 2. FULL UPDATED: SEND TAILORED RADAR ALERT VIA WHATSAPP
+    // =========================================================================
+    function sendTailoredRadarWhatsapp(name, phone, isActive, context, timeLeft) {
+      const validPhone = getCleanWhatsappPhone(phone);
+      let text = '';
+
+      if (isActive) {
+        text = `🌟 *TDTTI USS TRAINING PORTAL*
+
+      Dear *${name}*,
+      Great job! You are currently *ACTIVE* and practicing in:
+      📍 [${context}]
+      ⏳ *Time Left Today:* ${timeLeft || 'Active'}
+
+      Keep up the steady focus and dedication toward your USS Exam success! 🚀📚`;
+      } else {
+        text = `⚠️ *TDTTI USS PORTAL - URGENT PRACTICE REMINDER*
+
+      Dear *${name}*,
+      You are currently *OFFLINE / INACTIVE* on the USS Training Portal.
+      ⏳ *Practice Allowance Remaining Today:* ${timeLeft || '60m available'}
+
+      Daily continuous practice is essential to qualify for the USS Scholarship! Please log in now and complete today's Subject Practice & Trial Exam sessions. ✍️🎯`;
+      }
+
+      const url = validPhone
+        ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(validPhone)}&text=${encodeURIComponent(text)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+
+      window.open(url, '_blank');
+    }
+    
 
     // =========================================================================
     // AUDIT ACCESS LOGS (GROUPED BY USER)
@@ -5609,18 +5707,30 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
     async function handleStudentRegistration(e) {
       e.preventDefault();
 
-      // ALWAYS CAPITALIZE NAME AND DIVISION
       const name = document.getElementById('reg-name').value.trim().toUpperCase();
       const division = document.getElementById('reg-div').value.trim().toUpperCase() || 'A';
-
       const gender = document.getElementById('reg-gender').value;
       const userClass = document.getElementById('reg-class').value.trim() || '7';
       const firstLang = document.getElementById('reg-first-lang').value;
-      const phone = document.getElementById('reg-phone').value.trim();
+      
+      // AUTO-ADD COUNTRY CODE (+91)
+      const rawPhoneInput = document.getElementById('reg-phone').value.trim();
+      const cleanPhoneDigits = rawPhoneInput.replace(/[^0-9]/g, '');
+
+      if (cleanPhoneDigits.length < 10) {
+        showToast('Please enter a valid 10-digit mobile number.', 'danger');
+        return;
+      }
+
+      const formattedPhone = sanitizePhoneNumberWithCountryCode(cleanPhoneDigits);
+      // Example: '+918086749424'
+
       const username = document.getElementById('reg-username').value.trim().toLowerCase().replace(/\s+/g, '');
       const password = document.getElementById('reg-password').value.trim();
 
-      
+      // ... keep duplicate checks and proceed with formattedPhone:
+      // In newStudent object, use:
+      // phone: formattedPhone
 
       // Basic input validation
       if (!username || username.length < 3) {
@@ -5734,6 +5844,113 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
         setProgress(100);
         showToast('Registration failed: ' + err.message, 'danger');
       }
+    }
+
+    // =========================================================================
+// COPY ALL STUDENT NAMES FROM CONSOLIDATED SUMMARY
+// =========================================================================
+function copyAllStudentNames(event) {
+  // Prevent column sort trigger when clicking the copy button
+  if (event) event.stopPropagation();
+
+  if (!consolidatedStudentsList || consolidatedStudentsList.length === 0) {
+    showToast('No student names available to copy.', 'warning');
+    return;
+  }
+
+  // Extract names in their currently active sorted order
+  const namesList = consolidatedStudentsList
+    .map(item => String(item.name || '').trim())
+    .filter(name => name.length > 0);
+
+  if (namesList.length === 0) {
+    showToast('No names found.', 'warning');
+    return;
+  }
+
+  const formattedText = namesList.join('\n');
+
+  // Temporarily bypass portal security restriction so the copy succeeds
+  const prevSecurityState = securityProtectionActive;
+  securityProtectionActive = false;
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(formattedText)
+      .then(() => {
+        securityProtectionActive = prevSecurityState;
+        showToast(`📋 Copied ${namesList.length} student names to clipboard!`, 'success');
+      })
+      .catch(() => {
+        fallbackCopyText(formattedText, namesList.length, prevSecurityState);
+      });
+  } else {
+    fallbackCopyText(formattedText, namesList.length, prevSecurityState);
+  }
+}
+
+function fallbackCopyText(text, count, prevSecurityState) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  textArea.style.position = 'fixed';
+  textArea.style.left = '-999999px';
+  textArea.style.top = '-999999px';
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    document.execCommand('copy');
+    showToast(`📋 Copied ${count} student names to clipboard!`, 'success');
+  } catch (err) {
+    showToast('Failed to copy names. Please allow clipboard permissions.', 'danger');
+  }
+
+  document.body.removeChild(textArea);
+  securityProtectionActive = prevSecurityState;
+}
+
+// =========================================================================
+    // PHONE NUMBER AUTO-FORMATTER & SANITIZER (INDIA +91 DEFAULT)
+    // =========================================================================
+    function formatPhoneNumberInput(input) {
+      let val = input.value.replace(/[^0-9]/g, ''); // strip non-digits
+
+      // If user pasted 0XXXXXXXXXX (11 digits with leading 0)
+      if (val.length === 11 && val.startsWith('0')) {
+        val = val.substring(1);
+      }
+      // If user pasted 91XXXXXXXXXX (12 digits with country code)
+      else if (val.length === 12 && val.startsWith('91')) {
+        val = val.substring(2);
+      }
+
+      // Restrict to max 10 digits in the box
+      if (val.length > 10) {
+        val = val.slice(0, 10);
+      }
+
+      input.value = val;
+    }
+
+    // Normalizes any phone string to clean WhatsApp & DB format: +918086749424
+    function sanitizePhoneNumberWithCountryCode(rawPhone) {
+      if (!rawPhone) return '';
+      let clean = String(rawPhone).replace(/[^0-9]/g, '');
+
+      // Handle leading zero
+      if (clean.length === 11 && clean.startsWith('0')) {
+        clean = clean.substring(1);
+      }
+      // Handle already present 91 prefix
+      if (clean.length === 12 && clean.startsWith('91')) {
+        return '+' + clean;
+      }
+      // Standard 10-digit number
+      if (clean.length === 10) {
+        return '+91' + clean;
+      }
+      // Return with + if valid
+      return clean.startsWith('+') ? clean : ('+' + clean);
     }
   </script>
 </body>
