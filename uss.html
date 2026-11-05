@@ -570,14 +570,18 @@
       <svg viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Portfolio</span>
     </button>
+    <button class="icon-tab-btn tab-permission-item" data-tab-no="12" id="tab-history" onclick="showSection('history-sec')" title="Portal Activity History">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span id="tab-history-title">History</span>
+    </button>
+    <button class="icon-tab-btn tab-permission-item" data-tab-no="13" id="tab-offline-exams" onclick="showSection('admin-offline-exam-sec')" title="Enter Offline Exam Scores">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Offline Exams</span>
+    </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="3" id="tab-notif" onclick="showSection('notif-sec')" title="Notification Center">
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Notifs</span>
       <span class="tab-badge-dot" id="notif-badge-dot" style="display:none;"></span>
-    </button>
-    <button class="icon-tab-btn tab-permission-item" data-tab-no="4" id="tab-refresh" onclick="refreshCurrentView()" title="Refresh Data">
-      <svg id="global-refresh-icon" viewBox="0 0 24 24" fill="none"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Refresh</span>
     </button>
     <button class="icon-tab-btn tab-permission-item" data-tab-no="5" id="tab-attendance" onclick="showSection('admin-attendance-sec')" title="Student Attendance Tracker">
       <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/><line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/></svg>
@@ -607,6 +611,10 @@
     <button class="icon-tab-btn tab-permission-item" data-tab-no="11" id="tab-logs" onclick="showSection('admin-logs-sec')" title="Audit Access Logs">
       <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Logs</span>
+    </button>
+    <button class="icon-tab-btn tab-permission-item" data-tab-no="4" id="tab-refresh" onclick="refreshCurrentView()" title="Refresh Data">
+      <svg id="global-refresh-icon" viewBox="0 0 24 24" fill="none"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Refresh</span>
     </button>
   </div>
 
@@ -1046,6 +1054,38 @@
         </div>
       </div>
 
+      <!-- INSERT DIRECTLY BELOW My Performance Dashboard AND ABOVE Subject Overview IN #portfolio-sec -->
+      <div id="portfolio-offline-exams-container" style="margin-top: 30px; margin-bottom: 25px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0; color:var(--primary); display:flex; align-items:center; gap:8px;">
+            📝 Offline Exam Scores
+          </h3>
+          <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700;">School & Center Examinations</span>
+        </div>
+        
+        <div class="table-responsive" style="margin-top:0;">
+          <table class="data-table">
+            <thead>
+              <tr style="background:#eff6ff;">
+                <th>Date & Time</th>
+                <th>Exam Name</th>
+                <th>FL (MI/AR/SK)</th>
+                <th>MII</th>
+                <th>MM</th>
+                <th>ENG</th>
+                <th>BS</th>
+                <th>SS</th>
+                <th style="background:#dbeafe;">Total Score</th>
+                <th>%</th>
+              </tr>
+            </thead>
+            <tbody id="portfolio-offline-exams-body">
+              <tr><td colspan="10" style="text-align:center; color:var(--text-muted);">No offline exam scores recorded yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <h3 style="margin-top:30px; color:var(--primary);">Subject Overview</h3> 
       <div class="table-responsive">
         <table class="data-table">
@@ -1376,9 +1416,9 @@
                 Tab No Access (Comma-separated, e.g. 1,2,3,4 or 1,2,3,4,5,6,7,8,9,10,11):
               </label>
               <div>
-                <span class="quick-preset-chip" onclick="setTabPreset('1,2,3,4')">Student (1-4)</span>
+                <span class="quick-preset-chip" onclick="setTabPreset('1,2,3,4,12')">Student (1-4, 12)</span>
                 <span class="quick-preset-chip" onclick="setTabPreset('1,2,3,4,8')">Question Master (1-4, 8)</span>
-                <span class="quick-preset-chip" onclick="setTabPreset('1,2,3,4,5,6,7,8,9,10,11')">Full Admin (1-11)</span>
+                <span class="quick-preset-chip" onclick="setTabPreset('1,2,3,4,5,6,7,8,9,10,11,12,13')">Full Admin (1-13)</span>
               </div>
             </div>
             <input type="text" id="u-tab-access" placeholder="e.g. 1,2,3,4 or 1,2,3,4,5,6,7,8,9,10,11" required value="1,2,3,4" style="font-weight:700; background:#fff; border:1.5px solid var(--primary);">
@@ -1510,6 +1550,131 @@
         </button>
       </div>
       <div id="admin-logs-cards-container" style="width: 100%;"></div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 12: PORTAL HISTORY (TREE VIEW PER DATE & TIME)                    -->
+    <!-- ===================================================================== -->
+    <section id="history-sec" class="section" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h2 id="history-page-heading" style="margin:0; color:#1B257D;">My Activity History </h2>
+          <small style="color:var(--text-muted); font-weight:600;">Chronological date-wise activity tree view</small>
+        </div>
+        <button onclick="loadHistoryData()" class="btn btn-outline" style="padding:6px 14px;">🔄 </button>
+      </div>
+
+      <!-- Student View (Personal Tree) -->
+      <div id="student-history-tree-container" class="card" style="display:none; padding:22px;"></div>
+
+      <!-- Admin View (Collapsible Student Accordions like Reports Tab) -->
+      <div id="admin-history-accordion-list" style="display:none;"></div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 13: ADMIN OFFLINE EXAM SCORES ENTRY & MANAGEMENT                  -->
+    <!-- ===================================================================== -->
+    <section id="admin-offline-exam-sec" class="section" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0; color:#1B257D;">Offline Exam Scores Management (Tab 13)</h2>
+        <span class="badge" style="background:#fef3c7; color:#92400e; font-weight:800;">Admin Privileged</span>
+      </div>
+
+      <!-- ENTRY FORM -->
+      <form id="offline-exam-form" class="card" onsubmit="handleSaveOfflineExam(event)">
+        <h3 style="margin-top:0; color:var(--primary); font-size:16px;">➕ Enter Student Offline Exam Scores</h3>
+        
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Select Student *</label>
+            <select id="off-student-select" required onchange="onOfflineStudentChange()">
+              <option value="">-- Choose Student --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Exam Name *</label>
+            <input type="text" id="off-exam-name" required placeholder="e.g. USS Model Exam 1, District Mock Test">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Exam Date & Time *</label>
+            <input type="datetime-local" id="off-exam-date" required>
+          </div>
+
+          <div class="form-group">
+            <label>First Language Paper</label>
+            <input type="text" id="off-fl-subject-display" readonly style="background:#e2e8f0; font-weight:700;" value="MI">
+            <input type="hidden" id="off-fl-subject" value="MI">
+          </div>
+        </div>
+
+        <div style="background:#f8fafc; border:1px solid var(--border-color); border-radius:12px; padding:16px; margin: 12px 0 18px 0;">
+          <h4 style="margin:0 0 12px 0; color:var(--primary); font-size:14px;">Subject Marks Breakdown (Score / Maximum Marks)</h4>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:12px;">
+            <div>
+              <label id="lbl-off-fl" style="font-size:11.5px; font-weight:700;">FL Score / Out of</label>
+              <div style="display:flex; gap:4px;"><input type="number" step="0.5" id="off-fl-score" placeholder="Mark" required oninput="calcOfflineTotal()"><input type="number" step="0.5" id="off-fl-out" placeholder="Out" value="12" required oninput="calcOfflineTotal()"></div>
+            </div>
+            <div>
+              <label style="font-size:11.5px; font-weight:700;">MII Score / Out of</label>
+              <div style="display:flex; gap:4px;"><input type="number" step="0.5" id="off-mii-score" placeholder="Mark" required oninput="calcOfflineTotal()"><input type="number" step="0.5" id="off-mii-out" placeholder="Out" value="12" required oninput="calcOfflineTotal()"></div>
+            </div>
+            <div>
+              <label style="font-size:11.5px; font-weight:700;">MM Score / Out of</label>
+              <div style="display:flex; gap:4px;"><input type="number" step="0.5" id="off-mm-score" placeholder="Mark" required oninput="calcOfflineTotal()"><input type="number" step="0.5" id="off-mm-out" placeholder="Out" value="20" required oninput="calcOfflineTotal()"></div>
+            </div>
+            <div>
+              <label style="font-size:11.5px; font-weight:700;">ENG Score / Out of</label>
+              <div style="display:flex; gap:4px;"><input type="number" step="0.5" id="off-eng-score" placeholder="Mark" required oninput="calcOfflineTotal()"><input type="number" step="0.5" id="off-eng-out" placeholder="Out" value="12" required oninput="calcOfflineTotal()"></div>
+            </div>
+            <div>
+              <label style="font-size:11.5px; font-weight:700;">BS Score / Out of</label>
+              <div style="display:flex; gap:4px;"><input type="number" step="0.5" id="off-bs-score" placeholder="Mark" required oninput="calcOfflineTotal()"><input type="number" step="0.5" id="off-bs-out" placeholder="Out" value="12" required oninput="calcOfflineTotal()"></div>
+            </div>
+            <div>
+              <label style="font-size:11.5px; font-weight:700;">SS Score / Out of</label>
+              <div style="display:flex; gap:4px;"><input type="number" step="0.5" id="off-ss-score" placeholder="Mark" required oninput="calcOfflineTotal()"><input type="number" step="0.5" id="off-ss-out" placeholder="Out" value="12" required oninput="calcOfflineTotal()"></div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px; padding-top:12px; border-top:1px dashed #cbd5e1; display:flex; justify-content:space-between; align-items:center;">
+            <strong>Calculated Total:</strong>
+            <span class="badge badge-success" id="off-calc-badge" style="font-size:14px; padding:6px 14px;">0 / 80 (0%)</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="padding:12px 24px; font-weight:800;">💾 Save Offline Exam Score</button>
+      </form>
+
+      <!-- ENTERED OFFLINE EXAMS LIST -->
+      <h3 style="margin-top:35px; color:#1B257D;">Recorded Offline Exams</h3>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>Student Name</th>
+              <th>Exam Name</th>
+              <th>Date</th>
+              <th>FL</th>
+              <th>MII</th>
+              <th>MM</th>
+              <th>ENG</th>
+              <th>BS</th>
+              <th>SS</th>
+              <th>Total Score</th>
+              <th>%</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-offline-exams-body">
+            <tr><td colspan="13" style="text-align:center;">No records entered yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
   </div>
@@ -2827,6 +2992,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
     // =========================================================================
     async function handleLogin(e) {
       e.preventDefault();
+      logPortalActivity('LOGIN', 'Logged into portal', getDeviceInfo());
 
       const usernameInput = document.getElementById('login-username').value.trim();
       const passwordInput = document.getElementById('login-password').value.trim();
@@ -3070,6 +3236,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
       clearInterval(timerInterval);
       clearInterval(presenceHeartbeatInterval);
       clearTimeout(idleTimer);
+      logPortalActivity('LOGOUT', 'Logged out from portal', '');
 
       const savedUser = currentUser;
       const logoutTimeStr = formatDateStrict(new Date().toISOString());
@@ -3293,6 +3460,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
       }
       const cleanDate = new Date().toLocaleDateString('en-GB');
       const formattedDT = formatDateStrict(new Date().toISOString());
+      logPortalActivity('PRACTICE', `Exited Practice: ${sessionAnswersLog[0]?.Subject || 'General'}`, `${total} questions attended • Score: ${score}/${total}`);
 
       const upsertRows = sessionAnswersLog.map(q => ({
         timestamp: formattedDT,
@@ -3359,6 +3527,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
   if (!isStaffOrAdminUser(currentUser) && getTodayElapsedSeconds() >= DAILY_MAX_QUOTA_SECONDS) {
     showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
     triggerAppLockout();
+    logPortalActivity('PRACTICE', `Started Subject Practice: ${getFullSubjectName(subject)}`, `25 questions batch loaded`);
     return;
   }
 
@@ -3463,6 +3632,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
       document.getElementById('trial-exam-box').style.display = 'none';
       document.getElementById('no-trial-card').style.display = 'none';
       document.getElementById('practice-spinner').style.display = 'flex';
+      logPortalActivity('TRIAL', 'Started Comprehensive Trial Exam', 'Strict subject order model exam started');
 
       isTrialMode = true;
       sessionAnswersLog = [];
@@ -3690,6 +3860,8 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
       clearInterval(timerInterval);
       document.getElementById('quiz-card').style.display = 'none';
 
+      const pTitle = isTrialMode ? 'Completed Trial Exam' : `Completed Practice: ${sessionAnswersLog[0]?.Subject || 'General'}`;
+logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/${total} (${victoryRate}%)`);
       const total = sessionAnswersLog.length;
       const score = sessionAnswersLog.filter(a => a.IsCorrect).length;
       const victoryRate = total ? Math.round((score / total) * 100) : 0;
@@ -3772,21 +3944,95 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
     }
 
     // =========================================================================
-    // DASHBOARD & PORTFOLIO
+    // FULL UPDATED PORTFOLIO LOADER (TAB 2)
     // =========================================================================
     async function loadPortfolio() {
-      const { data: answers } = await supabaseClient.from('student_answers').select('*').eq('phone', currentUser.phone);
-      const { data: trials } = await supabaseClient.from('trial_exams').select('*').eq('phone', currentUser.phone);
+      if (!currentUser) return;
       
+      const studentPhone = String(currentUser.phone || '').trim();
+      const studentUsername = String(currentUser.username || '').trim().toLowerCase();
+
+      // 1. Fetch Online Subject Practice Answers
+      const { data: answers } = await supabaseClient
+        .from('student_answers')
+        .select('*')
+        .eq('phone', studentPhone);
+
+      // 2. Fetch Comprehensive Trial Exams
+      const { data: trials } = await supabaseClient
+        .from('trial_exams')
+        .select('*')
+        .eq('phone', studentPhone)
+        .order('id', { ascending: false });
+
+      // 3. Fetch Attendance Logs
       let attendanceList = [];
       try {
-        const { data: dbAtt } = await supabaseClient.from('attendance').select('*').eq('phone', currentUser.phone);
+        const { data: dbAtt } = await supabaseClient
+          .from('attendance')
+          .select('*')
+          .or(`phone.eq."${studentPhone}",attendance_id.ilike.%${studentUsername}%`)
+          .order('id', { ascending: false });
         attendanceList = dbAtt || [];
-      } catch(e) {}
+      } catch (e) {
+        console.warn("Attendance query note:", e);
+      }
 
-      const studentMetrics = getStudentUniqueAnswerRecords(currentUser.phone, answers, trials);
+      // 4. Fetch Offline Exam Scores (School / Center Examinations)
+      let offlineExams = [];
+      try {
+        const { data: dbOffline } = await supabaseClient
+          .from('offline_exams')
+          .select('*')
+          .or(`phone.eq."${studentPhone}",username.eq."${studentUsername}"`)
+          .order('id', { ascending: false });
+        offlineExams = dbOffline || [];
+      } catch (e) {
+        console.warn("Offline exams query note:", e);
+      }
+
+      // 5. Deduplicate and Calculate Online Answer Metrics
+      const studentMetrics = getStudentUniqueAnswerRecords(studentPhone, answers, trials);
+
+      // 6. Render Attendance Summary and Log Table
       renderStudentAttendance(attendanceList, studentMetrics.total);
 
+      // 7. Render Dedicated Offline Exam Scores Table in Tab 2
+      const offTbody = document.getElementById('portfolio-offline-exams-body');
+      if (offTbody) {
+        if (!offlineExams || offlineExams.length === 0) {
+          offTbody.innerHTML = `
+            <tr>
+              <td colspan="10" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">
+                No offline exam scores recorded yet.
+              </td>
+            </tr>
+          `;
+        } else {
+          offTbody.innerHTML = offlineExams.map(ex => {
+            const pct = Number(ex.percentage || 0);
+            const badgeClass = pct >= 70 ? 'badge-success' : (pct >= 50 ? 'badge-warning' : 'badge-danger');
+            const examTime = ex.timestamp || ex.exam_date || '-';
+
+            return `
+              <tr>
+                <td><b>${formatDateStrict(examTime)}</b></td>
+                <td><strong style="color:var(--primary);">${escapeHtml(ex.exam_name || 'Offline Exam')}</strong></td>
+                <td><b>${ex.fl_score}</b>/${ex.fl_outof} <small style="color:var(--text-muted);">(${ex.fl_subject || 'FL'})</small></td>
+                <td><b>${ex.mii_score}</b>/${ex.mii_outof}</td>
+                <td><b>${ex.mm_score}</b>/${ex.mm_outof}</td>
+                <td><b>${ex.eng_score}</b>/${ex.eng_outof}</td>
+                <td><b>${ex.bs_score}</b>/${ex.bs_outof}</td>
+                <td><b>${ex.ss_score}</b>/${ex.ss_outof}</td>
+                <td style="background:#eff6ff;"><b style="color:var(--primary); font-size:13.5px;">${ex.total_score} / ${ex.total_outof}</b></td>
+                <td><span class="badge ${badgeClass}">${pct}%</span></td>
+              </tr>
+            `;
+          }).join('');
+        }
+      }
+
+      // 8. Bundle Combined Online and Offline Data for Unified Dashboard Metrics
       const resData = {
         detailedAnswers: studentMetrics.combined.map(c => ({
           QuestionID: c.question_id,
@@ -3802,10 +4048,22 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
           Score: t.score,
           TotalQuestions: t.total_questions,
           AnswersJson: t.answers_json
-        }))
+        })),
+        offlineExams: offlineExams || []
       };
 
-      renderStudentDashboardAndOverview(resData, 'stat-total', 'stat-accuracy', 'strong-subjects-chart-container', 'weak-subjects-chart-container', 'portfolio-overview-body', 'portfolio-trial-history-box', 'portfolio-trial-history-container', 'portfolio-audit-body');
+      // 9. Render Unified Dashboard, Charts, Strengths/Priorities, and Subject Overview
+      renderStudentDashboardAndOverview(
+        resData,
+        'stat-total',
+        'stat-accuracy',
+        'strong-subjects-chart-container',
+        'weak-subjects-chart-container',
+        'portfolio-overview-body',
+        'portfolio-trial-history-box',
+        'portfolio-trial-history-container',
+        'portfolio-audit-body'
+      );
     }
 
     function renderStudentAttendance(attLogs, verifiedTotalQuestions) {
@@ -4823,10 +5081,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
     
 
     // =========================================================================
-    // AUDIT ACCESS LOGS (TAB 11) - DISPLAY FULL NAME INSTEAD OF USERNAME
-    // =========================================================================
-    // =========================================================================
-    // AUDIT ACCESS LOGS (TAB 11) - SORTED BY LAST LOGGED IN AT THE TOP
+    // AUDIT ACCESS LOGS (TAB 11) - CLEANED: NO ACTIVITY COLUMN & LOGOUT SHOWS '-'
     // =========================================================================
     function renderGroupedAuditLogs(logs) {
       const container = document.getElementById('admin-logs-cards-container');
@@ -4837,11 +5092,9 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
         return;
       }
 
-      const allAtt = (cachedAdminData && Array.isArray(cachedAdminData.allAttendance)) ? cachedAdminData.allAttendance : [];
-      const allTrials = (cachedAdminData && Array.isArray(cachedAdminData.allTrialExams)) ? cachedAdminData.allTrialExams : [];
       const allUsers = (cachedAdminData && Array.isArray(cachedAdminData.users)) ? cachedAdminData.users : [];
 
-      // 1. Group logs by identifier (username)
+      // Group logs by identifier
       const grouped = {};
       logs.forEach(l => {
         const userKey = l.identifier || 'Unknown User';
@@ -4849,85 +5102,33 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
         grouped[userKey].push(l);
       });
 
-      // 2. Sort internal sessions for each user: Newest login at the top
-      Object.keys(grouped).forEach(uKey => {
-        grouped[uKey].sort((a, b) => {
-          const dateA = parseCustomDate(a.login_time || a.timestamp);
-          const dateB = parseCustomDate(b.login_time || b.timestamp);
-          const timeA = dateA ? dateA.getTime() : 0;
-          const timeB = dateB ? dateB.getTime() : 0;
-          return timeB - timeA; // Descending (latest session first)
-        });
-      });
-
-      // 3. SORT USER GROUP CARDS: User with the MOST RECENT login appears at the very top
-      const userKeys = Object.keys(grouped).sort((uKeyA, uKeyB) => {
-        const latestLogA = grouped[uKeyA][0];
-        const latestLogB = grouped[uKeyB][0];
-
-        // "Active Now" takes absolute top priority
-        const aIsActive = latestLogA.logout_time === 'Active Now' ? 1 : 0;
-        const bIsActive = latestLogB.logout_time === 'Active Now' ? 1 : 0;
-        if (aIsActive !== bIsActive) return bIsActive - aIsActive;
-
-        const dateA = parseCustomDate(latestLogA.login_time || latestLogA.timestamp);
-        const dateB = parseCustomDate(latestLogB.login_time || latestLogB.timestamp);
-        const timeA = dateA ? dateA.getTime() : 0;
-        const timeB = dateB ? dateB.getTime() : 0;
-
-        return timeB - timeA; // Most recent user at the top
+      // Sort user groups: latest login at the top
+      const userKeys = Object.keys(grouped).sort((uA, uB) => {
+        const timeA = parseCustomDate(grouped[uA][0]?.login_time || grouped[uA][0]?.timestamp)?.getTime() || 0;
+        const timeB = parseCustomDate(grouped[uB][0]?.login_time || grouped[uB][0]?.timestamp)?.getTime() || 0;
+        return timeB - timeA;
       });
 
       container.innerHTML = userKeys.map((username, gIdx) => {
         const userLogs = grouped[username];
         const latestLog = userLogs[0];
-        const isOnlineNow = navigator.onLine && (latestLog.logout_time === 'Active Now');
+        
+        // Strictly do NOT show "Active Now"
+        const isLoggedOut = latestLog.logout_time && latestLog.logout_time !== 'Active Now' && latestLog.logout_time !== '-';
 
-        // Look up student details
         const matchedUser = allUsers.find(u => 
           String(u.username || '').toLowerCase() === String(username).toLowerCase() ||
           String(u.name || '').toLowerCase() === String(username).toLowerCase()
         );
-
-        const displayName = matchedUser && matchedUser.name ? matchedUser.name : username;
-        const userPhone = matchedUser ? String(matchedUser.phone || '').trim() : '';
-
-        // Pull recorded activities for this student
-        const userActivities = [];
-
-        allAtt.filter(a => 
-          (userPhone && String(a.phone || '').trim() === userPhone) ||
-          (String(a.student_name || '').toLowerCase() === String(username).toLowerCase()) ||
-          (String(a.student_name || '').toLowerCase() === String(displayName).toLowerCase())
-        ).forEach(att => {
-          userActivities.push({
-            type: 'ATTENDANCE',
-            time: att.timestamp || att.date,
-            label: att.activity || 'Practice Session',
-            details: `${att.questions_attended || 0} Qs • ${att.duration_text || '0m'} • Result: ${att.score || 'Recorded'}`
-          });
-        });
-
-        allTrials.filter(t => 
-          (userPhone && String(t.phone || '').trim() === userPhone) ||
-          (String(t.student_name || '').toLowerCase() === String(username).toLowerCase()) ||
-          (String(t.student_name || '').toLowerCase() === String(displayName).toLowerCase())
-        ).forEach(tr => {
-          userActivities.push({
-            type: 'TRIAL',
-            time: tr.timestamp,
-            label: '⭐ Trial Exam Mode',
-            details: `Score: ${tr.score}/${tr.total_questions} (${Math.round((tr.score / (tr.total_questions || 1)) * 100)}%)`
-          });
-        });
+        const displayName = matchedUser?.name || username;
 
         return `
           <div class="user-logs-card">
             <div class="user-logs-header" onclick="toggleAccordion('log-group-${gIdx}')">
               <div style="display:flex; align-items:center; gap:12px;">
-                <span class="led-dot ${isOnlineNow ? 'led-green' : 'led-red'}"></span>
+                <span class="led-dot ${isLoggedOut ? 'led-red' : 'led-green'}"></span>
                 <div>
-                  <strong style="font-size:15.5px; color:var(--primary);">${escapeHtml(displayName)}</strong>
+                  <strong style="font-size:15px; color:var(--primary);">${escapeHtml(displayName)}</strong>
                   ${matchedUser ? `<span class="badge" style="margin-left:6px; font-size:11px;">Class ${matchedUser.class || '7'}-${matchedUser.division || 'A'}</span>` : ''}
                   <span style="font-size:12px; color:var(--text-muted); margin-left:8px;">
                     (${userLogs.length} session${userLogs.length > 1 ? 's' : ''})
@@ -4936,10 +5137,10 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
               </div>
 
               <div style="display:flex; align-items:center; gap:10px;">
-                <span class="badge ${isOnlineNow ? 'badge-success' : 'badge-warning'}">
-                  ${isOnlineNow ? '🟢 Active Now' : 'Last: ' + getRelativeTime(latestLog.timestamp || latestLog.login_time)}
+                <span class="badge" style="background:#f1f5f9; color:#475569; font-size:11.5px;">
+                  Last Login: ${formatDateStrict(latestLog.login_time || latestLog.timestamp)}
                 </span>
-                <button onclick="event.stopPropagation(); deleteUserAllLogs('${escapeHtml(username)}')" class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete all logs for this user">
+                <button onclick="event.stopPropagation(); deleteUserAllLogs('${escapeHtml(username)}')" class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete logs">
                   🗑️
                 </button>
                 <span>▾</span>
@@ -4953,69 +5154,26 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
                     <tr>
                       <th style="width: 45px;">S.No</th>
                       <th style="width: 90px;">Status</th>
-                      <th style="min-width: 140px;">Login Time</th>
-                      <th style="min-width: 140px;">Logout Time</th>
-                      <th style="min-width: 250px;">Activity History (With Time)</th>
+                      <th>Login Time</th>
+                      <th>Logout Time</th>
                       <th>Device Specifications</th>
                       <th style="width: 50px;">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${userLogs.map((l, lIdx) => {
-                      const sessionActive = (l.logout_time === 'Active Now');
-                      const loginStr = l.login_time || l.timestamp || '';
-                      const logoutStr = l.logout_time || '';
-
-                      const loginDate = parseCustomDate(loginStr) || new Date();
-                      const logoutDate = (sessionActive || !logoutStr || logoutStr === '-') 
-                        ? new Date() 
-                        : (parseCustomDate(logoutStr) || new Date());
-
-                      const sessionActivities = userActivities.filter(act => {
-                        const actDate = parseCustomDate(act.time);
-                        if (actDate && !isNaN(loginDate.getTime())) {
-                          return (actDate >= new Date(loginDate.getTime() - 7200000)) && (actDate <= new Date(logoutDate.getTime() + 1800000));
-                        }
-                        return act.time && loginStr && act.time.split(',')[0].trim() === loginStr.split(',')[0].trim();
-                      });
-
-                      let activityListHTML = '';
-                      if (sessionActivities.length > 0) {
-                        activityListHTML = sessionActivities.map(act => `
-                          <div style="font-size: 11.5px; line-height: 1.4; margin-bottom: 6px; padding: 6px 8px; background: #f8fafc; border-left: 3px solid var(--primary); border-radius: 6px; border: 1px solid #e2e8f0; border-left-width: 3px;">
-                            <div style="color: #64748b; font-weight: 700;">⏱️ ${formatDateStrict(act.time)}</div>
-                            <div style="color: #0f172a; font-weight: 800; margin: 1px 0;">${escapeHtml(act.label)}</div>
-                            <div style="color: #475569; font-weight: 600;">${escapeHtml(act.details)}</div>
-                          </div>
-                        `).join('');
-                      } else {
-                        let sessionDurationFormatted = '0m 00s';
-                        const startMs = loginDate ? loginDate.getTime() : 0;
-                        const endMs = logoutDate ? logoutDate.getTime() : startMs;
-                        if (startMs > 0 && endMs >= startMs) {
-                          const diffSec = Math.max(1, Math.round((endMs - startMs) / 1000));
-                          sessionDurationFormatted = `${Math.floor(diffSec / 60)}m ${diffSec % 60}s`;
-                        }
-
-                        activityListHTML = `
-                          <div style="font-size: 11.5px; line-height: 1.4; padding: 6px 8px; background: #f8fafc; border-left: 3px solid #3b82f6; border-radius: 6px; border: 1px solid #e2e8f0; border-left-width: 3px;">
-                            <div style="color: #64748b; font-weight: 700;">⏱️ ${formatDateStrict(loginStr)}</div>
-                            <div style="color: #1e40af; font-weight: 800; margin: 1px 0;">Daily USS Training Session</div>
-                            <div style="color: #475569; font-weight: 600;">0 Qs • ${sessionDurationFormatted} • Result: <span class="badge ${sessionActive ? 'badge-success' : ''}" style="font-size: 10.5px; padding: 1px 6px;">${sessionActive ? 'Active' : 'Completed'}</span></div>
-                          </div>
-                        `;
-                      }
+                      const hasLoggedOut = l.logout_time && l.logout_time !== 'Active Now' && l.logout_time !== '-';
+                      const logoutDisplay = hasLoggedOut ? formatDateStrict(l.logout_time) : '-';
 
                       return `
                         <tr>
                           <td>${lIdx + 1}</td>
                           <td><span class="badge ${l.login_status === 'SUCCESS' ? 'badge-success' : 'badge-danger'}">${l.login_status}</span></td>
-                          <td><b>${formatDateStrict(loginStr)}</b></td>
-                          <td>${sessionActive ? '<span class="badge badge-success">Active Now</span>' : formatDateStrict(logoutStr)}</td>
-                          <td>${activityListHTML}</td>
+                          <td><b>${formatDateStrict(l.login_time || l.timestamp)}</b></td>
+                          <td><b>${logoutDisplay}</b></td>
                           <td><small style="color:var(--text-muted); font-family:monospace; font-size:11px;">${escapeHtml(l.device || 'N/A')}</small></td>
                           <td>
-                            <button onclick="deleteSingleLog('${l.log_id || l.id}')" class="btn btn-outline" style="padding:3px 8px; color:var(--danger); font-size:12px;" title="Delete Entry">🗑️</button>
+                            <button onclick="deleteSingleLog('${l.log_id || l.id}')" class="btn btn-outline" style="padding:3px 8px; color:var(--danger); font-size:12px;">🗑️</button>
                           </td>
                         </tr>
                       `;
@@ -6109,6 +6267,7 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
       const studentPhone = String(currentUser.phone || '').trim();
       const requestId = 'REQ-' + Date.now();
       const formattedDT = formatDateStrict(new Date().toISOString());
+      logPortalActivity('RESET', `Requested re-practice reset for ${subFullName}`, 'Pending admin approval');
 
       setProgress(40);
       showToast('Sending reset request to Admin...', 'info');
@@ -6771,6 +6930,335 @@ function fallbackCopyText(text, count, prevSecurityState) {
         accuracy_percentage: accuracy,
         last_updated: new Date().toISOString()
       }], { onConflict: 'phone,subject' });
+    }
+
+    // =========================================================================
+// LOG PORTAL ACTIVITY TO SUPABASE portal_history TABLE
+// =========================================================================
+async function logPortalActivity(activityType, title, details = '') {
+  if (!currentUser) return;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-GB');
+  const timestampStr = formatDateStrict(now.toISOString());
+
+  try {
+    await supabaseClient.from('portal_history').insert([{
+      username: currentUser.username,
+      student_name: currentUser.name || currentUser.username,
+      phone: String(currentUser.phone || '').trim(),
+      class: String(currentUser.userClass || '7'),
+      division: String(currentUser.division || 'A'),
+      date: dateStr,
+      timestamp: timestampStr,
+      activity_type: activityType,
+      title: title,
+      details: details
+    }]);
+  } catch (err) {
+    console.warn("Could not log activity history:", err);
+  }
+}
+
+// =========================================================================
+    // TAB 12: PORTAL HISTORY TREE VIEW (STUDENTS & ADMIN)
+    // =========================================================================
+    async function loadHistoryData() {
+      if (!currentUser) return;
+      const isPrivileged = isStaffOrAdminUser(currentUser);
+
+      const heading = document.getElementById('history-page-heading');
+      const studentBox = document.getElementById('student-history-tree-container');
+      const adminBox = document.getElementById('admin-history-accordion-list');
+      const tabTitle = document.getElementById('tab-history-title');
+
+      if (isPrivileged) {
+        if (heading) heading.innerText = 'All Students Portal History (Tab 12)';
+        if (tabTitle) tabTitle.innerText = 'Students History';
+        if (studentBox) studentBox.style.display = 'none';
+        if (adminBox) adminBox.style.display = 'block';
+
+        // Admin view: fetch all users and their history
+        const { data: allHistory } = await supabaseClient
+          .from('portal_history')
+          .select('*')
+          .order('id', { ascending: false });
+
+        renderAdminHistoryAccordions(allHistory || []);
+      } else {
+        if (heading) heading.innerText = 'My Activity History (Tab 12)';
+        if (tabTitle) tabTitle.innerText = 'My History';
+        if (studentBox) studentBox.style.display = 'block';
+        if (adminBox) adminBox.style.display = 'none';
+
+        // Student view: fetch own history
+        const { data: myHistory } = await supabaseClient
+          .from('portal_history')
+          .select('*')
+          .eq('phone', String(currentUser.phone || '').trim())
+          .order('id', { ascending: false });
+
+        renderDateWiseHistoryTree(studentBox, myHistory || []);
+      }
+    }
+
+    // Helper: builds an expandable tree view per date
+    function renderDateWiseHistoryTree(targetElement, records) {
+      if (!records || records.length === 0) {
+        targetElement.innerHTML = `<div style="text-align:center; padding:25px; color:var(--text-muted); font-size:13.5px;">No portal history recorded yet. Complete practice sessions or exams to see your timeline!</div>`;
+        return;
+      }
+
+      // Group by Date
+      const dateGroups = {};
+      records.forEach(r => {
+        const d = r.date || (r.timestamp ? r.timestamp.split(',')[0].trim() : 'General');
+        if (!dateGroups[d]) dateGroups[d] = [];
+        dateGroups[d].push(r);
+      });
+
+      // Sort dates descending
+      const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+        const tA = parseCustomDate(a)?.getTime() || 0;
+        const tB = parseCustomDate(b)?.getTime() || 0;
+        return tB - tA;
+      });
+
+      targetElement.innerHTML = sortedDates.map((dateStr, dIdx) => {
+        const events = dateGroups[dateStr];
+
+        return `
+          <div style="margin-bottom: 18px; border-left: 3px solid #3b82f6; padding-left: 14px; position: relative;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+              <span style="font-size:16px;">📅</span>
+              <strong style="font-size:14.5px; color:var(--primary);">${escapeHtml(dateStr)}</strong>
+              <span class="badge" style="background:#eff6ff; color:#1e40af; font-size:11px;">${events.length} Activit${events.length > 1 ? 'ies' : 'y'}</span>
+            </div>
+
+            <!-- Tree Branches -->
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${events.map(ev => {
+                let icon = '📌';
+                if (ev.activity_type === 'LOGIN') icon = '🔑';
+                else if (ev.activity_type === 'LOGOUT') icon = '🚪';
+                else if (ev.activity_type === 'PRACTICE') icon = '📖';
+                else if (ev.activity_type === 'TRIAL') icon = '⭐';
+                else if (ev.activity_type === 'RESET') icon = '🔄';
+
+                return `
+                  <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-muted); margin-bottom:3px;">
+                      <span>${icon} <strong>${escapeHtml(ev.title)}</strong></span>
+                      <span style="font-weight:700;">⏱️ ${formatDateStrict(ev.timestamp)}</span>
+                    </div>
+                    ${ev.details ? `<div style="font-size:12.5px; color:#475569; padding-left:20px;">${escapeHtml(ev.details)}</div>` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Admin view: Collapsible student list (A to Z) with individual history trees
+    function renderAdminHistoryAccordions(allHistory) {
+      const container = document.getElementById('admin-history-accordion-list');
+      const users = (cachedAdminData?.users || []).filter(u => !isStaffOrAdminUser(u));
+
+      users.sort((a, b) => (a.name || a.username).localeCompare(b.name || b.username));
+
+      if (users.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No students enrolled.</p>';
+        return;
+      }
+
+      container.innerHTML = users.map((st, sIdx) => {
+        const studentRecords = allHistory.filter(h => 
+          String(h.phone || '').trim() === String(st.phone || '').trim() ||
+          String(h.username || '').toLowerCase() === String(st.username || '').toLowerCase()
+        );
+
+        return `
+          <div class="accordion-item">
+            <div class="accordion-header" onclick="toggleAccordion('hist-tree-acc-${sIdx}')">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <strong>${sIdx + 1}. ${escapeHtml(st.name)}</strong>
+                <span class="badge" style="font-size:11px;">Class ${st.class || '7'}-${st.division || 'A'}</span>
+                <span style="font-size:12px; color:var(--text-muted);">(${studentRecords.length} records)</span>
+              </div>
+              <div>▾</div>
+            </div>
+            <div class="accordion-body" id="hist-tree-acc-${sIdx}">
+              <div id="hist-branch-${sIdx}"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      users.forEach((st, sIdx) => {
+        const branchBox = document.getElementById(`hist-branch-${sIdx}`);
+        const studentRecords = allHistory.filter(h => 
+          String(h.phone || '').trim() === String(st.phone || '').trim() ||
+          String(h.username || '').toLowerCase() === String(st.username || '').toLowerCase()
+        );
+        if (branchBox) renderDateWiseHistoryTree(branchBox, studentRecords);
+      });
+    }
+
+    // =========================================================================
+    // TAB 13: OFFLINE EXAM SCORES (ADMIN ENTRY & METRICS CALCULATION)
+    // =========================================================================
+    function populateOfflineExamStudents() {
+      const sel = document.getElementById('off-student-select');
+      if (!sel) return;
+      const students = (cachedAdminData?.users || []).filter(u => !isStaffOrAdminUser(u));
+
+      students.sort((a, b) => (a.name || a.username).localeCompare(b.name || b.username));
+      sel.innerHTML = '<option value="">-- Choose Student --</option>' + 
+        students.map(s => `<option value="${s.username}" data-phone="${s.phone}" data-name="${escapeHtml(s.name)}" data-fl="${s.first_language || 'MI'}" data-class="${s.class || '7'}" data-div="${s.division || 'A'}">${escapeHtml(s.name)} (Class ${s.class || '7'}-${s.division || 'A'}) [${s.first_language || 'MI'}]</option>`).join('');
+    }
+
+    function onOfflineStudentChange() {
+      const sel = document.getElementById('off-student-select');
+      const opt = sel.options[sel.selectedIndex];
+      if (!opt || !opt.value) return;
+
+      const fl = opt.getAttribute('data-fl') || 'MI';
+      document.getElementById('off-fl-subject').value = fl;
+      document.getElementById('off-fl-subject-display').value = `${fl} (${getFullSubjectName(fl)})`;
+      document.getElementById('lbl-off-fl').innerText = `${fl} Score / Out of`;
+    }
+
+    function calcOfflineTotal() {
+      const fields = ['fl', 'mii', 'mm', 'eng', 'bs', 'ss'];
+      let totalScore = 0;
+      let totalOut = 0;
+
+      fields.forEach(f => {
+        const s = parseFloat(document.getElementById(`off-${f}-score`).value) || 0;
+        const o = parseFloat(document.getElementById(`off-${f}-out`).value) || 0;
+        totalScore += s;
+        totalOut += o;
+      });
+
+      const pct = totalOut > 0 ? Math.round((totalScore / totalOut) * 100) : 0;
+      const badge = document.getElementById('off-calc-badge');
+      if (badge) badge.innerText = `${totalScore} / ${totalOut} (${pct}%)`;
+    }
+
+    async function handleSaveOfflineExam(e) {
+      e.preventDefault();
+      const sel = document.getElementById('off-student-select');
+      const opt = sel.options[sel.selectedIndex];
+      if (!opt || !opt.value) {
+        showToast('Please select a student!', 'danger');
+        return;
+      }
+
+      const username = opt.value;
+      const studentName = opt.getAttribute('data-name');
+      const phone = opt.getAttribute('data-phone');
+      const userClass = opt.getAttribute('data-class');
+      const division = opt.getAttribute('data-div');
+      const flSubject = document.getElementById('off-fl-subject').value || 'MI';
+
+      const fields = ['fl', 'mii', 'mm', 'eng', 'bs', 'ss'];
+      let totalScore = 0;
+      let totalOut = 0;
+      fields.forEach(f => {
+        totalScore += parseFloat(document.getElementById(`off-${f}-score`).value) || 0;
+        totalOut += parseFloat(document.getElementById(`off-${f}-out`).value) || 0;
+      });
+      const pct = totalOut > 0 ? Number(((totalScore / totalOut) * 100).toFixed(1)) : 0;
+
+      const examDateInput = document.getElementById('off-exam-date').value;
+      const dObj = examDateInput ? new Date(examDateInput) : new Date();
+      const formattedDate = dObj.toLocaleDateString('en-GB');
+      const formattedDT = formatDateStrict(dObj.toISOString());
+
+      const examRecord = {
+        exam_id: 'OFF-' + Date.now(),
+        username: username,
+        student_name: studentName,
+        phone: phone,
+        class: userClass,
+        division: division,
+        exam_name: document.getElementById('off-exam-name').value.trim(),
+        exam_date: formattedDate,
+        timestamp: formattedDT,
+        fl_subject: flSubject,
+        fl_score: parseFloat(document.getElementById('off-fl-score').value) || 0,
+        fl_outof: parseFloat(document.getElementById('off-fl-out').value) || 0,
+        mii_score: parseFloat(document.getElementById('off-mii-score').value) || 0,
+        mii_outof: parseFloat(document.getElementById('off-mii-out').value) || 0,
+        mm_score: parseFloat(document.getElementById('off-mm-score').value) || 0,
+        mm_outof: parseFloat(document.getElementById('off-mm-out').value) || 0,
+        eng_score: parseFloat(document.getElementById('off-eng-score').value) || 0,
+        eng_outof: parseFloat(document.getElementById('off-eng-out').value) || 0,
+        bs_score: parseFloat(document.getElementById('off-bs-score').value) || 0,
+        bs_outof: parseFloat(document.getElementById('off-bs-out').value) || 0,
+        ss_score: parseFloat(document.getElementById('off-ss-score').value) || 0,
+        ss_outof: parseFloat(document.getElementById('off-ss-out').value) || 0,
+        total_score: totalScore,
+        total_outof: totalOut,
+        percentage: pct
+      };
+
+      setProgress(40);
+      const { error } = await supabaseClient.from('offline_exams').insert([examRecord]);
+      setProgress(100);
+
+      if (!error) {
+        showToast('Offline exam record saved successfully!', 'success');
+        document.getElementById('offline-exam-form').reset();
+        calcOfflineTotal();
+        loadOfflineExamsAdmin();
+      } else {
+        showToast('Failed to save exam: ' + error.message, 'danger');
+      }
+    }
+
+    async function loadOfflineExamsAdmin() {
+      const tbody = document.getElementById('admin-offline-exams-body');
+      if (!tbody) return;
+
+      const { data: list } = await supabaseClient
+        .from('offline_exams')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;">No records entered yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map((item, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><b>${escapeHtml(item.student_name)}</b><br><small style="color:var(--text-muted);">${item.class}-${item.division}</small></td>
+          <td><b>${escapeHtml(item.exam_name)}</b></td>
+          <td>${item.exam_date}</td>
+          <td>${item.fl_score}/${item.fl_outof} <small>(${item.fl_subject})</small></td>
+          <td>${item.mii_score}/${item.mii_outof}</td>
+          <td>${item.mm_score}/${item.mm_outof}</td>
+          <td>${item.eng_score}/${item.eng_outof}</td>
+          <td>${item.bs_score}/${item.bs_outof}</td>
+          <td>${item.ss_score}/${item.ss_outof}</td>
+          <td><b style="color:var(--primary);">${item.total_score}/${item.total_outof}</b></td>
+          <td><span class="badge ${item.percentage >= 70 ? 'badge-success' : 'badge-warning'}">${item.percentage}%</span></td>
+          <td>
+            <button onclick="deleteOfflineExam('${item.exam_id}')" class="btn btn-outline" style="padding:3px 7px; color:var(--danger);" title="Delete Record">🗑️</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function deleteOfflineExam(examId) {
+      showConfirmModal('Delete Exam Score', 'Permanently delete this offline exam record?', async () => {
+        await supabaseClient.from('offline_exams').delete().eq('exam_id', examId);
+        showToast('Record deleted.', 'info');
+        loadOfflineExamsAdmin();
+      });
     }
 
   </script>
