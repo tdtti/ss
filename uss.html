@@ -1920,6 +1920,7 @@
         setupPresenceTracker();
         setupSingleSessionGuard();
       }
+      
 
       document.getElementById('login-form').addEventListener('submit', handleLogin);
       
@@ -1952,84 +1953,41 @@
       updateNetworkStatus();
     });
 
-    // =========================================================================
-    // FULL UPDATED GET TODAY ELAPSED SECONDS (CROSS-DEVICE & SUPABASE BACKED)
-    // =========================================================================
-    function getTodayElapsedSeconds(phoneOrUser) {
-      const todayIso = typeof getTodayDateIso === 'function' ? getTodayDateIso() : (() => {
-        const d = new Date();
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-      })();
+    // Authoritative elapsed seconds (Reads database first, then local ticker)
+function getTodayElapsedSeconds(phoneOrUser) {
+  const todayIso = getTodayDateIso();
+  const targetId = String(phoneOrUser || currentUser?.username || currentUser?.phone || '').trim().toLowerCase();
 
-      const cleanDate = new Date().toLocaleDateString('en-GB');
+  let maxSeconds = 0;
 
-      // 1. Identify Target Identifier(s)
-      const targetPhone = String(
-        phoneOrUser || currentUser?.phone || ''
-      ).trim();
-
-      const targetUsername = String(
-        phoneOrUser || currentUser?.username || ''
-      ).trim();
-
-      let maxSeconds = 0;
-
-      // 2. Read from in-memory accumulator (active ticking clock)
-      if (typeof cachedTodayUsedSeconds === 'number' && cachedTodayUsedSeconds > 0) {
-        // Only credit in-memory seconds if querying the logged-in student
-        if (!phoneOrUser || phoneOrUser === currentUser?.phone || phoneOrUser === currentUser?.username) {
-          maxSeconds = Math.max(maxSeconds, cachedTodayUsedSeconds);
-        }
-      }
-
-      // 3. Check LocalStorage across both phone and username keys
-      if (targetPhone) {
-        const localPhoneSec = parseInt(localStorage.getItem(`usage_${targetPhone}_${todayIso}`) || '0', 10);
-        if (!isNaN(localPhoneSec)) maxSeconds = Math.max(maxSeconds, localPhoneSec);
-      }
-      if (targetUsername) {
-        const localUserSec = parseInt(localStorage.getItem(`usage_${targetUsername}_${todayIso}`) || '0', 10);
-        if (!isNaN(localUserSec)) maxSeconds = Math.max(maxSeconds, localUserSec);
-      }
-
-      // 4. Cross-check cached Supabase Attendance Table (Prevent reset on device switch)
-      if (window.cachedAdminData && Array.isArray(cachedAdminData.allAttendance)) {
-        const studentTodayLogs = cachedAdminData.allAttendance.filter(a => {
-          const matchPhone = targetPhone && String(a.phone || '').trim() === targetPhone;
-          const matchDate = (a.date === cleanDate) || 
-                            (a.attendance_id && a.attendance_id.includes(todayIso)) ||
-                            (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate);
-          return matchPhone && matchDate;
-        });
-
-        let dbSumSec = 0;
-        studentTodayLogs.forEach(a => {
-          dbSumSec += (Number(a.duration_seconds) || 0);
-        });
-
-        if (dbSumSec > 0) {
-          maxSeconds = Math.max(maxSeconds, dbSumSec);
-        }
-      }
-
-      return maxSeconds;
+  // Active in-memory ticking clock
+  if (typeof cachedTodayUsedSeconds === 'number' && cachedTodayUsedSeconds > 0) {
+    if (!phoneOrUser || phoneOrUser === currentUser?.username || phoneOrUser === currentUser?.phone) {
+      maxSeconds = Math.max(maxSeconds, cachedTodayUsedSeconds);
     }
+  }
+
+  // LocalStorage check for current device
+  if (targetId) {
+    const localSec = parseInt(localStorage.getItem(`usage_${targetId}_${todayIso}`) || '0', 10);
+    if (!isNaN(localSec)) maxSeconds = Math.max(maxSeconds, localSec);
+  }
+
+  return maxSeconds;
+}
     
     function getTodayDateIso() {
-      const d = new Date();
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    }
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
 
     function getTodayKey(phoneOrUser) {
-      const id = phoneOrUser || currentUser?.phone || currentUser?.username || 'user';
-      return `usage_${id}_${getTodayDateIso()}`;
-    }
+  const id = phoneOrUser || currentUser?.username || currentUser?.phone || 'user';
+  return `usage_${id}_${getTodayDateIso()}`;
+}
 
     
 
@@ -2052,39 +2010,43 @@
       checkAndEnforceQuota(getTodayElapsedSeconds());
     }
 
-    async function fetchSupabaseDailyUsage(userOrPhone) {
-      if (!userOrPhone) return 0;
-      try {
-        const todayIso = getTodayDateIso();
-        const cleanId = String(userOrPhone).trim();
-        
-        // Match primary attendance_id by clean username
-        let { data } = await supabaseClient
-          .from('attendance')
-          .select('duration_seconds')
-          .eq('attendance_id', `ATT-${cleanId}-${todayIso}-DAILY`)
-          .maybeSingle();
+    // Fetches the authoritative daily usage from Supabase attendance table
+async function fetchSupabaseDailyUsage(usernameOrPhone) {
+  if (!usernameOrPhone) return 0;
+  try {
+    const todayIso = getTodayDateIso();
+    const cleanUser = String(currentUser?.username || usernameOrPhone).trim().toLowerCase();
+    const cleanPhone = String(currentUser?.phone || usernameOrPhone).trim();
 
-        if (data && typeof data.duration_seconds === 'number') {
-          return data.duration_seconds;
-        }
+    // 1. Check exact DAILY tracking record for this student for today
+    const { data: dailyRow, error } = await supabaseClient
+      .from('attendance')
+      .select('duration_seconds, score')
+      .or(`attendance_id.eq."ATT-${cleanUser}-${todayIso}-DAILY",attendance_id.eq."ATT-${cleanPhone}-${todayIso}-DAILY"`)
+      .maybeSingle();
 
-        // Fallback match by phone number
-        let { data: phoneData } = await supabaseClient
-          .from('attendance')
-          .select('duration_seconds')
-          .eq('phone', cleanId)
-          .eq('date', new Date().toLocaleDateString('en-GB'))
-          .maybeSingle();
-
-        if (phoneData && typeof phoneData.duration_seconds === 'number') {
-          return phoneData.duration_seconds;
-        }
-      } catch (err) {
-        console.warn("Daily usage fetch note:", err);
-      }
-      return 0;
+    if (!error && dailyRow && typeof dailyRow.duration_seconds === 'number') {
+      return dailyRow.duration_seconds;
     }
+
+    // 2. Fallback: Aggregate attendance records registered today
+    const cleanDate = new Date().toLocaleDateString('en-GB');
+    const { data: todayLogs } = await supabaseClient
+      .from('attendance')
+      .select('duration_seconds')
+      .or(`username.ilike."${cleanUser}",phone.eq."${cleanPhone}"`)
+      .eq('date', cleanDate);
+
+    if (todayLogs && todayLogs.length > 0) {
+      let sum = 0;
+      todayLogs.forEach(l => sum += (Number(l.duration_seconds) || 0));
+      return sum;
+    }
+  } catch (err) {
+    console.warn("Could not query daily usage from Supabase:", err);
+  }
+  return 0;
+}
 
     function isStudentActivelyFocused() {
       if (!currentUser || isStaffOrAdminUser(currentUser)) return false;
@@ -2210,122 +2172,114 @@
       if (quotaText) quotaText.innerText = '0m 00s (Expired)';
     }
 
-    async function saveLiveAttendanceProgress(totalSecondsToday) {
-      if (!currentUser || isStaffOrAdminUser(currentUser)) return;
-      const cleanDate = new Date().toLocaleDateString('en-GB');
+    // Periodically syncs active seconds directly to Supabase
+async function saveLiveAttendanceProgress(totalSecondsToday) {
+  if (!currentUser || isStaffOrAdminUser(currentUser)) return;
+  const cleanDate = new Date().toLocaleDateString('en-GB');
+  const todayIso = getTodayDateIso();
+  const mins = Math.floor(totalSecondsToday / 60);
+  const secs = totalSecondsToday % 60;
+  const cleanUser = String(currentUser.username || '').trim().toLowerCase();
+
+  const attendanceEntry = {
+    attendance_id: `ATT-${cleanUser}-${todayIso}-DAILY`,
+    username: cleanUser,
+    student_name: currentUser.name || currentUser.username,
+    phone: String(currentUser.phone || '').trim(),
+    class: String(currentUser.userClass || '7'),
+    division: String(currentUser.division || 'A'),
+    date: cleanDate,
+    timestamp: formatDateStrict(new Date().toISOString()),
+    activity: 'Daily USS Training Session',
+    duration_seconds: totalSecondsToday,
+    duration_text: `${mins}m ${String(secs).padStart(2, '0')}s`,
+    questions_attended: sessionAnswersLog.length || 0,
+    score: totalSecondsToday >= DAILY_MAX_QUOTA_SECONDS ? 'Quota Reached' : 'Active'
+  };
+
+  try {
+    await supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' });
+  } catch(e) {
+    console.warn("Attendance upsert note:", e);
+  }
+}
+
+    // =========================================================================
+// ADMIN ACTION: RESTORE/ADD 60M DAILY QUOTA FOR ANY DEVICE
+// =========================================================================
+async function adminResetStudentQuota(phone, username, studentName) {
+  if (!isStaffOrAdminUser(currentUser)) {
+    showToast('⚠️ Unauthorized: Admin privilege required.', 'danger');
+    return;
+  }
+
+  showConfirmModal(
+    '🔄 Restore Daily 60m Quota',
+    `Allow another 60 minutes for ${studentName || username} (${phone}) on all devices? This will reset usage to 0m and allow fresh practice today.`,
+    async () => {
+      setProgress(30);
+
       const todayIso = getTodayDateIso();
-      const mins = Math.floor(totalSecondsToday / 60);
-      const secs = totalSecondsToday % 60;
-      const cleanUser = String(currentUser.username || '').trim();
+      const cleanDate = new Date().toLocaleDateString('en-GB');
+      const cleanPhone = String(phone).trim();
+      const cleanUser = String(username).trim().toLowerCase();
+      const dailyAttId = `ATT-${cleanUser}-${todayIso}-DAILY`;
 
-      const attendanceEntry = {
-        attendance_id: `ATT-${cleanUser}-${todayIso}-DAILY`,
-        student_name: currentUser.name || currentUser.username,
-        phone: String(currentUser.phone || '').trim(),
-        class: String(currentUser.userClass || '7'),
-        division: String(currentUser.division || 'A'),
-        date: cleanDate,
-        timestamp: formatDateStrict(new Date().toISOString()),
-        activity: 'Daily USS Training Session',
-        duration_seconds: totalSecondsToday,
-        duration_text: `${mins}m ${String(secs).padStart(2, '0')}s`,
-        questions_attended: sessionAnswersLog.length || 0,
-        score: 'Active'
-      };
+      // 1. Wipe local keys on admin device
+      localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
+      localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
 
+      // 2. Set authoritative Supabase row duration to 0 seconds
       try {
-        await supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' });
-      } catch(e) {}
-    }
-
-    // =========================================================================
-    // ADMIN ACTION: RESTORE 60M DAILY QUOTA FOR A SPECIFIC STUDENT
-    // =========================================================================
-    async function adminResetStudentQuota(phone, username, studentName) {
-      if (!isStaffOrAdminUser(currentUser)) {
-        showToast('⚠️ Unauthorized: Admin privilege required.', 'danger');
-        return;
+        await supabaseClient
+          .from('attendance')
+          .upsert([{
+            attendance_id: dailyAttId,
+            username: cleanUser,
+            student_name: studentName,
+            phone: cleanPhone,
+            date: cleanDate,
+            timestamp: formatDateStrict(new Date().toISOString()),
+            activity: 'Quota Restored by Admin',
+            duration_seconds: 0,
+            duration_text: '0m 00s',
+            score: 'Quota Restored (+60m)'
+          }], { onConflict: 'attendance_id' });
+      } catch (e) {
+        console.warn("Quota reset error in DB:", e);
       }
 
-      showConfirmModal(
-        '🔄 Restore Daily 60m Quota',
-        `Restore today's 60-minute allowance for ${studentName || username} (${phone})? This will immediately reset Cumulative Usage to 0 and Time Left to 60m.`,
-        async () => {
-          setProgress(30);
+      // 3. Broadcast remote unlock signal to any active device the student is on
+      try {
+        const studentGuardChannel = supabaseClient.channel('guard_' + cleanUser);
+        await studentGuardChannel.subscribe();
+        await studentGuardChannel.send({
+          type: 'broadcast',
+          event: 'admin_reset_quota',
+          payload: { phone: cleanPhone, username: cleanUser, resetTime: Date.now() }
+        });
+      } catch (e) {}
 
-          const todayIso = getTodayDateIso();
-          const cleanDate = new Date().toLocaleDateString('en-GB');
-          const cleanPhone = String(phone).trim();
-          const cleanUser = String(username).trim();
+      // 4. Send Notification to Student
+      try {
+        await supabaseClient.from('notifications').insert([{
+          notification_id: 'NOTIF-' + Date.now(),
+          timestamp: formatDateStrict(new Date().toISOString()),
+          recipient_phone: cleanPhone,
+          title: 'Daily Practice Quota Restored',
+          message: `Your 60-minute daily practice allowance has been restored by Administrator for today (${cleanDate}). You have an additional 60m remaining.`,
+          sender: 'Administrator'
+        }]);
+      } catch (e) {}
 
-          // 1. Wipe local keys
-          localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
-          localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
+      setProgress(100);
+      showToast(`Quota restored! 60 minutes granted for ${studentName || username}.`, 'success');
 
-          // 2. INSTANT IN-MEMORY REFLECTION IN CACHED ADMIN DATA (TAB 5 & TAB 10)
-          if (cachedAdminData && cachedAdminData.allAttendance) {
-            const todayAttIndex = cachedAdminData.allAttendance.findIndex(a =>
-              String(a.phone).trim() === cleanPhone &&
-              (a.date === cleanDate || (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate))
-            );
-            if (todayAttIndex !== -1) {
-              cachedAdminData.allAttendance[todayAttIndex].duration_seconds = 0;
-              cachedAdminData.allAttendance[todayAttIndex].duration_text = '0m 00s';
-            }
-          }
-
-          // 3. Clear in Supabase attendance table
-          try {
-            const dailyAttId = `ATT-${cleanUser}-${todayIso}-DAILY`;
-            await supabaseClient
-              .from('attendance')
-              .upsert([{
-                attendance_id: dailyAttId,
-                student_name: studentName,
-                phone: cleanPhone,
-                date: cleanDate,
-                duration_seconds: 0,
-                duration_text: '0m 00s',
-                score: 'Reset by Admin'
-              }], { onConflict: 'attendance_id' });
-          } catch (e) {}
-
-          // 4. Remote unlock signal to student device
-          // AFTER (Explicit REST Delivery via httpSend):
-try {
-  const studentGuardChannel = supabaseClient.channel('guard_' + cleanUser);
-  if (typeof studentGuardChannel.httpSend === 'function') {
-    await studentGuardChannel.httpSend('admin_reset_quota', { phone: cleanPhone, username: cleanUser });
-  } else {
-    await studentGuardChannel.send({
-      type: 'broadcast',
-      event: 'admin_reset_quota',
-      payload: { phone: cleanPhone, username: cleanUser }
-    });
-  }
-} catch (e) {}
-
-          // 5. Send notification to student's inbox
-          try {
-            await supabaseClient.from('notifications').insert([{
-              notification_id: 'NOTIF-' + Date.now(),
-              timestamp: formatDateStrict(new Date().toISOString()),
-              recipient_phone: cleanPhone,
-              title: 'Daily Practice Quota Restored',
-              message: `Your 60-minute daily practice allowance has been restored by Administrator for today (${cleanDate}). You have 60m remaining.`,
-              sender: 'Administrator'
-            }]);
-          } catch (e) {}
-
-          setProgress(100);
-          showToast(`60m Quota restored! Cumulative Usage is now 0m and Time Left is 60m.`, 'success');
-
-          // 6. INSTANT RE-RENDER: Redraw Tab 5 and Tab 10 with 0m usage and 60m left
-          await loadAdminData();
-          renderAllUsersOnlineCards();
-        }
-      );
+      await loadAdminData();
+      renderAllUsersOnlineCards();
     }
+  );
+}
 
     // =========================================================================
     // SECURITY PROTECTION (TEXT SELECTION INACTIVE)
@@ -4082,40 +4036,58 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
       );
     }
 
-    function renderStudentAttendance(attLogs, verifiedTotalQuestions) {
-      let totalSec = 0;
-      const activeDaysSet = new Set();
+    // =========================================================================
+// RENDER DETAILED ATTENDANCE LOG (NEWEST SESSIONS AT THE TOP)
+// =========================================================================
+function renderStudentAttendance(attLogs, verifiedTotalQuestions) {
+  let totalSec = 0;
+  const activeDaysSet = new Set();
 
-      attLogs.forEach(item => {
-        totalSec += (Number(item.duration_seconds) || 0);
-        if (item.date) activeDaysSet.add(item.date);
-        else if (item.timestamp) activeDaysSet.add(item.timestamp.split(',')[0]);
-      });
+  attLogs.forEach(item => {
+    totalSec += (Number(item.duration_seconds) || 0);
+    if (item.date) activeDaysSet.add(item.date);
+    else if (item.timestamp) activeDaysSet.add(item.timestamp.split(',')[0]);
+  });
 
-      const todaySeconds = getTodayElapsedSeconds();
-      const combinedSec = Math.max(totalSec, todaySeconds);
-      const totalMins = Math.round(combinedSec / 60);
+  const todaySeconds = getTodayElapsedSeconds();
+  const combinedSec = Math.max(totalSec, todaySeconds);
+  const totalMins = Math.round(combinedSec / 60);
 
-      document.getElementById('att-total-time').innerText = totalMins > 0 ? `${totalMins} mins` : `${combinedSec}s`;
-      document.getElementById('att-total-days').innerText = `${Math.max(1, activeDaysSet.size)} Days`;
+  document.getElementById('att-total-time').innerText = totalMins > 0 ? `${totalMins} mins` : `${combinedSec}s`;
+  document.getElementById('att-total-days').innerText = `${Math.max(1, activeDaysSet.size)} Days`;
 
-      const tbody = document.getElementById('portfolio-attendance-body');
-      if (attLogs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No past attendance records found. Practice sessions will appear here!</td></tr>';
-        return;
-      }
+  const tbody = document.getElementById('portfolio-attendance-body');
+  if (!tbody) return;
 
-      tbody.innerHTML = attLogs.map(item => `
-        <tr>
-          <td><b>${item.date || item.timestamp?.split(',')[0] || '-'}</b></td>
-          <td>${item.timestamp?.split(',')[1] || item.timestamp || '-'}</td>
-          <td><span class="badge">${escapeHtml(item.activity)}</span></td>
-          <td><b>${item.duration_text || Math.round((item.duration_seconds || 0)/60) + 'm'}</b></td>
-          <td><b>${verifiedTotalQuestions !== undefined ? verifiedTotalQuestions : (item.questions_attended || 0)}</b></td>
-          <td><b>${item.score || '-'}</b></td>
-        </tr>
-      `).join('');
-    }
+  if (!attLogs || attLogs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted);">No past attendance records found. Practice sessions will appear here!</td></tr>';
+    return;
+  }
+
+  // SORT CHRONOLOGICALLY DESCENDING: Latest Date & Time at the top
+  const sortedLogs = [...attLogs].sort((a, b) => {
+    const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
+    const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
+    return timeB - timeA; // Descending
+  });
+
+  tbody.innerHTML = sortedLogs.map(item => {
+    const parts = (item.timestamp || '').split(',');
+    const dateFormatted = item.date || (parts[0] ? parts[0].trim() : '-');
+    const timeFormatted = parts[1] ? parts[1].trim() : '-';
+
+    return `
+      <tr>
+        <td><b>${escapeHtml(dateFormatted)}</b></td>
+        <td><small style="color:var(--text-muted); font-weight:700;">${escapeHtml(timeFormatted)}</small></td>
+        <td><span class="badge" style="background:#eff6ff; color:#1e40af;">${escapeHtml(item.activity || 'Practice Session')}</span></td>
+        <td><b>${escapeHtml(item.duration_text || Math.round((item.duration_seconds || 0)/60) + 'm')}</b></td>
+        <td><b>${item.questions_attended || 0}</b></td>
+        <td><span class="badge ${item.score?.includes('/') ? 'badge-success' : 'badge-warning'}">${escapeHtml(item.score || 'Completed')}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
 
     function renderStudentDashboardAndOverview(resData, totalElId, accElId, strongContainerId, weakContainerId, overviewTbodyId, trialBoxId, trialContainerId, auditTbodyId) {
       const combinedAnswers = resData.detailedAnswers || [];
@@ -4903,38 +4875,53 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
       }
 
       // -----------------------------------------------------------------------
-      // TAB 9: STUDENT OPTIMIZATION ANALYTICS
+      // TAB 9: STUDENT OPTIMIZATION ANALYTICS (SORTED BY OVERALL ACCURACY %)
       // -----------------------------------------------------------------------
       const optAccordion = document.getElementById('manage-users-analytics-accordion');
       if (optAccordion) {
         const scoredStudents = studentsOnly.map(st => {
           const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name);
-          const scoreMetric = metrics.total > 0 ? Number(((metrics.accuracy / metrics.total) * 100).toFixed(2)) : 0;
-
           return {
             user: st,
             total: metrics.total,
             correct: metrics.correct,
-            accuracy: metrics.accuracy,
-            scoreMetric,
+            accuracy: metrics.accuracy, // Overall Accuracy %
             combined: metrics.combined
           };
-        }).sort((a, b) => (b.scoreMetric - a.scoreMetric) || (b.accuracy - a.accuracy) || (b.total - a.total));
+        }).sort((a, b) => {
+          // 1. Primary Sort: Highest Overall Accuracy First (Descending)
+          if (b.accuracy !== a.accuracy) {
+            return b.accuracy - a.accuracy;
+          }
+          // 2. Secondary Sort: If accuracy is tied, student with more answered questions ranks higher
+          if (b.total !== a.total) {
+            return b.total - a.total;
+          }
+          // 3. Alphabetical tie-breaker
+          return String(a.user.name || '').localeCompare(String(b.user.name || ''));
+        });
 
         optAccordion.innerHTML = scoredStudents.map((item, idx) => `
           <div class="accordion-item" style="margin-bottom:12px;">
             <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')">
               <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <span class="badge ${idx < 3 ? 'badge-success' : 'badge-warning'}" style="font-weight:900;">#${idx + 1} Top Scorer</span>
+                <span class="badge ${idx < 3 ? 'badge-success' : (item.accuracy >= 70 ? 'badge-success' : 'badge-warning')}" style="font-weight:900;">
+                  #${idx + 1}
+                </span>
                 <strong>${escapeHtml(item.user.name)}</strong> — Class ${item.user.class || '7'}-${item.user.division || 'A'}
-                <span class="badge" style="background:#eff6ff; color:#1e40af;">Metric: ${item.scoreMetric}</span>
+                <span class="badge badge-success" style="font-size:12px; font-weight:800;">
+                  Accuracy: ${item.accuracy}%
+                </span>
+                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">
+                  (${item.correct}/${item.total} Correct)
+                </span>
               </div>
               <div>▾</div>
             </div>
             <div class="accordion-body" id="opt-acc-${idx}">
               <div class="stats-grid">
-                <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Total Answered</p><h3 id="opt-tot-${idx}">${item.total}</h3></div>
-                <div class="card" style="margin:0;"><p style="margin:0; font-size:12px; color:var(--text-muted);">Overall Accuracy</p><h3 id="opt-acc-val-${idx}">${item.accuracy}%</h3></div>
+                <div class="card" style="margin:0; background:#f8fafc;"><p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Answered</p><h3 id="opt-tot-${idx}">${item.total}</h3></div>
+                <div class="card" style="margin:0; background:#f8fafc;"><p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Overall Accuracy</p><h3 id="opt-acc-val-${idx}">${item.accuracy}%</h3></div>
               </div>
               <div class="grid-2" style="margin-bottom:20px;">
                 <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px;">
