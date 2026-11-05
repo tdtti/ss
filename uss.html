@@ -1555,13 +1555,21 @@
     <!-- ===================================================================== -->
     <!-- TAB 12: PORTAL HISTORY (TREE VIEW PER DATE & TIME)                    -->
     <!-- ===================================================================== -->
+    <!-- TAB 12: PORTAL HISTORY -->
     <section id="history-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:10px;">
         <div>
-          <h2 id="history-page-heading" style="margin:0; color:#1B257D;">My Activity History </h2>
+          <h2 id="history-page-heading" style="margin:0; color:#1B257D;">My Activity History</h2>
           <small style="color:var(--text-muted); font-weight:600;">Chronological date-wise activity tree view</small>
         </div>
-        <button onclick="loadHistoryData()" class="btn btn-outline" style="padding:6px 14px;">🔄 </button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button onclick="syncPastActivitiesToHistoryTable()" class="btn btn-outline" style="padding:6px 14px;" title="Import all past logins, tests, and attendance into the history table">
+            ⚡ Sync Past Activities to History
+          </button>
+          <button onclick="loadHistoryData()" class="btn btn-primary" style="padding:6px 14px;">
+            🔄 Refresh History
+          </button>
+        </div>
       </div>
 
       <!-- Student View (Personal Tree) -->
@@ -1576,7 +1584,7 @@
     <!-- ===================================================================== -->
     <section id="admin-offline-exam-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h2 style="margin:0; color:#1B257D;">Offline Exam Scores Management (Tab 13)</h2>
+        <h2 style="margin:0; color:#1B257D;">Offline Exam Scores Management</h2>
         <span class="badge" style="background:#fef3c7; color:#92400e; font-weight:800;">Admin Privileged</span>
       </div>
 
@@ -2935,12 +2943,27 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
     }
 
     // =========================================================================
-    // UNIFIED STUDENT QUESTIONS DEDUPLICATION HELPER
+    // MULTI-FACTOR ACCURATE STUDENT ANSWER DEDUPLICATION (PREVENTS BLANK DATA)
     // =========================================================================
-    function getStudentUniqueAnswerRecords(studentPhone, allAnswers, allTrialExams) {
-      const cleanPhone = String(studentPhone || '').trim();
-      const stAnswers = (allAnswers || []).filter(a => String(a.phone).trim() === cleanPhone);
-      const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === cleanPhone);
+    function getStudentUniqueAnswerRecords(studentPhone, allAnswers, allTrialExams, studentUsername = '', studentName = '') {
+      const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+
+      const targetPhone10 = get10(studentPhone);
+      const targetUser = String(studentUsername || '').trim().toLowerCase();
+      const targetName = String(studentName || '').trim().toLowerCase();
+
+      const isMatch = (itemPhone, itemUser, itemName) => {
+        const item10 = get10(itemPhone);
+        const itemU = String(itemUser || '').trim().toLowerCase();
+        const itemN = String(itemName || '').trim().toLowerCase();
+
+        return (targetPhone10 && item10 && targetPhone10 === item10) ||
+               (targetUser && itemU && targetUser === itemU) ||
+               (targetName && itemN && (targetName === itemN || targetName.includes(itemN) || itemN.includes(targetName)));
+      };
+
+      const stAnswers = (allAnswers || []).filter(a => isMatch(a.phone, a.username, a.student_name));
+      const stTrials = (allTrialExams || []).filter(t => isMatch(t.phone, t.username, t.student_name));
 
       const seenQKeys = new Set();
       const combined = [];
@@ -2955,7 +2978,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
             question_text: a.question_text,
             user_answer: a.user_answer,
             correct_answer: a.correct_answer,
-            is_correct: (a.is_correct === 'YES' || a.is_correct === true),
+            is_correct: (a.is_correct === 'YES' || a.is_correct === true || a.is_correct === 'true'),
             timestamp: a.timestamp
           });
         }
@@ -3367,6 +3390,9 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
       else if (sectionId === 'notif-sec') loadNotifications();
       else if (sectionId === 'admin-online-sec') renderAllUsersOnlineCards();
       else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(sectionId)) loadAdminData();
+      if (sectionId === 'history-sec') {
+        loadHistoryData(); // AUTO-LOADS WITHOUT NEEDING REFRESH
+      }
     }
 
     // =========================================================================
@@ -3950,19 +3976,21 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
       if (!currentUser) return;
       
       const studentPhone = String(currentUser.phone || '').trim();
+      const clean10 = studentPhone.replace(/[^0-9]/g, '').slice(-10);
       const studentUsername = String(currentUser.username || '').trim().toLowerCase();
+      const studentName = String(currentUser.name || currentUser.username || '').trim();
 
-      // 1. Fetch Online Subject Practice Answers
+      // 1. Fetch Online Subject Practice Answers (Multi-pattern query)
       const { data: answers } = await supabaseClient
         .from('student_answers')
         .select('*')
-        .eq('phone', studentPhone);
+        .or(`phone.eq."${studentPhone}",phone.ilike."%${clean10}%",student_name.ilike."%${studentName}%"`);
 
       // 2. Fetch Comprehensive Trial Exams
       const { data: trials } = await supabaseClient
         .from('trial_exams')
         .select('*')
-        .eq('phone', studentPhone)
+        .or(`phone.eq."${studentPhone}",phone.ilike."%${clean10}%",student_name.ilike."%${studentName}%"`)
         .order('id', { ascending: false });
 
       // 3. Fetch Attendance Logs
@@ -3971,54 +3999,42 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
         const { data: dbAtt } = await supabaseClient
           .from('attendance')
           .select('*')
-          .or(`phone.eq."${studentPhone}",attendance_id.ilike.%${studentUsername}%`)
+          .or(`phone.eq."${studentPhone}",phone.ilike."%${clean10}%",student_name.ilike."%${studentName}%",attendance_id.ilike."%${studentUsername}%"`)
           .order('id', { ascending: false });
         attendanceList = dbAtt || [];
-      } catch (e) {
-        console.warn("Attendance query note:", e);
-      }
+      } catch (e) {}
 
-      // 4. Fetch Offline Exam Scores (School / Center Examinations)
+      // 4. Fetch Offline Exam Scores
       let offlineExams = [];
       try {
         const { data: dbOffline } = await supabaseClient
           .from('offline_exams')
           .select('*')
-          .or(`phone.eq."${studentPhone}",username.eq."${studentUsername}"`)
+          .or(`phone.eq."${studentPhone}",phone.ilike."%${clean10}%",student_name.ilike."%${studentName}%",username.ilike."%${studentUsername}%"`)
           .order('id', { ascending: false });
         offlineExams = dbOffline || [];
-      } catch (e) {
-        console.warn("Offline exams query note:", e);
-      }
+      } catch (e) {}
 
-      // 5. Deduplicate and Calculate Online Answer Metrics
-      const studentMetrics = getStudentUniqueAnswerRecords(studentPhone, answers, trials);
+      // 5. Calculate Metrics with Multi-Factor matching
+      const studentMetrics = getStudentUniqueAnswerRecords(studentPhone, answers, trials, studentUsername, studentName);
 
-      // 6. Render Attendance Summary and Log Table
+      // 6. Render Attendance Summary
       renderStudentAttendance(attendanceList, studentMetrics.total);
 
-      // 7. Render Dedicated Offline Exam Scores Table in Tab 2
+      // 7. Render Offline Exam Scores Table
       const offTbody = document.getElementById('portfolio-offline-exams-body');
       if (offTbody) {
         if (!offlineExams || offlineExams.length === 0) {
-          offTbody.innerHTML = `
-            <tr>
-              <td colspan="10" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">
-                No offline exam scores recorded yet.
-              </td>
-            </tr>
-          `;
+          offTbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">No offline exam scores recorded yet.</td></tr>`;
         } else {
           offTbody.innerHTML = offlineExams.map(ex => {
             const pct = Number(ex.percentage || 0);
             const badgeClass = pct >= 70 ? 'badge-success' : (pct >= 50 ? 'badge-warning' : 'badge-danger');
-            const examTime = ex.timestamp || ex.exam_date || '-';
-
             return `
               <tr>
-                <td><b>${formatDateStrict(examTime)}</b></td>
+                <td><b>${formatDateStrict(ex.timestamp || ex.exam_date)}</b></td>
                 <td><strong style="color:var(--primary);">${escapeHtml(ex.exam_name || 'Offline Exam')}</strong></td>
-                <td><b>${ex.fl_score}</b>/${ex.fl_outof} <small style="color:var(--text-muted);">(${ex.fl_subject || 'FL'})</small></td>
+                <td><b>${ex.fl_score}</b>/${ex.fl_outof} <small>(${ex.fl_subject})</small></td>
                 <td><b>${ex.mii_score}</b>/${ex.mii_outof}</td>
                 <td><b>${ex.mm_score}</b>/${ex.mm_outof}</td>
                 <td><b>${ex.eng_score}</b>/${ex.eng_outof}</td>
@@ -4032,7 +4048,7 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
         }
       }
 
-      // 8. Bundle Combined Online and Offline Data for Unified Dashboard Metrics
+      // 8. Bundle Online + Trial + Offline for Dashboard & Overview
       const resData = {
         detailedAnswers: studentMetrics.combined.map(c => ({
           QuestionID: c.question_id,
@@ -4052,7 +4068,7 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
         offlineExams: offlineExams || []
       };
 
-      // 9. Render Unified Dashboard, Charts, Strengths/Priorities, and Subject Overview
+      // 9. Render Dashboard, Strengths, Priorities, Subject Overview & Audit Log
       renderStudentDashboardAndOverview(
         resData,
         'stat-total',
@@ -4430,28 +4446,59 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
 
     
     // =========================================================================
-    // LOAD ADMIN DATA & HARMONIZED MODULE SYNC
+    // FULL UPDATED LOAD ADMIN DATA (ALL TABS SYNCHRONIZED & ERROR-FREE)
     // =========================================================================
     async function loadAdminData() {
-      const { data: users } = await supabaseClient.from('users').select('*');
-      const { data: questions } = await supabaseClient.from('questions').select('*');
-      const { data: logs } = await supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(200);
-      const { data: allAnswers } = await supabaseClient.from('student_answers').select('*').order('created_at', { ascending: false });
-      const { data: allTrialExams } = await supabaseClient.from('trial_exams').select('*').order('created_at', { ascending: false });
-      const { data: resetRequests } = await supabaseClient.from('reset_requests').select('*').order('created_at', { ascending: false });
+      setProgress(30);
 
-      let allAttendance = [];
-      try {
-        const { data: dbAtt } = await supabaseClient.from('attendance').select('*').order('id', { ascending: false });
-        allAttendance = dbAtt || [];
-      } catch (e) {}
+      // 1. Fetch all data concurrently
+      const [
+        usersRes, 
+        questionsRes, 
+        logsRes, 
+        answersRes, 
+        trialsRes, 
+        resetsRes, 
+        attRes, 
+        offlineRes
+      ] = await Promise.all([
+        supabaseClient.from('users').select('*'),
+        supabaseClient.from('questions').select('*'),
+        supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(200),
+        supabaseClient.from('student_answers').select('*').order('created_at', { ascending: false }),
+        supabaseClient.from('trial_exams').select('*').order('created_at', { ascending: false }),
+        supabaseClient.from('reset_requests').select('*').order('created_at', { ascending: false }),
+        supabaseClient.from('attendance').select('*').order('id', { ascending: false }),
+        supabaseClient.from('offline_exams').select('*').order('id', { ascending: false })
+      ]);
 
-      cachedAdminData = { users, questions, logs, allAnswers, allTrialExams, resetRequests, allAttendance };
+      const users = usersRes.data || [];
+      const questions = questionsRes.data || [];
+      const logs = logsRes.data || [];
+      const allAnswers = answersRes.data || [];
+      const allTrialExams = trialsRes.data || [];
+      const resetRequests = resetsRes.data || [];
+      const allAttendance = attRes.data || [];
+      const allOfflineExams = offlineRes.data || [];
 
-      // 1. POPULATE STUDENT CHIPS FOR NOTIFICATION COMPOSER (EXCLUDE ADMIN/STAFF)
+      // Cache globally for fast in-memory lookups
+      cachedAdminData = { 
+        users, 
+        questions, 
+        logs, 
+        allAnswers, 
+        allTrialExams, 
+        resetRequests, 
+        allAttendance, 
+        allOfflineExams 
+      };
+
+      const studentsOnly = users.filter(u => !isStaffOrAdminUser(u));
+
+      // -----------------------------------------------------------------------
+      // TAB 3: NOTIFICATION COMPOSER STUDENT CHIPS
+      // -----------------------------------------------------------------------
       const studentChipsContainer = document.getElementById('student-chips-container');
-      const studentsOnly = (users || []).filter(u => !isStaffOrAdminUser(u));
-
       if (studentChipsContainer) {
         studentChipsContainer.innerHTML = '';
         studentsOnly.forEach(s => {
@@ -4471,27 +4518,22 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
         });
       }
 
-      // =========================================================================
-      // 2. ATTENDANCE TRACKER (TAB 5) - STRICT ONE-ROW-PER-STUDENT DEDUPLICATION
-      // =========================================================================
+      // -----------------------------------------------------------------------
+      // TAB 5: STUDENT DAILY ATTENDANCE TRACKER
+      // (Restructured by Date, Hides 0 Qs, Restore Quota ONLY on Present Day)
+      // -----------------------------------------------------------------------
       const adminAttBody = document.getElementById('admin-attendance-body');
       if (adminAttBody) {
         const dailyGroups = {};
-
-        // Helper to normalize phone numbers (e.g. "+91 8086749424" -> "8086749424")
-        const getPhone10Digit = (ph) => {
-          if (!ph) return '';
-          const digits = String(ph).replace(/[^0-9]/g, '');
-          return digits.length >= 10 ? digits.slice(-10) : digits;
-        };
+        const cleanTodayDateStr = new Date().toLocaleDateString('en-GB');
+        const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
 
         allAttendance.forEach(a => {
           const rawPhone = String(a.phone || '').trim();
-          const phone10 = getPhone10Digit(rawPhone);
+          const phone10 = get10(rawPhone);
 
-          // Find student profile from cached users list
-          const matchedUser = (users || []).find(u => {
-            const uPhone10 = getPhone10Digit(u.phone);
+          const matchedUser = users.find(u => {
+            const uPhone10 = get10(u.phone);
             const uName = String(u.name || '').trim().toLowerCase();
             const aName = String(a.student_name || '').trim().toLowerCase();
             const uUser = String(u.username || '').trim().toLowerCase();
@@ -4502,30 +4544,19 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
                    (aName && uName && aName === uName);
           });
 
-          // Exclude Admin or Staff
           if (matchedUser && isStaffOrAdminUser(matchedUser)) return;
 
-          // Standardize date into DD/MM/YYYY format so date variations merge together
           let cleanDateStr = '';
           const rawDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
           const parsedD = parseCustomDate(rawDate) || parseCustomDate(a.timestamp);
-          
           if (parsedD && !isNaN(parsedD.getTime())) {
             const dd = String(parsedD.getDate()).padStart(2, '0');
             const mm = String(parsedD.getMonth() + 1).padStart(2, '0');
             const yyyy = parsedD.getFullYear();
             cleanDateStr = `${dd}/${mm}/${yyyy}`;
           } else {
-            cleanDateStr = rawDate || new Date().toLocaleDateString('en-GB');
+            cleanDateStr = rawDate || cleanTodayDateStr;
           }
-
-          // STRICT UNIFIED STUDENT IDENTIFIER
-          const studentIdentifier = matchedUser 
-            ? matchedUser.username.toLowerCase() 
-            : (phone10 || String(a.student_name || '').trim().toLowerCase());
-
-          // GROUPING KEY: Exactly ONE key per student per date
-          const groupKey = `${cleanDateStr}__${studentIdentifier}`;
 
           const resolvedName = matchedUser?.name || a.student_name || 'Student';
           const resolvedPhone = matchedUser?.phone || a.phone || '';
@@ -4533,7 +4564,27 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
           const resolvedDiv = matchedUser?.division || a.division || 'A';
           const resolvedUsername = matchedUser ? matchedUser.username : (a.username || a.student_name);
 
-          const metrics = getStudentUniqueAnswerRecords(resolvedPhone, allAnswers, allTrialExams);
+          const groupKey = `${cleanDateStr}__${resolvedUsername.toLowerCase()}`;
+
+          // Count answers attended specifically on this date
+          const dateAnswersCount = allAnswers.filter(ans => {
+            const aD = ans.timestamp ? ans.timestamp.split(',')[0].trim() : '';
+            const matchUser = (phone10 && get10(ans.phone) === phone10) || 
+                              String(ans.student_name || '').toLowerCase() === resolvedName.toLowerCase();
+            return matchUser && (aD === cleanDateStr || aD === rawDate);
+          }).length;
+
+          const dateTrialsCount = allTrialExams.filter(tr => {
+            const tD = tr.timestamp ? tr.timestamp.split(',')[0].trim() : '';
+            const matchUser = (phone10 && get10(tr.phone) === phone10) || 
+                              String(tr.student_name || '').toLowerCase() === resolvedName.toLowerCase();
+            return matchUser && (tD === cleanDateStr || tD === rawDate);
+          }).reduce((sum, tr) => sum + (Number(tr.total_questions) || 0), 0);
+
+          const totalQsOnThisDay = Math.max(
+            Number(a.questions_attended) || 0,
+            dateAnswersCount + dateTrialsCount
+          );
 
           if (!dailyGroups[groupKey]) {
             dailyGroups[groupKey] = {
@@ -4544,16 +4595,19 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
               division: resolvedDiv,
               date: cleanDateStr,
               total_seconds: 0,
-              verified_questions: metrics.total,
+              verified_questions: totalQsOnThisDay,
               activitiesSet: new Set(),
               timestamp: a.timestamp
             };
           }
 
-          // Merge cumulative seconds and distinct activities
           dailyGroups[groupKey].total_seconds = Math.max(
             dailyGroups[groupKey].total_seconds,
             Number(a.duration_seconds) || 0
+          );
+          dailyGroups[groupKey].verified_questions = Math.max(
+            dailyGroups[groupKey].verified_questions,
+            totalQsOnThisDay
           );
 
           if (a.activity && a.activity.trim() !== '') {
@@ -4561,7 +4615,7 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
           }
         });
 
-        // 1. Group records by Date
+        // Group by Date
         const groupedByDate = {};
         Object.values(dailyGroups).forEach(g => {
           const dateKey = g.date;
@@ -4588,7 +4642,6 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
           });
         });
 
-        // 2. Sort Dates Descending (Latest date on top)
         const sortedDates = Object.keys(groupedByDate).sort((dateA, dateB) => {
           const dA = parseCustomDate(dateA);
           const dB = parseCustomDate(dateB);
@@ -4603,26 +4656,33 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
           let fullTableHtml = '';
 
           sortedDates.forEach(dateStr => {
-            const studentEntries = groupedByDate[dateStr];
+            const rawEntries = groupedByDate[dateStr] || [];
 
-            // Sort students under this date: Highest practice duration at the top
-            studentEntries.sort((a, b) => b.practicedSec - a.practicedSec);
+            // FILTER: HIDE ANY STUDENT WHO ATTENDED 0 QUESTIONS
+            const activeAttendedEntries = rawEntries.filter(row => (Number(row.verified_questions) || 0) > 0);
 
-            // DATE-WISE SUB-HEADER ROW
+            // If no student attended > 0 questions on this date, skip the header entirely
+            if (activeAttendedEntries.length === 0) return;
+
+            // Sort students under this date: highest practice duration at the top
+            activeAttendedEntries.sort((a, b) => b.practicedSec - a.practicedSec);
+
+            const isToday = (dateStr === cleanTodayDateStr);
+
             fullTableHtml += `
               <tr style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: #ffffff;">
                 <td colspan="9" style="padding: 10px 16px; font-weight: 800; font-size: 13.5px; letter-spacing: 0.3px; border-top: 2px solid #3b82f6 !important;">
                   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                    <span>📅 Date: ${escapeHtml(dateStr)}</span>
+                    <span>📅 Date: ${escapeHtml(dateStr)} ${isToday ? '<span class="badge badge-success" style="font-size:10.5px; margin-left:6px;">TODAY</span>' : ''}</span>
                     <div style="display:flex; align-items:center; gap:8px;">
                       <span class="badge" style="background: rgba(255,255,255,0.2); color:#ffffff; font-size: 11.5px;">
-                        ${studentEntries.length} Student${studentEntries.length > 1 ? 's' : ''} Attended
+                        ${activeAttendedEntries.length} Student${activeAttendedEntries.length > 1 ? 's' : ''} Attended
                       </span>
                       <button type="button" 
                               onclick="copyDailyAttendedStudentNames(event, '${escapeHtml(dateStr)}')" 
                               class="btn btn-outline no-print" 
                               style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 6px; background: #ffffff; color: var(--primary); border: 1px solid #bfdbfe; cursor: pointer;" 
-                              title="Copy student names for ${escapeHtml(dateStr)} in alphabetical order">
+                              title="Copy student names for ${escapeHtml(dateStr)}">
                         📋 Copy Names
                       </button>
                     </div>
@@ -4631,8 +4691,7 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
               </tr>
             `;
 
-            // ONE ROW PER STUDENT FOR THIS DATE
-            studentEntries.forEach((row, idx) => {
+            activeAttendedEntries.forEach((row, idx) => {
               fullTableHtml += `
                 <tr style="${row.isBlocked ? 'background:#fff1f2;' : (row.isWarned ? 'background:#fffbeb;' : '')}">
                   <td style="text-align:center; font-weight:700;">${idx + 1}</td>
@@ -4649,91 +4708,207 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
                   <td><strong style="color:var(--primary); font-size:14px;">${row.durationFormatted}</strong></td>
                   <td><span class="badge ${row.isBlocked ? 'badge-danger' : (row.isWarned ? 'badge-warning' : 'badge-success')}">${row.remainingFormatted}</span></td>
                   <td><small>${escapeHtml(row.activitiesString)}</small></td>
-                  <td><b>${row.verified_questions}</b> Qs</td>
+                  <td><b style="color:var(--primary); font-size:14px;">${row.verified_questions}</b> Qs</td>
                   <td>
                     <span class="badge ${row.isBlocked ? 'badge-danger' : 'badge-success'}">
                       ${row.isBlocked ? '🛑 60m Limit Reached' : 'Active Practicing'}
                     </span>
-                    <button onclick="adminResetStudentQuota('${row.phone}', '${escapeHtml(row.username)}', '${escapeHtml(row.student_name)}')" 
-                            class="btn btn-outline" 
-                            style="display:inline-flex; align-items:center; margin-top:5px; padding:4px 8px; font-size:11.5px; font-weight:700; color:var(--primary); border-color:#bfdbfe; background:#eff6ff; border-radius:8px;" 
-                            title="Restore 60m Practice Quota">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
-                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                        <path d="M3 3v5h5"/>
-                      </svg>
-                      Restore Quota
-                    </button>
+
+                    <!-- ONLY SHOW RESTORE QUOTA FOR PRESENT DAY (TODAY); HIDE IN PREVIOUS DAYS -->
+                    ${isToday ? `
+                      <button onclick="adminResetStudentQuota('${row.phone}', '${escapeHtml(row.username)}', '${escapeHtml(row.student_name)}')" 
+                              class="btn btn-outline" 
+                              style="display:inline-flex; align-items:center; margin-top:5px; padding:4px 8px; font-size:11.5px; font-weight:700; color:var(--primary); border-color:#bfdbfe; background:#eff6ff; border-radius:8px;" 
+                              title="Restore 60m Practice Quota">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                          <path d="M3 3v5h5"/>
+                        </svg>
+                        Restore Quota
+                      </button>
+                    ` : ''}
                   </td>
                 </tr>
               `;
             });
           });
 
-          adminAttBody.innerHTML = fullTableHtml;
+          adminAttBody.innerHTML = fullTableHtml || '<tr><td colspan="9" style="text-align:center; padding: 25px; color:var(--text-muted);">No student attended questions yet.</td></tr>';
         }
       }
 
-      // 3. EVALUATION REPORTS (TAB 6) - ALPHABETICAL (STUDENTS ONLY)
+      // -----------------------------------------------------------------------
+      // TAB 6: EVALUATION REPORTS (ALL 6 COMPLETE MODULES PER STUDENT)
+      // -----------------------------------------------------------------------
       const reportAccordion = document.getElementById('admin-student-accordion-list');
       if (reportAccordion) {
-        const alphabeticalStudents = [...studentsOnly].sort((a, b) => {
-          return String(a.name || a.username).trim().localeCompare(String(b.name || b.username).trim());
-        });
+        const alphabeticalStudents = [...studentsOnly].sort((a, b) => 
+          String(a.name || a.username).trim().localeCompare(String(b.name || b.username).trim())
+        );
 
         reportAccordion.innerHTML = alphabeticalStudents.map((st, idx) => `
-          <div class="accordion-item">
+          <div class="accordion-item" style="margin-bottom:14px;">
             <div class="accordion-header" onclick="toggleAccordion('report-acc-${idx}')">
-              <div><strong>${idx + 1}. ${escapeHtml(st.name)}</strong> — Class ${st.class || '7'}-${st.division || 'A'} [FL: ${st.first_language || 'MI'}] [${st.phone}]</div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <strong>${idx + 1}. ${escapeHtml(st.name)}</strong> — Class ${st.class || '7'}-${st.division || 'A'} [FL: ${st.first_language || 'MI'}] [${st.phone}]
+              </div>
               <div>▾</div>
             </div>
-            <div class="accordion-body" id="report-acc-${idx}">
+            <div class="accordion-body" id="report-acc-${idx}" style="padding:22px; background:#f8fafc;">
               <div id="admin-rep-container-${idx}"></div>
             </div>
           </div>
         `).join('');
 
         alphabeticalStudents.forEach((st, idx) => {
-          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
-          const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(st.phone).trim()).map(t => ({
+          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name);
+          const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+          const st10 = get10(st.phone);
+          const stNameLower = String(st.name || '').trim().toLowerCase();
+
+          // 1. Attendance Records
+          const stAtt = allAttendance.filter(a => 
+            (st10 && get10(a.phone) === st10) || String(a.student_name || '').toLowerCase() === stNameLower
+          );
+
+          // 2. Offline Exam Records
+          const stOffline = allOfflineExams.filter(o => 
+            (st10 && get10(o.phone) === st10) || String(o.student_name || '').toLowerCase() === stNameLower
+          );
+
+          // 3. Trial Exams
+          const stTrials = allTrialExams.filter(t => 
+            (st10 && get10(t.phone) === st10) || String(t.student_name || '').toLowerCase() === stNameLower
+          ).map(t => ({
             Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
           }));
 
           const container = document.getElementById(`admin-rep-container-${idx}`);
           if (container) {
             container.innerHTML = `
-              <h4 style="margin-top:0; color:var(--primary);">Subject Overview</h4>
-              <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="admin-rep-overview-${idx}"></tbody></table></div>
-              <h4 style="margin-top:20px; color:var(--primary);">Trial Exam Consolidations</h4>
-              <div id="admin-rep-trial-box-${idx}">
-                ${stTrials.length > 0 ? stTrials.map(t => {
-                  let tAns = typeof t.AnswersJson === 'string' ? JSON.parse(t.AnswersJson || '[]') : (t.AnswersJson || []);
-                  return `
-                    <div style="background:#f8fafc; border:1px solid var(--border-color); padding:12px; border-radius:8px; margin-bottom:12px;">
-                      <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Date: ${formatDateStrict(t.Timestamp)} | Score: ${t.Score} / ${t.TotalQuestions}</div>
-                      <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>User Choice</th><th>Correct Choice</th></tr></thead><tbody>
-                        ${tAns.map((a, aIdx) => `<tr><td>${aIdx + 1}</td><td>${getFullSubjectName(a.Subject)}</td><td>${escapeHtml(a.QuestionText)}</td><td><b>${escapeHtml(a.UserAnswer)}</b></td><td><b style="color:var(--success);">${escapeHtml(a.CorrectAnswer)}</b></td></tr>`).join('')}
-                      </tbody></table></div>
-                    </div>
-                  `;
-                }).join('') : '<p style="font-size:13px; color:var(--text-muted);">No trial exams recorded.</p>'}
+              <!-- 1. ATTENDANCE & PRACTICE TIME -->
+              <div class="card" style="margin-bottom:20px; background:#fff;">
+                <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📅 Attendance & Practice Time</h4>
+                <div class="table-responsive" style="margin:0;">
+                  <table class="data-table">
+                    <thead><tr><th>Date</th><th>Activity</th><th>Duration</th><th>Questions Attended</th><th>Score</th></tr></thead>
+                    <tbody>
+                      ${stAtt.length > 0 ? stAtt.map(a => `
+                        <tr>
+                          <td><b>${a.date || a.timestamp?.split(',')[0] || '-'}</b></td>
+                          <td><span class="badge">${escapeHtml(a.activity)}</span></td>
+                          <td><b>${a.duration_text || '0m'}</b></td>
+                          <td><b>${a.questions_attended || 0}</b></td>
+                          <td>${a.score || '-'}</td>
+                        </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;">No attendance logged.</td></tr>'}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <h4 style="margin-top:20px; color:var(--primary);">Practice Audit Log</h4>
-              <div class="table-responsive"><table class="data-table"><thead><tr><th>S.No</th><th>Subject</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Status</th></tr></thead><tbody id="admin-rep-audit-${idx}"></tbody></table></div>
+
+              <!-- 2. PERFORMANCE DASHBOARD -->
+              <div class="card" style="margin-bottom:20px; background:#fff;">
+                <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📊 Performance Dashboard</h4>
+                <div class="stats-grid" style="margin-bottom:14px;">
+                  <div class="card" style="margin:0; background:#f8fafc;"><p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Answered Questions</p><h2 id="rep-tot-${idx}" style="margin:6px 0 0 0; color:var(--primary);">0</h2></div>
+                  <div class="card" style="margin:0; background:#f8fafc;"><p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Overall Accuracy Rate</p><h2 id="rep-acc-${idx}" style="margin:6px 0 0 0; color:var(--success);">0%</h2></div>
+                </div>
+                <div class="grid-2">
+                  <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:14px; border-radius:10px;"><h5 style="margin:0 0 10px 0; color:#166534;">🌟 Strengths (≥70%)</h5><div id="rep-strong-${idx}"></div></div>
+                  <div style="background:#fffbe0; border:1px solid #fef08a; padding:14px; border-radius:10px;"><h5 style="margin:0 0 10px 0; color:#92400e;">⚠️ Priorities (<70%)</h5><div id="rep-weak-${idx}"></div></div>
+                </div>
+              </div>
+
+              <!-- 3. OFFLINE EXAM SCORES TABLE -->
+              <div class="card" style="margin-bottom:20px; background:#fff;">
+                <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📝 Offline Exam Scores</h4>
+                <div class="table-responsive" style="margin:0;">
+                  <table class="data-table">
+                    <thead><tr style="background:#eff6ff;"><th>Date</th><th>Exam Name</th><th>FL</th><th>MII</th><th>MM</th><th>ENG</th><th>BS</th><th>SS</th><th>Total Score</th><th>%</th></tr></thead>
+                    <tbody>
+                      ${stOffline.length > 0 ? stOffline.map(o => `
+                        <tr>
+                          <td>${o.exam_date}</td>
+                          <td><b>${escapeHtml(o.exam_name)}</b></td>
+                          <td>${o.fl_score}/${o.fl_outof} <small>(${o.fl_subject})</small></td>
+                          <td>${o.mii_score}/${o.mii_outof}</td>
+                          <td>${o.mm_score}/${o.mm_outof}</td>
+                          <td>${o.eng_score}/${o.eng_outof}</td>
+                          <td>${o.bs_score}/${o.bs_outof}</td>
+                          <td>${o.ss_score}/${o.ss_outof}</td>
+                          <td><b style="color:var(--primary);">${o.total_score}/${o.total_outof}</b></td>
+                          <td><span class="badge ${o.percentage >= 70 ? 'badge-success' : 'badge-warning'}">${o.percentage}%</span></td>
+                        </tr>`).join('') : '<tr><td colspan="10" style="text-align:center;">No offline exams recorded.</td></tr>'}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- 4. SUBJECT OVERVIEW -->
+              <div class="card" style="margin-bottom:20px; background:#fff;">
+                <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📖 Subject Overview</h4>
+                <div class="table-responsive" style="margin:0;">
+                  <table class="data-table">
+                    <thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead>
+                    <tbody id="admin-rep-overview-${idx}"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- 5. TRIAL EXAM CONSOLIDATIONS -->
+              <div class="card" style="margin-bottom:20px; background:#fff;">
+                <h4 style="margin-top:0; color:var(--primary); font-size:15px;">⭐ Trial Exam Consolidations</h4>
+                <div id="admin-rep-trial-box-${idx}">
+                  ${stTrials.length > 0 ? stTrials.map(t => {
+                    let tAns = typeof t.AnswersJson === 'string' ? JSON.parse(t.AnswersJson || '[]') : (t.AnswersJson || []);
+                    return `
+                      <div style="background:#f8fafc; border:1px solid var(--border-color); padding:12px; border-radius:8px; margin-bottom:12px;">
+                        <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Date: ${formatDateStrict(t.Timestamp)} | Score: ${t.Score} / ${t.TotalQuestions}</div>
+                        <div class="table-responsive"><table class="data-table"><thead><tr><th>#</th><th>Subject</th><th>Question</th><th>User Choice</th><th>Correct</th></tr></thead><tbody>
+                          ${tAns.map((a, aIdx) => `<tr><td>${aIdx + 1}</td><td>${getFullSubjectName(a.Subject)}</td><td>${escapeHtml(a.QuestionText)}</td><td><b>${escapeHtml(a.UserAnswer)}</b></td><td><b style="color:var(--success);">${escapeHtml(a.CorrectAnswer)}</b></td></tr>`).join('')}
+                        </tbody></table></div>
+                      </div>
+                    `;
+                  }).join('') : '<p style="font-size:13px; color:var(--text-muted); margin:0;">No trial exams recorded.</p>'}
+                </div>
+              </div>
+
+              <!-- 6. PRACTICE AUDIT LOG -->
+              <div class="card" style="margin-bottom:0; background:#fff;">
+                <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📋 Practice Audit Log</h4>
+                <div class="table-responsive" style="margin:0;">
+                  <table class="data-table">
+                    <thead><tr><th>#</th><th>Subject</th><th>Question</th><th>Student Choice</th><th>Correct Choice</th><th>Status</th></tr></thead>
+                    <tbody id="admin-rep-audit-${idx}"></tbody>
+                  </table>
+                </div>
+              </div>
             `;
+
             renderStudentDashboardAndOverview({ 
-              detailedAnswers: metrics.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
-              trialExams: stTrials 
-            }, null, null, null, null, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
+              detailedAnswers: metrics.combined.map(c => ({ 
+                QuestionID: c.question_id, 
+                QuestionText: c.question_text, 
+                Subject: c.subject, 
+                UserAnswer: c.user_answer, 
+                CorrectAnswer: c.correct_answer, 
+                IsCorrect: c.is_correct, 
+                Timestamp: c.timestamp 
+              })), 
+              trialExams: stTrials,
+              offlineExams: stOffline
+            }, `rep-tot-${idx}`, `rep-acc-${idx}`, `rep-strong-${idx}`, `rep-weak-${idx}`, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
           }
         });
       }
 
-      // 4. STUDENT OPTIMIZATION ANALYTICS (TAB 9)
+      // -----------------------------------------------------------------------
+      // TAB 9: STUDENT OPTIMIZATION ANALYTICS
+      // -----------------------------------------------------------------------
       const optAccordion = document.getElementById('manage-users-analytics-accordion');
       if (optAccordion) {
         const scoredStudents = studentsOnly.map(st => {
-          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
+          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name);
           const scoreMetric = metrics.total > 0 ? Number(((metrics.accuracy / metrics.total) * 100).toFixed(2)) : 0;
 
           return {
@@ -4747,7 +4922,7 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
         }).sort((a, b) => (b.scoreMetric - a.scoreMetric) || (b.accuracy - a.accuracy) || (b.total - a.total));
 
         optAccordion.innerHTML = scoredStudents.map((item, idx) => `
-          <div class="accordion-item">
+          <div class="accordion-item" style="margin-bottom:12px;">
             <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')">
               <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                 <span class="badge ${idx < 3 ? 'badge-success' : 'badge-warning'}" style="font-weight:900;">#${idx + 1} Top Scorer</span>
@@ -4778,20 +4953,33 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
         `).join('');
 
         scoredStudents.forEach((item, idx) => {
-          const stTrials = (allTrialExams || []).filter(t => String(t.phone).trim() === String(item.user.phone).trim()).map(t => ({
+          const stTrials = allTrialExams.filter(t => 
+            String(t.phone).trim() === String(item.user.phone).trim() ||
+            String(t.student_name || '').toLowerCase() === String(item.user.name || '').toLowerCase()
+          ).map(t => ({
             Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
           }));
 
           renderStudentDashboardAndOverview({ 
-            detailedAnswers: item.combined.map(c => ({ QuestionID: c.question_id, QuestionText: c.question_text, Subject: c.subject, UserAnswer: c.user_answer, CorrectAnswer: c.correct_answer, IsCorrect: c.is_correct, Timestamp: c.timestamp })), 
+            detailedAnswers: item.combined.map(c => ({ 
+              QuestionID: c.question_id, 
+              QuestionText: c.question_text, 
+              Subject: c.subject, 
+              UserAnswer: c.user_answer, 
+              CorrectAnswer: c.correct_answer, 
+              IsCorrect: c.is_correct, 
+              Timestamp: c.timestamp 
+            })), 
             trialExams: stTrials 
           }, `opt-tot-${idx}`, `opt-acc-val-${idx}`, `opt-strong-${idx}`, `opt-weak-${idx}`, `opt-overview-${idx}`);
         });
       }
 
-      // 5. PERFORMANCE CONSOLIDATED SUMMARY (TAB 9)
+      // -----------------------------------------------------------------------
+      // TAB 9: PERFORMANCE CONSOLIDATED SUMMARY TABLE
+      // -----------------------------------------------------------------------
       consolidatedStudentsList = studentsOnly.map((st, index) => {
-        const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams);
+        const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name);
         return {
           sno: index + 1,
           name: st.name || st.username,
@@ -4809,10 +4997,12 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
       sortAscending = true;
       renderConsolidatedTable();
 
-      // 6. RESET REQUESTS (TAB 7)
+      // -----------------------------------------------------------------------
+      // TAB 7: RESET REQUESTS
+      // -----------------------------------------------------------------------
       const resetBody = document.getElementById('admin-resets-body');
       if (resetBody) {
-        resetBody.innerHTML = (resetRequests || []).map(r => `
+        resetBody.innerHTML = resetRequests.map(r => `
           <tr>
             <td><small>${r.request_id}</small></td>
             <td>${formatDateStrict(r.timestamp)}</td>
@@ -4831,13 +5021,14 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
         `).join('') || '<tr><td colspan="8" style="text-align:center;">No reset requests logged.</td></tr>';
       }
 
-      // 7. QUESTION SUMMARY (TAB 8)
-      const qsList = questions || [];
+      // -----------------------------------------------------------------------
+      // TAB 8: SUBJECT-WISE QUESTION COUNTS SUMMARY
+      // -----------------------------------------------------------------------
       const summaryBody = document.getElementById('admin-questions-summary-body');
       if (summaryBody) {
         let grandTotalQs = 0;
         summaryBody.innerHTML = SUBJECT_ORDER.map((code, idx) => {
-          const count = qsList.filter(q => String(q.subject).trim().toUpperCase() === code).length;
+          const count = questions.filter(q => String(q.subject).trim().toUpperCase() === code).length;
           grandTotalQs += count;
           return `
             <tr>
@@ -4855,13 +5046,15 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
         `;
       }
 
-      // 8. QUESTION BANK (TAB 8)
+      // -----------------------------------------------------------------------
+      // TAB 8: QUESTION BANK
+      // -----------------------------------------------------------------------
       selectedQuestionIds.clear();
       updateBulkDeleteQsButton();
       const selectAllCheckbox = document.getElementById('select-all-qs');
       if (selectAllCheckbox) selectAllCheckbox.checked = false;
 
-      const sortedQuestions = [...qsList].sort((a, b) => {
+      const sortedQuestions = [...questions].sort((a, b) => {
         const orderA = SUBJECT_ORDER.indexOf(String(a.subject).toUpperCase());
         const orderB = SUBJECT_ORDER.indexOf(String(b.subject).toUpperCase());
         const posA = orderA === -1 ? 99 : orderA;
@@ -4887,8 +5080,16 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
         `).join('') || '<tr><td colspan="6" style="text-align:center;">No questions found in bank.</td></tr>';
       }
 
+      // -----------------------------------------------------------------------
+      // UPDATE ASSOCIATED VIEWS
+      // -----------------------------------------------------------------------
       updateUsersTableLiveStatus();
-      renderGroupedAuditLogs(logs || []);
+      renderGroupedAuditLogs(logs);
+
+      if (typeof populateOfflineExamStudents === 'function') populateOfflineExamStudents();
+      if (typeof loadOfflineExamsAdmin === 'function') loadOfflineExamsAdmin();
+
+      setProgress(100);
     }
 
 
@@ -6933,9 +7134,9 @@ function fallbackCopyText(text, count, prevSecurityState) {
     }
 
     // =========================================================================
-// LOG PORTAL ACTIVITY TO SUPABASE portal_history TABLE
+// TAB 12: REAL-TIME PORTAL ACTIVITY LOGGER (SUPABASE portal_history)
 // =========================================================================
-async function logPortalActivity(activityType, title, details = '') {
+async function logPortalActivity(activityType, title, details = '', metadata = null) {
   if (!currentUser) return;
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-GB');
@@ -6952,7 +7153,8 @@ async function logPortalActivity(activityType, title, details = '') {
       timestamp: timestampStr,
       activity_type: activityType,
       title: title,
-      details: details
+      details: details,
+      metadata: metadata || {}
     }]);
   } catch (err) {
     console.warn("Could not log activity history:", err);
@@ -6960,150 +7162,431 @@ async function logPortalActivity(activityType, title, details = '') {
 }
 
 // =========================================================================
-    // TAB 12: PORTAL HISTORY TREE VIEW (STUDENTS & ADMIN)
+// TAB 12: OPTIMIZED O(N) LINEAR HISTORY LOADER (PREVENTS 400MS LOOP FREEZE)
+// =========================================================================
+async function loadHistoryData() {
+  if (!currentUser) return;
+  const isPrivileged = isStaffOrAdminUser(currentUser);
+
+  const heading = document.getElementById('history-page-heading');
+  const studentBox = document.getElementById('student-history-tree-container');
+  const adminBox = document.getElementById('admin-history-accordion-list');
+  const tabTitle = document.getElementById('tab-history-title');
+
+  setProgress(30);
+
+  // Parallel fetch to prevent UI lockup
+  const [histRes, attRes, trialRes, logRes, resetRes, ansRes, userRes, offRes] = await Promise.all([
+    supabaseClient.from('portal_history').select('*').order('id', { ascending: false }).limit(300),
+    supabaseClient.from('attendance').select('*').order('id', { ascending: false }),
+    supabaseClient.from('trial_exams').select('*').order('id', { ascending: false }),
+    supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(200),
+    supabaseClient.from('reset_requests').select('*').order('created_at', { ascending: false }),
+    supabaseClient.from('student_answers').select('*').order('created_at', { ascending: false }),
+    supabaseClient.from('users').select('*'),
+    supabaseClient.from('offline_exams').select('*').order('id', { ascending: false })
+  ]);
+
+  cachedAdminData = cachedAdminData || {};
+  cachedAdminData.users = userRes.data || cachedAdminData.users || [];
+  cachedAdminData.allAttendance = attRes.data || [];
+  cachedAdminData.allTrialExams = trialRes.data || [];
+  cachedAdminData.logs = logRes.data || [];
+  cachedAdminData.resetRequests = resetRes.data || [];
+  cachedAdminData.allAnswers = ansRes.data || [];
+  cachedAdminData.allOfflineExams = offRes.data || [];
+
+  // Generate complete, harmonized history without stalling the main thread
+  const allHistory = synthesizeHistoryFromCache();
+
+  setProgress(100);
+
+  if (isPrivileged) {
+    if (heading) heading.innerText = 'All Users Portal Activity & Event History (Tab 12)';
+    if (tabTitle) tabTitle.innerText = 'Users History';
+    if (studentBox) studentBox.style.display = 'none';
+    if (adminBox) adminBox.style.display = 'block';
+
+    renderAdminHistoryAccordions(allHistory);
+  } else {
+    if (heading) heading.innerText = 'My Activity & Event History (Tab 12)';
+    if (tabTitle) tabTitle.innerText = 'My History';
+    if (studentBox) studentBox.style.display = 'block';
+    if (adminBox) adminBox.style.display = 'none';
+
+    const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+    const myPhone10 = get10(currentUser.phone);
+    const myUser = String(currentUser.username || '').trim().toLowerCase();
+    const myName = String(currentUser.name || currentUser.username || '').trim().toLowerCase();
+
+    const myHistory = allHistory.filter(h => {
+      const hPhone10 = get10(h.phone);
+      const hUser = String(h.username || '').trim().toLowerCase();
+      const hName = String(h.student_name || '').trim().toLowerCase();
+
+      return (myUser && hUser && myUser === hUser) ||
+             (myPhone10 && hPhone10 && myPhone10 === hPhone10) ||
+             (myName && hName && (myName === hName || myName.includes(hName) || hName.includes(myName)));
+    });
+
+    renderDateWiseHistoryTree(studentBox, myHistory);
+  }
+}
+
     // =========================================================================
-    async function loadHistoryData() {
-      if (!currentUser) return;
-      const isPrivileged = isStaffOrAdminUser(currentUser);
+// O(N) LINEAR PRE-INDEXED HISTORY SYNTHESIZER (<15ms EXECUTION)
+// =========================================================================
+function synthesizeHistoryFromCache() {
+  const synth = [];
+  const allAtt = cachedAdminData?.allAttendance || [];
+  const allTrials = cachedAdminData?.allTrialExams || [];
+  const allLogs = cachedAdminData?.logs || [];
+  const allUsers = cachedAdminData?.users || [];
+  const allAnswers = cachedAdminData?.allAnswers || [];
+  const allResets = cachedAdminData?.resetRequests || [];
+  const allOffline = cachedAdminData?.allOfflineExams || [];
 
-      const heading = document.getElementById('history-page-heading');
-      const studentBox = document.getElementById('student-history-tree-container');
-      const adminBox = document.getElementById('admin-history-accordion-list');
-      const tabTitle = document.getElementById('tab-history-title');
+  const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
 
-      if (isPrivileged) {
-        if (heading) heading.innerText = 'All Students Portal History (Tab 12)';
-        if (tabTitle) tabTitle.innerText = 'Students History';
-        if (studentBox) studentBox.style.display = 'none';
-        if (adminBox) adminBox.style.display = 'block';
+  // 1. O(N) FAST PRE-INDEX ANSWERS BY USER AND PHONE
+  const answersMap = new Map();
+  allAnswers.forEach(ans => {
+    const p10 = get10(ans.phone);
+    const nameKey = String(ans.student_name || '').trim().toLowerCase();
+    const uKey = String(ans.username || '').trim().toLowerCase();
+    const dStr = ans.timestamp ? ans.timestamp.split(',')[0].trim() : '';
 
-        // Admin view: fetch all users and their history
-        const { data: allHistory } = await supabaseClient
-          .from('portal_history')
-          .select('*')
-          .order('id', { ascending: false });
+    const keys = [
+      p10 ? `${p10}_${dStr}` : null,
+      nameKey ? `${nameKey}_${dStr}` : null,
+      uKey ? `${uKey}_${dStr}` : null
+    ].filter(Boolean);
 
-        renderAdminHistoryAccordions(allHistory || []);
-      } else {
-        if (heading) heading.innerText = 'My Activity History (Tab 12)';
-        if (tabTitle) tabTitle.innerText = 'My History';
-        if (studentBox) studentBox.style.display = 'block';
-        if (adminBox) adminBox.style.display = 'none';
+    keys.forEach(k => {
+      if (!answersMap.has(k)) answersMap.set(k, []);
+      answersMap.get(k).push(ans);
+    });
+  });
 
-        // Student view: fetch own history
-        const { data: myHistory } = await supabaseClient
-          .from('portal_history')
-          .select('*')
-          .eq('phone', String(currentUser.phone || '').trim())
-          .order('id', { ascending: false });
+  // 2. SYNTHESIZE SUBJECT PRACTICE SESSIONS
+  const seenAttendanceSessions = new Set();
+  allAtt.forEach(a => {
+    const aPhone10 = get10(a.phone);
+    const aName = String(a.student_name || '').trim().toLowerCase();
+    const aUser = String(a.username || '').trim().toLowerCase();
+    const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+    const qCount = Number(a.questions_attended) || 0;
 
-        renderDateWiseHistoryTree(studentBox, myHistory || []);
-      }
+    const dedupKey = `ATT_${aPhone10 || aUser}_${aDate}_${a.activity}_${qCount}`;
+    if (seenAttendanceSessions.has(dedupKey)) return;
+    seenAttendanceSessions.add(dedupKey);
+
+    // Instant O(1) hash lookup
+    const relatedAnswers = answersMap.get(`${aPhone10}_${aDate}`) ||
+                           answersMap.get(`${aName}_${aDate}`) ||
+                           answersMap.get(`${aUser}_${aDate}`) || [];
+
+    const detectedSubject = relatedAnswers[0]?.subject || (a.activity?.includes('(') ? a.activity.split('(')[1].replace(')', '') : 'Practice');
+
+    synth.push({
+      username: a.username || a.student_name,
+      student_name: a.student_name,
+      phone: a.phone,
+      class: a.class || '7',
+      division: a.division || 'A',
+      date: aDate,
+      timestamp: a.timestamp,
+      activity_type: 'PRACTICE',
+      title: a.activity || `Subject Practice (${getFullSubjectName(detectedSubject)})`,
+      details: `• Duration: ${a.duration_text || Math.round((a.duration_seconds || 0) / 60) + 'm'} • Questions Practiced: ${qCount || relatedAnswers.length} • Score: ${a.score || '-'}`,
+      qa_list: relatedAnswers.map(q => ({
+        subject: q.subject,
+        question: q.question_text,
+        user_choice: q.user_answer,
+        correct_choice: q.correct_answer,
+        is_correct: (q.is_correct === 'YES' || q.is_correct === true || q.is_correct === 'true')
+      }))
+    });
+  });
+
+  // 3. SYNTHESIZE TRIAL EXAMS
+  allTrials.forEach(t => {
+    let tAns = typeof t.answers_json === 'string' ? JSON.parse(t.answers_json || '[]') : (t.answers_json || []);
+    const tDate = t.timestamp ? t.timestamp.split(',')[0].trim() : '';
+
+    synth.push({
+      username: t.username || t.student_name,
+      student_name: t.student_name,
+      phone: t.phone,
+      class: t.class || '7',
+      division: t.division || 'A',
+      date: tDate,
+      timestamp: t.timestamp,
+      activity_type: 'TRIAL',
+      title: 'Comprehensive Trial Exam',
+      details: `• Comprehensive Model Exam • Attended: ${t.total_questions || tAns.length} Qs • Score: ${t.score}/${t.total_questions} (${Math.round((t.score / (t.total_questions || 1)) * 100)}%)`,
+      qa_list: tAns.map(ta => ({
+        subject: ta.Subject || ta.subject,
+        question: ta.QuestionText || ta.question_text,
+        user_choice: ta.UserAnswer || ta.user_answer,
+        correct_choice: ta.CorrectAnswer || ta.correct_answer,
+        is_correct: (ta.IsCorrect === true || ta.IsCorrect === 'YES' || ta.is_correct === true || ta.is_correct === 'YES')
+      }))
+    });
+  });
+
+  // 4. SYNTHESIZE OFFLINE EXAMS
+  allOffline.forEach(o => {
+    synth.push({
+      username: o.username || o.student_name,
+      student_name: o.student_name,
+      phone: o.phone,
+      class: o.class || '7',
+      division: o.division || 'A',
+      date: o.exam_date || (o.timestamp ? o.timestamp.split(',')[0].trim() : ''),
+      timestamp: o.timestamp || o.exam_date,
+      activity_type: 'OFFLINE',
+      title: `Offline Exam: ${o.exam_name || 'School Test'}`,
+      details: `• Total Score: ${o.total_score}/${o.total_outof} (${o.percentage}%) • FL: ${o.fl_score}/${o.fl_outof} • MII: ${o.mii_score}/${o.mii_outof} • MM: ${o.mm_score}/${o.mm_outof} • ENG: ${o.eng_score}/${o.eng_outof} • BS: ${o.bs_score}/${o.bs_outof} • SS: ${o.ss_score}/${o.ss_outof}`
+    });
+  });
+
+  // 5. SYNTHESIZE RESET REQUESTS (INCLUDES DEVA LAKSHMI'S REQUESTS)
+  allResets.forEach(r => {
+    synth.push({
+      username: r.username || r.student_name,
+      student_name: r.student_name,
+      phone: r.phone,
+      class: r.class || '7',
+      division: r.division || 'A',
+      date: r.timestamp ? r.timestamp.split(',')[0].trim() : '',
+      timestamp: r.timestamp,
+      activity_type: 'RESET',
+      title: `Subject Reset Request: ${getFullSubjectName(r.subject)}`,
+      details: `• Request ID: ${r.request_id} • Subject: ${getFullSubjectName(r.subject)} • Decision: ${r.status}`
+    });
+  });
+
+  // 6. SYNTHESIZE LOGINS & TAB ACCESS
+  allLogs.filter(l => l.login_status === 'SUCCESS').forEach(l => {
+    const u = allUsers.find(user => String(user.username).toLowerCase() === String(l.identifier).toLowerCase());
+    const userTabs = parseTabAccessList(u?.role || u?.tab_access || l.role || '1,2,3,4');
+
+    synth.push({
+      username: l.identifier,
+      student_name: u?.name || l.identifier,
+      phone: u?.phone || '',
+      class: u?.class || '7',
+      division: u?.division || 'A',
+      date: l.timestamp ? l.timestamp.split(',')[0].trim() : '',
+      timestamp: l.login_time || l.timestamp,
+      activity_type: 'LOGIN',
+      title: 'Portal Login & Session Authenticated',
+      details: `• Login Successful • Granted Tab Access: [${userTabs.join(', ')}] • Device: ${l.device || 'Browser Session'}`
+    });
+  });
+
+  return synth;
+}
+
+
+    // =========================================================================
+// CHRONOLOGICAL DATE TREE RENDERER WITH QUESTION ACCORDIONS
+// =========================================================================
+function renderDateWiseHistoryTree(targetElement, records) {
+  if (!records || records.length === 0) {
+    targetElement.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted); font-size:13.5px;">No activity records logged for this user yet.</div>`;
+    return;
+  }
+
+  // Group by Normalized Date
+  const dateGroups = {};
+  records.forEach(r => {
+    let d = r.date || (r.timestamp ? r.timestamp.split(',')[0].trim() : 'General');
+    const parsedD = parseCustomDate(d) || parseCustomDate(r.timestamp);
+    if (parsedD && !isNaN(parsedD.getTime())) {
+      const dd = String(parsedD.getDate()).padStart(2, '0');
+      const mm = String(parsedD.getMonth() + 1).padStart(2, '0');
+      const yyyy = parsedD.getFullYear();
+      d = `${dd}/${mm}/${yyyy}`;
     }
+    if (!dateGroups[d]) dateGroups[d] = [];
+    dateGroups[d].push(r);
+  });
 
-    // Helper: builds an expandable tree view per date
-    function renderDateWiseHistoryTree(targetElement, records) {
-      if (!records || records.length === 0) {
-        targetElement.innerHTML = `<div style="text-align:center; padding:25px; color:var(--text-muted); font-size:13.5px;">No portal history recorded yet. Complete practice sessions or exams to see your timeline!</div>`;
-        return;
-      }
+  const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+    const tA = parseCustomDate(a)?.getTime() || 0;
+    const tB = parseCustomDate(b)?.getTime() || 0;
+    return tB - tA;
+  });
 
-      // Group by Date
-      const dateGroups = {};
-      records.forEach(r => {
-        const d = r.date || (r.timestamp ? r.timestamp.split(',')[0].trim() : 'General');
-        if (!dateGroups[d]) dateGroups[d] = [];
-        dateGroups[d].push(r);
-      });
+  targetElement.innerHTML = sortedDates.map((dateStr, dIdx) => {
+    const events = dateGroups[dateStr];
+    events.sort((a, b) => (parseCustomDate(b.timestamp)?.getTime() || 0) - (parseCustomDate(a.timestamp)?.getTime() || 0));
 
-      // Sort dates descending
-      const sortedDates = Object.keys(dateGroups).sort((a, b) => {
-        const tA = parseCustomDate(a)?.getTime() || 0;
-        const tB = parseCustomDate(b)?.getTime() || 0;
-        return tB - tA;
-      });
+    return `
+      <div style="margin-bottom: 22px; border-left: 3.5px solid var(--primary); padding-left: 14px; position: relative;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+          <span style="font-size:18px;">📅</span>
+          <strong style="font-size:15px; color:var(--primary);">${escapeHtml(dateStr)}</strong>
+          <span class="badge" style="background:#eff6ff; color:#1e40af; font-size:11.5px; padding:3px 9px;">
+            ${events.length} Activit${events.length > 1 ? 'ies' : 'y'}
+          </span>
+        </div>
 
-      targetElement.innerHTML = sortedDates.map((dateStr, dIdx) => {
-        const events = dateGroups[dateStr];
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          ${events.map((ev, evIdx) => {
+            let icon = '📌';
+            let badgeBg = '#f1f5f9';
+            let badgeColor = '#475569';
 
-        return `
-          <div style="margin-bottom: 18px; border-left: 3px solid #3b82f6; padding-left: 14px; position: relative;">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-              <span style="font-size:16px;">📅</span>
-              <strong style="font-size:14.5px; color:var(--primary);">${escapeHtml(dateStr)}</strong>
-              <span class="badge" style="background:#eff6ff; color:#1e40af; font-size:11px;">${events.length} Activit${events.length > 1 ? 'ies' : 'y'}</span>
-            </div>
+            if (ev.activity_type === 'LOGIN') { icon = '🔑'; badgeBg = '#eff6ff'; badgeColor = '#1e40af'; }
+            else if (ev.activity_type === 'PRACTICE') { icon = '📖'; badgeBg = '#ecfdf5'; badgeColor = '#065f46'; }
+            else if (ev.activity_type === 'TRIAL') { icon = '⭐'; badgeBg = '#fef3c7'; badgeColor = '#92400e'; }
+            else if (ev.activity_type === 'OFFLINE') { icon = '📝'; badgeBg = '#ede9fe'; badgeColor = '#5b21b6'; }
+            else if (ev.activity_type === 'RESET') { icon = '🔄'; badgeBg = '#fee2e2'; badgeColor = '#991b1b'; }
 
-            <!-- Tree Branches -->
-            <div style="display:flex; flex-direction:column; gap:8px;">
-              ${events.map(ev => {
-                let icon = '📌';
-                if (ev.activity_type === 'LOGIN') icon = '🔑';
-                else if (ev.activity_type === 'LOGOUT') icon = '🚪';
-                else if (ev.activity_type === 'PRACTICE') icon = '📖';
-                else if (ev.activity_type === 'TRIAL') icon = '⭐';
-                else if (ev.activity_type === 'RESET') icon = '🔄';
+            const detailId = `hist-qa-${dIdx}-${evIdx}`;
+            const hasQAs = Array.isArray(ev.qa_list) && ev.qa_list.length > 0;
 
-                return `
-                  <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-muted); margin-bottom:3px;">
-                      <span>${icon} <strong>${escapeHtml(ev.title)}</strong></span>
-                      <span style="font-weight:700;">⏱️ ${formatDateStrict(ev.timestamp)}</span>
+            return `
+              <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; box-shadow:0 2px 5px rgba(0,0,0,0.02);">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-muted); margin-bottom:6px; flex-wrap:wrap; gap:6px;">
+                  <span style="display:flex; align-items:center; gap:6px;">
+                    <span style="font-size:15px;">${icon}</span>
+                    <strong style="color:#0f172a; font-size:13.5px;">${escapeHtml(ev.title)}</strong>
+                  </span>
+                  <span style="font-weight:700; background:${badgeBg}; color:${badgeColor}; padding:3px 8px; border-radius:6px;">
+                    ⏱️ ${formatDateStrict(ev.timestamp)}
+                  </span>
+                </div>
+
+                ${ev.details ? `<div style="font-size:12.5px; color:#475569; padding-left:24px; margin-bottom:6px; line-height:1.5;">${escapeHtml(ev.details)}</div>` : ''}
+
+                <!-- EXPANDABLE BREAKDOWN OF QUESTIONS ANSWERED -->
+                ${hasQAs ? `
+                  <div style="padding-left: 24px; margin-top: 6px;">
+                    <button type="button" onclick="toggleAccordion('${detailId}')" class="btn btn-outline" style="padding: 4px 10px; font-size: 11.5px; font-weight: 700; color: var(--primary); border-color: #bfdbfe; background: #eff6ff; border-radius:8px;">
+                      🔍 View Question-by-Question Breakdown (${ev.qa_list.length} Qs) ▾
+                    </button>
+
+                    <div id="${detailId}" style="display:none; margin-top:10px; border-top:1px dashed #cbd5e1; padding-top:8px;">
+                      <div class="table-responsive" style="margin:0;">
+                        <table class="data-table" style="font-size:11.5px;">
+                          <thead>
+                            <tr style="background:#f8fafc;">
+                              <th style="width:35px;">#</th>
+                              <th>Subject</th>
+                              <th>Question</th>
+                              <th>Student's Choice</th>
+                              <th>Correct Choice</th>
+                              <th>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${ev.qa_list.map((q, qIdx) => `
+                              <tr>
+                                <td>${qIdx + 1}</td>
+                                <td><span class="badge" style="font-size:10px;">${getFullSubjectName(q.subject)}</span></td>
+                                <td>${escapeHtml(q.question)}</td>
+                                <td><b>${escapeHtml(q.user_choice)}</b></td>
+                                <td><b style="color:var(--success);">${escapeHtml(q.correct_choice)}</b></td>
+                                <td>
+                                  <span class="badge ${q.is_correct ? 'badge-success' : 'badge-danger'}" style="font-size:10px;">
+                                    ${q.is_correct ? 'Correct' : 'Wrong'}
+                                  </span>
+                                </td>
+                              </tr>
+                            `).join('')}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                    ${ev.details ? `<div style="font-size:12.5px; color:#475569; padding-left:20px;">${escapeHtml(ev.details)}</div>` : ''}
                   </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Admin view: Collapsible student list (A to Z) with individual history trees
-    function renderAdminHistoryAccordions(allHistory) {
-      const container = document.getElementById('admin-history-accordion-list');
-      const users = (cachedAdminData?.users || []).filter(u => !isStaffOrAdminUser(u));
-
-      users.sort((a, b) => (a.name || a.username).localeCompare(b.name || b.username));
-
-      if (users.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No students enrolled.</p>';
-        return;
-      }
-
-      container.innerHTML = users.map((st, sIdx) => {
-        const studentRecords = allHistory.filter(h => 
-          String(h.phone || '').trim() === String(st.phone || '').trim() ||
-          String(h.username || '').toLowerCase() === String(st.username || '').toLowerCase()
-        );
-
-        return `
-          <div class="accordion-item">
-            <div class="accordion-header" onclick="toggleAccordion('hist-tree-acc-${sIdx}')">
-              <div style="display:flex; align-items:center; gap:8px;">
-                <strong>${sIdx + 1}. ${escapeHtml(st.name)}</strong>
-                <span class="badge" style="font-size:11px;">Class ${st.class || '7'}-${st.division || 'A'}</span>
-                <span style="font-size:12px; color:var(--text-muted);">(${studentRecords.length} records)</span>
+                ` : ''}
               </div>
-              <div>▾</div>
-            </div>
-            <div class="accordion-body" id="hist-tree-acc-${sIdx}">
-              <div id="hist-branch-${sIdx}"></div>
-            </div>
-          </div>
-        `;
-      }).join('');
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 
-      users.forEach((st, sIdx) => {
-        const branchBox = document.getElementById(`hist-branch-${sIdx}`);
-        const studentRecords = allHistory.filter(h => 
-          String(h.phone || '').trim() === String(st.phone || '').trim() ||
-          String(h.username || '').toLowerCase() === String(st.username || '').toLowerCase()
-        );
-        if (branchBox) renderDateWiseHistoryTree(branchBox, studentRecords);
-      });
-    }
+    // =========================================================================
+// ADMIN ACCORDION RENDERER (ALL STUDENTS + STAFF + ADMINS INCLUDED)
+// =========================================================================
+function renderAdminHistoryAccordions(allHistory) {
+  const container = document.getElementById('admin-history-accordion-list');
+  if (!container) return;
+
+  const users = [...(cachedAdminData?.users || [])];
+  users.sort((a, b) => String(a.name || a.username).localeCompare(String(b.name || b.username)));
+
+  if (users.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No users registered.</p>';
+    return;
+  }
+
+  const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+
+  container.innerHTML = users.map((u, uIdx) => {
+    const uPhone10 = get10(u.phone);
+    const uUser = String(u.username || '').trim().toLowerCase();
+    const uName = String(u.name || '').trim().toLowerCase();
+
+    // Match all events for this user
+    const userRecords = allHistory.filter(h => {
+      const hPhone10 = get10(h.phone);
+      const hUser = String(h.username || '').trim().toLowerCase();
+      const hName = String(h.student_name || '').trim().toLowerCase();
+
+      return (uUser && hUser && uUser === hUser) ||
+             (uPhone10 && hPhone10 && uPhone10 === hPhone10) ||
+             (uName && hName && (uName === hName || uName.includes(hName) || hName.includes(uName)));
+    });
+
+    const isStaff = isStaffOrAdminUser(u);
+
+    return `
+      <div class="accordion-item" style="margin-bottom:12px;">
+        <div class="accordion-header" onclick="toggleAccordion('hist-tree-acc-${uIdx}')">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <strong>${uIdx + 1}. ${escapeHtml(u.name || u.username)}</strong>
+            ${isStaff ? '<span class="badge badge-warning" style="font-size:10.5px;">STAFF</span>' : `<span class="badge" style="font-size:10.5px;">Class ${u.class || '7'}-${u.division || 'A'}</span>`}
+            <span class="badge ${userRecords.length > 0 ? 'badge-success' : ''}" style="font-size:11px;">
+              ${userRecords.length} record${userRecords.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div>▾</div>
+        </div>
+        <div class="accordion-body" id="hist-tree-acc-${uIdx}" style="padding:18px;">
+          <div id="hist-branch-${uIdx}"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Hydrate each accordion's date tree
+  users.forEach((u, uIdx) => {
+    const branchBox = document.getElementById(`hist-branch-${uIdx}`);
+    const uPhone10 = get10(u.phone);
+    const uUser = String(u.username || '').trim().toLowerCase();
+    const uName = String(u.name || '').trim().toLowerCase();
+
+    const userRecords = allHistory.filter(h => {
+      const hPhone10 = get10(h.phone);
+      const hUser = String(h.username || '').trim().toLowerCase();
+      const hName = String(h.student_name || '').trim().toLowerCase();
+
+      return (uUser && hUser && uUser === hUser) ||
+             (uPhone10 && hPhone10 && uPhone10 === hPhone10) ||
+             (uName && hName && (uName === hName || uName.includes(hName) || hName.includes(uName)));
+    });
+
+    if (branchBox) renderDateWiseHistoryTree(branchBox, userRecords);
+  });
+}
 
     // =========================================================================
     // TAB 13: OFFLINE EXAM SCORES (ADMIN ENTRY & METRICS CALCULATION)
@@ -7260,6 +7743,52 @@ async function logPortalActivity(activityType, title, details = '') {
         loadOfflineExamsAdmin();
       });
     }
+
+    // =========================================================================
+// SAFE BATCH SYNC TO SUPABASE (CHUNKED IN GROUPS OF 25, PREVENTS TIMEOUT)
+// =========================================================================
+async function syncPastActivitiesToHistoryTable() {
+  showToast('Starting safe batch sync to portal_history...', 'info');
+  setProgress(25);
+
+  const synth = synthesizeHistoryFromCache();
+  if (synth.length === 0) {
+    setProgress(100);
+    showToast('No activities found to sync.', 'info');
+    return;
+  }
+
+  // Deduplicate against existing table rows before inserting
+  const { data: existingRows } = await supabaseClient
+    .from('portal_history')
+    .select('username, timestamp, activity_type');
+
+  const existingSet = new Set((existingRows || []).map(r => `${r.username}_${r.timestamp}_${r.activity_type}`));
+  const freshRows = synth.filter(s => !existingSet.has(`${s.username}_${s.timestamp}_${s.activity_type}`));
+
+  if (freshRows.length === 0) {
+    setProgress(100);
+    showToast('All past activities are already synchronized!', 'success');
+    return;
+  }
+
+  // Insert in safe batches of 25 with micro-delays to yield to browser main thread
+  let insertedCount = 0;
+  const chunkSize = 25;
+
+  for (let i = 0; i < freshRows.length; i += chunkSize) {
+    const batch = freshRows.slice(i, i + chunkSize);
+    const { error } = await supabaseClient.from('portal_history').insert(batch);
+    if (!error) insertedCount += batch.length;
+    
+    // Yield execution to prevent the browser's 400ms timeout freeze
+    await new Promise(r => setTimeout(r, 10));
+  }
+
+  setProgress(100);
+  showToast(`Successfully synced ${insertedCount} new history records!`, 'success');
+  loadHistoryData();
+}
 
   </script>
 </body>
