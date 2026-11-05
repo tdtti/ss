@@ -1206,7 +1206,7 @@
     <section id="admin-resets-sec" class="section" style="display:none;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h2 style="margin:0; color: #1B257D;">Reset Requests</h2>
-        <button onclick="refreshResetRequests()" class="btn btn-outline" title="Refresh Requests">🔄 Refresh</button>
+        <button onclick="refreshResetRequests()" class="btn btn-outline" title="Refresh Requests">🔄 </button>
       </div>
       <div class="table-responsive">
         <table class="data-table">
@@ -1564,10 +1564,10 @@
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button onclick="syncPastActivitiesToHistoryTable()" class="btn btn-outline" style="padding:6px 14px;" title="Import all past logins, tests, and attendance into the history table">
-            ⚡ Sync Past Activities to History
+            ⚡ 
           </button>
           <button onclick="loadHistoryData()" class="btn btn-primary" style="padding:6px 14px;">
-            🔄 Refresh History
+            🔄 
           </button>
         </div>
       </div>
@@ -1585,7 +1585,7 @@
     <section id="admin-offline-exam-sec" class="section" style="display:none;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <h2 style="margin:0; color:#1B257D;">Offline Exam Scores Management</h2>
-        <span class="badge" style="background:#fef3c7; color:#92400e; font-weight:800;">Admin Privileged</span>
+        <span class="badge" style="background:#fef3c7; color:#92400e; font-weight:800;"></span>
       </div>
 
       <!-- ENTRY FORM -->
@@ -7202,14 +7202,14 @@ async function loadHistoryData() {
   setProgress(100);
 
   if (isPrivileged) {
-    if (heading) heading.innerText = 'All Users Portal Activity & Event History (Tab 12)';
+    if (heading) heading.innerText = 'All Users Portal Activity & Event History ';
     if (tabTitle) tabTitle.innerText = 'Users History';
     if (studentBox) studentBox.style.display = 'none';
     if (adminBox) adminBox.style.display = 'block';
 
     renderAdminHistoryAccordions(allHistory);
   } else {
-    if (heading) heading.innerText = 'My Activity & Event History (Tab 12)';
+    if (heading) heading.innerText = 'My Activity & Event History';
     if (tabTitle) tabTitle.innerText = 'My History';
     if (studentBox) studentBox.style.display = 'block';
     if (adminBox) adminBox.style.display = 'none';
