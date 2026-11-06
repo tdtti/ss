@@ -3579,32 +3579,43 @@ async function syncPastActivitiesToSupabase() {
 }
 
     // =========================================================================
-// FULL UPDATED: SAVE COMPLETED SESSION ON EXIT WITH ACTUAL FRACTION SCORE
+// FULL UPDATED: SAVE COMPLETED SESSION (EACH SESSION GETS A UNIQUE TIMESTAMP ID)
 // =========================================================================
 async function saveCompletedSessionOnExit() {
   if (!sessionAnswersLog || sessionAnswersLog.length === 0) return;
 
-  const total = sessionAnswersLog.length;
-  const score = sessionAnswersLog.filter(a => 
+  const currentSessionLog = [...sessionAnswersLog];
+  const total = currentSessionLog.length;
+  const score = currentSessionLog.filter(a => 
     a.IsCorrect === true || a.is_correct === true || a.is_correct === 'YES' || a.IsCorrect === 'YES'
   ).length;
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   const actualScoreDisplay = `${score} / ${total} (${pct}%)`;
 
   const cleanDate = new Date().toLocaleDateString('en-GB');
-  const formattedDT = formatDateStrict(new Date().toISOString());
+  const now = new Date();
+  const formattedDT = formatDateStrict(now.toISOString());
   const studentPhone = String(currentUser.phone || '').trim();
   const studentUsername = String(currentUser.username || '').trim().toLowerCase();
-  const subjectCode = sessionAnswersLog[0]?.SubjectCode || 'General';
-  const subjectName = sessionAnswersLog[0]?.Subject || getFullSubjectName(subjectCode);
+  
+  const isTrial = (isTrialMode === true);
+  const subjectCode = isTrial ? 'TRIAL' : (currentSessionLog[0]?.SubjectCode || 'General');
+  const subjectName = isTrial ? 'Trial Exam' : (currentSessionLog[0]?.Subject || getFullSubjectName(subjectCode));
+  const sessionActivity = isTrial ? 'Trial Exam Mode' : `Subject Practice (${subjectName})`;
+
+  // ✅ CRITICAL FIX: TIMESTAMPED ATTENDANCE ID
+  // Guarantees that multiple sessions on the same day never overwrite each other!
+  const sessionTimestamp = now.getTime();
+  const attId = `ATT-${studentPhone}-${cleanDate.replace(/\//g, '')}-${subjectCode}-${sessionTimestamp}`;
 
   setProgress(30);
 
   try {
     // 1. UPSERT STUDENT ANSWERS AUDIT LOG
-    const upsertRows = sessionAnswersLog.map(q => ({
+    const upsertRows = currentSessionLog.map(q => ({
       timestamp: formattedDT,
       phone: studentPhone,
+      username: studentUsername,
       student_name: currentUser.name || currentUser.username,
       class: String(currentUser.userClass || '7'),
       division: String(currentUser.division || 'A'),
@@ -3625,8 +3636,7 @@ async function saveCompletedSessionOnExit() {
     const seconds = durationSeconds % 60;
     const durationText = minutes > 0 ? `${minutes}m ${String(seconds).padStart(2, '0')}s` : `${seconds}s`;
 
-    // 3. UPSERT INTO ATTENDANCE TABLE (STRICT REAL SCORE SAVED)
-    const attId = `ATT-${studentPhone}-${cleanDate}-${subjectCode}`;
+    // 3. INSERT DISTINCT ROW IN ATTENDANCE TABLE (PRESERVES EVERY INDIVIDUAL SESSION)
     await supabaseClient.from('attendance').upsert([{
       attendance_id: attId,
       username: studentUsername,
@@ -3636,15 +3646,15 @@ async function saveCompletedSessionOnExit() {
       division: String(currentUser.division || 'A'),
       date: cleanDate,
       timestamp: formattedDT,
-      activity: `Subject Practice (${subjectName})`,
+      activity: sessionActivity,
       duration_seconds: durationSeconds,
       duration_text: durationText,
       questions_attended: total,
-      score: actualScoreDisplay // Displays e.g. "18 / 25 (72%)" instead of "25 Attended"
+      score: actualScoreDisplay
     }], { onConflict: 'attendance_id' });
 
     // 4. SYNC TO student_progress SUMMARY TABLE
-    if (typeof updateStudentProgressSummary === 'function') {
+    if (!isTrial && typeof updateStudentProgressSummary === 'function') {
       await updateStudentProgressSummary(subjectCode);
     }
 
@@ -3667,11 +3677,14 @@ async function saveCompletedSessionOnExit() {
     // 6. LOG EVENT TO PORTAL ACTIVITY HISTORY (TAB 12)
     if (typeof logPortalActivity === 'function') {
       logPortalActivity(
-        'PRACTICE',
-        `Completed Practice: ${subjectName}`,
+        isTrial ? 'TRIAL' : 'PRACTICE',
+        isTrial ? 'Completed Trial Exam' : `Completed Practice: ${subjectName}`,
         `• Duration: ${durationText} • Questions Practiced: ${total} • Score: ${actualScoreDisplay}`
       );
     }
+
+    // Clear session buffer so it cannot be double-saved or cross-overwritten
+    sessionAnswersLog = [];
 
     setProgress(100);
     showToast(`Saved ${total} questions! Score: ${actualScoreDisplay}`, 'success');
@@ -4011,6 +4024,8 @@ async function saveCompletedSessionOnExit() {
         renderQuestion();
       } else {
         document.getElementById('quiz-card').style.display = 'none';
+        // Immediately commit session to DB before presenting consolidation
+        await saveCompletedSessionOnExit();
         showConsolidationView();
       }
       updateStudentProgressSummary(q.Subject);
@@ -4201,14 +4216,20 @@ async function saveCompletedSessionOnExit() {
       );
     }
 
-    // =========================================================================
-    // FULL UPDATED: RENDER STUDENT ATTENDANCE LOG (TAB 2 PORTFOLIO)
-    // =========================================================================
     function renderStudentAttendance(attLogs, verifiedTotalQuestions) {
       let totalSec = 0;
       const activeDaysSet = new Set();
 
-      (attLogs || []).forEach(item => {
+      // Filter out zero-question daily heartbeat entries so only real sessions display
+      const validLogs = (attLogs || []).filter(item => {
+        const isDailyHeartbeat = String(item.attendance_id || '').includes('-DAILY');
+        if (isDailyHeartbeat && (Number(item.questions_attended) || 0) === 0) {
+          return false;
+        }
+        return true;
+      });
+
+      validLogs.forEach(item => {
         totalSec += (Number(item.duration_seconds) || 0);
         if (item.date) activeDaysSet.add(item.date);
         else if (item.timestamp) activeDaysSet.add(item.timestamp.split(',')[0].trim());
@@ -4227,13 +4248,13 @@ async function saveCompletedSessionOnExit() {
       const tbody = document.getElementById('portfolio-attendance-body');
       if (!tbody) return;
 
-      if (!attLogs || attLogs.length === 0) {
+      if (!validLogs || validLogs.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">No past attendance records found. Practice sessions will appear here!</td></tr>';
         return;
       }
 
       // Latest session chronologically at the top
-      const sortedLogs = [...attLogs].sort((a, b) => {
+      const sortedLogs = [...validLogs].sort((a, b) => {
         const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
         const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
         return timeB - timeA;
@@ -7789,10 +7810,11 @@ async function loadHistoryData() {
         const aTimeVal = parseCustomDate(a.timestamp)?.getTime() || 0;
         const qCount = Number(a.questions_attended) || 0;
 
-        // Skip non-practice empty snapshots
+        // Skip non-practice background daily ticker rows
         if (qCount === 0 && (a.activity?.includes('Daily USS Training') || a.score === 'Active')) return;
 
-        const dedupKey = `ATT_${aPhone10 || aName}_${aDate}_${a.activity}_${a.timestamp}`;
+        // Use the exact unique attendance_id so every session is preserved in History
+        const dedupKey = a.attendance_id || `ATT_${aPhone10 || aName}_${aDate}_${a.activity}_${a.timestamp}`;
         if (seenAttendanceSessions.has(dedupKey)) return;
         seenAttendanceSessions.add(dedupKey);
 
