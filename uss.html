@@ -337,8 +337,8 @@
       <div class="form-group" style="margin-bottom: 12px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <label style="margin:0; font-weight:800; font-size:13px;">Paste Questions Here:</label>
-          <button type="button" class="btn btn-outline" onclick="pasteSampleBulkQuestions()" style="padding:4px 10px; font-size:11.5px; font-weight:700;">
-            📝 Paste Sample Mathematics Data
+          <button type="button" class="btn btn-outline" onclick="copySampleBulkQuestions(this)" style="padding:4px 10px; font-size:11.5px; font-weight:700;">
+            📝 Copy Sample Mathematics Data
           </button>
         </div>
         <textarea id="bulk-questions-textarea" rows="11" placeholder="subject,question,option_a,option_b,option_c,option_d,correct_answer,image_url&#10;MM,The sum of three consecutive natural numbers is 72. Which is the largest number?,23,24,25,26,C,&#10;MM,What is the perimeter of a rectangle whose area is 96 sq.cm and length is 12 cm?,40 cm,20 cm,36 cm,48 cm,A," style="font-family: monospace; font-size: 12.5px; line-height: 1.5; background: #f8fafc; border: 1.5px solid var(--border-color);"></textarea>
@@ -1309,14 +1309,52 @@
         </table>
       </div>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:35px; flex-wrap:gap:10px;">
-        <h2 style="margin:0; color: #1B257D;">Question Bank</h2>
+      <!-- QUESTION BANK HEADER WITH SEARCH & FILTER CONTROLS -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:35px; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h2 style="margin:0; color: #1B257D;">Question Bank</h2>
+          <span id="questions-filtered-count-badge" class="badge" style="background:#eff6ff; color:#1e40af; font-size:12px; font-weight:800;">
+            Loading...
+          </span>
+        </div>
         <button id="admin-bulk-delete-qs-btn" class="btn btn-danger" onclick="deleteSelectedQuestions()" style="display:none; padding:8px 16px;">
           🗑️ Delete Selected (<span id="selected-qs-count">0</span>)
         </button>
       </div>
 
-      <div class="table-responsive">
+      <!-- SEARCH BAR & SUBJECT FILTER -->
+      <div style="display: flex; gap: 10px; margin-top: 14px; margin-bottom: 12px; flex-wrap: wrap;">
+        <div style="flex: 2; min-width: 220px; position: relative;">
+          <input type="text" 
+                 id="search-questions-input" 
+                 oninput="filterQuestionsBank()" 
+                 placeholder="🔍 Search question prompt, options, or keywords (e.g., triangle, natural numbers)..." 
+                 style="padding: 10px 14px; font-size: 13px; border-radius: 10px; background: #ffffff; border: 1.5px solid var(--border-color);">
+        </div>
+        <div style="flex: 1; min-width: 160px;">
+          <select id="filter-questions-subject" 
+                  onchange="filterQuestionsBank()" 
+                  style="padding: 10px 12px; font-size: 13px; border-radius: 10px; background: #ffffff; border: 1.5px solid var(--border-color); font-weight: 700;">
+            <option value="ALL">All Subjects</option>
+            <option value="MI">MI (Malayalam I)</option>
+            <option value="AR">AR (Arabic)</option>
+            <option value="SK">SK (Sanskrit)</option>
+            <option value="MII">MII (Malayalam II)</option>
+            <option value="EN">EN (English)</option>
+            <option value="MM">MM (Mathematics)</option>
+            <option value="BS">BS (Basic Science)</option>
+            <option value="SS">SS (Social Science)</option>
+          </select>
+        </div>
+        <button type="button" 
+                class="btn btn-outline" 
+                onclick="resetQuestionsSearch()" 
+                style="padding: 10px 16px; font-size: 12.5px; font-weight: 700;">
+          Clear ✕
+        </button>
+      </div>
+
+      <div class="table-responsive" style="margin-top:0;">
         <table class="data-table">
           <thead>
             <tr>
@@ -5808,38 +5846,17 @@ async function saveCompletedSessionOnExit() {
       }
 
       // -----------------------------------------------------------------------
-      // TAB 8: QUESTION BANK
+      // TAB 8: QUESTION BANK (SEARCHABLE & FILTERABLE)
       // -----------------------------------------------------------------------
       selectedQuestionIds.clear();
       updateBulkDeleteQsButton();
       const selectAllCheckbox = document.getElementById('select-all-qs');
       if (selectAllCheckbox) selectAllCheckbox.checked = false;
 
-      const sortedQuestions = [...questions].sort((a, b) => {
-        const orderA = SUBJECT_ORDER.indexOf(String(a.subject).toUpperCase());
-        const orderB = SUBJECT_ORDER.indexOf(String(b.subject).toUpperCase());
-        const posA = orderA === -1 ? 99 : orderA;
-        const posB = orderB === -1 ? 99 : orderB;
-        if (posA !== posB) return posA - posB;
-        return String(a.question || '').localeCompare(String(b.question || ''));
-      });
-
-      const qBody = document.getElementById('admin-questions-body');
-      if (qBody) {
-        qBody.innerHTML = sortedQuestions.map((q, idx) => `
-          <tr>
-            <td style="text-align:center;"><input type="checkbox" class="q-checkbox" data-id="${q.id}" onchange="toggleSelectQuestion('${q.id}', this.checked)"></td>
-            <td>${idx + 1}</td>
-            <td><span class="badge">${q.subject}</span></td>
-            <td>${escapeHtml(q.question)} ${q.image_url ? '📷' : ''}</td>
-            <td><b>${q.correct_answer}</b></td>
-            <td style="display:flex; gap:8px;">
-              <button onclick="openInstantEditModalById('${q.id}')" class="btn btn-outline" style="padding:4px 8px;">✏️</button>
-              <button onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; color:var(--danger); border-color:#fca5a5;">🗑️</button>
-            </td>
-          </tr>
-        `).join('') || '<tr><td colspan="6" style="text-align:center;">No questions found in bank.</td></tr>';
-      }
+      // Render question bank preserving active search query & subject filter
+      const currentQSearch = (document.getElementById('search-questions-input')?.value || '').trim().toLowerCase();
+      const currentQSub = (document.getElementById('filter-questions-subject')?.value || 'ALL').toUpperCase();
+      renderAdminQuestionsTable(currentQSearch, currentQSub);
 
       // -----------------------------------------------------------------------
       // UPDATE ASSOCIATED VIEWS
@@ -6437,21 +6454,46 @@ async function saveCompletedSessionOnExit() {
       return result;
     }
 
-    function pasteSampleBulkQuestions() {
+    // =========================================================================
+    // COPY SAMPLE MATHEMATICS BULK DATA TO CLIPBOARD
+    // =========================================================================
+    function copySampleBulkQuestions(btn) {
       const sample = 
-`subject,question,option_a,option_b,option_c,option_d,correct_answer,image_url
-MM,The sum of three consecutive natural numbers is 72. Which is the largest number?,23,24,25,26,C,
-MM,What is the perimeter of a rectangle whose area is 96 sq.cm and length is 12 cm?,40 cm,20 cm,36 cm,48 cm,A,
-MM,If 3/4 of a number is 60, what is 1/2 of that number?,30,40,45,50,B,
-MM,The average of 5 numbers is 28. If one number is excluded, the average becomes 25. What is the excluded number?,35,40,42,45,B,
-MM,A train 150 m long crosses an electric post in 10 seconds. What is the speed of the train in km/h?,15 km/h,36 km/h,54 km/h,60 km/h,C,
-MM,What is the measure of each interior angle of a regular hexagon?,108°,120°,135°,140°,B,
-MM,If 2^x = 64, what is the value of 2^(x-2)?,8,16,32,4,B,
-MM,A shopkeeper bought an article for ₹400 and sold it for ₹480. What is the profit percentage?,15%,16.66%,20%,25%,C,
-MM,"What is the smallest number which when divided by 6, 8, and 12 leaves a remainder of 3 in each case?",21,27,45,51,B,
-MM,If the side of a square is increased by 20%, by what percentage does its area increase?,20%,40%,44%,48%,C`;
+      `subject,question,option_a,option_b,option_c,option_d,correct_answer,image_url
+      MM,The sum of three consecutive natural numbers is 72. Which is the largest number?,23,24,25,26,C,
+      MM,What is the perimeter of a rectangle whose area is 96 sq.cm and length is 12 cm?,40 cm,20 cm,36 cm,48 cm,A,
+      MM,If 3/4 of a number is 60, what is 1/2 of that number?,30,40,45,50,B,
+      MM,The average of 5 numbers is 28. If one number is excluded, the average becomes 25. What is the excluded number?,35,40,42,45,B,
+      MM,A train 150 m long crosses an electric post in 10 seconds. What is the speed of the train in km/h?,15 km/h,36 km/h,54 km/h,60 km/h,C,
+      MM,What is the measure of each interior angle of a regular hexagon?,108°,120°,135°,140°,B,
+      MM,If 2^x = 64, what is the value of 2^(x-2)?,8,16,32,4,B,
+      MM,A shopkeeper bought an article for ₹400 and sold it for ₹480. What is the profit percentage?,15%,16.66%,20%,25%,C,
+      MM,"What is the smallest number which when divided by 6, 8, and 12 leaves a remainder of 3 in each case?",21,27,45,51,B,
+      MM,If the side of a square is increased by 20%, by what percentage does its area increase?,20%,40%,44%,48%,C`;
 
-      document.getElementById('bulk-questions-textarea').value = sample;
+      // Temporarily bypass portal security clipboard lock
+      const prevSecurityState = securityProtectionActive;
+      securityProtectionActive = false;
+
+      const handleSuccess = () => {
+        securityProtectionActive = prevSecurityState;
+        showToast('📋 Sample Mathematics data copied to clipboard!', 'success');
+        if (btn) {
+          const originalHtml = btn.innerHTML;
+          btn.innerHTML = '✅ Copied to Clipboard!';
+          setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+        }
+      };
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(sample)
+          .then(handleSuccess)
+          .catch(() => {
+            fallbackCopyText(sample, 10, prevSecurityState);
+          });
+      } else {
+        fallbackCopyText(sample, 10, prevSecurityState);
+      }
     }
 
     async function handleBulkTextQuestionsUpload() {
@@ -6615,6 +6657,122 @@ MM,If the side of a square is increased by 20%, by what percentage does its area
         setProgress(100);
         showToast('No past activities found to sync.', 'info');
       }
+    }
+
+    // =========================================================================
+    // REAL-TIME QUESTION BANK SEARCH & FILTER
+    // =========================================================================
+    function filterQuestionsBank() {
+      const query = (document.getElementById('search-questions-input')?.value || '').trim().toLowerCase();
+      const subjectFilter = (document.getElementById('filter-questions-subject')?.value || 'ALL').toUpperCase();
+      renderAdminQuestionsTable(query, subjectFilter);
+    }
+
+    function resetQuestionsSearch() {
+      const searchInput = document.getElementById('search-questions-input');
+      const subjectSelect = document.getElementById('filter-questions-subject');
+      if (searchInput) searchInput.value = '';
+      if (subjectSelect) subjectSelect.value = 'ALL';
+      renderAdminQuestionsTable('', 'ALL');
+    }
+
+    function renderAdminQuestionsTable(searchQuery = '', subjectFilter = 'ALL') {
+      const qBody = document.getElementById('admin-questions-body');
+      if (!qBody) return;
+
+      const questions = cachedAdminData?.questions || [];
+
+      // Sort in canonical curriculum order (MI -> AR -> SK -> MII -> EN -> MM -> BS -> SS)
+      const sortedQuestions = [...questions].sort((a, b) => {
+        const orderA = SUBJECT_ORDER.indexOf(String(a.subject).toUpperCase());
+        const orderB = SUBJECT_ORDER.indexOf(String(b.subject).toUpperCase());
+        const posA = orderA === -1 ? 99 : orderA;
+        const posB = orderB === -1 ? 99 : orderB;
+        if (posA !== posB) return posA - posB;
+        return String(a.question || '').localeCompare(String(b.question || ''));
+      });
+
+      // Filter by subject and keyword
+      const filtered = sortedQuestions.filter(q => {
+        const qSub = String(q.subject || '').toUpperCase().trim();
+        if (subjectFilter !== 'ALL' && qSub !== subjectFilter) {
+          return false;
+        }
+
+        if (searchQuery) {
+          const qText = String(q.question || '').toLowerCase();
+          const optA = String(q.option_a || '').toLowerCase();
+          const optB = String(q.option_b || '').toLowerCase();
+          const optC = String(q.option_c || '').toLowerCase();
+          const optD = String(q.option_d || '').toLowerCase();
+          const subName = String(getFullSubjectName(qSub)).toLowerCase();
+          const qId = String(q.id || '').toLowerCase();
+
+          const match = qText.includes(searchQuery) ||
+                        optA.includes(searchQuery) ||
+                        optB.includes(searchQuery) ||
+                        optC.includes(searchQuery) ||
+                        optD.includes(searchQuery) ||
+                        qSub.toLowerCase().includes(searchQuery) ||
+                        subName.includes(searchQuery) ||
+                        qId.includes(searchQuery);
+
+          if (!match) return false;
+        }
+
+        return true;
+      });
+
+      // Update question count badge
+      const countBadge = document.getElementById('questions-filtered-count-badge');
+      if (countBadge) {
+        if (searchQuery || subjectFilter !== 'ALL') {
+          countBadge.innerText = `${filtered.length} of ${questions.length} Questions`;
+        } else {
+          countBadge.innerText = `${questions.length} Total Questions`;
+        }
+      }
+
+      if (filtered.length === 0) {
+        qBody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted); font-size:13.5px;">
+              🔍 No questions found matching "<strong>${escapeHtml(searchQuery || subjectFilter)}</strong>". Try another keyword or clear the search.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      qBody.innerHTML = filtered.map((q, idx) => {
+        const isChecked = selectedQuestionIds.has(String(q.id));
+        return `
+          <tr>
+            <td style="text-align:center;">
+              <input type="checkbox" class="q-checkbox" data-id="${q.id}" ${isChecked ? 'checked' : ''} onchange="toggleSelectQuestion('${q.id}', this.checked)">
+            </td>
+            <td style="text-align:center; font-weight:700;">${idx + 1}</td>
+            <td><span class="badge">${escapeHtml(q.subject)}</span></td>
+            <td>
+              <div style="font-weight:600; line-height:1.5;">${escapeHtml(q.question)} ${q.image_url ? '<span title="Has diagram">📷</span>' : ''}</div>
+              <small style="color:var(--text-muted); font-size:11.5px; display:block; margin-top:3px;">
+                A: ${escapeHtml(q.option_a)} | B: ${escapeHtml(q.option_b)} | C: ${escapeHtml(q.option_c)} | D: ${escapeHtml(q.option_d)}
+              </small>
+            </td>
+            <td style="text-align:center;"><b style="color:var(--success); font-size:14px;">${escapeHtml(q.correct_answer)}</b></td>
+            <td>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <button type="button" onclick="openInstantEditModalById('${q.id}')" class="btn btn-outline" style="padding:4px 8px; font-size:13px;" title="Edit Question">
+                  ✏️
+                </button>
+                <button type="button" onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; font-size:13px; color:var(--danger); border-color:#fca5a5;" title="Delete Question">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     // =========================================================================
