@@ -1756,6 +1756,7 @@
     let selectedOption = null;
     let sessionAnswersLog = [];
     let sessionStartTime = null;
+    let hasSavedCurrentSession = false;
 
     let presenceChannel = null;
     let sessionGuardChannel = null;
@@ -1923,6 +1924,9 @@
         initializeSession();
         setupPresenceTracker();
         setupSingleSessionGuard();
+
+        // ✅ Log session access for auto-resumed student logins (Kamalesh, Devalakshmi, etc.)
+        recordSessionAccessLog('SUCCESS');
       }
       
 
@@ -3014,6 +3018,60 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
     }
 
     // =========================================================================
+    // AUDIT ACCESS LOGGER (FOR BOTH MANUAL LOGINS & RESUMED LOCAL SESSIONS)
+    // =========================================================================
+    async function recordSessionAccessLog(status = 'SUCCESS') {
+      if (!currentUser) return;
+
+      const userIdentifier = currentUser.username || currentUser.phone;
+      const sessionLogKey = 'last_logged_visit_' + userIdentifier;
+      const lastLogTime = parseInt(sessionStorage.getItem(sessionLogKey) || '0', 10);
+      const now = Date.now();
+
+      // Debounce: don't create duplicate logs if page was reloaded within 15 minutes
+      if (currentUser.logId && (now - lastLogTime < 15 * 60 * 1000)) {
+        return;
+      }
+
+      const nowStr = formatDateStrict(new Date().toISOString());
+      const logId = 'LOG-' + now + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+      currentUser.logId = logId;
+      currentUser.loginTimeStr = nowStr;
+      sessionStorage.setItem(sessionLogKey, String(now));
+
+      if (localStorage.getItem('USS_USER')) {
+        localStorage.setItem('USS_USER', JSON.stringify(currentUser));
+      } else {
+        sessionStorage.setItem('USS_USER', JSON.stringify(currentUser));
+      }
+
+      const deviceStr = getDeviceInfo();
+
+      try {
+        // Close any prior unclosed session for this user
+        await supabaseClient
+          .from('logs')
+          .update({ logout_time: 'Auto Closed (Session Resumed)' })
+          .eq('identifier', userIdentifier)
+          .eq('logout_time', 'Active Now');
+
+        // Insert new audit log entry
+        await supabaseClient.from('logs').insert([{ 
+          timestamp: nowStr, 
+          log_id: logId, 
+          identifier: userIdentifier, 
+          role: currentUser.role || currentUser.tabAccess || '1,2,3,4', 
+          login_status: status, 
+          login_time: nowStr, 
+          logout_time: 'Active Now', 
+          device: deviceStr 
+        }]);
+      } catch (err) {
+        console.warn("Could not record audit log:", err);
+      }
+    }
+
+    // =========================================================================
     // FULL UPDATED AUTHENTICATION & LOGIN HANDLER
     // =========================================================================
     async function handleLogin(e) {
@@ -3254,52 +3312,46 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
     }
 
     // =========================================================================
-    // INSTANT NON-BLOCKING LOGOUT (<50ms Response)
+    // RELIABLE LOGOUT: COMMITS LOGOUT TIME BEFORE RELOAD
     // =========================================================================
-    function logout(forced = false) {
-      // 1. Immediately kill local intervals and background tickers
+    async function logout(forced = false) {
       clearInterval(globalQuotaInterval);
       clearInterval(timerInterval);
       clearInterval(presenceHeartbeatInterval);
       clearTimeout(idleTimer);
-      logPortalActivity('LOGOUT', 'Logged out from portal', '');
 
       const savedUser = currentUser;
       const logoutTimeStr = formatDateStrict(new Date().toISOString());
 
-      // 2. Play exit sound
       if (typeof playExitChime === 'function') {
         playExitChime();
       }
 
-      // 3. Immediately wipe client credentials so user cannot navigate back
+      // Clear local memory
       currentUser = null;
       localStorage.removeItem('USS_USER');
       sessionStorage.clear();
 
-      // 4. FIRE-AND-FORGET BACKGROUND CLEANUP (Do NOT await - runs in background)
       try {
         if (presenceChannel) {
-          // Untrack from presence immediately
           presenceChannel.untrack().catch(() => {});
         }
       } catch (e) {}
 
-      if (savedUser && savedUser.logId) {
-        // Send database update asynchronously without blocking UI reload
-        supabaseClient
-          .from('logs')
-          .update({
-            logout_time: forced 
-              ? 'Auto Logged Out (Quota Expired or Device Switch)' 
-              : logoutTimeStr
-          })
-          .eq('log_id', savedUser.logId)
-          .then(() => {})
-          .catch(() => {});
+      // Await database write with a 400ms timeout race so location.reload() never aborts it
+      if (savedUser && (savedUser.logId || savedUser.username)) {
+        try {
+          const updatePromise = savedUser.logId
+            ? supabaseClient.from('logs').update({ logout_time: forced ? 'Auto Logged Out (Quota Expired)' : logoutTimeStr }).eq('log_id', savedUser.logId)
+            : supabaseClient.from('logs').update({ logout_time: logoutTimeStr }).eq('identifier', savedUser.username).eq('logout_time', 'Active Now');
+
+          await Promise.race([
+            updatePromise,
+            new Promise(resolve => setTimeout(resolve, 400))
+          ]);
+        } catch (e) {}
       }
 
-      // 5. Instant visual reset - no waiting for server responses
       location.reload();
     }
 
@@ -3443,10 +3495,12 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
     async function exitPracticeMode() {
       clearInterval(timerInterval);
 
-      if (sessionAnswersLog.length > 0) {
-        await saveCompletedSessionOnExit();
+      if (sessionAnswersLog.length > 0 && !hasSavedCurrentSession) {
+      await saveCompletedSessionOnExit();
       }
 
+      sessionAnswersLog = [];
+      hasSavedCurrentSession = false;
       sessionStartTime = null;
       document.getElementById('top-navbar').style.display = 'flex';
       document.getElementById('sticky-sub-header').style.display = 'flex';
@@ -3579,10 +3633,12 @@ async function syncPastActivitiesToSupabase() {
 }
 
     // =========================================================================
-// FULL UPDATED: SAVE COMPLETED SESSION (EACH SESSION GETS A UNIQUE TIMESTAMP ID)
+// FULL UPDATED: SAVE COMPLETED SESSION (DO NOT WIPE sessionAnswersLog PREMATURELY)
 // =========================================================================
 async function saveCompletedSessionOnExit() {
-  if (!sessionAnswersLog || sessionAnswersLog.length === 0) return;
+  // Prevent duplicate saves while keeping sessionAnswersLog intact for Consolidation view
+  if (!sessionAnswersLog || sessionAnswersLog.length === 0 || hasSavedCurrentSession) return;
+  hasSavedCurrentSession = true;
 
   const currentSessionLog = [...sessionAnswersLog];
   const total = currentSessionLog.length;
@@ -3603,8 +3659,6 @@ async function saveCompletedSessionOnExit() {
   const subjectName = isTrial ? 'Trial Exam' : (currentSessionLog[0]?.Subject || getFullSubjectName(subjectCode));
   const sessionActivity = isTrial ? 'Trial Exam Mode' : `Subject Practice (${subjectName})`;
 
-  // ✅ CRITICAL FIX: TIMESTAMPED ATTENDANCE ID
-  // Guarantees that multiple sessions on the same day never overwrite each other!
   const sessionTimestamp = now.getTime();
   const attId = `ATT-${studentPhone}-${cleanDate.replace(/\//g, '')}-${subjectCode}-${sessionTimestamp}`;
 
@@ -3636,7 +3690,7 @@ async function saveCompletedSessionOnExit() {
     const seconds = durationSeconds % 60;
     const durationText = minutes > 0 ? `${minutes}m ${String(seconds).padStart(2, '0')}s` : `${seconds}s`;
 
-    // 3. INSERT DISTINCT ROW IN ATTENDANCE TABLE (PRESERVES EVERY INDIVIDUAL SESSION)
+    // 3. INSERT INTO ATTENDANCE TABLE WITH UNIQUE TIMESTAMP ID
     await supabaseClient.from('attendance').upsert([{
       attendance_id: attId,
       username: studentUsername,
@@ -3683,8 +3737,8 @@ async function saveCompletedSessionOnExit() {
       );
     }
 
-    // Clear session buffer so it cannot be double-saved or cross-overwritten
-    sessionAnswersLog = [];
+    // NOTE: Do NOT empty sessionAnswersLog here!
+    // It is preserved so showConsolidationView() can display the score and table.
 
     setProgress(100);
     showToast(`Saved ${total} questions! Score: ${actualScoreDisplay}`, 'success');
@@ -3715,6 +3769,7 @@ async function saveCompletedSessionOnExit() {
       if (!subject) return;
 
       sessionAnswersLog = [];
+      hasSavedCurrentSession = false;
       sessionStartTime = Date.now();
       isTrialMode = false;
       currentExhaustedSubjectCode = subject;
@@ -3816,6 +3871,7 @@ async function saveCompletedSessionOnExit() {
 
       isTrialMode = true;
       sessionAnswersLog = [];
+      hasSavedCurrentSession = false;
       sessionStartTime = Date.now();
       currentActiveContext = 'Trial Exam Mode';
       updatePresenceLiveState('Online & Active');
@@ -4114,6 +4170,11 @@ async function saveCompletedSessionOnExit() {
 
     function exitConsolidationView() {
       document.getElementById('consolidation-card').style.display = 'none';
+
+      // Safe clean up now that the student has finished reviewing their results
+      sessionAnswersLog = [];
+      hasSavedCurrentSession = false;
+
       // RESTORE BOTH HEADER AND SUB-HEADER ON FINISH
       document.getElementById('top-navbar').style.display = 'flex';
       document.getElementById('sticky-sub-header').style.display = 'flex';
@@ -4701,7 +4762,7 @@ async function saveCompletedSessionOnExit() {
       ] = await Promise.all([
         supabaseClient.from('users').select('*'),
         supabaseClient.from('questions').select('*'),
-        supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(200),
+        supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(1000),
         supabaseClient.from('student_answers').select('*').order('created_at', { ascending: false }),
         supabaseClient.from('trial_exams').select('*').order('created_at', { ascending: false }),
         supabaseClient.from('reset_requests').select('*').order('created_at', { ascending: false }),
@@ -4712,6 +4773,24 @@ async function saveCompletedSessionOnExit() {
       const users = usersRes.data || [];
       const questions = questionsRes.data || [];
       const logs = logsRes.data || [];
+      // Auto-heal false "Active Now" logs that are older than 90 minutes
+      const nowMs = Date.now();
+      const staleLogIds = [];
+      (logs || []).forEach(l => {
+        if (l.logout_time === 'Active Now') {
+          const lDate = parseCustomDate(l.login_time || l.timestamp);
+          if (lDate && (nowMs - lDate.getTime() > 90 * 60 * 1000)) {
+            l.logout_time = formatDateStrict(new Date(lDate.getTime() + 45 * 60 * 1000).toISOString()) + ' (Session Closed)';
+            if (l.log_id) staleLogIds.push(l.log_id);
+          }
+        }
+      });
+      if (staleLogIds.length > 0) {
+        supabaseClient.from('logs')
+          .update({ logout_time: 'Auto Closed (Session Inactive)' })
+          .in('log_id', staleLogIds)
+          .then(() => {});
+      }
       const allAnswers = answersRes.data || [];
       const allTrialExams = trialsRes.data || [];
       const resetRequests = resetsRes.data || [];
@@ -5884,50 +5963,149 @@ async function saveCompletedSessionOnExit() {
     // =========================================================================
     // AUDIT ACCESS LOGS (TAB 11) - CLEANED: NO ACTIVITY COLUMN & LOGOUT SHOWS '-'
     // =========================================================================
+    // =========================================================================
+    // AUDIT ACCESS LOGS RENDERER (TAB 11) - WITH REAL-TIME RECONCILIATION
+    // =========================================================================
     function renderGroupedAuditLogs(logs) {
       const container = document.getElementById('admin-logs-cards-container');
       if (!container) return;
 
-      if (!logs || logs.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-muted); font-size:14px;">No access logs recorded yet.</p>';
-        return;
-      }
-
       const allUsers = (cachedAdminData && Array.isArray(cachedAdminData.users)) ? cachedAdminData.users : [];
+      const allAtt = (cachedAdminData && Array.isArray(cachedAdminData.allAttendance)) ? cachedAdminData.allAttendance : [];
+      const allHist = (cachedAdminData && Array.isArray(cachedAdminData.portalHistory)) ? cachedAdminData.portalHistory : [];
 
-      // Group logs by identifier
+      const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+
+      // 1. Group existing logs by user identifier
       const grouped = {};
-      logs.forEach(l => {
-        const userKey = l.identifier || 'Unknown User';
+      (logs || []).forEach(l => {
+        const rawId = String(l.identifier || 'Unknown User').trim().toLowerCase();
+        // Match canonical username if available
+        const matched = allUsers.find(u => 
+          String(u.username || '').trim().toLowerCase() === rawId ||
+          String(u.name || '').trim().toLowerCase() === rawId ||
+          (u.phone && get10(u.phone) === get10(rawId))
+        );
+        const userKey = matched ? String(matched.username).trim().toLowerCase() : rawId;
+
         if (!grouped[userKey]) grouped[userKey] = [];
         grouped[userKey].push(l);
       });
 
-      // Sort user groups: latest login at the top
+      // 2. RECONCILE STUDENTS WITH HISTORY (Kamalesh M R, Devalakshmi S Sharma, etc.)
+      // If a student has records in attendance or history but no row in logs, auto-generate their session logs
+      allUsers.forEach(u => {
+        const uUser = String(u.username || '').trim().toLowerCase();
+        const uPhone10 = get10(u.phone);
+        const uName = String(u.name || '').trim().toLowerCase();
+
+        const hasExistingLogs = Object.keys(grouped).some(k => 
+          k === uUser || (uName && k === uName) || (uPhone10 && k.includes(uPhone10))
+        );
+
+        if (!hasExistingLogs) {
+          const studentAtt = allAtt.filter(a => {
+            const a10 = get10(a.phone);
+            const aName = String(a.student_name || '').trim().toLowerCase();
+            const aUser = String(a.username || '').trim().toLowerCase();
+            return (uPhone10 && a10 === uPhone10) || (uUser && aUser === uUser) || (uName && aName === uName);
+          });
+
+          const studentHist = allHist.filter(h => {
+            const h10 = get10(h.phone);
+            const hUser = String(h.username || '').trim().toLowerCase();
+            const hName = String(h.student_name || '').trim().toLowerCase();
+            return (uPhone10 && h10 === uPhone10) || (uUser && hUser === uUser) || (uName && hName === uName);
+          });
+
+          const syntheticLogs = [];
+
+          // Synthesize from completed attendance practice sessions
+          studentAtt.forEach(a => {
+            const sessionTime = a.timestamp || a.date;
+            syntheticLogs.push({
+              log_id: `LOG-RECON-${a.attendance_id || Math.random().toString(36).substr(2, 6)}`,
+              identifier: u.username || u.name,
+              role: u.role || '1,2,3,4',
+              login_status: 'SUCCESS',
+              login_time: formatDateStrict(sessionTime),
+              logout_time: a.duration_text ? `${a.duration_text} practice session completed` : 'Session Closed',
+              device: 'Mobile/Browser (Reconciled from Practice Activity)',
+              timestamp: sessionTime
+            });
+          });
+
+          // Synthesize from portal history logins
+          studentHist.filter(h => h.activity_type === 'LOGIN').forEach(h => {
+            syntheticLogs.push({
+              log_id: `LOG-RECON-${h.id || Math.random().toString(36).substr(2, 6)}`,
+              identifier: u.username || u.name,
+              role: u.role || '1,2,3,4',
+              login_status: 'SUCCESS',
+              login_time: formatDateStrict(h.timestamp),
+              logout_time: 'Session Closed',
+              device: h.details || 'Browser',
+              timestamp: h.timestamp
+            });
+          });
+
+          if (syntheticLogs.length > 0) {
+            grouped[uUser || uName] = syntheticLogs;
+          }
+        }
+      });
+
+      if (Object.keys(grouped).length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px;">No access logs recorded yet.</p>';
+        return;
+      }
+
+      // 3. Sort individual logs inside each user group chronologically (newest at the top)
+      Object.keys(grouped).forEach(k => {
+        grouped[k].sort((a, b) => {
+          const timeA = parseCustomDate(a.login_time || a.timestamp)?.getTime() || 0;
+          const timeB = parseCustomDate(b.login_time || b.timestamp)?.getTime() || 0;
+          return timeB - timeA;
+        });
+      });
+
+      // 4. Sort user accordion cards: user with the latest login appears at the top
       const userKeys = Object.keys(grouped).sort((uA, uB) => {
         const timeA = parseCustomDate(grouped[uA][0]?.login_time || grouped[uA][0]?.timestamp)?.getTime() || 0;
         const timeB = parseCustomDate(grouped[uB][0]?.login_time || grouped[uB][0]?.timestamp)?.getTime() || 0;
         return timeB - timeA;
       });
 
+      const nowMs = Date.now();
+
+      // 5. Render cards
       container.innerHTML = userKeys.map((username, gIdx) => {
         const userLogs = grouped[username];
         const latestLog = userLogs[0];
-        
-        // Strictly do NOT show "Active Now"
-        const isLoggedOut = latestLog.logout_time && latestLog.logout_time !== 'Active Now' && latestLog.logout_time !== '-';
 
+        // Match user details for display
         const matchedUser = allUsers.find(u => 
           String(u.username || '').toLowerCase() === String(username).toLowerCase() ||
           String(u.name || '').toLowerCase() === String(username).toLowerCase()
         );
         const displayName = matchedUser?.name || username;
 
+        // Accurate online detection (avoid false 'Active Now' if login was > 90 minutes ago)
+        let isOnlineNow = false;
+        if (latestLog.logout_time === 'Active Now') {
+          const lDate = parseCustomDate(latestLog.login_time || latestLog.timestamp);
+          if (lDate && (nowMs - lDate.getTime() < 90 * 60 * 1000)) {
+            isOnlineNow = true;
+          } else {
+            latestLog.logout_time = 'Session Closed (Inactive)';
+          }
+        }
+
         return `
           <div class="user-logs-card">
             <div class="user-logs-header" onclick="toggleAccordion('log-group-${gIdx}')">
               <div style="display:flex; align-items:center; gap:12px;">
-                <span class="led-dot ${isLoggedOut ? 'led-red' : 'led-green'}"></span>
+                <span class="led-dot ${isOnlineNow ? 'led-green' : 'led-red'}" title="${isOnlineNow ? 'Online & Active' : 'Offline'}"></span>
                 <div>
                   <strong style="font-size:15px; color:var(--primary);">${escapeHtml(displayName)}</strong>
                   ${matchedUser ? `<span class="badge" style="margin-left:6px; font-size:11px;">Class ${matchedUser.class || '7'}-${matchedUser.division || 'A'}</span>` : ''}
@@ -5941,14 +6119,14 @@ async function saveCompletedSessionOnExit() {
                 <span class="badge" style="background:#f1f5f9; color:#475569; font-size:11.5px;">
                   Last Login: ${formatDateStrict(latestLog.login_time || latestLog.timestamp)}
                 </span>
-                <button onclick="event.stopPropagation(); deleteUserAllLogs('${escapeHtml(username)}')" class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete logs">
+                <button onclick="event.stopPropagation(); deleteUserAllLogs('${escapeHtml(username)}')" class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete logs for this user">
                   🗑️
                 </button>
                 <span>▾</span>
               </div>
             </div>
 
-            <div id="log-group-${gIdx}" style="display:none; padding:16px; border-top:1px solid var(--border-color);">
+            <div id="log-group-${gIdx}" style="display:none; padding:16px; border-top:1px solid var(--border-color); background:#ffffff;">
               <div class="table-responsive" style="margin:0;">
                 <table class="data-table">
                   <thead>
@@ -5963,8 +6141,12 @@ async function saveCompletedSessionOnExit() {
                   </thead>
                   <tbody>
                     ${userLogs.map((l, lIdx) => {
-                      const hasLoggedOut = l.logout_time && l.logout_time !== 'Active Now' && l.logout_time !== '-';
-                      const logoutDisplay = hasLoggedOut ? formatDateStrict(l.logout_time) : '-';
+                      let logoutDisplay = '-';
+                      if (l.logout_time === 'Active Now') {
+                        logoutDisplay = '<span class="badge badge-success" style="font-size:11px;">Active Now</span>';
+                      } else if (l.logout_time && l.logout_time !== '-') {
+                        logoutDisplay = formatDateStrict(l.logout_time);
+                      }
 
                       return `
                         <tr>
@@ -5974,7 +6156,9 @@ async function saveCompletedSessionOnExit() {
                           <td><b>${logoutDisplay}</b></td>
                           <td><small style="color:var(--text-muted); font-family:monospace; font-size:11px;">${escapeHtml(l.device || 'N/A')}</small></td>
                           <td>
-                            <button onclick="deleteSingleLog('${l.log_id || l.id}')" class="btn btn-outline" style="padding:3px 8px; color:var(--danger); font-size:12px;">🗑️</button>
+                            <button onclick="deleteSingleLog('${l.log_id || l.id}')" class="btn btn-outline" style="padding:3px 8px; color:var(--danger); font-size:12px;" title="Delete this log entry">
+                              🗑️
+                            </button>
                           </td>
                         </tr>
                       `;
