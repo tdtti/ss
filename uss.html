@@ -5049,10 +5049,40 @@ async function saveCompletedSessionOnExit() {
           const st10 = get10(st.phone);
           const stNameLower = String(st.name || '').trim().toLowerCase();
 
-          // 1. Attendance Records
-          const stAtt = allAttendance.filter(a => 
-            (st10 && get10(a.phone) === st10) || String(a.student_name || '').toLowerCase() === stNameLower
-          );
+          const stUserLower = String(st.username || '').trim().toLowerCase();
+
+          // 1. Attendance Records (Filtered & Sorted Chronologically)
+          const validAtt = allAttendance.filter(a => {
+            const a10 = get10(a.phone);
+            const aName = String(a.student_name || '').trim().toLowerCase();
+            const aUser = String(a.username || '').trim().toLowerCase();
+            const matchUser = (st10 && a10 === st10) || 
+                              (stUserLower && aUser === stUserLower) ||
+                              (stNameLower && (aName === stNameLower || aName.includes(stNameLower) || stNameLower.includes(aName)));
+            if (!matchUser) return false;
+
+            // Hide background daily quota heartbeat rows that have 0 questions
+            if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) {
+              return false;
+            }
+            return true;
+          }).sort((a, b) => {
+            const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
+            const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
+            return timeB - timeA;
+          });
+
+          // Compute Practice Time & Active Days identically to Student Login
+          let totalSec = 0;
+          const activeDaysSet = new Set();
+          validAtt.forEach(a => {
+            totalSec += (Number(a.duration_seconds) || 0);
+            if (a.date) activeDaysSet.add(a.date);
+            else if (a.timestamp) activeDaysSet.add(a.timestamp.split(',')[0].trim());
+          });
+          const totalMins = Math.round(totalSec / 60);
+          const durationFormatted = totalMins > 0 ? `${totalMins} mins` : `${totalSec}s`;
+          const activeDaysCount = activeDaysSet.size;
 
           // 2. Offline Exam Records
           const stOffline = allOfflineExams.filter(o => 
@@ -5069,14 +5099,30 @@ async function saveCompletedSessionOnExit() {
           const container = document.getElementById(`admin-rep-container-${idx}`);
           if (container) {
             container.innerHTML = `
-              <!-- 1. ATTENDANCE & PRACTICE TIME -->
-              <div class="card" style="margin-bottom:20px; background:#fff;">
-                <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📅 Attendance & Practice Time</h4>
+              <!-- 1. ATTENDANCE & PRACTICE TIME (IDENTICAL TO STUDENT LOGIN) -->
+              <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
+                <h4 style="margin-top:0; color:var(--primary); font-size:15px; display:flex; align-items:center; gap:8px;">
+                  📅 Attendance & Practice Time
+                </h4>
+                
+                <div class="stats-grid" style="margin-bottom:16px;">
+                  <div class="card" style="margin:0; background:#f8fafc;">
+                    <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced</p>
+                    <h3 style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
+                  </div>
+                  <div class="card" style="margin:0; background:#f8fafc;">
+                    <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Active Attendance Days</p>
+                    <h3 style="margin:6px 0 0 0; color:var(--success);">${activeDaysCount} Days</h3>
+                  </div>
+                </div>
+
+                <h5 style="margin:14px 0 8px 0; color:var(--text-main); font-size:13.5px;">Detailed Attendance Log</h5>
                 <div class="table-responsive" style="margin:0;">
                   <table class="data-table">
                     <thead>
                       <tr>
                         <th>Date</th>
+                        <th>Time</th>
                         <th>Activity</th>
                         <th>Duration</th>
                         <th>Questions Attended</th>
@@ -5084,26 +5130,30 @@ async function saveCompletedSessionOnExit() {
                       </tr>
                     </thead>
                     <tbody>
-                      ${stAtt.length > 0 ? stAtt.map(a => {
-                        // Dynamically resolve real score fraction and percentage (e.g. 23 / 25 (92%))
+                      ${validAtt.length > 0 ? validAtt.map(a => {
+                        const parts = (a.timestamp || '').split(',');
+                        const dateFormatted = a.date || (parts[0] ? parts[0].trim() : '-');
+                        const timeFormatted = parts[1] ? parts[1].trim() : '-';
                         const displayScore = resolveAttendanceRowScore(a, st.phone, st.name, allAnswers);
                         const isFraction = displayScore.includes('/');
                         const isPassing = isFraction && !displayScore.startsWith('0');
                         const badgeClass = isPassing ? 'badge-success' : (isFraction ? 'badge-warning' : '');
 
                         return `
-                        <tr>
-                          <td><b>${escapeHtml(a.date || a.timestamp?.split(',')[0] || '-')}</b></td>
-                          <td><span class="badge" style="background:#eff6ff; color:#1e40af;">${escapeHtml(a.activity || 'Subject Practice')}</span></td>
-                          <td><b>${escapeHtml(a.duration_text || '0m')}</b></td>
-                          <td><b>${a.questions_attended || 0}</b></td>
-                          <td>
-                            <span class="badge ${badgeClass}" style="font-size:12px; font-weight:800; padding:4px 9px;">
-                              ${escapeHtml(displayScore)}
-                            </span>
-                          </td>
-                        </tr>`;
-                      }).join('') : '<tr><td colspan="5" style="text-align:center; padding:15px; color:var(--text-muted);">No attendance logged.</td></tr>'}
+                          <tr>
+                            <td><b>${escapeHtml(dateFormatted)}</b></td>
+                            <td><small style="color:var(--text-muted); font-weight:700;">${escapeHtml(timeFormatted)}</small></td>
+                            <td><span class="badge" style="background:#eff6ff; color:#1e40af;">${escapeHtml(a.activity || 'Practice Session')}</span></td>
+                            <td><b>${escapeHtml(a.duration_text || Math.round((a.duration_seconds || 0)/60) + 'm')}</b></td>
+                            <td><b>${a.questions_attended || 0}</b></td>
+                            <td>
+                              <span class="badge ${badgeClass}" style="font-size:11.5px; font-weight:800; padding:3px 8px;">
+                                ${escapeHtml(displayScore)}
+                              </span>
+                            </td>
+                          </tr>
+                        `;
+                      }).join('') : '<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--text-muted);">No attendance logged yet.</td></tr>'}
                     </tbody>
                   </table>
                 </div>
@@ -5206,7 +5256,7 @@ async function saveCompletedSessionOnExit() {
       }
 
       // -----------------------------------------------------------------------
-      // TAB 9: STUDENT OPTIMIZATION ANALYTICS (COMPREHENSIVE STUDENT PORTFOLIO VIEW)
+      // TAB 9 (USERS TAB): STUDENT OPTIMIZATION ANALYTICS WITH DETAILED ATTENDANCE LOG
       // -----------------------------------------------------------------------
       const optAccordion = document.getElementById('manage-users-analytics-accordion');
       if (optAccordion) {
@@ -5232,24 +5282,31 @@ async function saveCompletedSessionOnExit() {
           const stNameLower = String(item.user.name || '').trim().toLowerCase();
           const stUserLower = String(item.user.username || '').trim().toLowerCase();
 
-          // 1. Filter student attendance logs
-          const stAtt = allAttendance.filter(a => {
+          // 1. FILTER ATTENDANCE LOGS IDENTICALLY TO STUDENT LOGIN
+          const validAtt = allAttendance.filter(a => {
             const a10 = get10(a.phone);
             const aName = String(a.student_name || '').trim().toLowerCase();
             const aUser = String(a.username || '').trim().toLowerCase();
-            return (st10 && a10 === st10) || 
-                   (stUserLower && aUser === stUserLower) ||
-                   (stNameLower && (aName === stNameLower || aName.includes(stNameLower) || stNameLower.includes(aName)));
+            const matchUser = (st10 && a10 === st10) || 
+                              (stUserLower && aUser === stUserLower) ||
+                              (stNameLower && (aName === stNameLower || aName.includes(stNameLower) || stNameLower.includes(aName)));
+            if (!matchUser) return false;
+
+            // Hide background daily quota heartbeat rows that have 0 questions
+            if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) {
+              return false;
+            }
+            return true;
           }).sort((a, b) => {
             const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
             const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
             return timeB - timeA;
           });
 
-          // Calculate practice time and active days
+          // 2. COMPUTE TOTAL TIME PRACTICED & ACTIVE DAYS (IDENTICAL TO STUDENT LOGIN)
           let totalSec = 0;
           const activeDaysSet = new Set();
-          stAtt.forEach(a => {
+          validAtt.forEach(a => {
             totalSec += (Number(a.duration_seconds) || 0);
             if (a.date) activeDaysSet.add(a.date);
             else if (a.timestamp) activeDaysSet.add(a.timestamp.split(',')[0].trim());
@@ -5258,7 +5315,7 @@ async function saveCompletedSessionOnExit() {
           const durationFormatted = totalMins > 0 ? `${totalMins} mins` : `${totalSec}s`;
           const activeDaysCount = activeDaysSet.size;
 
-          // 2. Filter student offline exams
+          // 3. FILTER OFFLINE EXAMS
           const stOffline = allOfflineExams.filter(o => {
             const o10 = get10(o.phone);
             const oName = String(o.student_name || '').trim().toLowerCase();
@@ -5295,7 +5352,7 @@ async function saveCompletedSessionOnExit() {
 
               <div class="accordion-body" id="opt-acc-${idx}" style="padding:20px; background:#ffffff;">
                 
-                <!-- 1. MY ATTENDANCE & PRACTICE TIME -->
+                <!-- 1. 📅 DETAILED ATTENDANCE LOG (IDENTICAL TO STUDENT LOGIN) -->
                 <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
                   <h4 style="margin-top:0; color:var(--primary); font-size:15px; display:flex; align-items:center; gap:8px;">
                     📅 My Attendance & Practice Time
@@ -5326,7 +5383,7 @@ async function saveCompletedSessionOnExit() {
                         </tr>
                       </thead>
                       <tbody>
-                        ${stAtt.length > 0 ? stAtt.map(a => {
+                        ${validAtt.length > 0 ? validAtt.map(a => {
                           const parts = (a.timestamp || '').split(',');
                           const dateFormatted = a.date || (parts[0] ? parts[0].trim() : '-');
                           const timeFormatted = parts[1] ? parts[1].trim() : '-';
@@ -5462,7 +5519,7 @@ async function saveCompletedSessionOnExit() {
           `;
         }).join('');
 
-        // Hydrate and calculate all charts, subject overviews, trials & audit logs
+        // Hydrate all charts, subject overviews, trials, and audit logs
         scoredStudents.forEach((item, idx) => {
           const st10 = get10(item.user.phone);
           const stNameLower = String(item.user.name || '').trim().toLowerCase();
