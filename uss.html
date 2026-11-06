@@ -954,7 +954,7 @@
           <span id="quiz-subject" class="badge">Subject</span>
           <div id="timer-badge" class="timer-badge">⏱️ <span id="timer-count">30</span>s</div>
           <span id="quiz-progress" style="font-size: 13px; color: var(--text-muted); font-weight:600;">Question 1</span>
-          <button id="quiz-exit-btn" onclick="triggerEarlyExitPractice()" class="btn btn-outline" style="padding:6px 14px; font-size:12px; color:var(--danger); border-color:#fca5a5; background:#fee2e2; font-weight:800;">Exit ✕</button>
+          <button id="quiz-exit-btn" onclick="triggerEarlyExitPractice()" class="btn btn-outline" style="padding:6px 14px; font-size:12px; color:var(--danger); border-color:#fca5a5; background:#fee2e2; font-weight:800;">X</button>
         </div>
         
         <div id="quiz-question" class="question-text">Question prompt?</div>
@@ -8834,9 +8834,6 @@ async function syncPastActivitiesToHistoryTable() {
       const qCount = Number(item.questions_attended) || 0;
       return qCount > 0 ? `${qCount} Attended` : '-';
     }
-
-    
-
   </script>
 </body>
 </html>
