@@ -1964,8 +1964,20 @@
       if (currentUser) {
         if (!isStaffOrAdminUser(currentUser)) {
           const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone);
-          const localSec = getTodayElapsedSeconds();
-          cachedTodayUsedSeconds = Math.max(remoteSec, localSec);
+
+          // ✅ If Supabase has 0 seconds, wipe stale local cache immediately
+          if (remoteSec === 0) {
+            const todayIso = getTodayDateIso();
+            const cleanUser = String(currentUser.username || '').toLowerCase();
+            const cleanPhone = String(currentUser.phone || '').toLowerCase();
+            localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
+            localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
+            cachedTodayUsedSeconds = 0;
+          } else {
+            const localSec = getTodayElapsedSeconds();
+            cachedTodayUsedSeconds = Math.max(remoteSec, localSec);
+          }
+
           if (cachedTodayUsedSeconds >= DAILY_MAX_QUOTA_SECONDS) {
             triggerAppLockout();
             return;
@@ -2152,10 +2164,21 @@ async function fetchSupabaseDailyUsage(usernameOrPhone) {
 
       const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone);
       const localKey = getTodayKey();
-      const localSec = parseInt(localStorage.getItem(localKey) || '0', 10);
-      
-      cachedTodayUsedSeconds = Math.max(remoteSec, localSec);
-      localStorage.setItem(localKey, cachedTodayUsedSeconds);
+      const todayIso = getTodayDateIso();
+      const cleanUser = String(currentUser.username || '').toLowerCase();
+      const cleanPhone = String(currentUser.phone || '').toLowerCase();
+
+      // ✅ If Supabase returns 0 seconds (database cleared), wipe stale local keys!
+      if (remoteSec === 0) {
+        localStorage.removeItem(localKey);
+        localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
+        localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
+        cachedTodayUsedSeconds = 0;
+      } else {
+        const localSec = parseInt(localStorage.getItem(localKey) || '0', 10);
+        cachedTodayUsedSeconds = Math.max(remoteSec, localSec);
+        localStorage.setItem(localKey, cachedTodayUsedSeconds);
+      }
 
       checkAndEnforceQuota(cachedTodayUsedSeconds);
 
@@ -4397,11 +4420,15 @@ async function saveCompletedSessionOnExit() {
       );
     }
 
+    // =========================================================================
+    // RENDER STUDENT ATTENDANCE LOG (STRICTLY 0 WHEN SUPABASE DATA IS EMPTY)
+    // =========================================================================
     function renderStudentAttendance(attLogs, verifiedTotalQuestions) {
-      let totalSec = 0;
-      const activeDaysSet = new Set();
+      const totalTimeEl = document.getElementById('att-total-time');
+      const totalDaysEl = document.getElementById('att-total-days');
+      const tbody = document.getElementById('portfolio-attendance-body');
 
-      // Filter out zero-question daily heartbeat entries so only real sessions display
+      // Filter out zero-question background daily heartbeat rows
       const validLogs = (attLogs || []).filter(item => {
         const isDailyHeartbeat = String(item.attendance_id || '').includes('-DAILY');
         if (isDailyHeartbeat && (Number(item.questions_attended) || 0) === 0) {
@@ -4409,6 +4436,31 @@ async function saveCompletedSessionOnExit() {
         }
         return true;
       });
+
+      // ✅ IF SUPABASE HAS NO ATTENDANCE LOGS: STRICTLY RESET DISPLAY & PURGE STALE CACHE
+      if (!validLogs || validLogs.length === 0) {
+        if (totalTimeEl) totalTimeEl.innerText = '0m';
+        if (totalDaysEl) totalDaysEl.innerText = '0 Days';
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">No past attendance records found. Practice sessions will appear here!</td></tr>';
+        }
+
+        // Purge leftover stale localStorage keys on this device
+        if (currentUser) {
+          const todayIso = getTodayDateIso();
+          const cleanUser = String(currentUser.username || '').toLowerCase();
+          const cleanPhone = String(currentUser.phone || '').toLowerCase();
+          localStorage.removeItem(getTodayKey());
+          localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
+          localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
+          cachedTodayUsedSeconds = 0;
+          checkAndEnforceQuota(0);
+        }
+        return;
+      }
+
+      let totalSec = 0;
+      const activeDaysSet = new Set();
 
       validLogs.forEach(item => {
         totalSec += (Number(item.duration_seconds) || 0);
@@ -4420,19 +4472,10 @@ async function saveCompletedSessionOnExit() {
       const combinedSec = Math.max(totalSec, todaySeconds);
       const totalMins = Math.round(combinedSec / 60);
 
-      const totalTimeEl = document.getElementById('att-total-time');
-      const totalDaysEl = document.getElementById('att-total-days');
-
       if (totalTimeEl) totalTimeEl.innerText = totalMins > 0 ? `${totalMins} mins` : `${combinedSec}s`;
-      if (totalDaysEl) totalDaysEl.innerText = `${Math.max(activeDaysSet.size, activeDaysSet.size > 0 ? 1 : 0)} Days`;
+      if (totalDaysEl) totalDaysEl.innerText = `${activeDaysSet.size} Days`;
 
-      const tbody = document.getElementById('portfolio-attendance-body');
       if (!tbody) return;
-
-      if (!validLogs || validLogs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">No past attendance records found. Practice sessions will appear here!</td></tr>';
-        return;
-      }
 
       // Latest session chronologically at the top
       const sortedLogs = [...validLogs].sort((a, b) => {
