@@ -5185,84 +5185,314 @@ async function saveCompletedSessionOnExit() {
       }
 
       // -----------------------------------------------------------------------
-      // TAB 9: STUDENT OPTIMIZATION ANALYTICS (SORTED BY OVERALL ACCURACY %)
+      // TAB 9: STUDENT OPTIMIZATION ANALYTICS (COMPREHENSIVE STUDENT PORTFOLIO VIEW)
       // -----------------------------------------------------------------------
       const optAccordion = document.getElementById('manage-users-analytics-accordion');
       if (optAccordion) {
+        const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+
         const scoredStudents = studentsOnly.map(st => {
-        // PASS allOfflineExams as the 6th argument:
-        const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
-        return {
-          user: st,
-          total: metrics.total, // Combined: Practice + Trial + Offline
-          correct: metrics.correct, // Combined: Practice + Trial + Offline
-          accuracy: metrics.accuracy, // Overall Accuracy % across all modes
-          combined: metrics.combined
-        };
-      }).sort((a, b) => {
-        if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
-        if (b.total !== a.total) return b.total - a.total;
-        return String(a.user.name || '').localeCompare(String(b.user.name || ''));
-      });
+          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
+          return {
+            user: st,
+            total: metrics.total,
+            correct: metrics.correct,
+            accuracy: metrics.accuracy,
+            combined: metrics.combined
+          };
+        }).sort((a, b) => {
+          if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+          if (b.total !== a.total) return b.total - a.total;
+          return String(a.user.name || '').localeCompare(String(b.user.name || ''));
+        });
 
-        optAccordion.innerHTML = scoredStudents.map((item, idx) => `
-          <div class="accordion-item" style="margin-bottom:12px;">
-            <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')">
-              <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <span class="badge ${idx < 3 ? 'badge-success' : (item.accuracy >= 70 ? 'badge-success' : 'badge-warning')}" style="font-weight:900;">
-                  #${idx + 1}
-                </span>
-                <strong>${escapeHtml(item.user.name)}</strong> — Class ${item.user.class || '7'}-${item.user.division || 'A'}
-                <span class="badge badge-success" style="font-size:12px; font-weight:800;">
-                  Accuracy: ${item.accuracy}%
-                </span>
-                <span style="font-size:12px; color:var(--text-muted); font-weight:700;">
-                  (${item.correct}/${item.total} Correct)
-                </span>
-              </div>
-              <div>▾</div>
-            </div>
-            <div class="accordion-body" id="opt-acc-${idx}">
-              <div class="stats-grid">
-                <div class="card" style="margin:0; background:#f8fafc;"><p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Answered</p><h3 id="opt-tot-${idx}">${item.total}</h3></div>
-                <div class="card" style="margin:0; background:#f8fafc;"><p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Overall Accuracy</p><h3 id="opt-acc-val-${idx}">${item.accuracy}%</h3></div>
-              </div>
-              <div class="grid-2" style="margin-bottom:20px;">
-                <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:10px;">
-                  <h5 style="margin:0 0 10px 0; color:#166534;">🌟 Strengths (≥70%)</h5>
-                  <div id="opt-strong-${idx}"></div>
-                </div>
-                <div style="background:#fffbe0; border:1px solid #fef08a; padding:12px; border-radius:10px;">
-                  <h5 style="margin:0 0 10px 0; color:#92400e;">⚠️ Priorities (&lt;70%)</h5>
-                  <div id="opt-weak-${idx}"></div>
-                </div>
-              </div>
-              <h4 style="margin:20px 0 8px 0; color:var(--primary); font-weight:800;">Subject Overview</h4>
-              <div class="table-responsive"><table class="data-table"><thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead><tbody id="opt-overview-${idx}"></tbody></table></div>
-            </div>
-          </div>
-        `).join('');
+        optAccordion.innerHTML = scoredStudents.map((item, idx) => {
+          const st10 = get10(item.user.phone);
+          const stNameLower = String(item.user.name || '').trim().toLowerCase();
+          const stUserLower = String(item.user.username || '').trim().toLowerCase();
 
+          // 1. Filter student attendance logs
+          const stAtt = allAttendance.filter(a => {
+            const a10 = get10(a.phone);
+            const aName = String(a.student_name || '').trim().toLowerCase();
+            const aUser = String(a.username || '').trim().toLowerCase();
+            return (st10 && a10 === st10) || 
+                   (stUserLower && aUser === stUserLower) ||
+                   (stNameLower && (aName === stNameLower || aName.includes(stNameLower) || stNameLower.includes(aName)));
+          }).sort((a, b) => {
+            const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
+            const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
+            return timeB - timeA;
+          });
+
+          // Calculate practice time and active days
+          let totalSec = 0;
+          const activeDaysSet = new Set();
+          stAtt.forEach(a => {
+            totalSec += (Number(a.duration_seconds) || 0);
+            if (a.date) activeDaysSet.add(a.date);
+            else if (a.timestamp) activeDaysSet.add(a.timestamp.split(',')[0].trim());
+          });
+          const totalMins = Math.round(totalSec / 60);
+          const durationFormatted = totalMins > 0 ? `${totalMins} mins` : `${totalSec}s`;
+          const activeDaysCount = activeDaysSet.size;
+
+          // 2. Filter student offline exams
+          const stOffline = allOfflineExams.filter(o => {
+            const o10 = get10(o.phone);
+            const oName = String(o.student_name || '').trim().toLowerCase();
+            const oUser = String(o.username || '').trim().toLowerCase();
+            return (st10 && o10 === st10) ||
+                   (stUserLower && oUser === stUserLower) ||
+                   (stNameLower && (oName === stNameLower || oName.includes(stNameLower) || stNameLower.includes(oName)));
+          }).sort((a, b) => {
+            const timeA = parseCustomDate(a.timestamp || a.exam_date)?.getTime() || 0;
+            const timeB = parseCustomDate(b.timestamp || b.exam_date)?.getTime() || 0;
+            return timeB - timeA;
+          });
+
+          return `
+            <div class="accordion-item" style="margin-bottom:14px; border:1.5px solid var(--border-color); border-radius:14px; overflow:hidden;">
+              <div class="accordion-header" onclick="toggleAccordion('opt-acc-${idx}')" style="background:#f8fafc; padding:14px 18px;">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <span class="badge ${idx < 3 ? 'badge-success' : (item.accuracy >= 70 ? 'badge-success' : 'badge-warning')}" style="font-weight:900;">
+                    #${idx + 1}
+                  </span>
+                  <strong style="font-size:15px; color:#0f172a;">${escapeHtml(item.user.name)}</strong>
+                  <span class="badge" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; font-size:11px;">
+                    Class ${item.user.class || '7'}-${item.user.division || 'A'}
+                  </span>
+                  <span class="badge badge-success" style="font-size:12px; font-weight:800;">
+                    Accuracy: ${item.accuracy}%
+                  </span>
+                  <span style="font-size:12px; color:var(--text-muted); font-weight:700;">
+                    (${item.correct}/${item.total} Correct)
+                  </span>
+                </div>
+                <div>▾</div>
+              </div>
+
+              <div class="accordion-body" id="opt-acc-${idx}" style="padding:20px; background:#ffffff;">
+                
+                <!-- 1. MY ATTENDANCE & PRACTICE TIME -->
+                <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
+                  <h4 style="margin-top:0; color:var(--primary); font-size:15px; display:flex; align-items:center; gap:8px;">
+                    📅 My Attendance & Practice Time
+                  </h4>
+                  
+                  <div class="stats-grid" style="margin-bottom:16px;">
+                    <div class="card" style="margin:0; background:#f8fafc;">
+                      <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced</p>
+                      <h3 style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
+                    </div>
+                    <div class="card" style="margin:0; background:#f8fafc;">
+                      <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Active Attendance Days</p>
+                      <h3 style="margin:6px 0 0 0; color:var(--success);">${activeDaysCount} Days</h3>
+                    </div>
+                  </div>
+
+                  <h5 style="margin:14px 0 8px 0; color:var(--text-main); font-size:13.5px;">Detailed Attendance Log</h5>
+                  <div class="table-responsive" style="margin:0;">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Time</th>
+                          <th>Activity</th>
+                          <th>Duration</th>
+                          <th>Questions Attended</th>
+                          <th>Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${stAtt.length > 0 ? stAtt.map(a => {
+                          const parts = (a.timestamp || '').split(',');
+                          const dateFormatted = a.date || (parts[0] ? parts[0].trim() : '-');
+                          const timeFormatted = parts[1] ? parts[1].trim() : '-';
+                          const displayScore = resolveAttendanceRowScore(a, item.user.phone, item.user.name, allAnswers);
+                          const isFraction = displayScore.includes('/');
+                          const isPassing = isFraction && !displayScore.startsWith('0');
+                          const badgeClass = isPassing ? 'badge-success' : (isFraction ? 'badge-warning' : '');
+
+                          return `
+                            <tr>
+                              <td><b>${escapeHtml(dateFormatted)}</b></td>
+                              <td><small style="color:var(--text-muted); font-weight:700;">${escapeHtml(timeFormatted)}</small></td>
+                              <td><span class="badge" style="background:#eff6ff; color:#1e40af;">${escapeHtml(a.activity || 'Practice Session')}</span></td>
+                              <td><b>${escapeHtml(a.duration_text || Math.round((a.duration_seconds || 0)/60) + 'm')}</b></td>
+                              <td><b>${a.questions_attended || 0}</b></td>
+                              <td>
+                                <span class="badge ${badgeClass}" style="font-size:11.5px; font-weight:800; padding:3px 8px;">
+                                  ${escapeHtml(displayScore)}
+                                </span>
+                              </td>
+                            </tr>
+                          `;
+                        }).join('') : '<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--text-muted);">No attendance logged yet.</td></tr>'}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- 2. MY PERFORMANCE DASHBOARD -->
+                <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
+                  <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📊 My Performance Dashboard</h4>
+                  <div class="stats-grid" style="margin-bottom:14px;">
+                    <div class="card" style="margin:0; background:#f8fafc;">
+                      <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Answered Questions</p>
+                      <h2 id="opt-tot-${idx}" style="margin:6px 0 0 0; color:var(--primary);">${item.total}</h2>
+                    </div>
+                    <div class="card" style="margin:0; background:#f8fafc;">
+                      <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Overall Accuracy Rate</p>
+                      <h2 id="opt-acc-val-${idx}" style="margin:6px 0 0 0; color:var(--success);">${item.accuracy}%</h2>
+                    </div>
+                  </div>
+
+                  <div class="grid-2">
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:14px; border-radius:10px;">
+                      <h5 style="margin:0 0 10px 0; color:#166534;">🌟 Strengths (≥70%)</h5>
+                      <div id="opt-strong-${idx}"></div>
+                    </div>
+                    <div style="background:#fffbe0; border:1px solid #fef08a; padding:14px; border-radius:10px;">
+                      <h5 style="margin:0 0 10px 0; color:#92400e;">⚠️ Priorities (&lt;70%)</h5>
+                      <div id="opt-weak-${idx}"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. OFFLINE EXAM SCORES -->
+                <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h4 style="margin:0; color:var(--primary); font-size:15px; display:flex; align-items:center; gap:8px;">
+                      📝 Offline Exam Scores
+                    </h4>
+                    <span class="badge" style="background:#e0e7ff; color:#3730a3; font-weight:700;">School & Center Examinations</span>
+                  </div>
+                  <div class="table-responsive" style="margin:0;">
+                    <table class="data-table">
+                      <thead>
+                        <tr style="background:#eff6ff;">
+                          <th>Date & Time</th>
+                          <th>Exam Name</th>
+                          <th>FL</th>
+                          <th>MII</th>
+                          <th>MM</th>
+                          <th>ENG</th>
+                          <th>BS</th>
+                          <th>SS</th>
+                          <th style="background:#dbeafe;">Total Score</th>
+                          <th>%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${stOffline.length > 0 ? stOffline.map(o => `
+                          <tr>
+                            <td>${o.exam_date || o.timestamp}</td>
+                            <td><b>${escapeHtml(o.exam_name)}</b></td>
+                            <td>${o.fl_score}/${o.fl_outof} <small>(${o.fl_subject})</small></td>
+                            <td>${o.mii_score}/${o.mii_outof}</td>
+                            <td>${o.mm_score}/${o.mm_outof}</td>
+                            <td>${o.eng_score}/${o.eng_outof}</td>
+                            <td>${o.bs_score}/${o.bs_outof}</td>
+                            <td>${o.ss_score}/${o.ss_outof}</td>
+                            <td><b style="color:var(--primary);">${o.total_score}/${o.total_outof}</b></td>
+                            <td><span class="badge ${o.percentage >= 70 ? 'badge-success' : 'badge-warning'}">${o.percentage}%</span></td>
+                          </tr>
+                        `).join('') : '<tr><td colspan="10" style="text-align:center; padding:15px; color:var(--text-muted);">No offline exam scores recorded yet.</td></tr>'}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- 4. SUBJECT OVERVIEW -->
+                <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
+                  <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📖 Subject Overview</h4>
+                  <div class="table-responsive" style="margin:0;">
+                    <table class="data-table">
+                      <thead>
+                        <tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr>
+                      </thead>
+                      <tbody id="opt-overview-${idx}"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- 5. TRIAL EXAM CONSOLIDATIONS -->
+                <div class="card" id="opt-trial-box-${idx}" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color); display:none;">
+                  <h4 style="margin-top:0; color:var(--primary); font-size:15px;">⭐ Trial Exam Consolidations</h4>
+                  <div id="opt-trial-container-${idx}"></div>
+                </div>
+
+                <!-- 6. PRACTICE AUDIT LOG -->
+                <div class="card" style="margin-bottom:0; background:#fff; border:1px solid var(--border-color);">
+                  <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📋 Practice Audit Log</h4>
+                  <div class="table-responsive" style="margin:0;">
+                    <table class="data-table">
+                      <thead>
+                        <tr><th>S.No</th><th>Subject</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Status</th></tr>
+                      </thead>
+                      <tbody id="opt-audit-${idx}"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Hydrate and calculate all charts, subject overviews, trials & audit logs
         scoredStudents.forEach((item, idx) => {
-          const stTrials = allTrialExams.filter(t => 
-            String(t.phone).trim() === String(item.user.phone).trim() ||
-            String(t.student_name || '').toLowerCase() === String(item.user.name || '').toLowerCase()
-          ).map(t => ({
-            Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
+          const st10 = get10(item.user.phone);
+          const stNameLower = String(item.user.name || '').trim().toLowerCase();
+          const stUserLower = String(item.user.username || '').trim().toLowerCase();
+
+          const stTrials = allTrialExams.filter(t => {
+            const t10 = get10(t.phone);
+            const tName = String(t.student_name || '').trim().toLowerCase();
+            const tUser = String(t.username || '').trim().toLowerCase();
+            return (st10 && t10 === st10) ||
+                   (stUserLower && tUser === stUserLower) ||
+                   (stNameLower && (tName === stNameLower || tName.includes(stNameLower) || stNameLower.includes(tName)));
+          }).map(t => ({
+            Timestamp: t.timestamp,
+            Score: t.score,
+            TotalQuestions: t.total_questions,
+            AnswersJson: t.answers_json
           }));
 
-          renderStudentDashboardAndOverview({ 
-            detailedAnswers: item.combined.map(c => ({ 
-              QuestionID: c.question_id, 
-              QuestionText: c.question_text, 
-              Subject: c.subject, 
-              UserAnswer: c.user_answer, 
-              CorrectAnswer: c.correct_answer, 
-              IsCorrect: c.is_correct, 
-              Timestamp: c.timestamp 
-            })), 
-            trialExams: stTrials 
-          }, `opt-tot-${idx}`, `opt-acc-val-${idx}`, `opt-strong-${idx}`, `opt-weak-${idx}`, `opt-overview-${idx}`);
+          const stOffline = allOfflineExams.filter(o => {
+            const o10 = get10(o.phone);
+            const oName = String(o.student_name || '').trim().toLowerCase();
+            const oUser = String(o.username || '').trim().toLowerCase();
+            return (st10 && o10 === st10) ||
+                   (stUserLower && oUser === stUserLower) ||
+                   (stNameLower && (oName === stNameLower || oName.includes(stNameLower) || stNameLower.includes(oName)));
+          });
+
+          renderStudentDashboardAndOverview(
+            { 
+              detailedAnswers: item.combined.map(c => ({ 
+                QuestionID: c.question_id, 
+                QuestionText: c.question_text, 
+                Subject: c.subject, 
+                UserAnswer: c.user_answer, 
+                CorrectAnswer: c.correct_answer, 
+                IsCorrect: c.is_correct, 
+                Timestamp: c.timestamp 
+              })), 
+              trialExams: stTrials,
+              offlineExams: stOffline
+            }, 
+            `opt-tot-${idx}`, 
+            `opt-acc-val-${idx}`, 
+            `opt-strong-${idx}`, 
+            `opt-weak-${idx}`, 
+            `opt-overview-${idx}`,
+            `opt-trial-box-${idx}`,
+            `opt-trial-container-${idx}`,
+            `opt-audit-${idx}`
+          );
         });
       }
 
@@ -6782,13 +7012,13 @@ SK,"सूर्यः कस्यां दिशि उदेति?",पू�
 
         if (reqErr) throw reqErr;
 
-        // 2. Notify Admin via notifications table
+        // 2. Notify Admin via notifications table (Restricted strictly to Administrator)
         await supabaseClient.from('notifications').insert([{
           notification_id: 'NOTIF-' + Date.now(),
           timestamp: formattedDT,
-          recipient_phone: 'ALL',
+          recipient_phone: 'ADMINISTRATOR',
           title: `🔔 New Reset Request: ${subFullName}`,
-          message: `${currentUser.name || currentUser.username} (Class ${currentUser.userClass || '10'}-${currentUser.division || 'A'}) has answered all questions in '${subFullName}' and requested a reset in Tab 7 to re-practice.`,
+          message: `${currentUser.name || currentUser.username} (Class ${currentUser.userClass || '7'}-${currentUser.division || 'A'}) has answered all questions in '${subFullName}' and requested a reset in Tab 7 to re-practice.`,
           sender: 'System Monitor'
         }]);
 
@@ -7833,7 +8063,8 @@ function renderAdminHistoryAccordions(allHistory) {
   const container = document.getElementById('admin-history-accordion-list');
   if (!container) return;
 
-  const users = [...(cachedAdminData?.users || [])];
+  // Filter out Question Master, TDTTI Administrator, and all staff accounts
+  const users = (cachedAdminData?.users || []).filter(u => !isStaffOrAdminUser(u));
   users.sort((a, b) => String(a.name || a.username).localeCompare(String(b.name || b.username)));
 
   if (users.length === 0) {
@@ -8017,7 +8248,23 @@ function renderAdminHistoryAccordions(allHistory) {
       setProgress(100);
 
       if (!error) {
-        showToast('Offline exam record saved successfully!', 'success');
+        // DISPATCH NOTIFICATION FOR THE CONCERNED STUDENT & ADMIN ONLY
+        try {
+          const targetRecipient = String(phone || username || '').trim();
+          const notifId = 'NOTIF-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+          await supabaseClient.from('notifications').insert([{
+            notification_id: notifId,
+            timestamp: formattedDT,
+            recipient_phone: targetRecipient,
+            title: `📝 Offline Exam Result: ${examRecord.exam_name}`,
+            message: `Dear ${studentName},\nYour marks for the offline exam "${examRecord.exam_name}" (${formattedDate}) have been published.\n\n• First Language (${flSubject}): ${examRecord.fl_score}/${examRecord.fl_outof}\n• Malayalam II (MII): ${examRecord.mii_score}/${examRecord.mii_outof}\n• Mathematics (MM): ${examRecord.mm_score}/${examRecord.mm_outof}\n• English (ENG): ${examRecord.eng_score}/${examRecord.eng_outof}\n• Basic Science (BS): ${examRecord.bs_score}/${examRecord.bs_outof}\n• Social Science (SS): ${examRecord.ss_score}/${examRecord.ss_outof}\n─────────────────────────\n🏆 Total Score: ${totalScore} / ${totalOut} (${pct}%)\nCheck your Portfolio (Tab 2) for updated analysis.`,
+            sender: 'TDTTI Administration'
+          }]);
+        } catch (notifErr) {
+          console.warn("Could not dispatch offline exam notification:", notifErr);
+        }
+
+        showToast('Offline exam record saved and notification sent!', 'success');
         document.getElementById('offline-exam-form').reset();
         calcOfflineTotal();
         loadOfflineExamsAdmin();
