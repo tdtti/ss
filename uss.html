@@ -2448,7 +2448,7 @@ async function adminResetStudentQuota(phone, username, studentName) {
               if (navigator.onLine && !isUserCurrentlyIdle && document.visibilityState === 'visible' && isWindowCurrentlyFocused) {
                 broadcastLivePulse('Online & Active', true);
               }
-            }, 8000);
+            }, 5000);
           }
         });
 
