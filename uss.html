@@ -4018,7 +4018,7 @@ async function saveCompletedSessionOnExit() {
     }
 
     // =========================================================================
-    // CONSOLIDATION VIEW
+    // CONSOLIDATION VIEW WITH WORKING NOTIFICATION DISPATCH
     // =========================================================================
     // =========================================================================
     // CONSOLIDATION VIEW WITH WORKING NOTIFICATION DISPATCH
@@ -4027,12 +4027,15 @@ async function saveCompletedSessionOnExit() {
       clearInterval(timerInterval);
       document.getElementById('quiz-card').style.display = 'none';
 
-      const pTitle = isTrialMode ? 'Completed Trial Exam' : `Completed Practice: ${sessionAnswersLog[0]?.Subject || 'General'}`;
-logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/${total} (${victoryRate}%)`);
+      // 1. Calculate values FIRST
       const total = sessionAnswersLog.length;
       const score = sessionAnswersLog.filter(a => a.IsCorrect).length;
       const victoryRate = total ? Math.round((score / total) * 100) : 0;
       const formattedDT = formatDateStrict(new Date().toISOString());
+
+      // 2. Now log the activity safely
+      const pTitle = isTrialMode ? 'Completed Trial Exam' : `Completed Practice: ${sessionAnswersLog[0]?.Subject || 'General'}`;
+      logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/${total} (${victoryRate}%)`);
 
       document.getElementById('summary-score-val').innerText = `${score} / ${total}`;
       document.getElementById('summary-acc-val').innerText = `${victoryRate}%`;
@@ -4070,7 +4073,7 @@ logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/$
         }
       }
 
-      // 2. DISPATCH NOTIFICATION TO SUPABASE (FIX FOR MISSING NOTIFICATIONS)
+      // 2. DISPATCH NOTIFICATION TO SUPABASE
       const studentPlainInfo = `${currentUser.name || currentUser.username} (Class ${currentUser.userClass || '10'}-${currentUser.division || 'A'})`;
       const subjName = isTrialMode ? 'Trial Exam' : (sessionAnswersLog[0]?.Subject || 'Subject Practice');
       const notifTitle = `${subjName} Activity Summary`;
