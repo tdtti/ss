@@ -1762,6 +1762,7 @@
     let sessionAnswersLog = [];
     let sessionStartTime = null;
     let hasSavedCurrentSession = false;
+    let isTransitioningQuestion = false;
 
     let presenceChannel = null;
     let sessionGuardChannel = null;
@@ -3992,12 +3993,79 @@ async function saveCompletedSessionOnExit() {
 
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
-          showToast('⏱️ Time is up! All questions are compulsory. Please select your answer to proceed.', 'danger');
+          // ✅ AUTO-CONTINUE AS ATTENDED WITH WRONG ANSWER (0 SCORE)
+          handleQuestionTimeout();
         }
       }, 1000);
     }
 
+    // =========================================================================
+    // AUTO-HANDLE TIMEOUT: RECORD AS ATTENDED & WRONG, THEN ADVANCE QUIZ
+    // =========================================================================
+    async function handleQuestionTimeout() {
+      if (isTransitioningQuestion) return;
+      isTransitioningQuestion = true;
+
+      showToast('⏱️ Time is up! Question marked as wrong. Moving to next question...', 'danger');
+
+      const q = currentQuestions[qIndex];
+      const userChoice = selectedOption ? `${selectedOption} (Timed Out)` : 'Timed Out';
+
+      // 1. Record in sessionAnswersLog as Attended & Wrong (No Score)
+      if (!sessionAnswersLog.some(item => item.QuestionID === q.ID)) {
+        sessionAnswersLog.push({
+          Subject: getFullSubjectName(q.Subject),
+          SubjectCode: q.Subject,
+          QuestionID: q.ID,
+          QuestionText: q.Question,
+          OptionA: q.OptionA,
+          OptionB: q.OptionB,
+          OptionC: q.OptionC,
+          OptionD: q.OptionD,
+          UserAnswer: userChoice,
+          CorrectAnswer: q.CorrectAnswer,
+          IsCorrect: false // Strictly 0 score
+        });
+
+        // 2. Persist to student_answers database
+        const nowStr = formatDateStrict(new Date().toISOString());
+        try {
+          await supabaseClient.from('student_answers').upsert([{
+            timestamp: nowStr,
+            phone: currentUser.phone,
+            username: currentUser.username || '',
+            student_name: currentUser.name || currentUser.username,
+            class: currentUser.userClass || '7',
+            division: currentUser.division || 'A',
+            subject: q.Subject,
+            question_id: q.ID,
+            question_text: q.Question,
+            user_answer: userChoice,
+            correct_answer: q.CorrectAnswer,
+            is_correct: 'NO'
+          }], { onConflict: 'phone,question_id' });
+        } catch (e) {
+          console.warn("Could not save timed-out answer:", e);
+        }
+      }
+
+      // 3. Move to next question or conclude quiz
+      if (qIndex + 1 < currentQuestions.length) {
+        qIndex++;
+        renderQuestion();
+      } else {
+        document.getElementById('quiz-card').style.display = 'none';
+        await saveCompletedSessionOnExit();
+        showConsolidationView();
+      }
+
+      if (!isTrialMode && typeof updateStudentProgressSummary === 'function') {
+        updateStudentProgressSummary(q.Subject);
+      }
+    }
+
     function renderQuestion() {
+      isTransitioningQuestion = false;
       selectedOption = null;
       const q = currentQuestions[qIndex];
       const quizCard = document.getElementById('quiz-card');
@@ -4039,11 +4107,14 @@ async function saveCompletedSessionOnExit() {
     }
 
     async function confirmNextQuestion() {
+      if (isTransitioningQuestion) return;
+
       if (!selectedOption) {
         showToast('⚠️ Please select an answer! All questions are compulsory.', 'danger');
         return;
       }
-      
+
+      isTransitioningQuestion = true;
       clearInterval(timerInterval);
       const q = currentQuestions[qIndex];
       const userChoice = selectedOption;
