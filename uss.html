@@ -1793,6 +1793,7 @@
 
     const SUBJECT_ORDER = ['MI', 'AR', 'SK', 'MII', 'EN', 'MM', 'BS', 'SS'];
     let isStudentRegistrationAllowed = localStorage.getItem('allow_student_registration') !== 'false'; // Default TRUE
+    let securityProtectionActive = localStorage.getItem('portal_security_mode') !== 'false'; // Default TRUE
     let currentUser = JSON.parse(localStorage.getItem('USS_USER')) || JSON.parse(sessionStorage.getItem('USS_USER')) || null;
     let currentQuestions = [];
     let qIndex = 0;
@@ -1828,11 +1829,60 @@
     let selectedStudentPhones = new Set();
     let selectedNotifIds = new Set();
     let selectedQuestionIds = new Set();
-    let securityProtectionActive = true;
+    
 
     // SYNTHESIZED WEB AUDIO API SYSTEM
     window._previousUserStates = window._previousUserStates || {};
     window._hasInitialPresenceSynced = window._hasInitialPresenceSynced || false;
+
+    // =========================================================================
+    // GLOBAL SYSTEM SETTINGS LOADER & REALTIME SYNC (PORTAL-WIDE ENFORCEMENT)
+    // =========================================================================
+    async function loadGlobalSystemSettings() {
+      try {
+        const { data: settings, error } = await supabaseClient.from('system_settings').select('*');
+        if (!error && settings && settings.length > 0) {
+          const regSetting = settings.find(s => s.key === 'allow_student_registration');
+          if (regSetting) {
+            isStudentRegistrationAllowed = (regSetting.value === 'true');
+            localStorage.setItem('allow_student_registration', regSetting.value);
+            applyRegistrationVisibilityUI();
+          }
+
+          const secSetting = settings.find(s => s.key === 'portal_security_mode');
+          if (secSetting) {
+            securityProtectionActive = (secSetting.value === 'true');
+            localStorage.setItem('portal_security_mode', secSetting.value);
+            applySecurityModeUI();
+          }
+        }
+      } catch (e) {
+        console.warn("Could not load global settings:", e);
+      }
+    }
+
+    // Subscribe to global real-time setting updates across all connected devices
+    function setupGlobalSettingsRealtime() {
+      try {
+        supabaseClient
+          .channel('global_system_settings_sync')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings' }, (payload) => {
+            if (payload && payload.new) {
+              if (payload.new.key === 'allow_student_registration') {
+                isStudentRegistrationAllowed = (payload.new.value === 'true');
+                localStorage.setItem('allow_student_registration', payload.new.value);
+                applyRegistrationVisibilityUI();
+              }
+              if (payload.new.key === 'portal_security_mode') {
+                securityProtectionActive = (payload.new.value === 'true');
+                localStorage.setItem('portal_security_mode', payload.new.value);
+                applySecurityModeUI();
+              }
+            }
+          })
+          .subscribe();
+      } catch (e) {}
+    }
 
     // =========================================================================
     // CLEAR SYNTHESIZED SOUND CHIMES (WEB AUDIO API)
@@ -1960,7 +2010,13 @@
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
+      // ✅ Apply cached UI states immediately to avoid layout flicker
       applyRegistrationVisibilityUI();
+      applySecurityModeUI();
+
+      // ✅ Fetch authoritative global system settings from Supabase and listen for live changes
+      loadGlobalSystemSettings();
+      setupGlobalSettingsRealtime();
       if (currentUser) {
         // ✅ 1. VERIFY USER ACTUALLY EXISTS IN SUPABASE (EXPEL UNAUTHORIZED/DELETED ACCOUNTS)
         try {
@@ -2445,21 +2501,46 @@ async function adminResetStudentQuota(phone, username, studentName) {
       });
     }
 
-    function toggleSecurityModePill() {
-      securityProtectionActive = !securityProtectionActive;
+    function applySecurityModeUI() {
       const pill = document.getElementById('security-pill-btn');
       const statusText = document.getElementById('security-pill-status');
 
       if (securityProtectionActive) {
         document.body.classList.add('security-active');
-        pill.className = 'tap-toggle-pill enabled';
-        statusText.innerText = 'Security Active: ENABLED';
-        showToast('Security protection ENABLED (Text Selection Disabled)', 'success');
+        if (pill) pill.className = 'tap-toggle-pill enabled';
+        if (statusText) statusText.innerText = 'Security Active: ENABLED';
       } else {
         document.body.classList.remove('security-active');
-        pill.className = 'tap-toggle-pill disabled';
-        statusText.innerText = 'Security Active: DISABLED';
-        showToast('Security protection DISABLED', 'warning');
+        if (pill) pill.className = 'tap-toggle-pill disabled';
+        if (statusText) statusText.innerText = 'Security Active: DISABLED';
+      }
+    }
+
+    async function toggleSecurityModePill() {
+      if (!isStaffOrAdminUser(currentUser)) {
+        showToast('⚠️ Unauthorized: Admin privilege required.', 'danger');
+        return;
+      }
+
+      securityProtectionActive = !securityProtectionActive;
+      applySecurityModeUI();
+
+      const valStr = securityProtectionActive ? 'true' : 'false';
+      localStorage.setItem('portal_security_mode', valStr);
+
+      showToast(`Saving Global Security Mode: ${securityProtectionActive ? 'ENABLED' : 'DISABLED'}...`, 'info');
+
+      try {
+        await supabaseClient.from('system_settings').upsert([{
+          key: 'portal_security_mode',
+          value: valStr,
+          description: 'Global toggle for right-click, inspect, and text selection security mode',
+          updated_at: new Date().toISOString()
+        }], { onConflict: 'key' });
+
+        showToast(`✅ Global Security Protection is now ${securityProtectionActive ? 'ENABLED' : 'DISABLED'} across all devices!`, 'success');
+      } catch (err) {
+        showToast('Failed to save setting globally: ' + err.message, 'danger');
       }
     }
 
@@ -8084,21 +8165,31 @@ function fallbackCopyText(text, count, prevSecurityState) {
       }
     }
 
-    function toggleRegistrationControlPill() {
+    async function toggleRegistrationControlPill() {
       if (!isStaffOrAdminUser(currentUser)) {
         showToast('⚠️ Unauthorized: Admin privilege required.', 'danger');
         return;
       }
 
       isStudentRegistrationAllowed = !isStudentRegistrationAllowed;
-      localStorage.setItem('allow_student_registration', isStudentRegistrationAllowed ? 'true' : 'false');
-
       applyRegistrationVisibilityUI();
 
-      if (isStudentRegistrationAllowed) {
-        showToast('✅ Student Self-Registration is now ENABLED.', 'success');
-      } else {
-        showToast('🛑 Student Self-Registration is now DISABLED.', 'warning');
+      const valStr = isStudentRegistrationAllowed ? 'true' : 'false';
+      localStorage.setItem('allow_student_registration', valStr);
+
+      showToast(`Saving Global Registration: ${isStudentRegistrationAllowed ? 'ENABLED' : 'DISABLED'}...`, 'info');
+
+      try {
+        await supabaseClient.from('system_settings').upsert([{
+          key: 'allow_student_registration',
+          value: valStr,
+          description: 'Global switch allowing new students to self-register',
+          updated_at: new Date().toISOString()
+        }], { onConflict: 'key' });
+
+        showToast(`✅ Global Student Registration is now ${isStudentRegistrationAllowed ? 'ENABLED' : 'DISABLED'} across all devices!`, 'success');
+      } catch (err) {
+        showToast('Failed to save setting globally: ' + err.message, 'danger');
       }
     }
 
