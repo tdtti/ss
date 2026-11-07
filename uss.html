@@ -1989,21 +1989,16 @@
 
         if (!isStaffOrAdminUser(currentUser)) {
           const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone);
+          const localKey = getTodayKey();
 
-          // ✅ If Supabase has 0 seconds, wipe stale local cache immediately
-          if (remoteSec === 0) {
-            const todayIso = getTodayDateIso();
-            const cleanUser = String(currentUser.username || '').toLowerCase();
-            const cleanPhone = String(currentUser.phone || '').toLowerCase();
-            localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
-            localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
-            cachedTodayUsedSeconds = 0;
+          // ✅ If student still has practice allowance on server, unlock immediately!
+          if (remoteSec < DAILY_MAX_QUOTA_SECONDS) {
+            cachedTodayUsedSeconds = remoteSec;
+            localStorage.setItem(localKey, cachedTodayUsedSeconds);
+            const overlay = document.getElementById('app-quota-lock-overlay');
+            if (overlay) overlay.style.display = 'none';
           } else {
-            const localSec = getTodayElapsedSeconds();
-            cachedTodayUsedSeconds = Math.max(remoteSec, localSec);
-          }
-
-          if (cachedTodayUsedSeconds >= DAILY_MAX_QUOTA_SECONDS) {
+            cachedTodayUsedSeconds = remoteSec;
             triggerAppLockout();
             return;
           }
@@ -2105,37 +2100,36 @@ function getTodayElapsedSeconds(phoneOrUser) {
       checkAndEnforceQuota(getTodayElapsedSeconds());
     }
 
-    // Fetches the authoritative daily usage from Supabase attendance table
+    // =========================================================================
+// AUTHORITATIVE DAILY USAGE (MATCHES TAB 10, TAB 5, AND STUDENT SESSIONS)
+// =========================================================================
 async function fetchSupabaseDailyUsage(usernameOrPhone) {
   if (!usernameOrPhone) return 0;
   try {
-    const todayIso = getTodayDateIso();
+    const cleanDate = new Date().toLocaleDateString('en-GB');
     const cleanUser = String(currentUser?.username || usernameOrPhone).trim().toLowerCase();
     const cleanPhone = String(currentUser?.phone || usernameOrPhone).trim();
+    const cleanPhone10 = cleanPhone.replace(/[^0-9]/g, '').slice(-10);
 
-    // 1. Check exact DAILY tracking record for this student for today
-    const { data: dailyRow, error } = await supabaseClient
+    // Query real attendance sessions completed today
+    const { data: todayLogs, error } = await supabaseClient
       .from('attendance')
-      .select('duration_seconds, score')
-      .or(`attendance_id.eq."ATT-${cleanUser}-${todayIso}-DAILY",attendance_id.eq."ATT-${cleanPhone}-${todayIso}-DAILY"`)
-      .maybeSingle();
+      .select('duration_seconds, attendance_id, questions_attended, date, timestamp')
+      .or(`username.ilike."${cleanUser}",phone.eq."${cleanPhone}",phone.ilike."%${cleanPhone10}%"`);
 
-    if (!error && dailyRow && typeof dailyRow.duration_seconds === 'number') {
-      return dailyRow.duration_seconds;
-    }
-
-    // 2. Fallback: Aggregate attendance records registered today
-    const cleanDate = new Date().toLocaleDateString('en-GB');
-    const { data: todayLogs } = await supabaseClient
-      .from('attendance')
-      .select('duration_seconds')
-      .or(`username.ilike."${cleanUser}",phone.eq."${cleanPhone}"`)
-      .eq('date', cleanDate);
-
-    if (todayLogs && todayLogs.length > 0) {
-      let sum = 0;
-      todayLogs.forEach(l => sum += (Number(l.duration_seconds) || 0));
-      return sum;
+    if (!error && todayLogs && todayLogs.length > 0) {
+      let sumSeconds = 0;
+      todayLogs.forEach(a => {
+        const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+        if (aDate === cleanDate) {
+          // Exclude background 0-question daily heartbeat row
+          const isDailyHeartbeat = String(a.attendance_id || '').includes('-DAILY');
+          if (!isDailyHeartbeat || (Number(a.questions_attended) || 0) > 0) {
+            sumSeconds += (Number(a.duration_seconds) || 0);
+          }
+        }
+      });
+      return sumSeconds;
     }
   } catch (err) {
     console.warn("Could not query daily usage from Supabase:", err);
@@ -2193,16 +2187,19 @@ async function fetchSupabaseDailyUsage(usernameOrPhone) {
       const cleanUser = String(currentUser.username || '').toLowerCase();
       const cleanPhone = String(currentUser.phone || '').toLowerCase();
 
-      // ✅ If Supabase returns 0 seconds (database cleared), wipe stale local keys!
-      if (remoteSec === 0) {
-        localStorage.removeItem(localKey);
-        localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
-        localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
-        cachedTodayUsedSeconds = 0;
-      } else {
-        const localSec = parseInt(localStorage.getItem(localKey) || '0', 10);
-        cachedTodayUsedSeconds = Math.max(remoteSec, localSec);
+      // ✅ SERVER IS AUTHORITATIVE: If student has time left on server, purge stale local 3600s lockout!
+      if (remoteSec < DAILY_MAX_QUOTA_SECONDS) {
+        cachedTodayUsedSeconds = remoteSec;
         localStorage.setItem(localKey, cachedTodayUsedSeconds);
+
+        // Auto-dismiss the red lockout overlay
+        const overlay = document.getElementById('app-quota-lock-overlay');
+        if (overlay) overlay.style.display = 'none';
+        document.getElementById('tab-bar-container').style.display = 'flex';
+        const subHeader = document.getElementById('sticky-sub-header');
+        if (subHeader) subHeader.style.display = 'flex';
+      } else {
+        cachedTodayUsedSeconds = remoteSec;
       }
 
       checkAndEnforceQuota(cachedTodayUsedSeconds);
