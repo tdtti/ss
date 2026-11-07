@@ -1962,6 +1962,31 @@
     document.addEventListener('DOMContentLoaded', async () => {
       applyRegistrationVisibilityUI();
       if (currentUser) {
+        // ✅ 1. VERIFY USER ACTUALLY EXISTS IN SUPABASE (EXPEL UNAUTHORIZED/DELETED ACCOUNTS)
+        try {
+          const { data: dbUser, error: verifyErr } = await supabaseClient
+            .from('users')
+            .select('*')
+            .ilike('username', currentUser.username)
+            .maybeSingle();
+
+          if (verifyErr || !dbUser || String(dbUser.status).toLowerCase() === 'blocked') {
+            console.warn("Unauthorized or deleted account detected. Expelling session:", currentUser.username);
+            localStorage.removeItem('USS_USER');
+            sessionStorage.clear();
+            currentUser = null;
+            location.reload();
+            return;
+          }
+
+          // Sync verified details from database
+          currentUser.name = dbUser.name || currentUser.name;
+          currentUser.phone = dbUser.phone || currentUser.phone;
+          currentUser.role = dbUser.role || currentUser.role;
+        } catch (e) {
+          console.warn("Could not verify session with Supabase:", e);
+        }
+
         if (!isStaffOrAdminUser(currentUser)) {
           const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone);
 
@@ -4541,9 +4566,16 @@ async function saveCompletedSessionOnExit() {
       const overallAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 
       // 4. Update Header Cards (Total Answered Questions & Overall Accuracy Rate)
-      if (document.getElementById(totalElId)) document.getElementById(totalElId).innerText = totalAnswered;
+      if (document.getElementById(totalElId)) {
+        // Show total questions attempted (140) with unique bank coverage in subtitle (110)
+        document.getElementById(totalElId).innerText = totalAnswered;
+        const totalCardP = document.getElementById(totalElId).previousElementSibling;
+        if (totalCardP && combinedAnswers.length !== totalAnswered) {
+          totalCardP.innerText = `Total Questions Attended (${combinedAnswers.length} Unique)`;
+        }
+      }
       if (document.getElementById(accElId)) document.getElementById(accElId).innerText = `${overallAccuracy}%`;
-
+      
       // 5. Build Subject-Wise Stats for Overview, Strengths, and Priorities
       const subjectStats = {};
 
@@ -5060,10 +5092,9 @@ async function saveCompletedSessionOnExit() {
             return matchUser && (tD === cleanDateStr || tD === rawDate);
           }).reduce((sum, tr) => sum + (Number(tr.total_questions) || 0), 0);
 
-          const totalQsOnThisDay = Math.max(
-            Number(a.questions_attended) || 0,
-            dateAnswersCount + dateTrialsCount
-          );
+          // ✅ SYNCHRONIZED CALCULATION: Ignore ghost daily heartbeat rows with 0 questions
+          const isDailyHeartbeat = String(a.attendance_id || '').includes('-DAILY');
+          const isRealSession = (Number(a.questions_attended) || 0) > 0 || !isDailyHeartbeat;
 
           if (!dailyGroups[groupKey]) {
             dailyGroups[groupKey] = {
@@ -5074,20 +5105,21 @@ async function saveCompletedSessionOnExit() {
               division: resolvedDiv,
               date: cleanDateStr,
               total_seconds: 0,
-              verified_questions: totalQsOnThisDay,
+              verified_questions: 0,
               activitiesSet: new Set(),
               timestamp: a.timestamp
             };
           }
 
-          dailyGroups[groupKey].total_seconds = Math.max(
-            dailyGroups[groupKey].total_seconds,
-            Number(a.duration_seconds) || 0
-          );
-          dailyGroups[groupKey].verified_questions = Math.max(
-            dailyGroups[groupKey].verified_questions,
-            totalQsOnThisDay
-          );
+          // Sum duration and questions of real completed sessions (matches Student Portfolio)
+          if (isRealSession) {
+            dailyGroups[groupKey].total_seconds += (Number(a.duration_seconds) || 0);
+            dailyGroups[groupKey].verified_questions += (Number(a.questions_attended) || 0);
+          }
+
+          if (a.activity && a.activity.trim() !== '' && !a.activity.includes('Daily USS Training Session')) {
+            dailyGroups[groupKey].activitiesSet.add(a.activity.trim());
+          }
 
           if (a.activity && a.activity.trim() !== '') {
             dailyGroups[groupKey].activitiesSet.add(a.activity.trim());
@@ -6118,21 +6150,35 @@ async function saveCompletedSessionOnExit() {
 
       const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
 
-      // 1. Group existing logs by user identifier
+      // 1. Group existing logs by user identifier & FILTER OUT GHOST/UNREGISTERED USERS
       const grouped = {};
+      const ghostLogIds = [];
+
       (logs || []).forEach(l => {
-        const rawId = String(l.identifier || 'Unknown User').trim().toLowerCase();
-        // Match canonical username if available
+        const rawId = String(l.identifier || '').trim().toLowerCase();
+        
+        // Find if user exists in registered users table
         const matched = allUsers.find(u => 
           String(u.username || '').trim().toLowerCase() === rawId ||
           String(u.name || '').trim().toLowerCase() === rawId ||
           (u.phone && get10(u.phone) === get10(rawId))
         );
-        const userKey = matched ? String(matched.username).trim().toLowerCase() : rawId;
 
+        // ✅ If user does not exist in portal (e.g., karthika2014), mark for cleanup and skip
+        if (!matched && !isStaffOrAdminUser({ username: rawId })) {
+          if (l.log_id || l.id) ghostLogIds.push(l.log_id || l.id);
+          return;
+        }
+
+        const userKey = matched ? String(matched.username).trim().toLowerCase() : rawId;
         if (!grouped[userKey]) grouped[userKey] = [];
         grouped[userKey].push(l);
       });
+
+      // Silently purge ghost logs from database
+      if (ghostLogIds.length > 0) {
+        supabaseClient.from('logs').delete().in('log_id', ghostLogIds).then(() => {});
+      }
 
       // 2. RECONCILE STUDENTS WITH HISTORY (Kamalesh M R, Devalakshmi S Sharma, etc.)
       // If a student has records in attendance or history but no row in logs, auto-generate their session logs
