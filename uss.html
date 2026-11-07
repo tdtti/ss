@@ -2822,22 +2822,27 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
 
         window._previousUserStates[studentUniqueKey] = isOnlineAndActive;
 
-        // Calculate student's remaining practice time today
+        // ✅ 1. FILTER REAL SESSIONS FOR TODAY (EXCLUDE 0-QUESTION DAILY HEARTBEAT ROWS)
+        const studentTodayAtt = studentAttLogs.filter(a => {
+          const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+          const isDateMatch = (aDate === cleanDate);
+          if (!isDateMatch) return false;
+
+          // Ignore background daily quota heartbeat rows with 0 questions (matches Tabs 5, 6, and 9)
+          const isDailyHeartbeat = String(a.attendance_id || '').includes('-DAILY');
+          if (isDailyHeartbeat && (Number(a.questions_attended) || 0) === 0) {
+            return false;
+          }
+          return true;
+        });
+
+        // ✅ 2. SUM ACTUAL PRACTICE SESSIONS FOR TODAY (STRICTLY 36 MINS)
         let usedSeconds = 0;
-        if (pres && typeof pres.todaySeconds === 'number') {
-          usedSeconds = Math.max(usedSeconds, pres.todaySeconds);
-        }
+        studentTodayAtt.forEach(a => {
+          usedSeconds += (Number(a.duration_seconds) || 0);
+        });
 
-        const localUsed = getTodayElapsedSeconds(u.phone || u.username);
-        if (localUsed > usedSeconds) usedSeconds = localUsed;
-
-        const studentTodayAtt = studentAttLogs.filter(a => 
-          (a.date === cleanDate || (a.timestamp && a.timestamp.split(',')[0].trim() === cleanDate))
-        );
-        let dbTotalSec = 0;
-        studentTodayAtt.forEach(a => { dbTotalSec += (Number(a.duration_seconds) || 0); });
-        if (dbTotalSec > usedSeconds) usedSeconds = dbTotalSec;
-
+        // ✅ 3. CALCULATE REMAINING PRACTICE TIME OUT OF 60 MINUTES (3600s)
         const maxDailySec = 3600;
         const remainingSec = Math.max(0, maxDailySec - usedSeconds);
         const remMins = Math.floor(remainingSec / 60);
