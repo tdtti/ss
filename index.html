@@ -497,11 +497,11 @@
     <div id="yt-loader" class="yt-loader"></div>
 
     <!-- PWA INSTALLATION GUIDANCE BANNER -->
-    <div id="pwaGuideBanner" class="hidden" style="background: white; color: white; padding: 14px 18px; border-radius: 12px; margin: 10px auto 15px auto; max-width: 850px; position: relative; box-shadow: 0 4px 15px rgba(2,132,199,0.3); border: 1px solid rgba(255,255,255,0.2);">
-      <button onclick="closePwaGuideBanner()" style="position: absolute; top: 10px; right: 10px; background: white; color: white; border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; margin:0;" title="Close">✕</button>
+    <div id="pwaGuideBanner" class="hidden" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 14px 18px; border-radius: 12px; margin: 10px auto 15px auto; max-width: 850px; position: relative; box-shadow: 0 4px 15px rgba(2,132,199,0.3); border: 1px solid rgba(255,255,255,0.2);">
+      <button onclick="closePwaGuideBanner()" style="position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.2); color: white; border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; margin:0;" title="Close">✕</button>
       
       <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjGka-p7C45PTqBMBKqSjulqicQlHmW_Ee1BCfUPpaW888vYnoPjElzW9DVm8az1kCOjdlabjA3qb_vS00GpCApyVWh2C0aIcOcvb-BWeeTI8AdLojSf25iCvNpMS6aENxrWO-SgM5xjqePEMsHfCLy4HinnGk2xAnDlKaapXYFY05jXQM/s56-c/Logo2.png" style="width:36px !important; height:36px !important; margin:0 !important; object-fit:contain;" alt="App Icon">
+        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg8JiVmEpr0ghbXQ1Z2Mk-5ZFi1lKNN0f9Eygw999ZF7-Sa4OyQRrhXU646M9kpwRa0Gr5dISn2pGtD_xD-ZEbarFZLrnMquwiMvtGw2U151LH7Jckv2gaRkWJ_CtSbzVM_i1dT-JZb4QeCkLbtyrzczfUnKfP33vi21IPIGHMWhD4SkJQ/s1600/Logo2.png" style="width:36px !important; height:36px !important; margin:0 !important; object-fit:contain;" alt="App Icon">
         <div>
           <h4 style="margin:0; font-size:1rem; font-weight:700; color:white;">News App Install Now !! </h4>
           <p style="margin:2px 0 0 0; font-size:0.78rem; opacity:0.9;">TD SCHOOL NEWS ANYTIME !</p>
@@ -511,10 +511,10 @@
       <div id="pwaGuideSteps" style="font-size:0.8rem; background:rgba(0,0,0,0.18); padding:8px 12px; border-radius:8px; margin-bottom:10px; line-height:1.4;"></div>
 
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <button id="pwaDirectInstallBtn" onclick="triggerPwaInstallPrompt()" style="background:white; color:white; width:auto; padding:7px 16px; font-size:0.82rem; border-radius:20px; font-weight:700; margin:0; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+        <button id="pwaDirectInstallBtn" onclick="triggerPwaInstallPrompt()" style="background:#22c55e; color:white; width:auto; padding:7px 16px; font-size:0.82rem; border-radius:20px; font-weight:700; margin:0; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
           <i class="fa-solid fa-download"></i> Install App Now
         </button>
-        <button onclick="markPwaInstalledAndHide()" style="background:white; color:white; width:auto; padding:7px 14px; font-size:0.78rem; border-radius:20px; font-weight:600; margin:0; border:none; cursor:pointer;">
+        <button onclick="markPwaInstalledAndHide()" style="background:BLUE; color:white; width:auto; padding:7px 14px; font-size:0.78rem; border-radius:20px; font-weight:600; margin:0; border:none; cursor:pointer;">
           Already Installed / Dismiss
         </button>
       </div>
@@ -1045,14 +1045,14 @@
 
     (function injectPWAManifest() {
       const manifestData = {
-        name: "TDTTI SCHOOL NEWS ",
-        short_name: "TDTTI NEWS",
+        name: "TD SCHOOL NEWS ",
+        short_name: "NEWS TDTTI",
         description: "Daily School News Portal",
         start_url: "./",
         display: "standalone",
         orientation: "portrait-primary",
         background_color: "white",
-        theme_color: "#0284c7",
+        theme_color: "white",
         icons: [
           { src: PWA_LOGO_URL, sizes: "192x192", type: "image/png", purpose: "any maskable" },
           { src: PWA_LOGO_URL, sizes: "512x512", type: "image/png", purpose: "any maskable" }
