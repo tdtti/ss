@@ -1043,39 +1043,77 @@
     <script>
     const PWA_LOGO_URL = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg8JiVmEpr0ghbXQ1Z2Mk-5ZFi1lKNN0f9Eygw999ZF7-Sa4OyQRrhXU646M9kpwRa0Gr5dISn2pGtD_xD-ZEbarFZLrnMquwiMvtGw2U151LH7Jckv2gaRkWJ_CtSbzVM_i1dT-JZb4QeCkLbtyrzczfUnKfP33vi21IPIGHMWhD4SkJQ/s1600/Logo2.png";
 
-    (function injectPWAManifest() {
-      const manifestData = {
-        name: "TD SCHOOL NEWS ",
-        short_name: "NEWS TDTTI",
-        description: "Daily School News Portal",
-        start_url: "./",
-        display: "standalone",
-        orientation: "portrait-primary",
-        background_color: "white",
-        theme_color: "white",
-        icons: [
-          { src: PWA_LOGO_URL, sizes: "192x192", type: "image/png", purpose: "any " },
-          { src: PWA_LOGO_URL, sizes: "512x512", type: "image/png", purpose: "any " }
-        ]
+    // Generates a high-res 512x512 icon with a solid white background & proper safe-zone padding
+    function generateAdaptiveIcon(srcUrl, callback) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function() {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 512;
+          canvas.height = 512;
+          const ctx = canvas.getContext("2d");
+
+          // 1. Fill solid white background across entire icon
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, 512, 512);
+
+          // 2. Center and fit logo within the Android Safe Zone (80% of canvas)
+          const targetSize = 512 * 0.80; // 410px
+          const scale = Math.min(targetSize / img.width, targetSize / img.height);
+          const drawW = img.width * scale;
+          const drawH = img.height * scale;
+          const drawX = (512 - drawW) / 2;
+          const drawY = (512 - drawH) / 2;
+
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          callback(canvas.toDataURL("image/png"));
+        } catch (e) {
+          // Fallback if cross-origin image blocks canvas reading
+          callback(srcUrl);
+        }
       };
-
-      const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
-      const manifestURL = URL.createObjectURL(manifestBlob);
-      const manifestLink = document.createElement('link');
-      manifestLink.rel = 'manifest';
-      manifestLink.href = manifestURL;
-      document.head.appendChild(manifestLink);
-    })();
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(() => console.log('TDTTI NEWS PWA Service Worker Registered Successfully!'))
-          .catch((err) => {
-            console.warn('PWA ServiceWorker Note: Ensure sw.js is uploaded to your root folder.');
-          });
-      });
+      img.onerror = function() {
+        callback(srcUrl);
+      };
+      img.src = srcUrl;
     }
+
+    (function initPwa() {
+      generateAdaptiveIcon(PWA_LOGO_URL, function(iconDataUri) {
+        const manifestData = {
+          name: "TD SCHOOL NEWS",
+          short_name: "NEWS TDTTI",
+          description: "Daily School News Portal",
+          start_url: "./",
+          display: "standalone",
+          orientation: "portrait-primary",
+          background_color: "#ffffff",
+          theme_color: "#0866FF",
+          icons: [
+            {
+              src: iconDataUri,
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "any"
+            },
+            {
+              src: iconDataUri,
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "maskable"
+            }
+          ]
+        };
+
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = manifestURL;
+        document.head.appendChild(manifestLink);
+      });
+    })();
     
     // FIREBASE INITIALIZATION
     const firebaseConfig = {
