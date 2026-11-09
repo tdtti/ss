@@ -3720,26 +3720,50 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
 
     
     // =========================================================================
-// SYNC PAST ACTIVITIES TO SUPABASE (PROPERLY ENCAPSULATED)
+// SYNC PAST ACTIVITIES TO SUPABASE (GUARANTEED ZERO BATCH CONFLICTS)
 // =========================================================================
 async function syncPastActivitiesToSupabase() {
-  if (!cachedAdminData) return;
+  if (!cachedAdminData) {
+    showToast('Admin data is not ready yet. Please wait...', 'warning');
+    return;
+  }
   showToast('Syncing past activities...', 'info');
   setProgress(30);
 
-  const { allTrialExams, allAnswers } = cachedAdminData;
-  let newRows = [];
+  const { allTrialExams, allAnswers, users } = cachedAdminData;
+  const rowsMap = new Map();
+  const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
 
-  // 1. Group past trial exams
-  (allTrialExams || []).forEach(tr => {
-    const dateKey = tr.timestamp ? tr.timestamp.split(',')[0].trim() : new Date().toLocaleDateString('en-GB');
+  // 1. Process Past Trial Exams
+  (allTrialExams || []).forEach((tr, tIdx) => {
+    const rawPhone = String(tr.phone || '').trim();
+    const phone10 = get10(rawPhone);
+    const cleanPhone = rawPhone.startsWith('+') ? rawPhone : (phone10 ? `+91${phone10}` : rawPhone);
+
+    const matchedUser = (users || []).find(u => 
+      (phone10 && get10(u.phone) === phone10) || 
+      String(u.username || '').toLowerCase() === String(tr.username || '').toLowerCase()
+    );
+    if (matchedUser && isStaffOrAdminUser(matchedUser)) return;
+
+    const rawDate = tr.date || (tr.timestamp ? tr.timestamp.split(',')[0].trim() : '');
+    const parsedD = parseCustomDate(rawDate) || parseCustomDate(tr.timestamp);
+    let dateKey = rawDate;
+    if (parsedD && !isNaN(parsedD.getTime())) {
+      dateKey = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
+    }
+
     const pct = tr.total_questions > 0 ? Math.round((tr.score / tr.total_questions) * 100) : 0;
-    newRows.push({
-      attendance_id: `ATT-${String(tr.phone).trim()}-${dateKey}-TRIAL`,
-      student_name: tr.student_name || 'Student',
-      phone: String(tr.phone || ''),
-      class: String(tr.class || '7'),
-      division: String(tr.division || 'A'),
+    // Unique ID includes the trial exam id to prevent same-date collisions
+    const attId = `ATT-${cleanPhone}-${dateKey.replace(/\//g, '')}-TRIAL-${tr.id || tIdx}`;
+
+    rowsMap.set(attId, {
+      attendance_id: attId,
+      username: tr.username || (matchedUser ? matchedUser.username : ''),
+      student_name: tr.student_name || (matchedUser ? matchedUser.name : 'Student'),
+      phone: cleanPhone,
+      class: String(tr.class || (matchedUser ? matchedUser.class : '7')),
+      division: String(tr.division || (matchedUser ? matchedUser.division : 'A')),
       date: dateKey,
       timestamp: tr.timestamp,
       activity: 'Trial Exam Mode',
@@ -3750,44 +3774,64 @@ async function syncPastActivitiesToSupabase() {
     });
   });
 
-  // 2. Group answers by student, date, and subject
+  // 2. Process Past Subject Practice Answers
   const studentMap = {};
   (allAnswers || []).forEach(ans => {
-    const dateStr = ans.timestamp ? ans.timestamp.split(',')[0].trim() : new Date().toLocaleDateString('en-GB');
-    const key = `${ans.phone}_${dateStr}_${ans.subject}`;
-    if (!studentMap[key]) {
-      studentMap[key] = {
-        student_name: ans.student_name,
-        phone: ans.phone,
-        class: ans.class,
-        division: ans.division,
-        date: dateStr,
+    const rawPhone = String(ans.phone || '').trim();
+    const phone10 = get10(rawPhone);
+    const cleanPhone = rawPhone.startsWith('+') ? rawPhone : (phone10 ? `+91${phone10}` : rawPhone);
+
+    const matchedUser = (users || []).find(u => 
+      (phone10 && get10(u.phone) === phone10) || 
+      String(u.username || '').toLowerCase() === String(ans.username || '').toLowerCase()
+    );
+    if (matchedUser && isStaffOrAdminUser(matchedUser)) return;
+
+    const rawDate = ans.date || (ans.timestamp ? ans.timestamp.split(',')[0].trim() : '');
+    const parsedD = parseCustomDate(rawDate) || parseCustomDate(ans.timestamp);
+    let dateKey = rawDate;
+    if (parsedD && !isNaN(parsedD.getTime())) {
+      dateKey = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
+    }
+
+    const subCode = String(ans.subject || 'General').toUpperCase().trim();
+    const groupKey = `${cleanPhone}__${dateKey}__${subCode}`;
+
+    if (!studentMap[groupKey]) {
+      studentMap[groupKey] = {
+        username: ans.username || (matchedUser ? matchedUser.username : ''),
+        student_name: ans.student_name || (matchedUser ? matchedUser.name : 'Student'),
+        phone: cleanPhone,
+        class: String(ans.class || (matchedUser ? matchedUser.class : '7')),
+        division: String(ans.division || (matchedUser ? matchedUser.division : 'A')),
+        date: dateKey,
         timestamp: ans.timestamp,
-        subject: ans.subject,
+        subject: subCode,
         count: 0,
         correct: 0
       };
     }
-    studentMap[key].count++;
+
+    studentMap[groupKey].count++;
     if (ans.is_correct === 'YES' || ans.is_correct === true || ans.is_correct === 'true') {
-      studentMap[key].correct++;
+      studentMap[groupKey].correct++;
     }
   });
 
-  // Loop safely inside syncPastActivitiesToSupabase
   for (let k in studentMap) {
     const sm = studentMap[k];
-    const deterministicId = `ATT-${String(sm.phone).trim()}-${sm.date}-${sm.subject}`;
     const cor = sm.correct || 0;
     const tot = sm.count || 0;
     const pct = tot > 0 ? Math.round((cor / tot) * 100) : 0;
+    const attId = `ATT-${sm.phone}-${sm.date.replace(/\//g, '')}-${sm.subject}-SYNC`;
 
-    newRows.push({
-      attendance_id: deterministicId,
-      student_name: sm.student_name || 'Student',
-      phone: String(sm.phone || ''),
-      class: String(sm.class || '7'),
-      division: String(sm.division || 'A'),
+    rowsMap.set(attId, {
+      attendance_id: attId,
+      username: sm.username,
+      student_name: sm.student_name,
+      phone: sm.phone,
+      class: sm.class,
+      division: sm.division,
       date: sm.date,
       timestamp: sm.timestamp,
       activity: `Subject Practice (${getFullSubjectName(sm.subject)})`,
@@ -3798,28 +3842,49 @@ async function syncPastActivitiesToSupabase() {
     });
   }
 
-  if (newRows.length > 0) {
-    const { error } = await supabaseClient.from('attendance').upsert(newRows, { onConflict: 'attendance_id' });
-    setProgress(100);
-    if (!error) {
-      showToast(`Synced ${newRows.length} attendance records with real scores!`, 'success');
-      loadAdminData();
-    } else {
-      showToast('Failed to sync: ' + error.message, 'danger');
-    }
-  } else {
+  // ✅ Extract deduplicated rows
+  const newRows = Array.from(rowsMap.values());
+
+  if (newRows.length === 0) {
     setProgress(100);
     showToast('No past activities found to sync.', 'info');
+    return;
+  }
+
+  try {
+    // Upsert in safe chunks of 50 rows to prevent query payload limits
+    const chunkSize = 50;
+    for (let i = 0; i < newRows.length; i += chunkSize) {
+      const chunk = newRows.slice(i, i + chunkSize);
+      const { error } = await supabaseClient
+        .from('attendance')
+        .upsert(chunk, { onConflict: 'attendance_id' });
+
+      if (error) throw error;
+    }
+
+    setProgress(100);
+    showToast(`✅ Successfully synced ${newRows.length} attendance records!`, 'success');
+    await loadAdminData();
+  } catch (err) {
+    setProgress(100);
+    console.error("Sync error:", err);
+    showToast('Failed to sync: ' + err.message, 'danger');
   }
 }
 
     // =========================================================================
 // FULL UPDATED: SAVE COMPLETED SESSION (DO NOT WIPE sessionAnswersLog PREMATURELY)
 // =========================================================================
+// =========================================================================
+// SAVE COMPLETED SESSION (LOCKED TO sessionStartTime TO PREVENT DUPLICATES)
+// =========================================================================
 async function saveCompletedSessionOnExit() {
-  // Prevent duplicate saves while keeping sessionAnswersLog intact for Consolidation view
-  if (!sessionAnswersLog || sessionAnswersLog.length === 0 || hasSavedCurrentSession) return;
-  hasSavedCurrentSession = true;
+  if (!sessionAnswersLog || sessionAnswersLog.length === 0) return;
+
+  // Prevent multiple executions for the same session
+  if (window._isSavingSessionLock) return;
+  window._isSavingSessionLock = true;
 
   const currentSessionLog = [...sessionAnswersLog];
   const total = currentSessionLog.length;
@@ -3840,9 +3905,9 @@ async function saveCompletedSessionOnExit() {
   const subjectName = isTrial ? 'Trial Exam' : (currentSessionLog[0]?.Subject || getFullSubjectName(subjectCode));
   const sessionActivity = isTrial ? 'Trial Exam Mode' : `Subject Practice (${subjectName})`;
 
-  const sessionTimestamp = now.getTime();
-  const attId = `ATT-${studentPhone}-${cleanDate.replace(/\//g, '')}-${subjectCode}-${sessionTimestamp}`;
-
+  // ✅ CRITICAL FIX: Lock to sessionStartTime so multiple saves UPDATE the same row
+  const stableSessionKey = sessionStartTime || now.getTime();
+  const attId = `ATT-${studentPhone}-${cleanDate.replace(/\//g, '')}-${subjectCode}-${stableSessionKey}`;
   setProgress(30);
 
   try {
@@ -3952,6 +4017,7 @@ async function saveCompletedSessionOnExit() {
       sessionAnswersLog = [];
       hasSavedCurrentSession = false;
       sessionStartTime = Date.now();
+      window._isSavingSessionLock = false;
       isTrialMode = false;
       currentExhaustedSubjectCode = subject;
 
@@ -4050,10 +4116,11 @@ async function saveCompletedSessionOnExit() {
       document.getElementById('practice-spinner').style.display = 'flex';
       logPortalActivity('TRIAL', 'Started Comprehensive Trial Exam', 'Strict subject order model exam started');
 
-      isTrialMode = true;
       sessionAnswersLog = [];
       hasSavedCurrentSession = false;
       sessionStartTime = Date.now();
+      window._isSavingSessionLock = false;
+      isTrialMode = true;
       currentActiveContext = 'Trial Exam Mode';
       updatePresenceLiveState('Online & Active');
 
@@ -4419,25 +4486,40 @@ async function saveCompletedSessionOnExit() {
       }
     }
 
-    function exitConsolidationView() {
-      document.getElementById('consolidation-card').style.display = 'none';
+    async function exitPracticeMode() {
+      clearInterval(timerInterval);
 
-      // Safe clean up now that the student has finished reviewing their results
+      // Only save if an uncommitted session was in progress
+      if (sessionAnswersLog.length > 0 && !window._isSavingSessionLock) {
+        await saveCompletedSessionOnExit();
+      }
+
       sessionAnswersLog = [];
-      hasSavedCurrentSession = false;
+      sessionStartTime = null;
+      window._isSavingSessionLock = false;
 
-      // RESTORE BOTH HEADER AND SUB-HEADER ON FINISH
       document.getElementById('top-navbar').style.display = 'flex';
       document.getElementById('sticky-sub-header').style.display = 'flex';
       document.getElementById('tab-bar-container').style.display = 'flex';
+      document.getElementById('practice-mode-selector').style.display = 'flex';
 
-      if (isTrialMode) {
-        document.getElementById('trial-exam-box').style.display = 'block';
-      } else {
-        document.getElementById('subject-select').value = '';
-        document.getElementById('subject-practice-box').style.display = 'block';
-        document.getElementById('practice-mode-selector').style.display = 'flex';
-      }
+      const instrSec = document.getElementById('practice-instructions-section');
+      if (instrSec) instrSec.style.display = 'block';
+      const exhCard = document.getElementById('subject-exhausted-card');
+      if (exhCard) exhCard.style.display = 'none';
+      const trialBanner = document.getElementById('portal-version-trial-banner');
+      if (trialBanner) trialBanner.style.display = 'block';
+
+      document.getElementById('subject-practice-box').style.display = 'none';
+      document.getElementById('trial-exam-box').style.display = 'none';
+      document.getElementById('quiz-card').style.display = 'none';
+      document.getElementById('no-questions-card').style.display = 'none';
+      document.getElementById('no-trial-card').style.display = 'none';
+      document.getElementById('consolidation-card').style.display = 'none';
+      document.getElementById('subject-select').value = '';
+      currentActiveContext = 'Practice Center';
+      updatePresenceLiveState('Online & Active');
+      updateStudentAdminSupervisionUI();
     }
 
     // =========================================================================
@@ -4464,16 +4546,18 @@ async function saveCompletedSessionOnExit() {
         .or(`phone.eq."${studentPhone}",phone.ilike."%${clean10}%",student_name.ilike."%${studentName}%"`)
         .order('id', { ascending: false });
 
-      // 3. Fetch Attendance Logs
+      // 3. Fetch Attendance Logs (Clean 10-digit and username matching, no query-string breakage)
       let attendanceList = [];
       try {
         const { data: dbAtt } = await supabaseClient
           .from('attendance')
           .select('*')
-          .or(`phone.eq."${studentPhone}",phone.ilike."%${clean10}%",student_name.ilike."%${studentName}%",attendance_id.ilike."%${studentUsername}%"`)
+          .or(`username.ilike.${studentUsername},phone.ilike.%${clean10}%,student_name.ilike.%${studentName.split(' ')[0]}%`)
           .order('id', { ascending: false });
         attendanceList = dbAtt || [];
-      } catch (e) {}
+      } catch (e) {
+        console.warn("Could not fetch attendance logs:", e);
+      }
 
       // 4. Fetch Offline Exam Scores
       let offlineExams = [];
@@ -4592,7 +4676,27 @@ async function saveCompletedSessionOnExit() {
         return timeB - timeA;
       });
 
-      tbody.innerHTML = sortedLogs.map(item => {
+      // ✅ SMART DEDUPLICATION: Collapse duplicate -SYNC rows and identical sessions
+      const seenLogSigs = new Set();
+      const uniqueLogs = [];
+
+      sortedLogs.forEach(item => {
+        const dateStr = item.date || (item.timestamp ? item.timestamp.split(',')[0].trim() : '');
+        const timeStr = item.timestamp ? (item.timestamp.split(',')[1] || '').trim() : '';
+        const act = String(item.activity || '').trim();
+        const qs = Number(item.questions_attended) || 0;
+        const timeMin = timeStr ? timeStr.substring(0, 5) : '';
+
+        // Signature based on date, approximate time, activity, and question count
+        const sig = `${dateStr}__${timeMin}__${act}__${qs}`;
+
+        if (!seenLogSigs.has(sig)) {
+          seenLogSigs.add(sig);
+          uniqueLogs.push(item);
+        }
+      });
+
+      tbody.innerHTML = uniqueLogs.map(item => {
         const parts = (item.timestamp || '').split(',');
         const dateFormatted = item.date || (parts[0] ? parts[0].trim() : '-');
         const timeFormatted = parts[1] ? parts[1].trim() : '-';
@@ -4648,13 +4752,16 @@ async function saveCompletedSessionOnExit() {
       // 3. Overall Accuracy Rate (Across All Practice, Trials, and Offline Exams)
       const overallAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 
+      
       // 4. Update Header Cards (Total Answered Questions & Overall Accuracy Rate)
       if (document.getElementById(totalElId)) {
-        // Show total questions attempted (140) with unique bank coverage in subtitle (110)
-        document.getElementById(totalElId).innerText = totalAnswered;
+        // Calculate total attempts from session answers if higher than unique count
+        const totalAttempts = Math.max(totalAnswered, (resData.allAttemptsCount || totalAnswered));
+        document.getElementById(totalElId).innerText = totalAttempts;
+
         const totalCardP = document.getElementById(totalElId).previousElementSibling;
-        if (totalCardP && combinedAnswers.length !== totalAnswered) {
-          totalCardP.innerText = `Total Questions Attended (${combinedAnswers.length} Unique)`;
+        if (totalCardP) {
+          totalCardP.innerText = `Total Questions Attended (${combinedAnswers.length} Unique Mastered)`;
         }
       }
       if (document.getElementById(accElId)) document.getElementById(accElId).innerText = `${overallAccuracy}%`;
@@ -5177,6 +5284,20 @@ async function saveCompletedSessionOnExit() {
 
           // ✅ SYNCHRONIZED CALCULATION: Ignore ghost daily heartbeat rows with 0 questions
           const isDailyHeartbeat = String(a.attendance_id || '').includes('-DAILY');
+          const isSyncDuplicate = String(a.attendance_id || '').includes('-SYNC');
+
+          // If a student already has real live sessions for today, skip the -SYNC duplicate
+          if (isSyncDuplicate) {
+            const hasLiveSession = allAttendance.some(other => 
+              other !== a && 
+              get10(other.phone) === phone10 && 
+              (other.date === cleanDateStr || other.date === rawDate) && 
+              !String(other.attendance_id || '').includes('-SYNC') &&
+              (Number(other.questions_attended) || 0) > 0
+            );
+            if (hasLiveSession) return;
+          }
+
           const isRealSession = (Number(a.questions_attended) || 0) > 0 || !isDailyHeartbeat;
 
           if (!dailyGroups[groupKey]) {
@@ -6753,83 +6874,7 @@ async function saveCompletedSessionOnExit() {
       }
     }
 
-    async function syncPastActivitiesToSupabase() {
-      if (!cachedAdminData) return;
-      showToast('Syncing past activities...', 'info');
-      setProgress(30);
-
-      const { allTrialExams, allAnswers } = cachedAdminData;
-      let newRows = [];
-
-      (allTrialExams || []).forEach(tr => {
-        const dateKey = tr.timestamp ? tr.timestamp.split(',')[0].trim() : new Date().toLocaleDateString('en-GB');
-        newRows.push({
-          attendance_id: `ATT-${String(tr.phone).trim()}-${dateKey}-TRIAL`,
-          student_name: tr.student_name || 'Student',
-          phone: String(tr.phone || ''),
-          class: String(tr.class || '10'),
-          division: String(tr.division || 'A'),
-          date: dateKey,
-          timestamp: tr.timestamp,
-          activity: 'Trial Exam Mode',
-          duration_seconds: 300,
-          duration_text: '5m 00s',
-          questions_attended: tr.total_questions || 25,
-          score: `${tr.score} / ${tr.total_questions || 25}`
-        });
-      });
-
-      const studentMap = {};
-      (allAnswers || []).forEach(ans => {
-        const dateStr = ans.timestamp ? ans.timestamp.split(',')[0].trim() : new Date().toLocaleDateString('en-GB');
-        const key = `${ans.phone}_${dateStr}_${ans.subject}`;
-        if (!studentMap[key]) {
-          studentMap[key] = {
-            student_name: ans.student_name,
-            phone: ans.phone,
-            class: ans.class,
-            division: ans.division,
-            date: dateStr,
-            timestamp: ans.timestamp,
-            subject: ans.subject,
-            count: 0
-          };
-        }
-        studentMap[key].count++;
-      });
-
-      for (let k in studentMap) {
-        const sm = studentMap[k];
-        newRows.push({
-          attendance_id: `ATT-${String(sm.phone).trim()}-${sm.date}-${sm.subject}`,
-          student_name: sm.student_name || 'Student',
-          phone: String(sm.phone || ''),
-          class: String(sm.class || '10'),
-          division: String(sm.division || 'A'),
-          date: sm.date,
-          timestamp: sm.timestamp,
-          activity: `Subject Practice (${getFullSubjectName(sm.subject)})`,
-          duration_seconds: sm.count * 30,
-          duration_text: `${Math.round((sm.count * 30) / 60)}m 00s`,
-          questions_attended: sm.count,
-          score: `${sm.count} Attended`
-        });
-      }
-
-      if (newRows.length > 0) {
-        const { error } = await supabaseClient.from('attendance').upsert(newRows, { onConflict: 'attendance_id' });
-        setProgress(100);
-        if (!error) {
-          showToast(`Synced ${newRows.length} attendance records!`, 'success');
-          loadAdminData();
-        } else {
-          showToast('Failed to sync: ' + error.message, 'danger');
-        }
-      } else {
-        setProgress(100);
-        showToast('No past activities found to sync.', 'info');
-      }
-    }
+    
 
     // =========================================================================
     // REAL-TIME QUESTION BANK SEARCH & FILTER
@@ -8513,7 +8558,7 @@ async function loadHistoryData() {
         timeVal: parseCustomDate(a.timestamp)?.getTime() || 0
       }));
 
-      // 1. PRACTICE & ATTENDANCE SESSIONS
+      // 1. PRACTICE & ATTENDANCE SESSIONS (DEDUPLICATED)
       const seenAttendanceSessions = new Set();
       allAtt.forEach(a => {
         const aPhone10 = get10(a.phone);
@@ -8525,23 +8570,21 @@ async function loadHistoryData() {
         // Skip non-practice background daily ticker rows
         if (qCount === 0 && (a.activity?.includes('Daily USS Training') || a.score === 'Active')) return;
 
-        // Use the exact unique attendance_id so every session is preserved in History
-        const dedupKey = a.attendance_id || `ATT_${aPhone10 || aName}_${aDate}_${a.activity}_${a.timestamp}`;
+        // ✅ Deduplicate real session vs -SYNC rows
+        const cleanAct = String(a.activity || '').trim();
+        const dedupKey = `${aPhone10 || aName}_${aDate}_${cleanAct}_${qCount}`;
         if (seenAttendanceSessions.has(dedupKey)) return;
         seenAttendanceSessions.add(dedupKey);
 
-        // Find answers matching this student on this date
         const matchingAnswers = studentAnswers.filter(ans => {
           const matchUser = (aPhone10 && ans.phone10 === aPhone10) || (aName && ans.nameLower === aName);
           const matchDate = (ans.dateStr === aDate);
           return matchUser && matchDate;
         });
 
-        // Group only the questions matching the exact batch count (e.g. 21 questions, not 101)
         let sessionQuestions = [];
         if (matchingAnswers.length > 0) {
           if (qCount > 0 && matchingAnswers.length > qCount) {
-            // Find questions closest to the session timestamp
             sessionQuestions = matchingAnswers.sort((x, y) => {
               return Math.abs(x.timeVal - aTimeVal) - Math.abs(y.timeVal - aTimeVal);
             }).slice(0, qCount);
@@ -8550,13 +8593,13 @@ async function loadHistoryData() {
           }
         }
 
-        // Calculate actual score (e.g. 18 / 21)
         const correctAnswersCount = sessionQuestions.filter(q => q.is_correct === 'YES' || q.is_correct === true || q.is_correct === 'true').length;
         const totalSessionQuestions = sessionQuestions.length || qCount;
         const pct = totalSessionQuestions > 0 ? Math.round((correctAnswersCount / totalSessionQuestions) * 100) : 0;
         const scoreDisplay = totalSessionQuestions > 0 ? `${correctAnswersCount} / ${totalSessionQuestions} (${pct}%)` : (a.score || '-');
 
         const detectedSubject = sessionQuestions[0]?.subject || (a.activity?.includes('(') ? a.activity.split('(')[1].replace(')', '') : 'General');
+        const isTrial = a.activity?.toLowerCase().includes('trial');
 
         synth.push({
           username: a.username || a.student_name,
@@ -8566,8 +8609,8 @@ async function loadHistoryData() {
           division: a.division || 'A',
           date: aDate,
           timestamp: a.timestamp,
-          activity_type: 'PRACTICE',
-          title: `Subject Practice (${getFullSubjectName(detectedSubject)})`,
+          activity_type: isTrial ? 'TRIAL' : 'PRACTICE',
+          title: isTrial ? 'Comprehensive Trial Exam' : `Subject Practice (${getFullSubjectName(detectedSubject)})`,
           details: `• Duration: ${a.duration_text || '10m 00s'} • Questions Practiced: ${totalSessionQuestions} • Score: ${scoreDisplay}`,
           qa_list: sessionQuestions.map(q => ({
             subject: q.subject,
@@ -8575,6 +8618,45 @@ async function loadHistoryData() {
             user_choice: q.user_answer,
             correct_choice: q.correct_answer,
             is_correct: (q.is_correct === 'YES' || q.is_correct === true || q.is_correct === 'true')
+          }))
+        });
+      });
+
+      // 2. TRIAL EXAMS (SKIP IF ALREADY PROCESSED FROM ATTENDANCE TO PREVENT DUPLICATES)
+      const processedTrialKeys = new Set();
+      synth.filter(s => s.activity_type === 'TRIAL').forEach(s => {
+        processedTrialKeys.add(`${get10(s.phone)}_${s.date}`);
+      });
+
+      allTrials.forEach(t => {
+        const tPhone10 = get10(t.phone);
+        const tDate = t.timestamp ? t.timestamp.split(',')[0].trim() : '';
+        const trialKey = `${tPhone10}_${tDate}`;
+        
+        // Skip duplicate trial exam card if already processed
+        if (processedTrialKeys.has(trialKey)) return;
+        processedTrialKeys.add(trialKey);
+
+        let tAns = typeof t.answers_json === 'string' ? JSON.parse(t.answers_json || '[]') : (t.answers_json || []);
+        const pct = t.total_questions > 0 ? Math.round((t.score / t.total_questions) * 100) : 0;
+
+        synth.push({
+          username: t.username || t.student_name,
+          student_name: t.student_name,
+          phone: t.phone,
+          class: t.class || '7',
+          division: t.division || 'A',
+          date: tDate,
+          timestamp: t.timestamp,
+          activity_type: 'TRIAL',
+          title: 'Comprehensive Trial Exam',
+          details: `• Model Exam • Questions Practiced: ${t.total_questions || tAns.length} • Score: ${t.score} / ${t.total_questions} (${pct}%)`,
+          qa_list: tAns.map(ta => ({
+            subject: ta.Subject || ta.subject,
+            question: ta.QuestionText || ta.question_text,
+            user_choice: ta.UserAnswer || ta.user_answer,
+            correct_choice: ta.CorrectAnswer || ta.correct_answer,
+            is_correct: (ta.IsCorrect === true || ta.IsCorrect === 'YES' || ta.is_correct === true || ta.is_correct === 'YES')
           }))
         });
       });
@@ -9070,7 +9152,18 @@ async function syncPastActivitiesToHistoryTable() {
     .select('username, timestamp, activity_type');
 
   const existingSet = new Set((existingRows || []).map(r => `${r.username}_${r.timestamp}_${r.activity_type}`));
-  const freshRows = synth.filter(s => !existingSet.has(`${s.username}_${s.timestamp}_${s.activity_type}`));
+  
+  // Also deduplicate freshRows against itself within the same batch
+  const seenBatchKeys = new Set();
+  const freshRows = [];
+
+  synth.forEach(s => {
+    const key = `${s.username}_${s.timestamp}_${s.activity_type}`;
+    if (!existingSet.has(key) && !seenBatchKeys.has(key)) {
+      seenBatchKeys.add(key);
+      freshRows.push(s);
+    }
+  });
 
   if (freshRows.length === 0) {
     setProgress(100);
