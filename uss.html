@@ -7501,8 +7501,10 @@ async function saveCompletedSessionOnExit() {
 
     function formatDateStrict(dateStr) {
       if (!dateStr || dateStr === '-' || dateStr === 'Active Now') return dateStr;
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
+      
+      // Use parseCustomDate first to safely preserve Indian DD/MM/YYYY format
+      const d = parseCustomDate(dateStr) || new Date(dateStr);
+      if (!d || isNaN(d.getTime())) return dateStr;
 
       const dd = String(d.getDate()).padStart(2, '0');
       const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -8382,20 +8384,50 @@ async function loadHistoryData() {
       }));
 
       // 1. PRACTICE & ATTENDANCE SESSIONS (DEDUPLICATED)
+      const isSyncRow = (item) => String(item.attendance_id || '').includes('-SYNC');
+      
+      // If student has a real session, prefer it over -SYNC rows
+      const hasRealSessionOnDate = (phone10, name, date, subAct) => {
+        return allAtt.some(other => 
+          !isSyncRow(other) &&
+          (Number(other.questions_attended) || 0) > 0 &&
+          ((phone10 && get10(other.phone) === phone10) || (name && String(other.student_name || '').trim().toLowerCase() === name)) &&
+          (other.date === date || (other.timestamp && other.timestamp.split(',')[0].trim() === date)) &&
+          String(other.activity || '').trim() === subAct
+        );
+      };
+
       const seenAttendanceSessions = new Set();
       allAtt.forEach(a => {
         const aPhone10 = get10(a.phone);
         const aName = String(a.student_name || '').trim().toLowerCase();
-        const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+        
+        // Ensure date is strictly formatted in DD/MM/YYYY
+        let aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+        const parsedD = parseCustomDate(aDate) || parseCustomDate(a.timestamp);
+        if (parsedD && !isNaN(parsedD.getTime())) {
+          aDate = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
+        }
+
         const aTimeVal = parseCustomDate(a.timestamp)?.getTime() || 0;
         const qCount = Number(a.questions_attended) || 0;
 
         // Skip non-practice background daily ticker rows
         if (qCount === 0 && (a.activity?.includes('Daily USS Training') || a.score === 'Active')) return;
 
-        // ✅ Deduplicate real session vs -SYNC rows
         const cleanAct = String(a.activity || '').trim();
-        const dedupKey = `${aPhone10 || aName}_${aDate}_${cleanAct}_${qCount}`;
+
+        // If this is an auto-generated -SYNC row and a real session already exists, skip the -SYNC row
+        if (isSyncRow(a) && hasRealSessionOnDate(aPhone10, aName, aDate, cleanAct)) {
+          return;
+        }
+
+        // Deduplicate using timestamp or attendance_id so genuine distinct sessions are NEVER dropped
+        const timePart = a.timestamp ? (a.timestamp.split(',')[1] || '').trim() : '';
+        const dedupKey = a.attendance_id 
+          ? a.attendance_id 
+          : `${aPhone10 || aName}_${aDate}_${timePart}_${cleanAct}_${qCount}`;
+
         if (seenAttendanceSessions.has(dedupKey)) return;
         seenAttendanceSessions.add(dedupKey);
 
@@ -8609,7 +8641,7 @@ async function loadHistoryData() {
                         <strong style="color:#0f172a; font-size:13.5px;">${escapeHtml(ev.title)}</strong>
                       </span>
                       <span style="font-weight:700; background:${badgeBg}; color:${badgeColor}; padding:3px 8px; border-radius:6px;">
-                        ⏱️ ${formatDateStrict(ev.timestamp)}
+                      ⏱️ ${formatDateStrict(ev.timestamp || ev.date)}
                       </span>
                     </div>
 
@@ -9004,6 +9036,8 @@ async function syncPastActivitiesToHistoryTable() {
         btn.innerHTML = isHidden ? `🔍 Hide Breakdown ▴` : `🔍 ${currentText} ▾`;
       }
     }
+
+    
 
     // =========================================================================
     // RESOLVE REAL FRACTION SCORE WITH PERCENTAGE (e.g. "23 / 25 (92%)")
