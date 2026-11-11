@@ -3085,20 +3085,20 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       if (isActive) {
         text = `🌟 *TDTTI USS TRAINING PORTAL*
 
-Dear *${name}*,
-Great job! You are currently *ACTIVE* and practicing in:
-📍 [${context}]
-⏳ *Time Left Today:* ${timeLeft || 'Active'}
+      Dear *${name}*,
+      Great job! You are currently *ACTIVE* and practicing in:
+      📍 [${context}]
+      ⏳ *Time Left Today:* ${timeLeft || 'Active'}
 
-Keep up the steady focus toward your USS Exam success! 🚀📚`;
+      Keep up the steady focus toward your USS Exam success! 🚀📚`;
       } else {
         text = `⚠️ *TDTTI USS PORTAL - URGENT PRACTICE REMINDER*
 
-Dear *${name}*,
-You are currently *INACTIVE* on the USS Training Portal (${context || 'Last seen recently'}).
-⏳ *Practice Allowance Remaining Today:* ${timeLeft || '60m available'}
+      Dear *${name}*,
+      You are currently *INACTIVE* on the USS Training Portal (${context || 'Last seen recently'}).
+      ⏳ *Practice Allowance Remaining Today:* ${timeLeft || '60m available'}
 
-Daily continuous practice is essential to qualify for the USS Scholarship! Please log in now and complete today's Subject Practice & Trial Exam sessions. ✍️🎯`;
+      Daily continuous practice is essential to qualify for the USS Scholarship! Please log in now and complete today's Subject Practice & Trial Exam sessions. ✍️🎯`;
       }
 
       const url = validPhone
@@ -3125,7 +3125,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
 
         return (targetPhone10 && item10 && targetPhone10 === item10) ||
                (targetUser && itemU && targetUser === itemU) ||
-               (targetName && itemN && (targetName === itemN || targetName.includes(itemN) || itemN.includes(targetName)));
+               (targetName && itemN && (targetName === itemN || (targetName.length >= 4 && itemN.length >= 4 && (targetName.includes(itemN) || itemN.includes(targetName)))));
       };
 
       // 1. Online Subject Practice Answers (Deduplicated)
@@ -3673,40 +3673,7 @@ Daily continuous practice is essential to qualify for the USS Scholarship! Pleas
       updatePresenceLiveState('Online & Active');
     }
 
-    async function exitPracticeMode() {
-      clearInterval(timerInterval);
-
-      if (sessionAnswersLog.length > 0 && !hasSavedCurrentSession) {
-      await saveCompletedSessionOnExit();
-      }
-
-      sessionAnswersLog = [];
-      hasSavedCurrentSession = false;
-      sessionStartTime = null;
-      document.getElementById('top-navbar').style.display = 'flex';
-      document.getElementById('sticky-sub-header').style.display = 'flex';
-      document.getElementById('tab-bar-container').style.display = 'flex';
-      document.getElementById('practice-mode-selector').style.display = 'flex';
-      
-      // RESTORE MALAYALAM INSTRUCTIONS SECTION
-      const instrSec = document.getElementById('practice-instructions-section');
-      if (instrSec) instrSec.style.display = 'block';
-      const exhCard = document.getElementById('subject-exhausted-card');
-      if (exhCard) exhCard.style.display = 'none';
-      const trialBanner = document.getElementById('portal-version-trial-banner');
-      if (trialBanner) trialBanner.style.display = 'block';
-
-      document.getElementById('subject-practice-box').style.display = 'none';
-      document.getElementById('trial-exam-box').style.display = 'none';
-      document.getElementById('quiz-card').style.display = 'none';
-      document.getElementById('no-questions-card').style.display = 'none';
-      document.getElementById('no-trial-card').style.display = 'none';
-      document.getElementById('consolidation-card').style.display = 'none';
-      document.getElementById('subject-select').value = '';
-      currentActiveContext = 'Practice Center';
-      updatePresenceLiveState('Online & Active');
-      updateStudentAdminSupervisionUI();
-    }
+    
 
     async function triggerEarlyExitPractice() {
       clearInterval(timerInterval);
@@ -5534,9 +5501,10 @@ async function saveCompletedSessionOnExit() {
             const a10 = get10(a.phone);
             const aName = String(a.student_name || '').trim().toLowerCase();
             const aUser = String(a.username || '').trim().toLowerCase();
-            const matchUser = (st10 && a10 === st10) || 
-                              (stUserLower && aUser === stUserLower) ||
-                              (stNameLower && (aName === stNameLower || aName.includes(stNameLower) || stNameLower.includes(aName)));
+            
+            const matchUser = (st10 && a10 && st10 === a10) || 
+                              (stUserLower && aUser && stUserLower === aUser) ||
+                              (stNameLower && aName && (aName === stNameLower || (aName.length >= 4 && stNameLower.length >= 4 && (stNameLower.includes(aName) || aName.includes(stNameLower)))));
             if (!matchUser) return false;
 
             // Hide background daily quota heartbeat rows that have 0 questions
@@ -5765,9 +5733,10 @@ async function saveCompletedSessionOnExit() {
             const a10 = get10(a.phone);
             const aName = String(a.student_name || '').trim().toLowerCase();
             const aUser = String(a.username || '').trim().toLowerCase();
-            const matchUser = (st10 && a10 === st10) || 
-                              (stUserLower && aUser === stUserLower) ||
-                              (stNameLower && (aName === stNameLower || aName.includes(stNameLower) || stNameLower.includes(aName)));
+            
+            const matchUser = (st10 && a10 && st10 === a10) || 
+                              (stUserLower && aUser && stUserLower === aUser) ||
+                              (stNameLower && aName && (aName === stNameLower || (aName.length >= 4 && stNameLower.length >= 4 && (stNameLower.includes(aName) || aName.includes(stNameLower)))));
             if (!matchUser) return false;
 
             // Hide background daily quota heartbeat rows that have 0 questions
@@ -6317,30 +6286,9 @@ async function saveCompletedSessionOnExit() {
       window.open(url, '_blank');
     }
 
-    // =========================================================================
-    // 2. FULL UPDATED: SEND TAILORED RADAR ALERT VIA WHATSAPP
-    // =========================================================================
-    function sendTailoredRadarWhatsapp(name, phone, isActive, context, timeLeft) {
-      const validPhone = getCleanWhatsappPhone(phone);
-      let text = '';
-
-      if (isActive) {
-        text = `🌟 *TDTTI USS TRAINING PORTAL*\n\nDear *${name}*,\nGreat job! You are currently *ACTIVE* and practicing in:\n📍 [${context}]\n⏳ *Time Left Today:* ${timeLeft || 'Active'}\n\nKeep up the steady focus toward your USS Exam success! 🚀📚`;
-      } else {
-        text = `⚠️ *TDTTI USS PORTAL - URGENT PRACTICE REMINDER*\n\nDear *${name}*,\nYou are currently *OFFLINE / INACTIVE* on the USS Training Portal.\n⏳ *Practice Allowance Remaining Today:* ${timeLeft || '60m available'}\n\nDaily continuous practice is essential to qualify for the USS Scholarship! Please log in now and complete today's Subject Practice & Trial Exam sessions. ✍️🎯`;
-      }
-
-      const url = validPhone
-        ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(validPhone)}&text=${encodeURIComponent(text)}`
-        : `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-
-      window.open(url, '_blank');
-    }
+    
     
 
-    // =========================================================================
-    // AUDIT ACCESS LOGS (TAB 11) - CLEANED: NO ACTIVITY COLUMN & LOGOUT SHOWS '-'
-    // =========================================================================
     // =========================================================================
     // AUDIT ACCESS LOGS RENDERER (TAB 11) - WITH REAL-TIME RECONCILIATION
     // =========================================================================
@@ -7250,28 +7198,6 @@ async function saveCompletedSessionOnExit() {
       showToast('Diagram uploaded successfully!', 'success');
     }
 
-    async function deleteUploadedDiagram() {
-      const imgUrl = document.getElementById('q-img-url').value;
-      if (!imgUrl) return;
-
-      showToast('Deleting diagram...', 'info');
-      try {
-        if (imgUrl.includes('/question-images/')) {
-          const filePath = imgUrl.split('/question-images/')[1];
-          if (filePath) await supabaseClient.storage.from('question-images').remove([filePath]);
-        }
-      } catch (err) {
-        console.error("Delete diagram error:", err);
-      }
-
-      document.getElementById('q-img-url').value = '';
-      const preview = document.getElementById('q-img-preview');
-      preview.src = '';
-      preview.style.display = 'none';
-      document.getElementById('q-img-delete-btn').style.display = 'none';
-      showToast('Diagram deleted successfully!', 'success');
-    }
-
     async function handleSaveQuestion(e) {
       e.preventDefault();
       const qId = document.getElementById('q-id').value || ('Q-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase());
@@ -7298,7 +7224,6 @@ async function saveCompletedSessionOnExit() {
         showToast('Failed to save question: ' + error.message, 'danger');
       }
     }
-
 
     function confirmDeleteQuestion(id) {
       showConfirmModal('Delete Question', 'Permanently delete this question?', async () => {
@@ -9272,8 +9197,8 @@ async function syncPastActivitiesToHistoryTable() {
       const matchingAnswers = answersPool.filter(ans => {
         const aPhone10 = get10(ans.phone);
         const aName = String(ans.student_name || '').trim().toLowerCase();
-        const matchUser = (targetPhone10 && aPhone10 === targetPhone10) ||
-                          (targetName && (aName === targetName || aName.includes(targetName) || targetName.includes(aName)));
+        const matchUser = (targetPhone10 && aPhone10 && targetPhone10 === aPhone10) ||
+                          (targetName && aName && (aName === targetName || (aName.length >= 4 && targetName.length >= 4 && (targetName.includes(aName) || aName.includes(targetName)))));
 
         if (!matchUser) return false;
 
