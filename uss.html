@@ -2135,28 +2135,7 @@ function getTodayElapsedSeconds(phoneOrUser) {
   return `usage_${id}_${getTodayDateIso()}`;
 }
 
-    
-
-    // =========================================================================
-    // BACKWARD COMPATIBILITY HELPERS FOR DAILY QUOTA CHECKS
-    // =========================================================================
-    function checkDailyPracticeLimit() {
-      if (!currentUser || isStaffOrAdminUser(currentUser)) {
-        return { isBlocked: false, isWarned: false, practicedSec: 0, remainingSec: 3600 };
-      }
-      const practicedSec = getTodayElapsedSeconds();
-      const isBlocked = practicedSec >= DAILY_MAX_QUOTA_SECONDS;
-      const isWarned = practicedSec >= 1800 && !isBlocked;
-      const remainingSec = Math.max(0, DAILY_MAX_QUOTA_SECONDS - practicedSec);
-
-      return { isBlocked, isWarned, practicedSec, remainingSec };
-    }
-
-    function updatePracticeLimitUI() {
-      checkAndEnforceQuota(getTodayElapsedSeconds());
-    }
-
-    // =========================================================================
+// =========================================================================
 // AUTHORITATIVE DAILY USAGE (MATCHES TAB 10, TAB 5, AND STUDENT SESSIONS)
 // =========================================================================
 async function fetchSupabaseDailyUsage(usernameOrPhone) {
@@ -7173,30 +7152,7 @@ async function saveCompletedSessionOnExit() {
       );
     }
 
-    async function uploadToSupabaseStorage(input) {
-      if (!input.files || !input.files[0]) return;
-      const file = input.files[0];
-      showToast('Uploading diagram to Supabase Storage...', 'info');
-
-      const fileExt = file.name.split('.').pop() || 'png';
-      const fileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
-      const filePath = `diagrams/${fileName}`;
-
-      const { error } = await supabaseClient.storage.from('question-images').upload(filePath, file, { cacheControl: '3600', upsert: true });
-
-      if (error) {
-        showToast('Storage Upload Failed: ' + error.message, 'danger');
-        return;
-      }
-
-      const { data: publicUrlData } = supabaseClient.storage.from('question-images').getPublicUrl(filePath);
-      document.getElementById('q-img-url').value = publicUrlData.publicUrl;
-      const preview = document.getElementById('q-img-preview');
-      preview.src = publicUrlData.publicUrl;
-      preview.style.display = 'block';
-      document.getElementById('q-img-delete-btn').style.display = 'inline-flex';
-      showToast('Diagram uploaded successfully!', 'success');
-    }
+    
 
     async function handleSaveQuestion(e) {
       e.preventDefault();
@@ -7461,65 +7417,7 @@ async function saveCompletedSessionOnExit() {
       passInput.type = (passInput.type === 'password') ? 'text' : 'password';
     }
 
-    function openCSVGuideModal() {
-      document.getElementById('csv-guide-modal').style.display = 'flex';
-    }
-
-    function closeCSVGuideModal() {
-      document.getElementById('csv-guide-modal').style.display = 'none';
-    }
-
-    function downloadSampleCSV() {
-      const sampleCSVContent = 
-`subject,question,option_a,option_b,option_c,option_d,correct_answer,image_url
-BS,"What is the powerhouse of the cell?",Mitochondria,Nucleus,Ribosome,Golgi Body,A,
-MM,"What is the value of Pi (approx)?",3.14,2.71,1.41,1.73,A,
-EN,"Choose the correct synonym of 'Huge':",Tiny,Gigantic,Narrow,Fragile,B,
-SS,"Who is known as the Father of the Indian Constitution?",Mahatma Gandhi,Dr. B.R. Ambedkar,Jawaharlal Nehru,Sardar Patel,B,
-MI,"കേരളത്തിന്റെ തലസ്ഥാനം ഏത്?",തിരുവനന്തപുരം,കൊച്ചി,കോഴിക്കോട്,കണ്ണൂർ,A,
-AR,"ما هو الحرف الأول في الأبجدية؟",ألف,باء,تاء,ثاء,A,
-SK,"सूर्यः कस्यां दिशि उदेति?",पूर्वस्याम्,पश्चिमस्याम्,उत्तरस्याम्,दक्षिणस्याम्,A,`;
-
-      const blob = new Blob([sampleCSVContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'uss_questions_sample.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('Sample CSV template downloaded!', 'success');
-    }
-
-
-    function getRelativeTime(dateStr) {
-      if (!dateStr || dateStr === '-' || dateStr === 'Active Now') return 'Just now';
-      
-      const d = parseCustomDate(dateStr);
-      if (!d) return dateStr;
-
-      const now = new Date();
-      const diffMs = now.getTime() - d.getTime();
-      const diffSec = Math.floor(diffMs / 1000);
-
-      // Handle clock slight mismatch / future offsets
-      if (diffSec < 60) return 'Just now';
-
-      const diffMin = Math.floor(diffSec / 60);
-      if (diffMin === 1) return '1 min ago';
-      if (diffMin < 60) return `${diffMin} mins ago`;
-
-      const diffHr = Math.floor(diffMin / 60);
-      if (diffHr === 1) return '1 hr ago';
-      if (diffHr < 24) return `${diffHr} hrs ago`;
-
-      const diffDay = Math.floor(diffHr / 24);
-      if (diffDay === 1) return '1 day ago';
-      return `${diffDay} days ago`;
-    }
-
-
+    
     async function refreshCurrentView() {
       const icon = document.getElementById('global-refresh-icon');
       if (icon) icon.classList.add('spinning');
@@ -8586,32 +8484,7 @@ async function loadHistoryData() {
         });
       });
 
-      // 2. TRIAL EXAMS
-      allTrials.forEach(t => {
-        let tAns = typeof t.answers_json === 'string' ? JSON.parse(t.answers_json || '[]') : (t.answers_json || []);
-        const tDate = t.timestamp ? t.timestamp.split(',')[0].trim() : '';
-        const pct = t.total_questions > 0 ? Math.round((t.score / t.total_questions) * 100) : 0;
-
-        synth.push({
-          username: t.username || t.student_name,
-          student_name: t.student_name,
-          phone: t.phone,
-          class: t.class || '7',
-          division: t.division || 'A',
-          date: tDate,
-          timestamp: t.timestamp,
-          activity_type: 'TRIAL',
-          title: 'Comprehensive Trial Exam',
-          details: `• Model Exam • Questions Practiced: ${t.total_questions || tAns.length} • Score: ${t.score} / ${t.total_questions} (${pct}%)`,
-          qa_list: tAns.map(ta => ({
-            subject: ta.Subject || ta.subject,
-            question: ta.QuestionText || ta.question_text,
-            user_choice: ta.UserAnswer || ta.user_answer,
-            correct_choice: ta.CorrectAnswer || ta.correct_answer,
-            is_correct: (ta.IsCorrect === true || ta.IsCorrect === 'YES' || ta.is_correct === true || ta.is_correct === 'YES')
-          }))
-        });
-      });
+      
 
       // 3. OFFLINE EXAMS
       allOffline.forEach(o => {
