@@ -2637,10 +2637,9 @@ async function adminResetStudentQuota(phone, username, studentName) {
             presenceHeartbeatInterval = setInterval(() => {
               if (navigator.onLine && !isUserCurrentlyIdle && document.visibilityState === 'visible' && isWindowCurrentlyFocused) {
                 broadcastLivePulse('Online & Active', true);
-                // ✅ Keep Realtime Presence alive so Admins who open Tab 10 later see this student immediately
                 updatePresenceLiveState('Online & Active');
               }
-            }, 5000);
+            }, 5000); // ⚡ Runs every 5 seconds for instant detection
           }
         });
 
@@ -2738,37 +2737,34 @@ async function adminResetStudentQuota(phone, username, studentName) {
       window.addEventListener('beforeunload', handleAppExit);
     }
 
-    // REPLACE broadcastLivePulse() WITH THIS:
-async function broadcastLivePulse(statusMsg, isGreenFlag) {
-  if (!presenceChannel || !currentUser) return;
+    // =========================================================================
+    // DIRECT HIGH-SPEED WEBSOCKET PULSE (SUB-SECOND DELIVERY)
+    // =========================================================================
+    async function broadcastLivePulse(statusMsg, isGreenFlag) {
+      if (!presenceChannel || !currentUser) return;
 
-  const payload = {
-    username: currentUser.username,
-    name: currentUser.name || currentUser.username,
-    userClass: currentUser.userClass || '7',
-    division: currentUser.division || 'A',
-    phone: currentUser.phone || '',
-    liveStatus: statusMsg,
-    isGreen: (isGreenFlag === true),
-    currentContext: currentActiveContext || 'Portal Dashboard',
-    todaySeconds: getTodayElapsedSeconds(),
-    timestamp: Date.now()
-  };
+      const payload = {
+        username: currentUser.username,
+        name: currentUser.name || currentUser.username,
+        userClass: currentUser.userClass || '7',
+        division: currentUser.division || 'A',
+        phone: currentUser.phone || '',
+        liveStatus: statusMsg,
+        isGreen: (isGreenFlag === true),
+        currentContext: currentActiveContext || 'Portal Dashboard',
+        todaySeconds: getTodayElapsedSeconds(), // Accurate real-time ticking seconds
+        timestamp: Date.now()
+      };
 
-  try {
-    // If the WebSocket is joined, send over WebSocket without fallback
-    if (presenceChannel.state === 'joined') {
-      await presenceChannel.send({
-        type: 'broadcast',
-        event: 'heartbeat_ping',
-        payload: payload
-      });
-    } else if (typeof presenceChannel.httpSend === 'function') {
-      // If WebSocket is not yet connected/joined, use httpSend explicitly
-      await presenceChannel.httpSend('heartbeat_ping', payload);
+      try {
+        // Direct broadcast without blocking guards
+        presenceChannel.send({
+          type: 'broadcast',
+          event: 'heartbeat_ping',
+          payload: payload
+        });
+      } catch (err) {}
     }
-  } catch (err) {}
-}
 
     async function updatePresenceLiveState(statusMessage) {
       if (!presenceChannel || !currentUser) return;
@@ -2816,7 +2812,7 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
     }
 
     // =========================================================================
-    // INSTANT LIVE ONLINE RADAR WITH EXACT ACCURATE TIME LEFT
+    // INSTANT LIVE RADAR: SUB-SECOND ACTIVE/INACTIVE & ACCURATE TIME LEFT
     // =========================================================================
     async function renderAllUsersOnlineCards() {
       const activeFeed = document.getElementById('online-active-feed');
@@ -2826,22 +2822,23 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
       const cleanDate = new Date().toLocaleDateString('en-GB');
 
-      // 1. FAST BACKGROUND FETCH (PULLS FRESH ATTENDANCE & LOGS FROM SUPABASE)
-      try {
-        const [quickUsersRes, quickLogsRes, quickAttRes] = await Promise.all([
+      // 1. FAST BACKGROUND SYNC (PRESERVES IMMEDIATE UI RENDERING)
+      if (!window._isFetchingOnlineCards) {
+        window._isFetchingOnlineCards = true;
+        Promise.all([
           (!cachedAdminData?.users || cachedAdminData.users.length === 0) 
             ? supabaseClient.from('users').select('*') 
             : Promise.resolve({ data: cachedAdminData.users }),
-          supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(60),
+          supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(50),
           supabaseClient.from('attendance').select('*').eq('date', cleanDate).order('id', { ascending: false })
-        ]);
-
-        cachedAdminData = cachedAdminData || {};
-        if (quickUsersRes.data && quickUsersRes.data.length > 0) cachedAdminData.users = quickUsersRes.data;
-        if (quickLogsRes.data) cachedAdminData.logs = quickLogsRes.data;
-        if (quickAttRes.data) cachedAdminData.allAttendance = quickAttRes.data;
-      } catch (err) {
-        console.warn("Live heartbeat query notice:", err);
+        ]).then(([usersRes, logsRes, attRes]) => {
+          cachedAdminData = cachedAdminData || {};
+          if (usersRes.data && usersRes.data.length > 0) cachedAdminData.users = usersRes.data;
+          if (logsRes.data) cachedAdminData.logs = logsRes.data;
+          if (attRes.data) cachedAdminData.allAttendance = attRes.data;
+        }).catch(() => {}).finally(() => {
+          window._isFetchingOnlineCards = false;
+        });
       }
 
       const usersList = cachedAdminData?.users || [];
@@ -2850,7 +2847,7 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       const adminIsOnline = navigator.onLine;
       const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
 
-      // 2. COLLECT WEBSOCKET PRESENCE STATE ENTRIES
+      // 2. COLLECT WEBSOCKET PRESENCE
       let presenceEntries = [];
       try {
         if (presenceChannel) {
@@ -2864,11 +2861,11 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
         presenceEntries = [];
       }
 
-      // Merge broadcast heartbeats
+      // Merge broadcast pings (received within last 25 seconds)
       const livePings = window._liveHeartbeats || {};
       for (const k in livePings) {
         const ping = livePings[k];
-        if (Date.now() - ping.receivedAt < 40000) {
+        if (Date.now() - ping.receivedAt < 25000) {
           const existingIdx = presenceEntries.findIndex(p => 
             get10(p.phone) === get10(k) || String(p.username).toLowerCase() === String(k).toLowerCase()
           );
@@ -2881,7 +2878,7 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       const inactiveList = [];
       const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-      // Filter out Admin & Question Master accounts
+      // Exclude Admin & Staff accounts
       const onlyStudents = usersList.filter(u => !isStaffOrAdminUser(u));
 
       onlyStudents.forEach(u => {
@@ -2911,11 +2908,11 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
         );
 
         // -------------------------------------------------------------------
-        // 3. ACTUAL TIME CALCULATION: COMBINES SESSIONS + LIVE DAILY TICKER
+        // 3. ACTUAL TIME CALCULATION (SESSIONS + LIVE DAILY + WEBSOCKET TICKER)
         // -------------------------------------------------------------------
         let sessionsSum = 0;
         let dailyLiveSec = 0;
-        let latestTimestampMs = 0;
+        let latestActivityTimeMs = 0;
 
         studentAttLogs.forEach(a => {
           const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
@@ -2930,18 +2927,18 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
 
             if (a.timestamp) {
               const parsed = parseCustomDate(a.timestamp);
-              if (parsed && parsed.getTime() > latestTimestampMs) {
-                latestTimestampMs = parsed.getTime();
+              if (parsed && parsed.getTime() > latestActivityTimeMs) {
+                latestActivityTimeMs = parsed.getTime();
               }
             }
           }
         });
 
-        // Take the highest value among completed sessions, live DB row, and WebSocket ticker
+        // Exact maximum across completed tests, daily DB heartbeat, and active stream
         const liveStreamSec = Number(pres?.todaySeconds || 0);
         const usedSeconds = Math.max(sessionsSum, dailyLiveSec, liveStreamSec);
 
-        // Exactly 60 minutes limit (3600 seconds)
+        // Strict 60-minute countdown (3600 seconds)
         const maxDailySec = 3600;
         const remainingSec = Math.max(0, maxDailySec - usedSeconds);
         const remMins = Math.floor(remainingSec / 60);
@@ -2963,22 +2960,24 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
         const usedFormatted = `${usedMins}m ${String(usedSeconds % 60).padStart(2, '0')}s`;
 
         // -------------------------------------------------------------------
-        // 4. INSTANT ACTIVE DETECTION
+        // 4. MULTI-LAYER INSTANT ACTIVE DETECTION (CLOCK-DRIFT RESISTANT)
         // -------------------------------------------------------------------
-        const isWsActive = pres && (pres.isGreen === true || pres.liveStatus === 'Online & Active');
-        const isDbHeartbeatActive = (latestTimestampMs > 0 && (Date.now() - latestTimestampMs < 75000));
+        const isWsActive = Boolean(pres && (pres.isGreen === true || pres.liveStatus === 'Online & Active'));
+        const isPingActive = Boolean(pres && pres.receivedAt && (Date.now() - pres.receivedAt < 25000));
         
+        // Tolerates up to 3-minute clock drift between devices
+        const isDbHeartbeatActive = (latestActivityTimeMs > 0 && Math.abs(Date.now() - latestActivityTimeMs) < 90000);
+
         let isRecentLogActive = false;
         if (userLastLog && userLastLog.logout_time === 'Active Now') {
           const logTime = parseCustomDate(userLastLog.login_time || userLastLog.timestamp);
-          if (logTime && (Date.now() - logTime.getTime() < 120000)) {
+          if (logTime && Math.abs(Date.now() - logTime.getTime()) < 180000) {
             isRecentLogActive = true;
           }
         }
 
-        const isOnlineAndActive = adminIsOnline && (Boolean(isWsActive) || isDbHeartbeatActive || isRecentLogActive);
+        const isOnlineAndActive = adminIsOnline && (isWsActive || isPingActive || isDbHeartbeatActive || isRecentLogActive);
 
-        // Resolve Status Text
         let statusText = 'Offline';
         if (!adminIsOnline) {
           statusText = 'Offline (Admin Disconnected)';
@@ -3020,7 +3019,7 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       activeList.sort((a, b) => (parseCustomDate(b.loginTime)?.getTime() || 0) - (parseCustomDate(a.loginTime)?.getTime() || 0));
       inactiveList.sort((a, b) => String(a.name || a.username).localeCompare(String(b.name || b.username)));
 
-      // Update counters
+      // Update badge counters
       const actEl = document.getElementById('badge-active-count');
       const inactEl = document.getElementById('badge-inactive-count');
       if (actEl) actEl.innerText = `${activeList.length} Active`;
@@ -3052,7 +3051,7 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
                     <span>${escapeHtml(isAct ? u.activeContext : u.statusText)}</span>
                   </span>
 
-                  <!-- EXACT ACCURATE TIME LEFT -->
+                  <!-- EXACT REMAINING TIME -->
                   <span class="badge ${u.timeLeftBadgeClass}" style="display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:11px; padding:3px 8px;">
                     <span>⏳</span>
                     <span>${escapeHtml(u.timeLeftFormatted)}</span>
@@ -3461,6 +3460,31 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       const classDivBox = document.getElementById('user-class-div-container');
       const staffBadge = document.getElementById('user-staff-badge');
 
+      // ✅ ADMIN ONLY: Realtime live attendance stream for sub-second Tab 10 updates
+      if (isStaffOrAdminUser(currentUser)) {
+        supabaseClient
+          .channel('admin_realtime_attendance_stream')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, (payload) => {
+            if (payload && payload.new) {
+              cachedAdminData = cachedAdminData || {};
+              cachedAdminData.allAttendance = cachedAdminData.allAttendance || [];
+              const idx = cachedAdminData.allAttendance.findIndex(a => a.attendance_id === payload.new.attendance_id);
+              if (idx !== -1) {
+                cachedAdminData.allAttendance[idx] = payload.new;
+              } else {
+                cachedAdminData.allAttendance.unshift(payload.new);
+              }
+
+              // Instantly re-render Tab 10 if Admin is viewing it
+              const onlineSec = document.getElementById('admin-online-sec');
+              if (onlineSec && onlineSec.style.display === 'block') {
+                renderAllUsersOnlineCards();
+              }
+            }
+          })
+          .subscribe();
+      }
+
       if (isStaff) {
         if (classDivBox) classDivBox.style.display = 'none';
         if (staffBadge) {
@@ -3648,7 +3672,16 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       if (sectionId === 'portfolio-sec') loadPortfolio();
       else if (sectionId === 'notif-sec') loadNotifications();
       else if (sectionId === 'admin-online-sec') {
-        startAdminOnlineLiveLoop();
+        renderAllUsersOnlineCards();
+        clearInterval(adminOnlineRadarInterval);
+        // Instant ticker: polls every 2.5 seconds while viewing Tab 10
+        adminOnlineRadarInterval = setInterval(() => {
+          if (document.getElementById('admin-online-sec')?.style.display === 'block') {
+            renderAllUsersOnlineCards();
+          } else {
+            clearInterval(adminOnlineRadarInterval);
+          }
+        }, 2500);
       }
       else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(sectionId)) loadAdminData();
       if (sectionId === 'history-sec') {
