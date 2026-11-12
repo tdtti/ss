@@ -1010,7 +1010,7 @@
         </div>
 
         <div style="margin-top:30px; text-align:center;">
-          <button class="btn btn-primary" style="padding:14px 32px; font-weight:800; font-size:15px;" onclick="exitConsolidationView()">Proceed / Exit Practice →</button>
+          <button class="btn btn-primary" style="padding:14px 32px; font-weight:800; font-size:15px;" onclick="exitPracticeMode()">Proceed / Exit Practice →</button>
         </div>
       </div>
     </section>
@@ -1021,7 +1021,11 @@
       <div id="portfolio-attendance-section" class="card" style="background:#ffffff; border:1px solid var(--border-color); margin-bottom:25px;">
         <div id="portfolio-daily-allowance-box" style="margin-bottom:16px;"></div>
         
-        <div class="stats-grid" style="margin-bottom:18px;">
+        <div class="stats-grid" style="margin-bottom:18px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+          <div class="card" style="margin:0; background:#f8fafc;">
+            <p style="margin:0; color:var(--text-muted); font-size:13px; font-weight:700;">Total Time Practiced Today</p>
+            <h2 id="att-today-time" style="margin:6px 0 0 0; color:#059669;">0m 00s</h2>
+          </div>
           <div class="card" style="margin:0; background:#f8fafc;">
             <p style="margin:0; color:var(--text-muted); font-size:13px; font-weight:700;">Total Time Practiced</p>
             <h2 id="att-total-time" style="margin:6px 0 0 0; color:var(--primary);">0m</h2>
@@ -1044,7 +1048,11 @@
       </div>
 
       <h3 style="margin-top:0; color:var(--primary);">My Performance Dashboard</h3>
-      <div class="stats-grid">
+      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+        <div class="card" style="margin:0;">
+          <p style="margin:0; color:var(--text-muted); font-size:13px; font-weight:700;">Total Questions Attended Today</p>
+          <h2 id="stat-today-total" style="margin:6px 0 0 0; color:#059669;">0</h2>
+        </div>
         <div class="card" style="margin:0;">
           <p style="margin:0; color:var(--text-muted); font-size:13px; font-weight:700;">Total Answered Questions</p>
           <h2 id="stat-total" style="margin:6px 0 0 0; color:var(--primary);">0</h2>
@@ -2136,7 +2144,7 @@ function getTodayElapsedSeconds(phoneOrUser) {
 }
 
 // =========================================================================
-// AUTHORITATIVE DAILY USAGE (MATCHES TAB 10, TAB 5, AND STUDENT SESSIONS)
+// AUTHORITATIVE CROSS-DEVICE DAILY USAGE (SYNCS ACROSS ALL DEVICES)
 // =========================================================================
 async function fetchSupabaseDailyUsage(usernameOrPhone) {
   if (!usernameOrPhone) return 0;
@@ -2146,25 +2154,47 @@ async function fetchSupabaseDailyUsage(usernameOrPhone) {
     const cleanPhone = String(currentUser?.phone || usernameOrPhone).trim();
     const cleanPhone10 = cleanPhone.replace(/[^0-9]/g, '').slice(-10);
 
-    // Query real attendance sessions completed today
-    const { data: todayLogs, error } = await supabaseClient
+    // Query all attendance entries for today matching username or phone
+    let query = supabaseClient
       .from('attendance')
-      .select('duration_seconds, attendance_id, questions_attended, date, timestamp')
-      .or(`username.ilike."${cleanUser}",phone.eq."${cleanPhone}",phone.ilike."%${cleanPhone10}%"`);
+      .select('duration_seconds, attendance_id, date, timestamp');
 
-    if (!error && todayLogs && todayLogs.length > 0) {
-      let sumSeconds = 0;
+    if (cleanPhone10 && cleanUser) {
+      query = query.or(`username.ilike.${cleanUser},phone.ilike.%${cleanPhone10}%`);
+    } else if (cleanUser) {
+      query = query.ilike('username', cleanUser);
+    } else if (cleanPhone10) {
+      query = query.ilike('phone', `%${cleanPhone10}%`);
+    }
+
+    const { data: todayLogs, error } = await query;
+    if (error) {
+      console.warn("fetchSupabaseDailyUsage query note:", error);
+      return 0;
+    }
+
+    if (todayLogs && todayLogs.length > 0) {
+      let sessionsSum = 0;
+      let dailyLiveSeconds = 0;
+
       todayLogs.forEach(a => {
         const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
         if (aDate === cleanDate) {
-          // Exclude background 0-question daily heartbeat row
-          const isDailyHeartbeat = String(a.attendance_id || '').includes('-DAILY');
-          if (!isDailyHeartbeat || (Number(a.questions_attended) || 0) > 0) {
-            sumSeconds += (Number(a.duration_seconds) || 0);
+          const sec = Number(a.duration_seconds) || 0;
+          const isDailyRow = String(a.attendance_id || '').includes('-DAILY');
+
+          if (isDailyRow) {
+            // Heartbeat ticker row
+            if (sec > dailyLiveSeconds) dailyLiveSeconds = sec;
+          } else {
+            // Completed practice & exam session rows
+            sessionsSum += sec;
           }
         }
       });
-      return sumSeconds;
+
+      // Cross-device true total: Highest between live ticker and completed session sum
+      return Math.max(sessionsSum, dailyLiveSeconds);
     }
   } catch (err) {
     console.warn("Could not query daily usage from Supabase:", err);
@@ -2200,49 +2230,45 @@ async function fetchSupabaseDailyUsage(usernameOrPhone) {
     }
 
     async function startLiveAppQuotaClock() {
-      clearInterval(globalQuotaInterval);
-      if (!currentUser) return;
+  clearInterval(globalQuotaInterval);
+  if (!currentUser) return;
 
-      const quotaPill = document.getElementById('header-quota-pill');
+  const quotaPill = document.getElementById('header-quota-pill');
 
-      // HIDE DAILY LIMIT TIMER COMPLETELY FOR NON-STUDENTS (ADMIN & QUESTION MASTER)
-      if (isStaffOrAdminUser(currentUser)) {
-        if (quotaPill) {
-          quotaPill.style.display = 'none';
-        }
-        return;
-      }
+  // Hide daily limit completely for staff/admins
+  if (isStaffOrAdminUser(currentUser)) {
+    if (quotaPill) quotaPill.style.display = 'none';
+    return;
+  }
 
-      // SHOW ONLY FOR STUDENTS
-      if (quotaPill) quotaPill.style.display = 'inline-flex';
+  if (quotaPill) quotaPill.style.display = 'inline-flex';
 
-      const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone);
-      const localKey = getTodayKey();
-      const todayIso = getTodayDateIso();
-      const cleanUser = String(currentUser.username || '').toLowerCase();
-      const cleanPhone = String(currentUser.phone || '').toLowerCase();
+  // 1. Fetch cross-device authoritative usage from Supabase
+  const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone || currentUser.username);
+  const localSec = getTodayElapsedSeconds();
+  cachedTodayUsedSeconds = Math.max(remoteSec, localSec);
 
-      // ✅ SERVER IS AUTHORITATIVE: If student has time left on server, purge stale local 3600s lockout!
-      if (remoteSec < DAILY_MAX_QUOTA_SECONDS) {
-        cachedTodayUsedSeconds = remoteSec;
-        localStorage.setItem(localKey, cachedTodayUsedSeconds);
+  // Sync back to local storage
+  const localKey = getTodayKey();
+  localStorage.setItem(localKey, cachedTodayUsedSeconds);
 
-        // Auto-dismiss the red lockout overlay
-        const overlay = document.getElementById('app-quota-lock-overlay');
-        if (overlay) overlay.style.display = 'none';
-        document.getElementById('tab-bar-container').style.display = 'flex';
-        const subHeader = document.getElementById('sticky-sub-header');
-        if (subHeader) subHeader.style.display = 'flex';
-      } else {
-        cachedTodayUsedSeconds = remoteSec;
-      }
+  // 2. Lockout immediately if 60 minutes already used on any device
+  if (cachedTodayUsedSeconds >= DAILY_MAX_QUOTA_SECONDS) {
+    triggerAppLockout();
+    return;
+  }
 
-      checkAndEnforceQuota(cachedTodayUsedSeconds);
+  // 3. Remove overlay if student still has time
+  const overlay = document.getElementById('app-quota-lock-overlay');
+  if (overlay) overlay.style.display = 'none';
 
-      globalQuotaInterval = setInterval(() => {
-        recordElapsedSecond();
-      }, 1000);
-    }
+  checkAndEnforceQuota(cachedTodayUsedSeconds);
+
+  // 4. Start active ticking clock
+  globalQuotaInterval = setInterval(() => {
+    recordElapsedSecond();
+  }, 1000);
+}
 
     function updatePausedQuotaUI() {
       const elapsedSec = getTodayElapsedSeconds();
@@ -2311,59 +2337,37 @@ async function fetchSupabaseDailyUsage(usernameOrPhone) {
     }
 
     // =========================================================================
-    // SAVE LIVE ATTENDANCE PROGRESS WITH ACTUAL FRACTION SCORE (NO "ACTIVE")
-    // =========================================================================
-    async function saveLiveAttendanceProgress(totalSecondsToday) {
-      if (!currentUser || isStaffOrAdminUser(currentUser)) return;
-      const cleanDate = new Date().toLocaleDateString('en-GB');
-      const todayIso = getTodayDateIso();
-      const mins = Math.floor(totalSecondsToday / 60);
-      const secs = totalSecondsToday % 60;
-      const cleanUser = String(currentUser.username || '').trim().toLowerCase();
-      const cleanPhone = String(currentUser.phone || '').trim();
+// SAVE LIVE ATTENDANCE PROGRESS (COMMITS RUNNING SECONDS TO SUPABASE)
+// =========================================================================
+async function saveLiveAttendanceProgress(totalSecondsToday) {
+  if (!currentUser || isStaffOrAdminUser(currentUser)) return;
+  const cleanDate = new Date().toLocaleDateString('en-GB');
+  const todayIso = getTodayDateIso();
+  const mins = Math.floor(totalSecondsToday / 60);
+  const secs = totalSecondsToday % 60;
+  const cleanUser = String(currentUser.username || '').trim().toLowerCase();
+  const cleanPhone = String(currentUser.phone || '').trim();
 
-      // Compute actual score from active session or today's database logs
-      let actualScoreText = '-';
-      const attendedCount = sessionAnswersLog.length || 0;
-      
-      if (attendedCount > 0) {
-        const correctCount = sessionAnswersLog.filter(a => a.IsCorrect === true || a.is_correct === true || a.is_correct === 'YES').length;
-        const pct = Math.round((correctCount / attendedCount) * 100);
-        actualScoreText = `${correctCount} / ${attendedCount} (${pct}%)`;
-      } else {
-        const todayAnswers = (cachedAdminData?.allAnswers || []).filter(ans => {
-          const aDate = ans.timestamp ? ans.timestamp.split(',')[0].trim() : '';
-          return (String(ans.phone).trim() === cleanPhone || String(ans.username || '').toLowerCase() === cleanUser) && (aDate === cleanDate);
-        });
+  const attendanceEntry = {
+    attendance_id: `ATT-${cleanUser}-${todayIso}-DAILY`,
+    username: cleanUser,
+    student_name: currentUser.name || currentUser.username,
+    phone: cleanPhone,
+    class: String(currentUser.userClass || '7'),
+    division: String(currentUser.division || 'A'),
+    date: cleanDate,
+    timestamp: formatDateStrict(new Date().toISOString()),
+    activity: isTrialMode ? 'Trial Exam Mode' : (sessionAnswersLog[0]?.Subject ? `Subject Practice (${sessionAnswersLog[0].Subject})` : 'Daily USS Training Session'),
+    duration_seconds: totalSecondsToday,
+    duration_text: `${mins}m ${String(secs).padStart(2, '0')}s`,
+    questions_attended: sessionAnswersLog.length || 0,
+    score: `${mins}m / 60m used`
+  };
 
-        if (todayAnswers.length > 0) {
-          const tot = todayAnswers.length;
-          const cor = todayAnswers.filter(a => a.is_correct === 'YES' || a.is_correct === true).length;
-          const pct = Math.round((cor / tot) * 100);
-          actualScoreText = `${cor} / ${tot} (${pct}%)`;
-        }
-      }
-
-      const attendanceEntry = {
-        attendance_id: `ATT-${cleanUser}-${todayIso}-DAILY`,
-        username: cleanUser,
-        student_name: currentUser.name || currentUser.username,
-        phone: cleanPhone,
-        class: String(currentUser.userClass || '7'),
-        division: String(currentUser.division || 'A'),
-        date: cleanDate,
-        timestamp: formatDateStrict(new Date().toISOString()),
-        activity: isTrialMode ? 'Trial Exam Mode' : (sessionAnswersLog[0]?.Subject ? `Subject Practice (${sessionAnswersLog[0].Subject})` : 'Daily USS Training Session'),
-        duration_seconds: totalSecondsToday,
-        duration_text: `${mins}m ${String(secs).padStart(2, '0')}s`,
-        questions_attended: attendedCount,
-        score: actualScoreText
-      };
-
-      try {
-        await supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' });
-      } catch(e) {}
-    }
+  try {
+    await supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' });
+  } catch(e) {}
+}
 
     // =========================================================================
 // ADMIN ACTION: RESTORE/ADD 60M DAILY QUOTA FOR ANY DEVICE
@@ -3613,45 +3617,49 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
     // =========================================================================
     // PRACTICE & TRIAL WITH COMPLETED QUESTIONS SAVED ON EXIT
     // =========================================================================
-      function switchPracticeMode(mode) {
-      if (!isStaffOrAdminUser(currentUser) && getTodayElapsedSeconds() >= DAILY_MAX_QUOTA_SECONDS) {
+      async function switchPracticeMode(mode) {
+  // Check if non-admin has reached 60 minutes on ANY device
+  if (!isStaffOrAdminUser(currentUser)) {
+    const remoteSec = await fetchSupabaseDailyUsage(currentUser.phone || currentUser.username);
+    const totalUsage = Math.max(remoteSec, getTodayElapsedSeconds());
+    if (totalUsage >= DAILY_MAX_QUOTA_SECONDS) {
+      cachedTodayUsedSeconds = totalUsage;
       showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
       triggerAppLockout();
       return;
-      }
-
-      document.getElementById('tab-bar-container').style.display = 'none';
-      document.getElementById('practice-mode-selector').style.display = 'none';
-      
-      // HIDE MALAYALAM INSTRUCTIONS ON MODE SELECT
-      const instrSec = document.getElementById('practice-instructions-section');
-      if (instrSec) instrSec.style.display = 'none';
-      const exhCard = document.getElementById('subject-exhausted-card');
-      if (exhCard) exhCard.style.display = 'none';
-      // Inside switchPracticeMode():
-      const trialBanner = document.getElementById('portal-version-trial-banner');
-      if (trialBanner) trialBanner.style.display = 'none';
-
-      const supBar = document.getElementById('student-admin-supervision-bar');
-      if (supBar) supBar.style.display = 'none';
-
-      document.getElementById('quiz-card').style.display = 'none';
-      document.getElementById('no-questions-card').style.display = 'none';
-      document.getElementById('no-trial-card').style.display = 'none';
-      document.getElementById('consolidation-card').style.display = 'none';
-
-      if (mode === 'PRACTICE') {
-        document.getElementById('subject-practice-box').style.display = 'block';
-        document.getElementById('trial-exam-box').style.display = 'none';
-        currentActiveContext = 'Practice Center > Choosing Subject';
-      } else {
-        document.getElementById('subject-practice-box').style.display = 'none';
-        document.getElementById('trial-exam-box').style.display = 'block';
-        currentActiveContext = 'Practice Center > Trial Exam Mode';
-      }
-      updatePresenceLiveState('Online & Active');
     }
+  }
 
+  document.getElementById('tab-bar-container').style.display = 'none';
+  document.getElementById('practice-mode-selector').style.display = 'none';
+  
+  // HIDE MALAYALAM INSTRUCTIONS ON MODE SELECT
+  const instrSec = document.getElementById('practice-instructions-section');
+  if (instrSec) instrSec.style.display = 'none';
+  const exhCard = document.getElementById('subject-exhausted-card');
+  if (exhCard) exhCard.style.display = 'none';
+  const trialBanner = document.getElementById('portal-version-trial-banner');
+  if (trialBanner) trialBanner.style.display = 'none';
+
+  const supBar = document.getElementById('student-admin-supervision-bar');
+  if (supBar) supBar.style.display = 'none';
+
+  document.getElementById('quiz-card').style.display = 'none';
+  document.getElementById('no-questions-card').style.display = 'none';
+  document.getElementById('no-trial-card').style.display = 'none';
+  document.getElementById('consolidation-card').style.display = 'none';
+
+  if (mode === 'PRACTICE') {
+    document.getElementById('subject-practice-box').style.display = 'block';
+    document.getElementById('trial-exam-box').style.display = 'none';
+    currentActiveContext = 'Practice Center > Choosing Subject';
+  } else {
+    document.getElementById('subject-practice-box').style.display = 'none';
+    document.getElementById('trial-exam-box').style.display = 'block';
+    currentActiveContext = 'Practice Center > Trial Exam Mode';
+  }
+  updatePresenceLiveState('Online & Active');
+}
     
 
     async function triggerEarlyExitPractice() {
@@ -4469,6 +4477,13 @@ async function saveCompletedSessionOnExit() {
     }
 
     // =========================================================================
+    // EXIT CONSOLIDATION VIEW HANDLER
+    // =========================================================================
+    async function exitConsolidationView() {
+      await exitPracticeMode();
+    }
+
+    // =========================================================================
     // FULL UPDATED PORTFOLIO LOADER (TAB 2)
     // =========================================================================
     async function loadPortfolio() {
@@ -4559,14 +4574,177 @@ async function saveCompletedSessionOnExit() {
     }
 
     // =========================================================================
-    // RENDER STUDENT ATTENDANCE LOG (STRICTLY 0 WHEN SUPABASE DATA IS EMPTY)
+    // UNIVERSAL DETAILED ATTENDANCE LOG GENERATOR (WITH DAILY TOTALS & GRAND TOTAL)
+    // =========================================================================
+    function buildDetailedAttendanceLogHTML(validLogs, studentPhone, studentName, allAnswersList) {
+      if (!validLogs || validLogs.length === 0) {
+        return '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">No past attendance records found. Practice sessions will appear here!</td></tr>';
+      }
+
+      const parseSecs = (sec, text) => {
+        let n = Number(sec);
+        if (!isNaN(n) && n > 0) return n;
+        if (text) {
+          let total = 0;
+          const mMatch = text.match(/(\d+)\s*m/);
+          const sMatch = text.match(/(\d+)\s*s/);
+          if (mMatch) total += parseInt(mMatch[1], 10) * 60;
+          if (sMatch) total += parseInt(sMatch[1], 10);
+          if (total > 0) return total;
+        }
+        return 0;
+      };
+
+      const formatSecs = (totalSec) => {
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        return m > 0 ? `${m}m ${String(s).padStart(2, '0')}s` : `${totalSec}s`;
+      };
+
+      // 1. Sort logs chronologically descending
+      const sortedLogs = [...validLogs].sort((a, b) => {
+        const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
+        const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
+        return timeB - timeA;
+      });
+
+      // 2. Deduplicate identical log rows
+      const seenLogSigs = new Set();
+      const uniqueLogs = [];
+      sortedLogs.forEach(item => {
+        const dateStr = item.date || (item.timestamp ? item.timestamp.split(',')[0].trim() : '');
+        const timeStr = item.timestamp ? (item.timestamp.split(',')[1] || '').trim() : '';
+        const act = String(item.activity || '').trim();
+        const qs = Number(item.questions_attended) || 0;
+        const timeMin = timeStr ? timeStr.substring(0, 5) : '';
+        const sig = `${dateStr}__${timeMin}__${act}__${qs}`;
+        if (!seenLogSigs.has(sig)) {
+          seenLogSigs.add(sig);
+          uniqueLogs.push(item);
+        }
+      });
+
+      // 3. Group by Normalized Date (DD/MM/YYYY)
+      const dateGroups = {};
+      uniqueLogs.forEach(item => {
+        let dateStr = item.date || (item.timestamp ? item.timestamp.split(',')[0].trim() : '');
+        const parsedD = parseCustomDate(dateStr) || parseCustomDate(item.timestamp);
+        if (parsedD && !isNaN(parsedD.getTime())) {
+          dateStr = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
+        }
+        if (!dateGroups[dateStr]) dateGroups[dateStr] = [];
+        dateGroups[dateStr].push(item);
+      });
+
+      const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+        const dA = parseCustomDate(a)?.getTime() || 0;
+        const dB = parseCustomDate(b)?.getTime() || 0;
+        return dB - dA;
+      });
+
+      let grandTotalSec = 0;
+      let grandTotalQuestions = 0;
+      let html = '';
+
+      sortedDates.forEach(dKey => {
+        const dayItems = dateGroups[dKey];
+        let dayTotalSec = 0;
+        let dayTotalQuestions = 0;
+
+        dayItems.forEach(item => {
+          const parts = (item.timestamp || '').split(',');
+          const dateFormatted = dKey;
+          const timeFormatted = parts[1] ? parts[1].trim() : '-';
+          const qCount = Number(item.questions_attended) || 0;
+          const sec = parseSecs(item.duration_seconds, item.duration_text);
+
+          dayTotalSec += sec;
+          dayTotalQuestions += qCount;
+          grandTotalSec += sec;
+          grandTotalQuestions += qCount;
+
+          const durText = item.duration_text || formatSecs(sec);
+          const displayScore = resolveAttendanceRowScore(item, studentPhone, studentName, allAnswersList);
+          const isFraction = displayScore.includes('/');
+          const isPassing = isFraction && !displayScore.startsWith('0');
+          const badgeClass = isPassing ? 'badge-success' : (isFraction ? 'badge-warning' : '');
+
+          html += `
+            <tr>
+              <td><b>${escapeHtml(dateFormatted)}</b></td>
+              <td><small style="color:var(--text-muted); font-weight:700;">${escapeHtml(timeFormatted)}</small></td>
+              <td><span class="badge" style="background:#eff6ff; color:#1e40af;">${escapeHtml(item.activity || 'Practice Session')}</span></td>
+              <td><b>${escapeHtml(durText)}</b></td>
+              <td><b>${qCount}</b></td>
+              <td>
+                <span class="badge ${badgeClass}" style="font-size:12px; font-weight:800; padding:4px 9px;">
+                  ${escapeHtml(displayScore)}
+                </span>
+              </td>
+            </tr>
+          `;
+        });
+
+        // Subtotal row for each date
+        html += `
+          <tr style="background:#f1f5f9; font-weight:700; border-top:1.5px solid #cbd5e1; border-bottom:1.5px solid #cbd5e1;">
+            <td colspan="3" style="text-align:right; color:#1e40af; font-size:12.5px;">
+              📊 <b>Total for ${escapeHtml(dKey)}:</b>
+            </td>
+            <td style="color:#1e40af; font-size:13px;"><b>${formatSecs(dayTotalSec)}</b></td>
+            <td style="color:#1e40af; font-size:13px;"><b>${dayTotalQuestions} Qs</b></td>
+            <td><span class="badge" style="background:#e2e8f0; color:#334155; font-size:11px;">Day Total</span></td>
+          </tr>
+        `;
+      });
+
+      // Grand Total row at the bottom
+      html += `
+        <tr style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); font-weight:800; border-top:2px solid var(--primary) !important; font-size:13.5px;">
+          <td colspan="3" style="text-align:right; color:#1e3a8a;">
+            🏆 <b>GRAND TOTAL:</b>
+          </td>
+          <td style="color:var(--primary); font-size:14px;"><b>${formatSecs(grandTotalSec)}</b></td>
+          <td style="color:var(--primary); font-size:14px;"><b>${grandTotalQuestions} Qs</b></td>
+          <td><span class="badge badge-success" style="font-size:11.5px;">All Sessions</span></td>
+        </tr>
+      `;
+
+      return html;
+    }
+
+    // =========================================================================
+    // RENDER STUDENT ATTENDANCE LOG (WITH TODAY'S TIME, DAILY TOTALS & GRAND TOTAL)
     // =========================================================================
     function renderStudentAttendance(attLogs, verifiedTotalQuestions) {
+      const todayTimeEl = document.getElementById('att-today-time');
       const totalTimeEl = document.getElementById('att-total-time');
       const totalDaysEl = document.getElementById('att-total-days');
       const tbody = document.getElementById('portfolio-attendance-body');
 
-      // Filter out zero-question background daily heartbeat rows
+      const cleanToday = new Date().toLocaleDateString('en-GB');
+
+      const parseSecs = (sec, text) => {
+        let n = Number(sec);
+        if (!isNaN(n) && n > 0) return n;
+        if (text) {
+          let total = 0;
+          const mMatch = text.match(/(\d+)\s*m/);
+          const sMatch = text.match(/(\d+)\s*s/);
+          if (mMatch) total += parseInt(mMatch[1], 10) * 60;
+          if (sMatch) total += parseInt(sMatch[1], 10);
+          if (total > 0) return total;
+        }
+        return 0;
+      };
+
+      const formatSecs = (totalSec) => {
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        return m > 0 ? `${m}m ${String(s).padStart(2, '0')}s` : `${totalSec}s`;
+      };
+
+      // Filter out background daily heartbeat rows with 0 questions
       const validLogs = (attLogs || []).filter(item => {
         const isDailyHeartbeat = String(item.attendance_id || '').includes('-DAILY');
         if (isDailyHeartbeat && (Number(item.questions_attended) || 0) === 0) {
@@ -4575,7 +4753,24 @@ async function saveCompletedSessionOnExit() {
         return true;
       });
 
-      // ✅ IF SUPABASE HAS NO ATTENDANCE LOGS: STRICTLY RESET DISPLAY & PURGE STALE CACHE
+      // Calculate Today's Practice Seconds from completed logs
+      let todaySecFromLogs = 0;
+      validLogs.forEach(item => {
+        let dateStr = item.date || (item.timestamp ? item.timestamp.split(',')[0].trim() : '');
+        const parsedD = parseCustomDate(dateStr) || parseCustomDate(item.timestamp);
+        if (parsedD && !isNaN(parsedD.getTime())) {
+          dateStr = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
+        }
+        if (dateStr === cleanToday) {
+          todaySecFromLogs += parseSecs(item.duration_seconds, item.duration_text);
+        }
+      });
+
+      // Take maximum of logged sessions and real-time active quota ticker
+      const todaySec = Math.max(todaySecFromLogs, getTodayElapsedSeconds());
+      if (todayTimeEl) todayTimeEl.innerText = formatSecs(todaySec);
+
+      // Handle empty state
       if (!validLogs || validLogs.length === 0) {
         if (totalTimeEl) totalTimeEl.innerText = '0m';
         if (totalDaysEl) totalDaysEl.innerText = '0 Days';
@@ -4597,83 +4792,36 @@ async function saveCompletedSessionOnExit() {
         return;
       }
 
+      // Calculate Lifetime Total Seconds & Unique Active Days
       let totalSec = 0;
       const activeDaysSet = new Set();
 
       validLogs.forEach(item => {
-        totalSec += (Number(item.duration_seconds) || 0);
-        if (item.date) activeDaysSet.add(item.date);
-        else if (item.timestamp) activeDaysSet.add(item.timestamp.split(',')[0].trim());
+        totalSec += parseSecs(item.duration_seconds, item.duration_text);
+
+        let dateStr = item.date || (item.timestamp ? item.timestamp.split(',')[0].trim() : '');
+        const parsedD = parseCustomDate(dateStr) || parseCustomDate(item.timestamp);
+        if (parsedD && !isNaN(parsedD.getTime())) {
+          dateStr = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
+        }
+        if (dateStr) activeDaysSet.add(dateStr);
       });
 
-      const todaySeconds = getTodayElapsedSeconds();
-      const combinedSec = Math.max(totalSec, todaySeconds);
+      const combinedSec = Math.max(totalSec, todaySec);
       const totalMins = Math.round(combinedSec / 60);
 
       if (totalTimeEl) totalTimeEl.innerText = totalMins > 0 ? `${totalMins} mins` : `${combinedSec}s`;
       if (totalDaysEl) totalDaysEl.innerText = `${activeDaysSet.size} Days`;
 
-      if (!tbody) return;
-
-      // Latest session chronologically at the top
-      const sortedLogs = [...validLogs].sort((a, b) => {
-        const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
-        const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
-        return timeB - timeA;
-      });
-
-      // ✅ SMART DEDUPLICATION: Collapse duplicate -SYNC rows and identical sessions
-      const seenLogSigs = new Set();
-      const uniqueLogs = [];
-
-      sortedLogs.forEach(item => {
-        const dateStr = item.date || (item.timestamp ? item.timestamp.split(',')[0].trim() : '');
-        const timeStr = item.timestamp ? (item.timestamp.split(',')[1] || '').trim() : '';
-        const act = String(item.activity || '').trim();
-        const qs = Number(item.questions_attended) || 0;
-        const timeMin = timeStr ? timeStr.substring(0, 5) : '';
-
-        // Signature based on date, approximate time, activity, and question count
-        const sig = `${dateStr}__${timeMin}__${act}__${qs}`;
-
-        if (!seenLogSigs.has(sig)) {
-          seenLogSigs.add(sig);
-          uniqueLogs.push(item);
-        }
-      });
-
-      tbody.innerHTML = uniqueLogs.map(item => {
-        const parts = (item.timestamp || '').split(',');
-        const dateFormatted = item.date || (parts[0] ? parts[0].trim() : '-');
-        const timeFormatted = parts[1] ? parts[1].trim() : '-';
-
-        // COMPUTE REAL SCORE FRACTION & PERCENTAGE (NEVER "25 Qs")
-        const displayScore = resolveAttendanceRowScore(
-          item, 
+      // Render the Detailed Attendance Log table with daily totals & grand total
+      if (tbody) {
+        tbody.innerHTML = buildDetailedAttendanceLogHTML(
+          validLogs, 
           currentUser?.phone, 
           currentUser?.name, 
           cachedAdminData?.allAnswers || []
         );
-
-        const isFraction = displayScore.includes('/');
-        const isPassing = isFraction && !displayScore.startsWith('0');
-        const badgeClass = isPassing ? 'badge-success' : (isFraction ? 'badge-warning' : '');
-
-        return `
-          <tr>
-            <td><b>${escapeHtml(dateFormatted)}</b></td>
-            <td><small style="color:var(--text-muted); font-weight:700;">${escapeHtml(timeFormatted)}</small></td>
-            <td><span class="badge" style="background:#eff6ff; color:#1e40af;">${escapeHtml(item.activity || 'Practice Session')}</span></td>
-            <td><b>${escapeHtml(item.duration_text || Math.round((item.duration_seconds || 0)/60) + 'm')}</b></td>
-            <td><b>${item.questions_attended || 0}</b></td>
-            <td>
-              <span class="badge ${badgeClass}" style="font-size:12px; font-weight:800; padding:4px 9px;">
-                ${escapeHtml(displayScore)}
-              </span>
-            </td>
-          </tr>
-        `;
-      }).join('');
+      }
     }
 
     // =========================================================================
@@ -4699,9 +4847,22 @@ async function saveCompletedSessionOnExit() {
       const overallAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 
       
-      // 4. Update Header Cards (Total Answered Questions & Overall Accuracy Rate)
+      // 4. Update Header Cards (Today Questions, Total Answered Questions & Overall Accuracy Rate)
+      const cleanToday = new Date().toLocaleDateString('en-GB');
+      let todayQuestionsCount = 0;
+      combinedAnswers.forEach(ans => {
+        let aDate = ans.Timestamp ? ans.Timestamp.split(',')[0].trim() : '';
+        const parsedD = parseCustomDate(aDate) || parseCustomDate(ans.Timestamp);
+        if (parsedD && !isNaN(parsedD.getTime())) {
+          aDate = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
+        }
+        if (aDate === cleanToday) todayQuestionsCount++;
+      });
+
+      const todayTotEl = document.getElementById('stat-today-total');
+      if (todayTotEl) todayTotEl.innerText = todayQuestionsCount;
+
       if (document.getElementById(totalElId)) {
-        // Calculate total attempts from session answers if higher than unique count
         const totalAttempts = Math.max(totalAnswered, (resData.allAttemptsCount || totalAnswered));
         document.getElementById(totalElId).innerText = totalAttempts;
 
@@ -5468,11 +5629,10 @@ async function saveCompletedSessionOnExit() {
 
         // Populate inner containers for each student
         alphabeticalStudents.forEach((st, idx) => {
-          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name);
+          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
           const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
           const st10 = get10(st.phone);
           const stNameLower = String(st.name || '').trim().toLowerCase();
-
           const stUserLower = String(st.username || '').trim().toLowerCase();
 
           // 1. Attendance Records (Filtered & Sorted Chronologically)
@@ -5497,40 +5657,76 @@ async function saveCompletedSessionOnExit() {
             return timeB - timeA;
           });
 
-          // Compute Practice Time & Active Days identically to Student Login
-          let totalSec = 0;
-          const activeDaysSet = new Set();
-          validAtt.forEach(a => {
-            totalSec += (Number(a.duration_seconds) || 0);
-            if (a.date) activeDaysSet.add(a.date);
-            else if (a.timestamp) activeDaysSet.add(a.timestamp.split(',')[0].trim());
-          });
-          const totalMins = Math.round(totalSec / 60);
-          const durationFormatted = totalMins > 0 ? `${totalMins} mins` : `${totalSec}s`;
-          const activeDaysCount = activeDaysSet.size;
-
-          // 2. Offline Exam Records
+          // 2. Offline Exam Records (DEFINED BEFORE TEMPLATE)
           const stOffline = allOfflineExams.filter(o => 
-            (st10 && get10(o.phone) === st10) || String(o.student_name || '').toLowerCase() === stNameLower
+            (st10 && get10(o.phone) === st10) || 
+            (stUserLower && String(o.username || '').trim().toLowerCase() === stUserLower) ||
+            (stNameLower && String(o.student_name || '').trim().toLowerCase() === stNameLower)
           );
 
-          // 3. Trial Exams
+          // 3. Trial Exams (DEFINED BEFORE TEMPLATE)
           const stTrials = allTrialExams.filter(t => 
-            (st10 && get10(t.phone) === st10) || String(t.student_name || '').toLowerCase() === stNameLower
+            (st10 && get10(t.phone) === st10) || 
+            (stUserLower && String(t.username || '').trim().toLowerCase() === stUserLower) ||
+            (stNameLower && String(t.student_name || '').trim().toLowerCase() === stNameLower)
           ).map(t => ({
             Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
           }));
 
+          const cleanToday = new Date().toLocaleDateString('en-GB');
+
+          // Compute Practice Time, Active Days, & Today Metrics
+          let totalSec = 0;
+          let todaySec = 0;
+          let todayQuestionsCount = 0;
+          const activeDaysSet = new Set();
+
+          validAtt.forEach(a => {
+            let s = Number(a.duration_seconds) || 0;
+            if (!s && a.duration_text) {
+              const mMatch = a.duration_text.match(/(\d+)\s*m/);
+              const sMatch = a.duration_text.match(/(\d+)\s*s/);
+              if (mMatch) s += parseInt(mMatch[1], 10) * 60;
+              if (sMatch) s += parseInt(sMatch[1], 10);
+            }
+            totalSec += s;
+
+            let dateStr = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+            const parsedD = parseCustomDate(dateStr) || parseCustomDate(a.timestamp);
+            if (parsedD && !isNaN(parsedD.getTime())) {
+              dateStr = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
+            }
+
+            if (dateStr) activeDaysSet.add(dateStr);
+
+            if (dateStr === cleanToday) {
+              todaySec += s;
+              todayQuestionsCount += (Number(a.questions_attended) || 0);
+            }
+          });
+
+          const totalMins = Math.round(totalSec / 60);
+          const durationFormatted = totalMins > 0 ? `${totalMins} mins` : `${totalSec}s`;
+          const activeDaysCount = activeDaysSet.size;
+
+          const todayM = Math.floor(todaySec / 60);
+          const todayS = todaySec % 60;
+          const todayDurationFormatted = todayM > 0 ? `${todayM}m ${String(todayS).padStart(2, '0')}s` : `${todaySec}s`;
+
           const container = document.getElementById(`admin-rep-container-${idx}`);
           if (container) {
             container.innerHTML = `
-              <!-- 1. ATTENDANCE & PRACTICE TIME (IDENTICAL TO STUDENT LOGIN) -->
+              <!-- 1. ATTENDANCE & PRACTICE TIME -->
               <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
                 <h4 style="margin-top:0; color:var(--primary); font-size:15px; display:flex; align-items:center; gap:8px;">
                   📅 Attendance & Practice Time
                 </h4>
                 
-                <div class="stats-grid" style="margin-bottom:16px;">
+                <div class="stats-grid" style="margin-bottom:16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                  <div class="card" style="margin:0; background:#f8fafc;">
+                    <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced Today</p>
+                    <h3 style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
+                  </div>
                   <div class="card" style="margin:0; background:#f8fafc;">
                     <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced</p>
                     <h3 style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
@@ -5555,30 +5751,7 @@ async function saveCompletedSessionOnExit() {
                       </tr>
                     </thead>
                     <tbody>
-                      ${validAtt.length > 0 ? validAtt.map(a => {
-                        const parts = (a.timestamp || '').split(',');
-                        const dateFormatted = a.date || (parts[0] ? parts[0].trim() : '-');
-                        const timeFormatted = parts[1] ? parts[1].trim() : '-';
-                        const displayScore = resolveAttendanceRowScore(a, st.phone, st.name, allAnswers);
-                        const isFraction = displayScore.includes('/');
-                        const isPassing = isFraction && !displayScore.startsWith('0');
-                        const badgeClass = isPassing ? 'badge-success' : (isFraction ? 'badge-warning' : '');
-
-                        return `
-                          <tr>
-                            <td><b>${escapeHtml(dateFormatted)}</b></td>
-                            <td><small style="color:var(--text-muted); font-weight:700;">${escapeHtml(timeFormatted)}</small></td>
-                            <td><span class="badge" style="background:#eff6ff; color:#1e40af;">${escapeHtml(a.activity || 'Practice Session')}</span></td>
-                            <td><b>${escapeHtml(a.duration_text || Math.round((a.duration_seconds || 0)/60) + 'm')}</b></td>
-                            <td><b>${a.questions_attended || 0}</b></td>
-                            <td>
-                              <span class="badge ${badgeClass}" style="font-size:11.5px; font-weight:800; padding:3px 8px;">
-                                ${escapeHtml(displayScore)}
-                              </span>
-                            </td>
-                          </tr>
-                        `;
-                      }).join('') : '<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--text-muted);">No attendance logged yet.</td></tr>'}
+                      ${buildDetailedAttendanceLogHTML(validAtt, st.phone, st.name, allAnswers)}
                     </tbody>
                   </table>
                 </div>
@@ -5587,13 +5760,23 @@ async function saveCompletedSessionOnExit() {
               <!-- 2. PERFORMANCE DASHBOARD -->
               <div class="card" style="margin-bottom:20px; background:#fff;">
                 <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📊 Performance Dashboard</h4>
-                <div class="stats-grid" style="margin-bottom:14px;">
-                  <div class="card" style="margin:0; background:#f8fafc;"><p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Answered Questions</p><h2 id="rep-tot-${idx}" style="margin:6px 0 0 0; color:var(--primary);">${metrics.total}</h2></div>
-                  <div class="card" style="margin:0; background:#f8fafc;"><p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Overall Accuracy Rate</p><h2 id="rep-acc-${idx}" style="margin:6px 0 0 0; color:var(--success);">${metrics.accuracy}%</h2></div>
+                <div class="stats-grid" style="margin-bottom:14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                  <div class="card" style="margin:0; background:#f8fafc;">
+                    <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Questions Attended Today</p>
+                    <h2 style="margin:6px 0 0 0; color:#059669;">${todayQuestionsCount}</h2>
+                  </div>
+                  <div class="card" style="margin:0; background:#f8fafc;">
+                    <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Answered Questions</p>
+                    <h2 id="rep-tot-${idx}" style="margin:6px 0 0 0; color:var(--primary);">${metrics.total}</h2>
+                  </div>
+                  <div class="card" style="margin:0; background:#f8fafc;">
+                    <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Overall Accuracy Rate</p>
+                    <h2 id="rep-acc-${idx}" style="margin:6px 0 0 0; color:var(--success);">${metrics.accuracy}%</h2>
+                  </div>
                 </div>
                 <div class="grid-2">
                   <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:14px; border-radius:10px;"><h5 style="margin:0 0 10px 0; color:#166534;">🌟 Strengths (≥70%)</h5><div id="rep-strong-${idx}"></div></div>
-                  <div style="background:#fffbe0; border:1px solid #fef08a; padding:14px; border-radius:10px;"><h5 style="margin:0 0 10px 0; color:#92400e;">⚠️ Priorities (<70%)</h5><div id="rep-weak-${idx}"></div></div>
+                  <div style="background:#fffbe0; border:1px solid #fef08a; padding:14px; border-radius:10px;"><h5 style="margin:0 0 10px 0; color:#92400e;">⚠️ Priorities (&lt;70%)</h5><div id="rep-weak-${idx}"></div></div>
                 </div>
               </div>
 
@@ -5730,18 +5913,48 @@ async function saveCompletedSessionOnExit() {
           });
 
           // 2. COMPUTE TOTAL TIME PRACTICED & ACTIVE DAYS (IDENTICAL TO STUDENT LOGIN)
+          const cleanToday = new Date().toLocaleDateString('en-GB');
+
+          // Compute Practice Time & Active Days & Today Metrics
           let totalSec = 0;
+          let todaySec = 0;
+          let todayQuestionsCount = 0;
           const activeDaysSet = new Set();
+
           validAtt.forEach(a => {
-            totalSec += (Number(a.duration_seconds) || 0);
-            if (a.date) activeDaysSet.add(a.date);
-            else if (a.timestamp) activeDaysSet.add(a.timestamp.split(',')[0].trim());
+            let s = Number(a.duration_seconds) || 0;
+            if (!s && a.duration_text) {
+              const mMatch = a.duration_text.match(/(\d+)\s*m/);
+              const sMatch = a.duration_text.match(/(\d+)\s*s/);
+              if (mMatch) s += parseInt(mMatch[1], 10) * 60;
+              if (sMatch) s += parseInt(sMatch[1], 10);
+            }
+            totalSec += s;
+
+            let dateStr = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+            const parsedD = parseCustomDate(dateStr) || parseCustomDate(a.timestamp);
+            if (parsedD && !isNaN(parsedD.getTime())) {
+              dateStr = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
+            }
+
+            if (dateStr) activeDaysSet.add(dateStr);
+
+            if (dateStr === cleanToday) {
+              todaySec += s;
+              todayQuestionsCount += (Number(a.questions_attended) || 0);
+            }
           });
+
           const totalMins = Math.round(totalSec / 60);
           const durationFormatted = totalMins > 0 ? `${totalMins} mins` : `${totalSec}s`;
           const activeDaysCount = activeDaysSet.size;
 
+          const todayM = Math.floor(todaySec / 60);
+          const todayS = todaySec % 60;
+          const todayDurationFormatted = todayM > 0 ? `${todayM}m ${String(todayS).padStart(2, '0')}s` : `${todaySec}s`;
+
           // 3. FILTER OFFLINE EXAMS
+          // Filter Offline Exams
           const stOffline = allOfflineExams.filter(o => {
             const o10 = get10(o.phone);
             const oName = String(o.student_name || '').trim().toLowerCase();
@@ -5784,7 +5997,11 @@ async function saveCompletedSessionOnExit() {
                     📅 My Attendance & Practice Time
                   </h4>
                   
-                  <div class="stats-grid" style="margin-bottom:16px;">
+                  <div class="stats-grid" style="margin-bottom:16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                    <div class="card" style="margin:0; background:#f8fafc;">
+                      <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced Today</p>
+                      <h3 style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
+                    </div>
                     <div class="card" style="margin:0; background:#f8fafc;">
                       <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced</p>
                       <h3 style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
@@ -5809,30 +6026,7 @@ async function saveCompletedSessionOnExit() {
                         </tr>
                       </thead>
                       <tbody>
-                        ${validAtt.length > 0 ? validAtt.map(a => {
-                          const parts = (a.timestamp || '').split(',');
-                          const dateFormatted = a.date || (parts[0] ? parts[0].trim() : '-');
-                          const timeFormatted = parts[1] ? parts[1].trim() : '-';
-                          const displayScore = resolveAttendanceRowScore(a, item.user.phone, item.user.name, allAnswers);
-                          const isFraction = displayScore.includes('/');
-                          const isPassing = isFraction && !displayScore.startsWith('0');
-                          const badgeClass = isPassing ? 'badge-success' : (isFraction ? 'badge-warning' : '');
-
-                          return `
-                            <tr>
-                              <td><b>${escapeHtml(dateFormatted)}</b></td>
-                              <td><small style="color:var(--text-muted); font-weight:700;">${escapeHtml(timeFormatted)}</small></td>
-                              <td><span class="badge" style="background:#eff6ff; color:#1e40af;">${escapeHtml(a.activity || 'Practice Session')}</span></td>
-                              <td><b>${escapeHtml(a.duration_text || Math.round((a.duration_seconds || 0)/60) + 'm')}</b></td>
-                              <td><b>${a.questions_attended || 0}</b></td>
-                              <td>
-                                <span class="badge ${badgeClass}" style="font-size:11.5px; font-weight:800; padding:3px 8px;">
-                                  ${escapeHtml(displayScore)}
-                                </span>
-                              </td>
-                            </tr>
-                          `;
-                        }).join('') : '<tr><td colspan="6" style="text-align:center; padding:15px; color:var(--text-muted);">No attendance logged yet.</td></tr>'}
+                        ${buildDetailedAttendanceLogHTML(validAtt, item.user.phone, item.user.name, allAnswers)}
                       </tbody>
                     </table>
                   </div>
@@ -5841,7 +6035,11 @@ async function saveCompletedSessionOnExit() {
                 <!-- 2. MY PERFORMANCE DASHBOARD -->
                 <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
                   <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📊 My Performance Dashboard</h4>
-                  <div class="stats-grid" style="margin-bottom:14px;">
+                  <div class="stats-grid" style="margin-bottom:14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                    <div class="card" style="margin:0; background:#f8fafc;">
+                      <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Questions Attended Today</p>
+                      <h2 style="margin:6px 0 0 0; color:#059669;">${todayQuestionsCount}</h2>
+                    </div>
                     <div class="card" style="margin:0; background:#f8fafc;">
                       <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Answered Questions</p>
                       <h2 id="opt-tot-${idx}" style="margin:6px 0 0 0; color:var(--primary);">${item.total}</h2>
