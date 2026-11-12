@@ -2700,30 +2700,7 @@ async function adminResetStudentQuota(phone, username, studentName) {
         updatePresenceLiveState('Online & Active');
       });
 
-      // 4. IDLE DETECTION (>90s OF NO TOUCH/INTERACTION)
-      const resetIdleTimer = () => {
-        if (isUserCurrentlyIdle) {
-          isUserCurrentlyIdle = false;
-          triggerStudentEntryAlert();
-          checkAndEnforceQuota(getTodayElapsedSeconds());
-          broadcastLivePulse('Online & Active', true);
-          updatePresenceLiveState('Online & Active');
-        }
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(() => {
-          isUserCurrentlyIdle = true;
-          updatePausedQuotaUI();
-          triggerStudentExitAlert('No interaction for >1 seconds (Idle)');
-          broadcastLivePulse('Inactive / Idle (>1s)', false);
-          updatePresenceLiveState('Inactive / Idle (>1s)');
-        }, 90000);
-      };
-
-      ['mousemove', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
-        window.addEventListener(evt, resetIdleTimer, { passive: true });
-      });
-      resetIdleTimer();
-
+      
       // 5. CLOSING PORTAL
       const handleAppExit = () => {
         triggerStudentExitAlert('Closed Portal / Left Page');
