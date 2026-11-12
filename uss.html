@@ -2210,8 +2210,43 @@
       return false;
     }
 
+    // =========================================================================
+    // CLEAR STALE LOCAL STORAGE ON LOGIN / DAILY RESUME
+    // Ensures clean slate every day and forces direct fetching from Supabase
+    // =========================================================================
+    function clearDailyLocalStorage(preserveCurrentUser = true) {
+      const todayIso = getTodayDateIso();
+      const savedUser = localStorage.getItem('USS_USER') || sessionStorage.getItem('USS_USER');
+      const lastPortalDate = localStorage.getItem('portal_last_active_date');
+
+      // If logging in fresh OR it is a new calendar day:
+      if (!lastPortalDate || lastPortalDate !== todayIso || !preserveCurrentUser) {
+        console.log("Scrubbing stale local storage keys. Fetching pure data from Supabase...");
+
+        // Remove all old usage tickers, stale caches, and flags
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k !== 'USS_USER') {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        sessionStorage.clear();
+
+        // Restore active user session if resuming
+        if (preserveCurrentUser && savedUser) {
+          localStorage.setItem('USS_USER', savedUser);
+          sessionStorage.setItem('USS_USER', savedUser);
+        }
+
+        localStorage.setItem('portal_last_active_date', todayIso);
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       // ✅ Apply cached UI states immediately to avoid layout flicker
+      clearDailyLocalStorage(true);
       applyRegistrationVisibilityUI();
       applySecurityModeUI();
 
@@ -3479,6 +3514,7 @@ async function adminResetStudentQuota(phone, username, studentName) {
     // =========================================================================
     async function handleLogin(e) {
       e.preventDefault();
+      clearDailyLocalStorage(false);
       logPortalActivity('LOGIN', 'Logged into portal', getDeviceInfo());
 
       const usernameInput = document.getElementById('login-username').value.trim();
@@ -5488,6 +5524,62 @@ async function saveCompletedSessionOnExit() {
       });
     }
 
+    // =========================================================================
+    // FETCH ALL QUESTIONS FROM SUPABASE (PARALLEL BATCHES - NO WHILE LOOP)
+    // Avoids 400ms sandbox loop-protection timeout and loads all 1000+ questions
+    // =========================================================================
+    async function fetchAllQuestionsFromSupabase() {
+      try {
+        const batchSize = 1000;
+
+        // 1. Instantly get the exact total question count without downloading rows
+        const { count, error: countErr } = await supabaseClient
+          .from('questions')
+          .select('*', { count: 'exact', head: true });
+
+        // If count fails or bank has 1,000 or fewer questions, fetch directly
+        if (countErr || !count || count <= batchSize) {
+          const { data, error } = await supabaseClient
+            .from('questions')
+            .select('*')
+            .order('id', { ascending: true });
+          return data || [];
+        }
+
+        // 2. Calculate the exact number of pages needed (e.g., 2,500 questions = 3 pages)
+        const totalBatches = Math.ceil(count / batchSize);
+        const batchPromises = [];
+
+        // 3. Queue all pages to fetch in parallel (NO while loop, 0ms sandbox risk)
+        for (let b = 0; b < totalBatches; b++) {
+          const from = b * batchSize;
+          const to = from + batchSize - 1;
+          batchPromises.push(
+            supabaseClient
+              .from('questions')
+              .select('*')
+              .range(from, to)
+              .order('id', { ascending: true })
+          );
+        }
+
+        // 4. Download all chunks concurrently
+        const responses = await Promise.all(batchPromises);
+        let allQuestions = [];
+
+        for (let i = 0; i < responses.length; i++) {
+          if (responses[i].data) {
+            allQuestions = allQuestions.concat(responses[i].data);
+          }
+        }
+
+        return allQuestions;
+      } catch (err) {
+        console.error("Error loading questions bank:", err);
+        const { data } = await supabaseClient.from('questions').select('*').limit(1000);
+        return data || [];
+      }
+    }
     
     // =========================================================================
     // FULL UPDATED LOAD ADMIN DATA (ALL TABS SYNCHRONIZED & ERROR-FREE)
@@ -5495,10 +5587,10 @@ async function saveCompletedSessionOnExit() {
     async function loadAdminData() {
       setProgress(30);
 
-      // 1. Fetch all data concurrently
+      // 1. Fetch all questions with pagination (all 1000+) + other tables
       const [
         usersRes, 
-        questionsRes, 
+        allQuestionsList, 
         logsRes, 
         answersRes, 
         trialsRes, 
@@ -5507,7 +5599,7 @@ async function saveCompletedSessionOnExit() {
         offlineRes
       ] = await Promise.all([
         supabaseClient.from('users').select('*'),
-        supabaseClient.from('questions').select('*'),
+        fetchAllQuestionsFromSupabase(), // ✅ LOADS ALL QUESTIONS (NO 1000 CAP)
         supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(1000),
         supabaseClient.from('student_answers').select('*').order('created_at', { ascending: false }),
         supabaseClient.from('trial_exams').select('*').order('created_at', { ascending: false }),
@@ -5517,7 +5609,7 @@ async function saveCompletedSessionOnExit() {
       ]);
 
       const users = usersRes.data || [];
-      const questions = questionsRes.data || [];
+      const questions = allQuestionsList || []; // ✅ Contains full bank (e.g. 1,450+ questions)
       const logs = logsRes.data || [];
       // Auto-heal false "Active Now" logs that are older than 90 minutes
       const nowMs = Date.now();
@@ -8972,77 +9064,61 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
 }
 
 // =========================================================================
-// TAB 12: OPTIMIZED O(N) LINEAR HISTORY LOADER (PREVENTS 400MS LOOP FREEZE)
-// =========================================================================
-async function loadHistoryData() {
-  if (!currentUser) return;
-  const isPrivileged = isStaffOrAdminUser(currentUser);
+    // TAB 12: PURE SUPABASE PORTAL HISTORY (NO CLIENT DUPLICATION)
+    // =========================================================================
+    async function loadHistoryData() {
+      if (!currentUser) return;
+      const isPrivileged = isStaffOrAdminUser(currentUser);
 
-  const heading = document.getElementById('history-page-heading');
-  const studentBox = document.getElementById('student-history-tree-container');
-  const adminBox = document.getElementById('admin-history-accordion-list');
-  const tabTitle = document.getElementById('tab-history-title');
+      const heading = document.getElementById('history-page-heading');
+      const studentBox = document.getElementById('student-history-tree-container');
+      const adminBox = document.getElementById('admin-history-accordion-list');
+      const tabTitle = document.getElementById('tab-history-title');
 
-  setProgress(30);
+      setProgress(30);
 
-  // Parallel fetch to prevent UI lockup
-  const [histRes, attRes, trialRes, logRes, resetRes, ansRes, userRes, offRes] = await Promise.all([
-    supabaseClient.from('portal_history').select('*').order('id', { ascending: false }).limit(300),
-    supabaseClient.from('attendance').select('*').order('id', { ascending: false }),
-    supabaseClient.from('trial_exams').select('*').order('id', { ascending: false }),
-    supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(200),
-    supabaseClient.from('reset_requests').select('*').order('created_at', { ascending: false }),
-    supabaseClient.from('student_answers').select('*').order('created_at', { ascending: false }),
-    supabaseClient.from('users').select('*'),
-    supabaseClient.from('offline_exams').select('*').order('id', { ascending: false })
-  ]);
+      // Fetch verified history directly from Supabase (paginated up to 2000 records)
+      let historyQuery = supabaseClient
+        .from('portal_history')
+        .select('*')
+        .order('id', { ascending: false })
+        .limit(2000);
 
-  cachedAdminData = cachedAdminData || {};
-  cachedAdminData.portalHistory = histRes.data || []; // ✅ Ensure portal_history is stored in cache
-  cachedAdminData.users = userRes.data || cachedAdminData.users || [];
-  cachedAdminData.allAttendance = attRes.data || [];
-  cachedAdminData.allTrialExams = trialRes.data || [];
-  cachedAdminData.logs = logRes.data || [];
-  cachedAdminData.resetRequests = resetRes.data || [];
-  cachedAdminData.allAnswers = ansRes.data || [];
-  cachedAdminData.allOfflineExams = offRes.data || [];
+      // If student, query only their own records directly from the database
+      if (!isPrivileged) {
+        const myPhone10 = String(currentUser.phone || '').replace(/[^0-9]/g, '').slice(-10);
+        const myUser = String(currentUser.username || '').trim().toLowerCase();
+        historyQuery = historyQuery.or(`username.ilike.${myUser},phone.ilike.%${myPhone10}%`);
+      }
 
-  // Generate complete, harmonized history without stalling the main thread
-  const allHistory = synthesizeHistoryFromCache();
+      const { data: dbHistory, error } = await historyQuery;
 
-  setProgress(100);
+      // Also ensure users list is available for accordion headers
+      if (!cachedAdminData?.users || cachedAdminData.users.length === 0) {
+        const { data: uList } = await supabaseClient.from('users').select('*');
+        cachedAdminData = cachedAdminData || {};
+        cachedAdminData.users = uList || [];
+      }
 
-  if (isPrivileged) {
-    if (heading) heading.innerText = 'All Users Portal Activity & Event History ';
-    if (tabTitle) tabTitle.innerText = 'Users History';
-    if (studentBox) studentBox.style.display = 'none';
-    if (adminBox) adminBox.style.display = 'block';
+      const pureHistoryRecords = dbHistory || [];
+      setProgress(100);
 
-    renderAdminHistoryAccordions(allHistory);
-  } else {
-    if (heading) heading.innerText = 'My Activity & Event History';
-    if (tabTitle) tabTitle.innerText = 'My History';
-    if (studentBox) studentBox.style.display = 'block';
-    if (adminBox) adminBox.style.display = 'none';
+      if (isPrivileged) {
+        if (heading) heading.innerText = 'All Users Portal Activity & Event History';
+        if (tabTitle) tabTitle.innerText = 'Users History';
+        if (studentBox) studentBox.style.display = 'none';
+        if (adminBox) adminBox.style.display = 'block';
 
-    const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
-    const myPhone10 = get10(currentUser.phone);
-    const myUser = String(currentUser.username || '').trim().toLowerCase();
-    const myName = String(currentUser.name || currentUser.username || '').trim().toLowerCase();
+        renderAdminHistoryAccordions(pureHistoryRecords);
+      } else {
+        if (heading) heading.innerText = 'My Activity & Event History';
+        if (tabTitle) tabTitle.innerText = 'My History';
+        if (studentBox) studentBox.style.display = 'block';
+        if (adminBox) adminBox.style.display = 'none';
 
-    const myHistory = allHistory.filter(h => {
-      const hPhone10 = get10(h.phone);
-      const hUser = String(h.username || '').trim().toLowerCase();
-      const hName = String(h.student_name || '').trim().toLowerCase();
-
-      return (myUser && hUser && myUser === hUser) ||
-             (myPhone10 && hPhone10 && myPhone10 === hPhone10) ||
-             (myName && hName && (myName === hName || myName.includes(hName) || hName.includes(myName)));
-    });
-
-    renderDateWiseHistoryTree(studentBox, myHistory);
-  }
-}
+        renderDateWiseHistoryTree(studentBox, pureHistoryRecords);
+      }
+    }
 
     // =========================================================================
     // TAB 12: EXACT SESSION-MATCHED HISTORY WITH REAL SCORES & PRECISE Q COUNTS
