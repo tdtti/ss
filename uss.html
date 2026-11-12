@@ -2713,9 +2713,9 @@ async function adminResetStudentQuota(phone, username, studentName) {
         idleTimer = setTimeout(() => {
           isUserCurrentlyIdle = true;
           updatePausedQuotaUI();
-          triggerStudentExitAlert('No interaction for >90 seconds (Idle)');
-          broadcastLivePulse('Inactive / Idle (>90s)', false);
-          updatePresenceLiveState('Inactive / Idle (>90s)');
+          triggerStudentExitAlert('No interaction for >1 seconds (Idle)');
+          broadcastLivePulse('Inactive / Idle (>1s)', false);
+          updatePresenceLiveState('Inactive / Idle (>1s)');
         }, 90000);
       };
 
