@@ -2143,64 +2143,30 @@ function getTodayElapsedSeconds(phoneOrUser) {
   return `usage_${id}_${getTodayDateIso()}`;
 }
 
-// =========================================================================
-// AUTHORITATIVE CROSS-DEVICE DAILY USAGE (SYNCS ACROSS ALL DEVICES)
-// =========================================================================
-async function fetchSupabaseDailyUsage(usernameOrPhone) {
-  if (!usernameOrPhone) return 0;
-  try {
-    const cleanDate = new Date().toLocaleDateString('en-GB');
-    const cleanUser = String(currentUser?.username || usernameOrPhone).trim().toLowerCase();
-    const cleanPhone = String(currentUser?.phone || usernameOrPhone).trim();
-    const cleanPhone10 = cleanPhone.replace(/[^0-9]/g, '').slice(-10);
+  // =========================================================================
+  // 1. QUERY AUTHORITATIVE DAILY TIMER FROM DEDICATED TABLE (CROSS-DEVICE)
+  // =========================================================================
+  async function fetchSupabaseDailyUsage(usernameOrPhone) {
+    if (!usernameOrPhone) return 0;
+    try {
+      const cleanDate = new Date().toLocaleDateString('en-GB');
+      const cleanUser = String(currentUser?.username || usernameOrPhone).trim().toLowerCase();
 
-    // Query all attendance entries for today matching username or phone
-    let query = supabaseClient
-      .from('attendance')
-      .select('duration_seconds, attendance_id, date, timestamp');
+      const { data, error } = await supabaseClient
+        .from('daily_usage')
+        .select('used_seconds')
+        .ilike('username', cleanUser)
+        .eq('date', cleanDate)
+        .maybeSingle();
 
-    if (cleanPhone10 && cleanUser) {
-      query = query.or(`username.ilike.${cleanUser},phone.ilike.%${cleanPhone10}%`);
-    } else if (cleanUser) {
-      query = query.ilike('username', cleanUser);
-    } else if (cleanPhone10) {
-      query = query.ilike('phone', `%${cleanPhone10}%`);
+      if (!error && data) {
+        return Number(data.used_seconds) || 0;
+      }
+    } catch (err) {
+      console.warn("Could not query daily usage from Supabase:", err);
     }
-
-    const { data: todayLogs, error } = await query;
-    if (error) {
-      console.warn("fetchSupabaseDailyUsage query note:", error);
-      return 0;
+    return 0;
     }
-
-    if (todayLogs && todayLogs.length > 0) {
-      let sessionsSum = 0;
-      let dailyLiveSeconds = 0;
-
-      todayLogs.forEach(a => {
-        const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
-        if (aDate === cleanDate) {
-          const sec = Number(a.duration_seconds) || 0;
-          const isDailyRow = String(a.attendance_id || '').includes('-DAILY');
-
-          if (isDailyRow) {
-            // Heartbeat ticker row
-            if (sec > dailyLiveSeconds) dailyLiveSeconds = sec;
-          } else {
-            // Completed practice & exam session rows
-            sessionsSum += sec;
-          }
-        }
-      });
-
-      // Cross-device true total: Highest between live ticker and completed session sum
-      return Math.max(sessionsSum, dailyLiveSeconds);
-    }
-  } catch (err) {
-    console.warn("Could not query daily usage from Supabase:", err);
-  }
-  return 0;
-}
 
     function isStudentActivelyFocused() {
       if (!currentUser || isStaffOrAdminUser(currentUser)) return false;
@@ -2210,9 +2176,13 @@ async function fetchSupabaseDailyUsage(usernameOrPhone) {
       return true;
     }
 
+    // =========================================================================
+    // 3. TIMER TICKER (TICKS ONLY WHEN ACTIVELY FOCUSED; PAUSES ON LEAVE/BLUR/IDLE)
+    // =========================================================================
     function recordElapsedSecond() {
       if (!currentUser || isStaffOrAdminUser(currentUser)) return;
 
+      // STRICT PAUSE: Check if student left tab, minimized app, or went idle
       if (!isStudentActivelyFocused()) {
         updatePausedQuotaUI();
         return;
@@ -2222,7 +2192,8 @@ async function fetchSupabaseDailyUsage(usernameOrPhone) {
       const key = getTodayKey();
       localStorage.setItem(key, cachedTodayUsedSeconds);
 
-      if (cachedTodayUsedSeconds % 10 === 0 || cachedTodayUsedSeconds >= DAILY_MAX_QUOTA_SECONDS) {
+      // Sync to Supabase every 5 seconds or immediately when 60m is reached
+      if (cachedTodayUsedSeconds % 5 === 0 || cachedTodayUsedSeconds >= DAILY_MAX_QUOTA_SECONDS) {
         saveLiveAttendanceProgress(cachedTodayUsedSeconds);
       }
 
@@ -2337,37 +2308,26 @@ async function fetchSupabaseDailyUsage(usernameOrPhone) {
     }
 
     // =========================================================================
-// SAVE LIVE ATTENDANCE PROGRESS (COMMITS RUNNING SECONDS TO SUPABASE)
-// =========================================================================
-async function saveLiveAttendanceProgress(totalSecondsToday) {
-  if (!currentUser || isStaffOrAdminUser(currentUser)) return;
-  const cleanDate = new Date().toLocaleDateString('en-GB');
-  const todayIso = getTodayDateIso();
-  const mins = Math.floor(totalSecondsToday / 60);
-  const secs = totalSecondsToday % 60;
-  const cleanUser = String(currentUser.username || '').trim().toLowerCase();
-  const cleanPhone = String(currentUser.phone || '').trim();
+    // 2. SYNC ACTIVE TIMER TO DEDICATED TABLE (DOES NOT TOUCH ATTENDANCE TABLE)
+    // =========================================================================
+    async function saveLiveAttendanceProgress(totalSecondsToday) {
+      if (!currentUser || isStaffOrAdminUser(currentUser)) return;
+      const cleanDate = new Date().toLocaleDateString('en-GB');
+      const cleanUser = String(currentUser.username || '').trim().toLowerCase();
+      const cleanPhone = String(currentUser.phone || '').trim();
 
-  const attendanceEntry = {
-    attendance_id: `ATT-${cleanUser}-${todayIso}-DAILY`,
-    username: cleanUser,
-    student_name: currentUser.name || currentUser.username,
-    phone: cleanPhone,
-    class: String(currentUser.userClass || '7'),
-    division: String(currentUser.division || 'A'),
-    date: cleanDate,
-    timestamp: formatDateStrict(new Date().toISOString()),
-    activity: isTrialMode ? 'Trial Exam Mode' : (sessionAnswersLog[0]?.Subject ? `Subject Practice (${sessionAnswersLog[0].Subject})` : 'Daily USS Training Session'),
-    duration_seconds: totalSecondsToday,
-    duration_text: `${mins}m ${String(secs).padStart(2, '0')}s`,
-    questions_attended: sessionAnswersLog.length || 0,
-    score: `${mins}m / 60m used`
-  };
-
-  try {
-    await supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' });
-  } catch(e) {}
-}
+      try {
+        await supabaseClient.from('daily_usage').upsert([{
+          username: cleanUser,
+          phone: cleanPhone,
+          date: cleanDate,
+          used_seconds: totalSecondsToday,
+          updated_at: new Date().toISOString()
+        }], { onConflict: 'username,date' });
+      } catch(e) {
+        console.warn("Timer sync warning:", e);
+      }
+    }
 
     // =========================================================================
 // ADMIN ACTION: RESTORE/ADD 60M DAILY QUOTA FOR ANY DEVICE
@@ -2394,22 +2354,17 @@ async function adminResetStudentQuota(phone, username, studentName) {
       localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
       localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
 
-      // 2. Set authoritative Supabase row duration to 0 seconds
+      // 2. Set authoritative daily usage to 0 seconds in the dedicated table
       try {
         await supabaseClient
-          .from('attendance')
+          .from('daily_usage')
           .upsert([{
-            attendance_id: dailyAttId,
             username: cleanUser,
-            student_name: studentName,
             phone: cleanPhone,
             date: cleanDate,
-            timestamp: formatDateStrict(new Date().toISOString()),
-            activity: 'Quota Restored by Admin',
-            duration_seconds: 0,
-            duration_text: '0m 00s',
-            score: 'Quota Restored (+60m)'
-          }], { onConflict: 'attendance_id' });
+            used_seconds: 0,
+            updated_at: new Date().toISOString()
+          }], { onConflict: 'username,date' });
       } catch (e) {
         console.warn("Quota reset error in DB:", e);
       }
@@ -2632,40 +2587,48 @@ async function adminResetStudentQuota(phone, username, studentName) {
         }
       }
 
-      // 1. TAB SWITCH / MINIMIZE (INACTIVE -> EXIT SOUND)
+      // 1. TAB SWITCH / MINIMIZE (PAUSE TIMER INSTANTLY)
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
           isWindowCurrentlyFocused = false;
+          // Immediately flush elapsed seconds to Supabase before backgrounding
+          if (cachedTodayUsedSeconds > 0) saveLiveAttendanceProgress(cachedTodayUsedSeconds);
           updatePausedQuotaUI();
-          triggerStudentExitAlert(); // 🎵 Play Exit Sound on Leave
+          triggerStudentExitAlert();
           broadcastLivePulse('Switched Tab / Opened Another Page', false);
           updatePresenceLiveState('Switched Tab / Opened Another Page');
         } else {
           isWindowCurrentlyFocused = true;
-          triggerStudentEntryAlert(); // 🎵 Play Entry Sound on Return
-          checkAndEnforceQuota(getTodayElapsedSeconds());
+          // Re-sync authoritative time from Supabase in case they practiced on another device
+          fetchSupabaseDailyUsage(currentUser.username).then(remoteSec => {
+            cachedTodayUsedSeconds = Math.max(cachedTodayUsedSeconds, remoteSec);
+            checkAndEnforceQuota(cachedTodayUsedSeconds);
+          });
+          triggerStudentEntryAlert();
           broadcastLivePulse('Online & Active', true);
           updatePresenceLiveState('Online & Active');
         }
       });
 
-      // 2. WINDOW BLUR (APP SWITCH / MINIMIZE -> EXIT SOUND)
+      // 2. WINDOW BLUR (APP SWITCH / NOTIFICATION SHADE / MINIMIZE -> PAUSE TIMER)
       window.addEventListener('blur', () => {
         isWindowCurrentlyFocused = false;
+        if (cachedTodayUsedSeconds > 0) saveLiveAttendanceProgress(cachedTodayUsedSeconds);
         updatePausedQuotaUI();
-        triggerStudentExitAlert(); // 🎵 Play Exit Sound
-        if (document.visibilityState !== 'hidden') {
-          broadcastLivePulse('Opened Another App / Window Inactive', false);
-          updatePresenceLiveState('Opened Another App / Window Inactive');
-        }
+        triggerStudentExitAlert();
+        broadcastLivePulse('Opened Another App / Window Inactive', false);
+        updatePresenceLiveState('Opened Another App / Window Inactive');
       });
 
-      // 3. WINDOW FOCUS (RETURN TO FOREGROUND -> ENTRY SOUND)
+      // 3. WINDOW FOCUS (RESUME TIMER)
       window.addEventListener('focus', () => {
         isWindowCurrentlyFocused = true;
         isUserCurrentlyIdle = false;
-        triggerStudentEntryAlert(); // 🎵 Play Entry Sound
-        checkAndEnforceQuota(getTodayElapsedSeconds());
+        fetchSupabaseDailyUsage(currentUser.username).then(remoteSec => {
+          cachedTodayUsedSeconds = Math.max(cachedTodayUsedSeconds, remoteSec);
+          checkAndEnforceQuota(cachedTodayUsedSeconds);
+        });
+        triggerStudentEntryAlert();
         broadcastLivePulse('Online & Active', true);
         updatePresenceLiveState('Online & Active');
       });
@@ -3828,20 +3791,16 @@ async function syncPastActivitiesToSupabase() {
 }
 
     // =========================================================================
-// FULL UPDATED: SAVE COMPLETED SESSION (DO NOT WIPE sessionAnswersLog PREMATURELY)
-// =========================================================================
-// =========================================================================
 // SAVE COMPLETED SESSION (LOCKED TO sessionStartTime TO PREVENT DUPLICATES)
 // =========================================================================
 async function saveCompletedSessionOnExit() {
+  // RULE: Mark attendance ONLY if questions were actually attended
   if (!sessionAnswersLog || sessionAnswersLog.length === 0) return;
-
-  // Prevent multiple executions for the same session
-  if (window._isSavingSessionLock) return;
-  window._isSavingSessionLock = true;
 
   const currentSessionLog = [...sessionAnswersLog];
   const total = currentSessionLog.length;
+  if (total <= 0) return; 
+
   const score = currentSessionLog.filter(a => 
     a.IsCorrect === true || a.is_correct === true || a.is_correct === 'YES' || a.IsCorrect === 'YES'
   ).length;
