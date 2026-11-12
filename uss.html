@@ -2559,6 +2559,33 @@ async function adminResetStudentQuota(phone, username, studentName) {
     }
 
     // =========================================================================
+    // LOG ACTIVE / INACTIVE TRANSITIONS TO PORTAL HISTORY (TAB 12)
+    // =========================================================================
+    let lastLoggedPresenceState = null;
+    let lastLoggedPresenceTime = 0;
+
+    async function logStudentPresenceTransition(state, reason) {
+      if (!currentUser || isStaffOrAdminUser(currentUser)) return;
+
+      const now = Date.now();
+      // Debounce: prevent duplicate logs of the same state within 30 seconds
+      if (lastLoggedPresenceState === state && (now - lastLoggedPresenceTime < 30000)) {
+        return;
+      }
+
+      lastLoggedPresenceState = state;
+      lastLoggedPresenceTime = now;
+
+      const isAct = (state === 'ACTIVE');
+      const title = isAct ? 'Active & Focused in Portal' : `Inactive: ${reason}`;
+      const details = isAct 
+        ? `• Student is actively interacting with the portal • Section: ${currentActiveContext || 'Dashboard'}`
+        : `• Away from portal • Reason: ${reason} • Context: ${currentActiveContext || 'Portal'}`;
+
+      await logPortalActivity(state, title, details, { reason: reason, context: currentActiveContext });
+    }
+
+    // =========================================================================
     // STUDENT CLIENT PRESENCE TRACKER (WITH ENTRY & EXIT SOUND CHIMES)
     // =========================================================================
     function setupPresenceTracker() {
@@ -2622,59 +2649,61 @@ async function adminResetStudentQuota(phone, username, studentName) {
         if (!isStudentCurrentlyActive) {
           isStudentCurrentlyActive = true;
           playEntryChime(); // 🎵 Ding-dong Entry Chime
+          logStudentPresenceTransition('ACTIVE', 'Resumed Interaction');
         }
       }
 
-      function triggerStudentExitAlert() {
+      function triggerStudentExitAlert(reason = 'Away from portal') {
         if (isStudentCurrentlyActive) {
           isStudentCurrentlyActive = false;
           playExitChime(); // 🎵 Descending Exit Chime
+          logStudentPresenceTransition('INACTIVE', reason);
         }
       }
 
-      // 1. TAB SWITCH / MINIMIZE (INACTIVE -> EXIT SOUND)
+      // 1. TAB SWITCH / MINIMIZE
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
           isWindowCurrentlyFocused = false;
           updatePausedQuotaUI();
-          triggerStudentExitAlert(); // 🎵 Play Exit Sound on Leave
+          triggerStudentExitAlert('Switched Tab / Opened Another Page');
           broadcastLivePulse('Switched Tab / Opened Another Page', false);
           updatePresenceLiveState('Switched Tab / Opened Another Page');
         } else {
           isWindowCurrentlyFocused = true;
-          triggerStudentEntryAlert(); // 🎵 Play Entry Sound on Return
+          triggerStudentEntryAlert();
           checkAndEnforceQuota(getTodayElapsedSeconds());
           broadcastLivePulse('Online & Active', true);
           updatePresenceLiveState('Online & Active');
         }
       });
 
-      // 2. WINDOW BLUR (APP SWITCH / MINIMIZE -> EXIT SOUND)
+      // 2. WINDOW BLUR (APP SWITCH / MINIMIZE)
       window.addEventListener('blur', () => {
         isWindowCurrentlyFocused = false;
         updatePausedQuotaUI();
-        triggerStudentExitAlert(); // 🎵 Play Exit Sound
+        triggerStudentExitAlert('Opened Another App / Minimized Window');
         if (document.visibilityState !== 'hidden') {
           broadcastLivePulse('Opened Another App / Window Inactive', false);
           updatePresenceLiveState('Opened Another App / Window Inactive');
         }
       });
 
-      // 3. WINDOW FOCUS (RETURN TO FOREGROUND -> ENTRY SOUND)
+      // 3. WINDOW FOCUS (RETURN TO FOREGROUND)
       window.addEventListener('focus', () => {
         isWindowCurrentlyFocused = true;
         isUserCurrentlyIdle = false;
-        triggerStudentEntryAlert(); // 🎵 Play Entry Sound
+        triggerStudentEntryAlert();
         checkAndEnforceQuota(getTodayElapsedSeconds());
         broadcastLivePulse('Online & Active', true);
         updatePresenceLiveState('Online & Active');
       });
 
-      // 4. IDLE DETECTION (>90s OF NO TOUCH/INTERACTION -> EXIT SOUND)
+      // 4. IDLE DETECTION (>90s OF NO TOUCH/INTERACTION)
       const resetIdleTimer = () => {
         if (isUserCurrentlyIdle) {
           isUserCurrentlyIdle = false;
-          triggerStudentEntryAlert(); // 🎵 Play Entry Sound on resume
+          triggerStudentEntryAlert();
           checkAndEnforceQuota(getTodayElapsedSeconds());
           broadcastLivePulse('Online & Active', true);
           updatePresenceLiveState('Online & Active');
@@ -2683,7 +2712,7 @@ async function adminResetStudentQuota(phone, username, studentName) {
         idleTimer = setTimeout(() => {
           isUserCurrentlyIdle = true;
           updatePausedQuotaUI();
-          triggerStudentExitAlert(); // 🎵 Play Exit Sound on Idle
+          triggerStudentExitAlert('No interaction for >90 seconds (Idle)');
           broadcastLivePulse('Inactive / Idle (>90s)', false);
           updatePresenceLiveState('Inactive / Idle (>90s)');
         }, 90000);
@@ -2694,9 +2723,9 @@ async function adminResetStudentQuota(phone, username, studentName) {
       });
       resetIdleTimer();
 
-      // 5. CLOSING PORTAL (EXIT SOUND)
+      // 5. CLOSING PORTAL
       const handleAppExit = () => {
-        triggerStudentExitAlert();
+        triggerStudentExitAlert('Closed Portal / Left Page');
         broadcastLivePulse('Left / Closed the Portal', false);
         try {
           if (presenceChannel) presenceChannel.untrack();
@@ -3491,6 +3520,10 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
         playExitChime();
       }
 
+      if (currentUser && !isStaffOrAdminUser(currentUser)) {
+        await logPortalActivity('INACTIVE', 'Logged Out of Portal', forced ? 'Auto Logged Out (Quota Expired)' : 'User manually clicked sign out');
+      }
+
       // Clear local memory
       currentUser = null;
       localStorage.removeItem('USS_USER');
@@ -3912,17 +3945,19 @@ async function saveCompletedSessionOnExit() {
       await updateStudentProgressSummary(subjectCode);
     }
 
-    // 5. DISPATCH PRIVATE NOTIFICATION TO STUDENT
+    // 5. DISPATCH PRIVATE NOTIFICATION TO STUDENT (IDEMPOTENT - NEVER DUPLICATES)
     try {
-      const notifId = 'NOTIF-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-      await supabaseClient.from('notifications').insert([{
+      // ✅ Lock notification_id to the stable attId so re-runs never duplicate
+      const notifId = `NOTIF-${attId}`;
+      await supabaseClient.from('notifications').upsert([{
         notification_id: notifId,
         timestamp: formattedDT,
         recipient_phone: studentPhone,
         title: `${subjectName} Practice Summary`,
         message: `Dear ${currentUser.name || currentUser.username},\nYou concluded your practice session in ${subjectName}.\n• Questions Completed: ${total}\n• Correct Answers: ${score}\n• Incorrect Answers: ${total - score}\n• Score: ${actualScoreDisplay}`,
         sender: 'Practice Monitor'
-      }]);
+      }], { onConflict: 'notification_id' });
+
       loadNotifications();
     } catch (err) {
       console.warn("Notification insert note:", err);
@@ -4416,28 +4451,7 @@ async function saveCompletedSessionOnExit() {
         }
       }
 
-      // 2. DISPATCH NOTIFICATION TO SUPABASE
-      const studentPlainInfo = `${currentUser.name || currentUser.username} (Class ${currentUser.userClass || '10'}-${currentUser.division || 'A'})`;
-      const subjName = isTrialMode ? 'Trial Exam' : (sessionAnswersLog[0]?.Subject || 'Subject Practice');
-      const notifTitle = `${subjName} Activity Summary`;
-      const notifMsg = `Dear ${currentUser.name || currentUser.username},\nYou completed a ${subjName} session on ${formattedDT}.\n\n• Total Attended: ${total} Questions\n• Correct Answers: ${score}\n• Incorrect Answers: ${total - score}\n• Accuracy Rate: ${victoryRate}%`;
-
-      try {
-        const notifId = 'NOTIF-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-        await supabaseClient.from('notifications').insert([{
-          notification_id: notifId,
-          timestamp: formattedDT,
-          recipient_phone: String(currentUser.phone || '').trim(),
-          title: notifTitle,
-          message: notifMsg,
-          sender: 'Practice Monitor'
-        }]);
-
-        // Auto-refresh notification badge
-        loadNotifications();
-      } catch (err) {
-        console.warn("Notification insert error:", err);
-      }
+      
     }
 
     async function exitPracticeMode() {
@@ -4770,24 +4784,12 @@ async function saveCompletedSessionOnExit() {
       const todaySec = Math.max(todaySecFromLogs, getTodayElapsedSeconds());
       if (todayTimeEl) todayTimeEl.innerText = formatSecs(todaySec);
 
-      // Handle empty state
+      // Handle empty state without wiping the student's timer
       if (!validLogs || validLogs.length === 0) {
-        if (totalTimeEl) totalTimeEl.innerText = '0m';
-        if (totalDaysEl) totalDaysEl.innerText = '0 Days';
+        if (totalTimeEl) totalTimeEl.innerText = todaySec > 0 ? formatSecs(todaySec) : '0m';
+        if (totalDaysEl) totalDaysEl.innerText = todaySec > 0 ? '1 Day' : '0 Days';
         if (tbody) {
           tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">No past attendance records found. Practice sessions will appear here!</td></tr>';
-        }
-
-        // Purge leftover stale localStorage keys on this device
-        if (currentUser) {
-          const todayIso = getTodayDateIso();
-          const cleanUser = String(currentUser.username || '').toLowerCase();
-          const cleanPhone = String(currentUser.phone || '').toLowerCase();
-          localStorage.removeItem(getTodayKey());
-          localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
-          localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
-          cachedTodayUsedSeconds = 0;
-          checkAndEnforceQuota(0);
         }
         return;
       }
@@ -5084,12 +5086,19 @@ async function saveCompletedSessionOnExit() {
                    rPhone === studentUsername;
           });
 
-      // Deduplicate notifications
+      // Deduplicate notifications (Cleans up both exact and legacy near-duplicates)
       const seenSignatures = new Set();
       const uniqueNotifications = [];
 
       userNotifications.forEach(n => {
-        const sig = `${n.title}_${n.timestamp}_${n.message}_${n.recipient_phone}`.trim();
+        // Normalize title and date to catch dual-summary legacy rows
+        const normalizedTitle = String(n.title || '').replace(/(Activity|Practice) Summary/i, 'Summary').trim();
+        const dateKey = n.timestamp ? n.timestamp.split(',')[0].trim() : '';
+        const timeMinute = n.timestamp && n.timestamp.includes(':') ? n.timestamp.substring(0, n.timestamp.lastIndexOf(':')) : n.timestamp;
+        const normalizedMsg = String(n.message || '').replace(/\s+/g, ' ').trim();
+
+        const sig = `${normalizedTitle}_${dateKey}_${timeMinute}_${n.recipient_phone}_${normalizedMsg.substring(0, 50)}`;
+
         if (!seenSignatures.has(sig)) {
           seenSignatures.add(sig);
           uniqueNotifications.push(n);
@@ -8511,6 +8520,7 @@ async function loadHistoryData() {
   ]);
 
   cachedAdminData = cachedAdminData || {};
+  cachedAdminData.portalHistory = histRes.data || []; // ✅ Ensure portal_history is stored in cache
   cachedAdminData.users = userRes.data || cachedAdminData.users || [];
   cachedAdminData.allAttendance = attRes.data || [];
   cachedAdminData.allTrialExams = trialRes.data || [];
@@ -8766,6 +8776,30 @@ async function loadHistoryData() {
         });
       });
 
+      // 6. MERGE ACTIVE, INACTIVE, AND RECORDED EVENTS FROM portal_history TABLE
+      const dbHistory = cachedAdminData?.portalHistory || [];
+      const seenDbKeys = new Set(synth.map(s => `${s.username}_${s.timestamp}_${s.activity_type}`));
+
+      dbHistory.forEach(h => {
+        const k = `${h.username}_${h.timestamp}_${h.activity_type}`;
+        if (!seenDbKeys.has(k)) {
+          seenDbKeys.add(k);
+          synth.push({
+            username: h.username,
+            student_name: h.student_name,
+            phone: h.phone,
+            class: h.class || '7',
+            division: h.division || 'A',
+            date: h.date,
+            timestamp: h.timestamp,
+            activity_type: h.activity_type,
+            title: h.title,
+            details: h.details,
+            metadata: h.metadata || {}
+          });
+        }
+      });
+
       return synth;
     }
 
@@ -8819,11 +8853,13 @@ async function loadHistoryData() {
                 let badgeBg = '#f1f5f9';
                 let badgeColor = '#475569';
 
-                if (ev.activity_type === 'LOGIN') { icon = '🔑'; badgeBg = '#eff6ff'; badgeColor = '#1e40af'; }
+                if (ev.activity_type === 'ACTIVE') { icon = '🟢'; badgeBg = '#dcfce7'; badgeColor = '#15803d'; }
+                else if (ev.activity_type === 'INACTIVE') { icon = '🔴'; badgeBg = '#fee2e2'; badgeColor = '#b91c1c'; }
+                else if (ev.activity_type === 'LOGIN') { icon = '🔑'; badgeBg = '#eff6ff'; badgeColor = '#1e40af'; }
                 else if (ev.activity_type === 'PRACTICE') { icon = '📖'; badgeBg = '#ecfdf5'; badgeColor = '#065f46'; }
                 else if (ev.activity_type === 'TRIAL') { icon = '⭐'; badgeBg = '#fef3c7'; badgeColor = '#92400e'; }
                 else if (ev.activity_type === 'OFFLINE') { icon = '📝'; badgeBg = '#ede9fe'; badgeColor = '#5b21b6'; }
-                else if (ev.activity_type === 'RESET') { icon = '🔄'; badgeBg = '#fee2e2'; badgeColor = '#991b1b'; }
+                else if (ev.activity_type === 'RESET') { icon = '🔄'; badgeBg = '#fff7ed'; badgeColor = '#c2410c'; }
 
                 // Unique, collision-free drawer ID
                 const detailId = `hist-drawer-${Math.random().toString(36).substr(2, 6)}-${dIdx}-${evIdx}`;
