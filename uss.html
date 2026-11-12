@@ -2795,7 +2795,28 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
     }
 
     // =========================================================================
-    // DUAL-ENGINE LIVE RADAR (WEBSOCKET PRESENCE + DATABASE LIVE HEARTBEAT)
+    // INSTANT LIVE RADAR TIMER FOR ADMIN (TAB 10)
+    // =========================================================================
+    let adminOnlineRadarInterval = null;
+
+    function startAdminOnlineLiveLoop() {
+      clearInterval(adminOnlineRadarInterval);
+      // Immediately render from memory for zero lag
+      renderAllUsersOnlineCards();
+
+      // Poll every 3 seconds while Admin is viewing Tab 10
+      adminOnlineRadarInterval = setInterval(() => {
+        const onlineSec = document.getElementById('admin-online-sec');
+        if (onlineSec && onlineSec.style.display === 'block') {
+          renderAllUsersOnlineCards();
+        } else {
+          clearInterval(adminOnlineRadarInterval);
+        }
+      }, 3000);
+    }
+
+    // =========================================================================
+    // INSTANT LIVE ONLINE RADAR WITH EXACT ACCURATE TIME LEFT
     // =========================================================================
     async function renderAllUsersOnlineCards() {
       const activeFeed = document.getElementById('online-active-feed');
@@ -2805,10 +2826,12 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
       const cleanDate = new Date().toLocaleDateString('en-GB');
 
-      // ✅ 1. ALWAYS FETCH FRESH REAL-TIME HEARTBEATS FROM SUPABASE
+      // 1. FAST BACKGROUND FETCH (PULLS FRESH ATTENDANCE & LOGS FROM SUPABASE)
       try {
         const [quickUsersRes, quickLogsRes, quickAttRes] = await Promise.all([
-          supabaseClient.from('users').select('*'),
+          (!cachedAdminData?.users || cachedAdminData.users.length === 0) 
+            ? supabaseClient.from('users').select('*') 
+            : Promise.resolve({ data: cachedAdminData.users }),
           supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(60),
           supabaseClient.from('attendance').select('*').eq('date', cleanDate).order('id', { ascending: false })
         ]);
@@ -2827,7 +2850,7 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       const adminIsOnline = navigator.onLine;
       const searchInput = (document.getElementById('online-user-search')?.value || '').trim().toLowerCase();
 
-      // 2. Collect Realtime WebSocket Presence entries
+      // 2. COLLECT WEBSOCKET PRESENCE STATE ENTRIES
       let presenceEntries = [];
       try {
         if (presenceChannel) {
@@ -2846,7 +2869,9 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       for (const k in livePings) {
         const ping = livePings[k];
         if (Date.now() - ping.receivedAt < 40000) {
-          const existingIdx = presenceEntries.findIndex(p => get10(p.phone) === get10(k) || String(p.username).toLowerCase() === String(k).toLowerCase());
+          const existingIdx = presenceEntries.findIndex(p => 
+            get10(p.phone) === get10(k) || String(p.username).toLowerCase() === String(k).toLowerCase()
+          );
           if (existingIdx !== -1) presenceEntries[existingIdx] = ping;
           else presenceEntries.push(ping);
         }
@@ -2856,7 +2881,7 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       const inactiveList = [];
       const cleanString = (str) => String(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-      // Exclude Admin & Staff accounts
+      // Filter out Admin & Question Master accounts
       const onlyStudents = usersList.filter(u => !isStaffOrAdminUser(u));
 
       onlyStudents.forEach(u => {
@@ -2864,7 +2889,7 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
         const cleanDbPhone10 = get10(u.phone);
         const cleanDbName = cleanString(u.name);
 
-        // Match presence entry by 10-digit phone or username
+        // Match student presence
         const pres = presenceEntries.find(p => {
           const pUser = cleanString(p.username);
           const pPhone10 = get10(p.phone);
@@ -2880,26 +2905,78 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
           return lId === cleanDbUser || lId === cleanDbName || (cleanDbPhone10 && get10(l.identifier) === cleanDbPhone10);
         });
 
-        const studentAttLogs = allAtt.filter(a => get10(a.phone) === cleanDbPhone10 || cleanString(a.username) === cleanDbUser);
+        const studentAttLogs = allAtt.filter(a => 
+          (cleanDbPhone10 && get10(a.phone) === cleanDbPhone10) || 
+          (cleanDbUser && cleanString(a.username) === cleanDbUser)
+        );
 
         // -------------------------------------------------------------------
-        // DUAL ACTIVE DETECTION:
-        // A) Realtime WebSocket says "Online & Active"
-        // B) OR Database Attendance Heartbeat updated within the last 90 seconds
+        // 3. ACTUAL TIME CALCULATION: COMBINES SESSIONS + LIVE DAILY TICKER
         // -------------------------------------------------------------------
-        const isWsActive = pres && (pres.isGreen === true || pres.liveStatus === 'Online & Active');
+        let sessionsSum = 0;
+        let dailyLiveSec = 0;
+        let latestTimestampMs = 0;
 
-        let isDbHeartbeatActive = false;
         studentAttLogs.forEach(a => {
-          if (a.timestamp) {
-            const parsedD = parseCustomDate(a.timestamp);
-            if (parsedD && (Date.now() - parsedD.getTime() < 90000)) { // Active in the last 90 seconds
-              isDbHeartbeatActive = true;
+          const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+          if (aDate === cleanDate) {
+            const sec = Number(a.duration_seconds) || 0;
+            const isDaily = String(a.attendance_id || '').includes('-DAILY');
+            if (isDaily) {
+              if (sec > dailyLiveSec) dailyLiveSec = sec;
+            } else {
+              sessionsSum += sec;
+            }
+
+            if (a.timestamp) {
+              const parsed = parseCustomDate(a.timestamp);
+              if (parsed && parsed.getTime() > latestTimestampMs) {
+                latestTimestampMs = parsed.getTime();
+              }
             }
           }
         });
 
-        const isOnlineAndActive = adminIsOnline && (Boolean(isWsActive) || isDbHeartbeatActive);
+        // Take the highest value among completed sessions, live DB row, and WebSocket ticker
+        const liveStreamSec = Number(pres?.todaySeconds || 0);
+        const usedSeconds = Math.max(sessionsSum, dailyLiveSec, liveStreamSec);
+
+        // Exactly 60 minutes limit (3600 seconds)
+        const maxDailySec = 3600;
+        const remainingSec = Math.max(0, maxDailySec - usedSeconds);
+        const remMins = Math.floor(remainingSec / 60);
+        const remSecs = remainingSec % 60;
+
+        let timeLeftFormatted = `${remMins}m ${String(remSecs).padStart(2, '0')}s left`;
+        let timeLeftBadgeClass = 'badge-success';
+
+        if (usedSeconds >= maxDailySec) {
+          timeLeftFormatted = '0m 00s (Expired)';
+          timeLeftBadgeClass = 'badge-danger';
+        } else if (remainingSec <= 600) {
+          timeLeftBadgeClass = 'badge-danger';
+        } else if (remainingSec <= 1800) {
+          timeLeftBadgeClass = 'badge-warning';
+        }
+
+        const usedMins = Math.floor(usedSeconds / 60);
+        const usedFormatted = `${usedMins}m ${String(usedSeconds % 60).padStart(2, '0')}s`;
+
+        // -------------------------------------------------------------------
+        // 4. INSTANT ACTIVE DETECTION
+        // -------------------------------------------------------------------
+        const isWsActive = pres && (pres.isGreen === true || pres.liveStatus === 'Online & Active');
+        const isDbHeartbeatActive = (latestTimestampMs > 0 && (Date.now() - latestTimestampMs < 75000));
+        
+        let isRecentLogActive = false;
+        if (userLastLog && userLastLog.logout_time === 'Active Now') {
+          const logTime = parseCustomDate(userLastLog.login_time || userLastLog.timestamp);
+          if (logTime && (Date.now() - logTime.getTime() < 120000)) {
+            isRecentLogActive = true;
+          }
+        }
+
+        const isOnlineAndActive = adminIsOnline && (Boolean(isWsActive) || isDbHeartbeatActive || isRecentLogActive);
 
         // Resolve Status Text
         let statusText = 'Offline';
@@ -2910,33 +2987,6 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
         } else {
           statusText = getStudentLastSeenTime(pres, userLastLog, studentAttLogs);
         }
-
-        // Calculate Usage & Quota
-        let usedSeconds = 0;
-        studentAttLogs.forEach(a => {
-          const isDailyHeartbeat = String(a.attendance_id || '').includes('-DAILY');
-          if (!isDailyHeartbeat || (Number(a.questions_attended) || 0) > 0) {
-            usedSeconds += (Number(a.duration_seconds) || 0);
-          }
-        });
-
-        const maxDailySec = 3600;
-        const remainingSec = Math.max(0, maxDailySec - usedSeconds);
-        const remMins = Math.floor(remainingSec / 60);
-        const remSecs = remainingSec % 60;
-
-        let timeLeftFormatted = `${remMins}m left`;
-        let timeLeftBadgeClass = 'badge-success';
-        if (usedSeconds >= maxDailySec) {
-          timeLeftFormatted = '0m (Expired)';
-          timeLeftBadgeClass = 'badge-danger';
-        } else if (remMins < 15) {
-          timeLeftFormatted = `${remMins}m ${remSecs}s left`;
-          timeLeftBadgeClass = 'badge-danger';
-        }
-
-        const usedMins = Math.floor(usedSeconds / 60);
-        const usedFormatted = `${usedMins}m ${usedSeconds % 60}s`;
 
         const loginTime = pres?.loginTime || (userLastLog ? formatDateStrict(userLastLog.login_time || userLastLog.timestamp) : '-');
         const logoutTime = isOnlineAndActive ? 'Active Now' : (pres?.logoutTime || (userLastLog ? formatDateStrict(userLastLog.logout_time) : 'Offline'));
@@ -2966,10 +3016,8 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
         else inactiveList.push(userData);
       });
 
-      // 1. ACTIVE STUDENTS: Latest Login at the top
+      // Sort Active by latest login; Inactive alphabetically
       activeList.sort((a, b) => (parseCustomDate(b.loginTime)?.getTime() || 0) - (parseCustomDate(a.loginTime)?.getTime() || 0));
-
-      // 2. INACTIVE STUDENTS: Alphabetical order
       inactiveList.sort((a, b) => String(a.name || a.username).localeCompare(String(b.name || b.username)));
 
       // Update counters
@@ -3004,6 +3052,7 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
                     <span>${escapeHtml(isAct ? u.activeContext : u.statusText)}</span>
                   </span>
 
+                  <!-- EXACT ACCURATE TIME LEFT -->
                   <span class="badge ${u.timeLeftBadgeClass}" style="display:inline-flex; align-items:center; gap:4px; font-weight:800; font-size:11px; padding:3px 8px;">
                     <span>⏳</span>
                     <span>${escapeHtml(u.timeLeftFormatted)}</span>
@@ -3599,9 +3648,7 @@ async function broadcastLivePulse(statusMsg, isGreenFlag) {
       if (sectionId === 'portfolio-sec') loadPortfolio();
       else if (sectionId === 'notif-sec') loadNotifications();
       else if (sectionId === 'admin-online-sec') {
-        renderAllUsersOnlineCards();
-        // Automatically check presence sync again after 1.5s to catch new joins
-        setTimeout(renderAllUsersOnlineCards, 1500);
+        startAdminOnlineLiveLoop();
       }
       else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(sectionId)) loadAdminData();
       if (sectionId === 'history-sec') {
