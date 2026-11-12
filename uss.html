@@ -283,6 +283,90 @@
     .user-logs-card { background: #ffffff; border: 1px solid var(--border-color); border-radius: 16px; margin-bottom: 14px; overflow: hidden; box-shadow: var(--shadow-sm); }
     .user-logs-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; cursor: pointer; user-select: none; }
     .user-logs-header:hover { background: #eff6ff; }
+
+    /* ATTENDANCE DATEWISE CARD TRACKER STYLES */
+    .att-date-card {
+      background: #ffffff;
+      border: 1.5px solid var(--border-color);
+      border-radius: 16px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .att-date-header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+      color: #ffffff;
+      padding: 14px 20px;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      transition: background 0.2s ease;
+    }
+    .att-date-header:hover {
+      background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%);
+    }
+    .att-student-card {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+    .att-student-card:hover {
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+      border-color: #cbd5e1;
+    }
+    .att-student-card.is-blocked {
+      border-left: 5px solid #ef4444;
+      background: #fff5f5;
+    }
+    .att-student-card.is-active {
+      border-left: 5px solid #10b981;
+    }
+    .att-grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .att-metric-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .att-metric-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .att-metric-value {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .att-today-highlight {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+    .att-today-highlight .att-metric-label {
+      color: #1e40af;
+    }
+    .att-today-highlight .att-metric-value {
+      color: #1e3a8a;
+    }
+
   </style>
 </head>
 <body class="security-active">
@@ -1183,35 +1267,25 @@
       </div>
     </section>
 
-    <!-- TAB 5: STUDENT ATTENDANCE TRACKER -->
+    <!-- TAB 5: STUDENT ATTENDANCE TRACKER (DATEWISE COLLAPSIBLE CARD TRACKER) -->
     <section id="admin-attendance-sec" class="section" style="display:none;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
         <div>
-          <h2 style="margin:0; color: #1B257D;">Student Daily Attendance Tracker </h2>
-          </div>
+          <h2 style="margin:0; color: #1B257D;">Student Daily Attendance Tracker</h2>
+          <small style="color:var(--text-muted); font-weight:600;">Datewise collapsible attendance cards with verified lifetime and daily portfolio metrics</small>
+        </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button onclick="syncPastActivitiesToSupabase()" class="btn btn-outline" title="Scan practice and trial exams to populate attendance in Supabase">⚡ </button>
-          <button onclick="loadAdminData()" class="btn btn-primary">🔄</button>
+          <button onclick="syncPastActivitiesToSupabase()" class="btn btn-outline" title="Scan past tests & practice to sync attendance">⚡ Sync</button>
+          <button onclick="loadAdminData()" class="btn btn-primary" title="Refresh Attendance Data">🔄 Refresh</button>
         </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th style="width: 50px;">S.No</th>
-              <th>Student Name</th>
-              <th>Class & Div</th>
-              <th style="text-align: center; width: 60px;">WhatsApp</th>
-              <th>Cumulative Usage</th>
-              <th>Time Left Today</th>
-              <th>Activities Covered</th>
-              <th>Questions Attended</th>
-              <th style="min-width: 130px;">Status / Action</th>
-            </tr>
-          </thead>
-          <tbody id="admin-attendance-body"></tbody>
-        </table>
+      <!-- MAIN CONTAINER FOR DATEWISE COLLAPSIBLE CARDS -->
+      <div id="admin-attendance-cards-container">
+        <div class="card spinner-box" style="display:flex;">
+          <div class="spinner-bar-pulse"></div>
+          <p style="color:var(--text-muted); font-size:13.5px; margin-top:12px;">Loading attendance records...</p>
+        </div>
       </div>
     </section>
 
@@ -5383,236 +5457,440 @@ async function saveCompletedSessionOnExit() {
       }
 
       // -----------------------------------------------------------------------
-      // TAB 5: STUDENT DAILY ATTENDANCE TRACKER
-      // (Restructured by Date, Hides 0 Qs, Restore Quota ONLY on Present Day)
+      // TAB 5: STUDENT DAILY ATTENDANCE TRACKER (COLLAPSIBLE DATEWISE CARDS)
+      // Strictly shows only students with verified attendance; matches Portfolio
       // -----------------------------------------------------------------------
-      const adminAttBody = document.getElementById('admin-attendance-body');
-      if (adminAttBody) {
-        const dailyGroups = {};
-        const cleanTodayDateStr = new Date().toLocaleDateString('en-GB');
+      const container = document.getElementById('admin-attendance-cards-container');
+      if (container) {
+        const cleanToday = new Date().toLocaleDateString('en-GB');
         const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
 
-        allAttendance.forEach(a => {
-          const rawPhone = String(a.phone || '').trim();
+        // Helper to parse seconds from string/number matching Portfolio
+        const parseSecs = (sec, text) => {
+          let n = Number(sec);
+          if (!isNaN(n) && n > 0) return n;
+          if (text) {
+            let total = 0;
+            const mMatch = text.match(/(\d+)\s*m/);
+            const sMatch = text.match(/(\d+)\s*s/);
+            if (mMatch) total += parseInt(mMatch[1], 10) * 60;
+            if (sMatch) total += parseInt(sMatch[1], 10);
+            if (total > 0) return total;
+          }
+          return 0;
+        };
+
+        const formatSecs = (totalSec) => {
+          const m = Math.floor(totalSec / 60);
+          const s = totalSec % 60;
+          return m > 0 ? `${m}m ${String(s).padStart(2, '0')}s` : `${totalSec}s`;
+        };
+
+        // 1. Filter out staff/admin accounts and prepare students pool
+        const enrolledStudents = users.filter(u => !isStaffOrAdminUser(u));
+
+        // 2. Pre-calculate lifetime metrics for each student (strictly identical to Portfolio)
+        const studentLifetimeMap = new Map();
+
+        enrolledStudents.forEach(st => {
+          const st10 = get10(st.phone);
+          const stUser = String(st.username || '').trim().toLowerCase();
+          const stName = String(st.name || '').trim().toLowerCase();
+
+          // A. Unique lifetime questions and accuracy from getStudentUniqueAnswerRecords
+          const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
+
+          // B. Real attendance records for lifetime days and duration
+          const validStudentAtt = allAttendance.filter(a => {
+            const a10 = get10(a.phone);
+            const aUser = String(a.username || '').trim().toLowerCase();
+            const aName = String(a.student_name || '').trim().toLowerCase();
+
+            const isMatch = (st10 && a10 && st10 === a10) || 
+                            (stUser && aUser && stUser === aUser) || 
+                            (stName && aName && (stName === aName || (stName.length >= 4 && aName.includes(stName))));
+            if (!isMatch) return false;
+
+            // Skip background heartbeat with 0 questions
+            if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) {
+              return false;
+            }
+            return true;
+          });
+
+          // Lifetime Unique Active Days & Total Duration
+          let lifetimeSeconds = 0;
+          const lifetimeDaysSet = new Set();
+
+          validStudentAtt.forEach(a => {
+            lifetimeSeconds += parseSecs(a.duration_seconds, a.duration_text);
+            let dStr = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+            const parsedD = parseCustomDate(dStr) || parseCustomDate(a.timestamp);
+            if (parsedD && !isNaN(parsedD.getTime())) {
+              dStr = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
+            }
+            if (dStr) lifetimeDaysSet.add(dStr);
+          });
+
+          // Incorporate real-time quota ticker if active today
+          const todayTickerSec = getTodayElapsedSeconds(st.phone || st.username);
+          const finalLifetimeSec = Math.max(lifetimeSeconds, todayTickerSec);
+          if (todayTickerSec > 0) lifetimeDaysSet.add(cleanToday);
+
+          const lifetimeMins = Math.round(finalLifetimeSec / 60);
+          const lifetimeDurationText = lifetimeMins > 0 ? `${lifetimeMins} mins` : `${finalLifetimeSec}s`;
+
+          studentLifetimeMap.set(st10 || stUser, {
+            user: st,
+            activeDaysCount: lifetimeDaysSet.size,
+            totalTimePracticedText: lifetimeDurationText,
+            totalQuestionsAttendedAllDay: metrics.total // Matches Portfolio "stat-total"
+          });
+        });
+
+        // 3. Group attendance records by Date
+        const datewiseMap = new Map();
+
+        allAttendance.forEach(att => {
+          const rawPhone = String(att.phone || '').trim();
           const phone10 = get10(rawPhone);
 
-          const matchedUser = users.find(u => {
-            const uPhone10 = get10(u.phone);
-            const uName = String(u.name || '').trim().toLowerCase();
-            const aName = String(a.student_name || '').trim().toLowerCase();
+          const matchedUser = enrolledStudents.find(u => {
+            const u10 = get10(u.phone);
             const uUser = String(u.username || '').trim().toLowerCase();
-            const aUser = String(a.username || '').trim().toLowerCase();
-
-            return (phone10 && uPhone10 && phone10 === uPhone10) ||
-                   (aUser && uUser && aUser === uUser) ||
-                   (aName && uName && aName === uName);
+            const aUser = String(att.username || '').trim().toLowerCase();
+            return (phone10 && u10 && phone10 === u10) || (aUser && uUser && aUser === uUser);
           });
 
-          if (matchedUser && isStaffOrAdminUser(matchedUser)) return;
+          if (!matchedUser) return; // Skip non-enrolled or staff
 
-          let cleanDateStr = '';
-          const rawDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
-          const parsedD = parseCustomDate(rawDate) || parseCustomDate(a.timestamp);
+          // Normalize Date to DD/MM/YYYY
+          let dateStr = att.date || (att.timestamp ? att.timestamp.split(',')[0].trim() : '');
+          const parsedD = parseCustomDate(dateStr) || parseCustomDate(att.timestamp);
           if (parsedD && !isNaN(parsedD.getTime())) {
-            const dd = String(parsedD.getDate()).padStart(2, '0');
-            const mm = String(parsedD.getMonth() + 1).padStart(2, '0');
-            const yyyy = parsedD.getFullYear();
-            cleanDateStr = `${dd}/${mm}/${yyyy}`;
-          } else {
-            cleanDateStr = rawDate || cleanTodayDateStr;
+            dateStr = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
           }
+          if (!dateStr) dateStr = cleanToday;
 
-          const resolvedName = matchedUser?.name || a.student_name || 'Student';
-          const resolvedPhone = matchedUser?.phone || a.phone || '';
-          const resolvedClass = matchedUser?.class || a.class || '7';
-          const resolvedDiv = matchedUser?.division || a.division || 'A';
-          const resolvedUsername = matchedUser ? matchedUser.username : (a.username || a.student_name);
+          // Skip zero-question sync duplicates
+          const isDailyHeartbeat = String(att.attendance_id || '').includes('-DAILY');
+          const isSyncDuplicate = String(att.attendance_id || '').includes('-SYNC');
 
-          const groupKey = `${cleanDateStr}__${resolvedUsername.toLowerCase()}`;
-
-          // Count answers attended specifically on this date
-          const dateAnswersCount = allAnswers.filter(ans => {
-            const aD = ans.timestamp ? ans.timestamp.split(',')[0].trim() : '';
-            const matchUser = (phone10 && get10(ans.phone) === phone10) || 
-                              String(ans.student_name || '').toLowerCase() === resolvedName.toLowerCase();
-            return matchUser && (aD === cleanDateStr || aD === rawDate);
-          }).length;
-
-          const dateTrialsCount = allTrialExams.filter(tr => {
-            const tD = tr.timestamp ? tr.timestamp.split(',')[0].trim() : '';
-            const matchUser = (phone10 && get10(tr.phone) === phone10) || 
-                              String(tr.student_name || '').toLowerCase() === resolvedName.toLowerCase();
-            return matchUser && (tD === cleanDateStr || tD === rawDate);
-          }).reduce((sum, tr) => sum + (Number(tr.total_questions) || 0), 0);
-
-          // ✅ SYNCHRONIZED CALCULATION: Ignore ghost daily heartbeat rows with 0 questions
-          const isDailyHeartbeat = String(a.attendance_id || '').includes('-DAILY');
-          const isSyncDuplicate = String(a.attendance_id || '').includes('-SYNC');
-
-          // If a student already has real live sessions for today, skip the -SYNC duplicate
           if (isSyncDuplicate) {
-            const hasLiveSession = allAttendance.some(other => 
-              other !== a && 
+            const hasLive = allAttendance.some(other => 
+              other !== att && 
               get10(other.phone) === phone10 && 
-              (other.date === cleanDateStr || other.date === rawDate) && 
-              !String(other.attendance_id || '').includes('-SYNC') &&
+              (other.date === dateStr) && 
+              !String(other.attendance_id || '').includes('-SYNC') && 
               (Number(other.questions_attended) || 0) > 0
             );
-            if (hasLiveSession) return;
+            if (hasLive) return;
           }
 
-          const isRealSession = (Number(a.questions_attended) || 0) > 0 || !isDailyHeartbeat;
+          if (isDailyHeartbeat && (Number(att.questions_attended) || 0) === 0) return;
 
-          if (!dailyGroups[groupKey]) {
-            dailyGroups[groupKey] = {
-              student_name: resolvedName,
-              username: resolvedUsername,
-              phone: resolvedPhone,
-              class: resolvedClass,
-              division: resolvedDiv,
-              date: cleanDateStr,
-              total_seconds: 0,
-              verified_questions: 0,
+          if (!datewiseMap.has(dateStr)) {
+            datewiseMap.set(dateStr, new Map());
+          }
+
+          const studentsOnDate = datewiseMap.get(dateStr);
+          const studentKey = phone10 || String(matchedUser.username).toLowerCase();
+
+          if (!studentsOnDate.has(studentKey)) {
+            studentsOnDate.set(studentKey, {
+              user: matchedUser,
+              date: dateStr,
+              sessions: [],
               activitiesSet: new Set(),
-              timestamp: a.timestamp
-            };
+              questionsAttended: 0,
+              totalDurationSeconds: 0
+            });
           }
 
-          // Sum duration and questions of real completed sessions (matches Student Portfolio)
-          if (isRealSession) {
-            dailyGroups[groupKey].total_seconds += (Number(a.duration_seconds) || 0);
-            dailyGroups[groupKey].verified_questions += (Number(a.questions_attended) || 0);
-          }
+          const stEntry = studentsOnDate.get(studentKey);
+          stEntry.sessions.push(att);
+          stEntry.questionsAttended += (Number(att.questions_attended) || 0);
+          stEntry.totalDurationSeconds += parseSecs(att.duration_seconds, att.duration_text);
 
-          if (a.activity && a.activity.trim() !== '' && !a.activity.includes('Daily USS Training Session')) {
-            dailyGroups[groupKey].activitiesSet.add(a.activity.trim());
-          }
-
-          if (a.activity && a.activity.trim() !== '') {
-            dailyGroups[groupKey].activitiesSet.add(a.activity.trim());
+          if (att.activity && att.activity.trim() !== '' && !att.activity.includes('Daily USS Training Session')) {
+            stEntry.activitiesSet.add(att.activity.trim());
           }
         });
 
-        // Group by Date
-        const groupedByDate = {};
-        Object.values(dailyGroups).forEach(g => {
-          const dateKey = g.date;
-          if (!groupedByDate[dateKey]) groupedByDate[dateKey] = [];
+        // 4. Ensure students active TODAY through real-time ticker are also captured
+        enrolledStudents.forEach(st => {
+          const st10 = get10(st.phone);
+          const studentKey = st10 || String(st.username).toLowerCase();
+          const liveSecToday = getTodayElapsedSeconds(st.phone || st.username);
 
-          const practicedSec = g.total_seconds;
-          const maxSec = 3600;
-          const remainingSec = Math.max(0, maxSec - practicedSec);
-          const pMins = Math.floor(practicedSec / 60);
-          const pSecs = practicedSec % 60;
-          const durationFormatted = pMins > 0 ? `${pMins}m ${pSecs}s` : `${pSecs}s`;
-          const rMins = Math.floor(remainingSec / 60);
-          const rSecs = remainingSec % 60;
-          const remainingFormatted = practicedSec >= maxSec ? '0m (Blocked)' : (rMins > 0 ? `${rMins}m ${rSecs}s` : `${rSecs}s`);
+          // Count today's answered questions
+          const todayQs = allAnswers.filter(ans => {
+            let aD = ans.timestamp ? ans.timestamp.split(',')[0].trim() : '';
+            const pD = parseCustomDate(aD) || parseCustomDate(ans.timestamp);
+            if (pD && !isNaN(pD.getTime())) {
+              aD = `${String(pD.getDate()).padStart(2, '0')}/${String(pD.getMonth() + 1).padStart(2, '0')}/${pD.getFullYear()}`;
+            }
+            return (st10 && get10(ans.phone) === st10) && (aD === cleanToday);
+          }).length;
 
-          groupedByDate[dateKey].push({
-            ...g,
-            practicedSec,
-            durationFormatted,
-            remainingFormatted,
-            isBlocked: practicedSec >= maxSec,
-            isWarned: practicedSec >= 1800 && practicedSec < maxSec,
-            activitiesString: Array.from(g.activitiesSet).join(', ') || 'Portal Learning'
-          });
+          if (todayQs > 0 || liveSecToday > 0) {
+            if (!datewiseMap.has(cleanToday)) {
+              datewiseMap.set(cleanToday, new Map());
+            }
+            const todayStudents = datewiseMap.get(cleanToday);
+            if (!todayStudents.has(studentKey)) {
+              todayStudents.set(studentKey, {
+                user: st,
+                date: cleanToday,
+                sessions: [],
+                activitiesSet: new Set(['Subject Practice & Portal Training']),
+                questionsAttended: todayQs,
+                totalDurationSeconds: liveSecToday
+              });
+            } else {
+              const entry = todayStudents.get(studentKey);
+              entry.questionsAttended = Math.max(entry.questionsAttended, todayQs);
+              entry.totalDurationSeconds = Math.max(entry.totalDurationSeconds, liveSecToday);
+            }
+          }
         });
 
-        const sortedDates = Object.keys(groupedByDate).sort((dateA, dateB) => {
-          const dA = parseCustomDate(dateA);
-          const dB = parseCustomDate(dateB);
-          const timeA = dA ? dA.getTime() : 0;
-          const timeB = dB ? dB.getTime() : 0;
-          return timeB - timeA;
+        // 5. Sort Dates Chronologically Descending (Today first)
+        const sortedDates = Array.from(datewiseMap.keys()).sort((a, b) => {
+          const tA = parseCustomDate(a)?.getTime() || 0;
+          const tB = parseCustomDate(b)?.getTime() || 0;
+          return tB - tA;
         });
 
         if (sortedDates.length === 0) {
-          adminAttBody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 25px; color:var(--text-muted);">No student attendance records logged yet.</td></tr>';
-        } else {
-          let fullTableHtml = '';
-
-          sortedDates.forEach(dateStr => {
-            const rawEntries = groupedByDate[dateStr] || [];
-
-            // FILTER: HIDE ANY STUDENT WHO ATTENDED 0 QUESTIONS
-            const activeAttendedEntries = rawEntries.filter(row => (Number(row.verified_questions) || 0) > 0);
-
-            // If no student attended > 0 questions on this date, skip the header entirely
-            if (activeAttendedEntries.length === 0) return;
-
-            // Sort students under this date: highest practice duration at the top
-            activeAttendedEntries.sort((a, b) => b.practicedSec - a.practicedSec);
-
-            const isToday = (dateStr === cleanTodayDateStr);
-
-            fullTableHtml += `
-              <tr style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); color: #ffffff;">
-                <td colspan="9" style="padding: 10px 16px; font-weight: 800; font-size: 13.5px; letter-spacing: 0.3px; border-top: 2px solid #3b82f6 !important;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                    <span>📅 Date: ${escapeHtml(dateStr)} ${isToday ? '<span class="badge badge-success" style="font-size:10.5px; margin-left:6px;">TODAY</span>' : ''}</span>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                      <span class="badge" style="background: rgba(255,255,255,0.2); color:#ffffff; font-size: 11.5px;">
-                        ${activeAttendedEntries.length} Student${activeAttendedEntries.length > 1 ? 's' : ''} Attended
-                      </span>
-                      <button type="button" 
-                              onclick="copyDailyAttendedStudentNames(event, '${escapeHtml(dateStr)}')" 
-                              class="btn btn-outline no-print" 
-                              style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; font-size: 11px; font-weight: 700; border-radius: 6px; background: #ffffff; color: var(--primary); border: 1px solid #bfdbfe; cursor: pointer;" 
-                              title="Copy student names for ${escapeHtml(dateStr)}">
-                        📋 Copy Names
-                      </button>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            `;
-
-            activeAttendedEntries.forEach((row, idx) => {
-              fullTableHtml += `
-                <tr style="${row.isBlocked ? 'background:#fff1f2;' : (row.isWarned ? 'background:#fffbeb;' : '')}">
-                  <td style="text-align:center; font-weight:700;">${idx + 1}</td>
-                  <td><b>${escapeHtml(row.student_name)}</b></td>
-                  <td>${escapeHtml(row.class)}-${escapeHtml(row.division)}</td>
-                  <td style="text-align:center;">
-                    <button onclick="sendAttendanceWhatsappAlert('${escapeHtml(row.student_name)}', '${row.phone}', '${row.date}', '${escapeHtml(row.activitiesString)}', '${row.durationFormatted}', '${row.remainingFormatted}', '${row.verified_questions}')" 
-                            class="btn btn-outline" 
-                            style="padding:4px 8px; font-size:14px; background:#dcfce7; color:#15803d; border-color:#86efac;" 
-                            title="Send WhatsApp Report">
-                      💬
-                    </button>
-                  </td>
-                  <td><strong style="color:var(--primary); font-size:14px;">${row.durationFormatted}</strong></td>
-                  <td><span class="badge ${row.isBlocked ? 'badge-danger' : (row.isWarned ? 'badge-warning' : 'badge-success')}">${row.remainingFormatted}</span></td>
-                  <td><small>${escapeHtml(row.activitiesString)}</small></td>
-                  <td><b style="color:var(--primary); font-size:14px;">${row.verified_questions}</b> Qs</td>
-                  <td>
-                    <span class="badge ${row.isBlocked ? 'badge-danger' : 'badge-success'}">
-                      ${row.isBlocked ? '🛑 60m Limit Reached' : 'Active Practicing'}
-                    </span>
-
-                    <!-- ONLY SHOW RESTORE QUOTA FOR PRESENT DAY (TODAY); HIDE IN PREVIOUS DAYS -->
-                    ${isToday ? `
-                      <button onclick="adminResetStudentQuota('${row.phone}', '${escapeHtml(row.username)}', '${escapeHtml(row.student_name)}')" 
-                              class="btn btn-outline" 
-                              style="display:inline-flex; align-items:center; margin-top:5px; padding:4px 8px; font-size:11.5px; font-weight:700; color:var(--primary); border-color:#bfdbfe; background:#eff6ff; border-radius:8px;" 
-                              title="Restore 60m Practice Quota">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
-                          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                          <path d="M3 3v5h5"/>
-                        </svg>
-                        Restore Quota
-                      </button>
-                    ` : ''}
-                  </td>
-                </tr>
-              `;
-            });
-          });
-
-          adminAttBody.innerHTML = fullTableHtml || '<tr><td colspan="9" style="text-align:center; padding: 25px; color:var(--text-muted);">No student attended questions yet.</td></tr>';
+          container.innerHTML = `
+            <div class="card" style="text-align:center; padding:35px 20px; color:var(--text-muted);">
+              <div style="font-size:42px; margin-bottom:10px;">📅</div>
+              <h3 style="margin:0 0 6px 0; color:var(--text-main);">No Attendance Records Found</h3>
+              <p style="margin:0; font-size:13.5px;">Student practice and exam sessions will automatically appear here once attended.</p>
+            </div>
+          `;
+          return;
         }
+
+        // 6. Build Collapsible Date Cards
+        let fullHTML = '';
+
+        sortedDates.forEach((dateStr, dIdx) => {
+          const studentsMap = datewiseMap.get(dateStr);
+          const rawStudents = Array.from(studentsMap.values());
+
+          // FILTER: STRICTLY ONLY SHOW STUDENTS WITH ATTENDANCE (>0 Qs or >0 duration)
+          const attendedStudents = rawStudents.filter(s => (s.questionsAttended > 0 || s.totalDurationSeconds > 0));
+
+          if (attendedStudents.length === 0) return; // Skip date if empty
+
+          // Sort students under this date: highest questions/duration first
+          attendedStudents.sort((a, b) => (b.questionsAttended - a.questionsAttended) || (b.totalDurationSeconds - a.totalDurationSeconds));
+
+          const isToday = (dateStr === cleanToday);
+          const collapseDateId = `att-date-group-${dIdx}`;
+
+          fullHTML += `
+            <div class="att-date-card">
+              <!-- COLLAPSIBLE DATE HEADER -->
+              <div class="att-date-header" onclick="toggleAccordion('${collapseDateId}')">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                  <span style="font-size:20px;">📅</span>
+                  <strong style="font-size:16px; letter-spacing:0.3px;">Date: ${escapeHtml(dateStr)}</strong>
+                  ${isToday ? '<span class="badge badge-success" style="font-size:11px; padding:3px 8px; font-weight:900;">TODAY</span>' : ''}
+                  <span class="badge" style="background:rgba(255,255,255,0.22); color:#fff; font-size:12px; font-weight:700;">
+                    ${attendedStudents.length} Student${attendedStudents.length > 1 ? 's' : ''} Attended
+                  </span>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <button type="button" 
+                          onclick="copyDailyAttendedStudentNames(event, '${escapeHtml(dateStr)}')" 
+                          class="btn btn-outline no-print" 
+                          style="padding:3px 10px; font-size:11.5px; font-weight:700; background:#ffffff; color:var(--primary); border-radius:8px;" 
+                          title="Copy student names for ${escapeHtml(dateStr)}">
+                    📋 Copy Names
+                  </button>
+                  <span style="font-size:16px;">▾</span>
+                </div>
+              </div>
+
+              <!-- COLLAPSIBLE STUDENT CARDS CONTAINER (EXPANDED BY DEFAULT FOR TODAY) -->
+              <div id="${collapseDateId}" style="display:${(isToday || dIdx === 0) ? 'block' : 'none'}; padding:16px; background:#f8fafc;">
+                ${attendedStudents.map((stData, sIdx) => {
+                  const u = stData.user;
+                  const u10 = get10(u.phone);
+                  const uKey = u10 || String(u.username).toLowerCase();
+
+                  // Retrieve lifetime metrics from pre-calculated map
+                  const lifetime = studentLifetimeMap.get(uKey) || {
+                    activeDaysCount: 1,
+                    totalTimePracticedText: '0m',
+                    totalQuestionsAttendedAllDay: stData.questionsAttended
+                  };
+
+                  // TODAY-ONLY CALCULATIONS
+                  const practicedSec = stData.totalDurationSeconds;
+                  const cumulativeUsageToday = formatSecs(practicedSec);
+                  const maxDailySec = 3600;
+                  const remainingSec = Math.max(0, maxDailySec - practicedSec);
+                  const isQuotaBlocked = (practicedSec >= maxDailySec);
+
+                  const remM = Math.floor(remainingSec / 60);
+                  const remS = remainingSec % 60;
+                  const timeLeftToday = isQuotaBlocked ? '0m 00s (Expired)' : `${remM}m ${String(remS).padStart(2, '0')}s left`;
+
+                  // Entry and Exit Times for Today
+                  let firstEntryToday = '-';
+                  let lastExitToday = '-';
+
+                  if (isToday) {
+                    // Search in audit logs for today's entry
+                    const userLogs = logs.filter(l => {
+                      const lId = String(l.identifier || '').trim().toLowerCase();
+                      return lId === String(u.username).toLowerCase() || (u10 && get10(l.identifier) === u10);
+                    });
+
+                    if (userLogs.length > 0) {
+                      const sortedLogs = [...userLogs].sort((x, y) => 
+                        (parseCustomDate(x.login_time || x.timestamp)?.getTime() || 0) - (parseCustomDate(y.login_time || y.timestamp)?.getTime() || 0)
+                      );
+                      firstEntryToday = sortedLogs[0]?.login_time ? (sortedLogs[0].login_time.split(',')[1] || sortedLogs[0].login_time).trim() : '-';
+                      
+                      const latestLog = sortedLogs[sortedLogs.length - 1];
+                      if (latestLog?.logout_time === 'Active Now') {
+                        lastExitToday = '<span class="badge badge-success" style="font-size:11px;">Active Now</span>';
+                      } else if (latestLog?.logout_time && latestLog.logout_time !== '-') {
+                        lastExitToday = (latestLog.logout_time.split(',')[1] || latestLog.logout_time).trim();
+                      }
+                    }
+
+                    // Fallback to attendance session timestamps if no login log found
+                    if (firstEntryToday === '-' && stData.sessions.length > 0) {
+                      const t = stData.sessions[0].timestamp || '';
+                      if (t.includes(',')) firstEntryToday = t.split(',')[1].trim();
+                    }
+                  } else {
+                    firstEntryToday = 'Past Record';
+                    lastExitToday = 'Completed';
+                  }
+
+                  const activitiesConsolidation = Array.from(stData.activitiesSet).join(', ') || 'Subject Practice Session';
+                  const studentCollapseId = `att-detail-${dIdx}-${sIdx}`;
+
+                  return `
+                    <div class="att-student-card ${isQuotaBlocked ? 'is-blocked' : 'is-active'}">
+                      <!-- TOP ROW: S.NO, STUDENT NAME, CLASS/DIV, STATUS BADGE & WHATSAPP -->
+                      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                          <span class="badge" style="background:#1e40af; color:#ffffff; font-size:13px; font-weight:800; border-radius:50%; width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center;">
+                            ${sIdx + 1}
+                          </span>
+                          <div>
+                            <strong style="font-size:15px; color:#0f172a;">${escapeHtml(u.name || u.username)}</strong>
+                            <span class="badge" style="background:#e0e7ff; color:#3730a3; margin-left:6px; font-size:11.5px; font-weight:700;">
+                              Class ${escapeHtml(u.class || '7')}-${escapeHtml(u.division || 'A')}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:8px;">
+                          <!-- WHATSAPP BUTTON -->
+                          <button onclick="sendAttendanceWhatsappAlert('${escapeHtml(u.name || u.username)}', '${u.phone}', '${dateStr}', '${escapeHtml(activitiesConsolidation)}', '${cumulativeUsageToday}', '${timeLeftToday}', '${stData.questionsAttended}')" 
+                                  class="btn btn-outline" 
+                                  style="padding:4px 10px; font-size:13px; background:#dcfce7; color:#15803d; border-color:#86efac; border-radius:8px;" 
+                                  title="Send Attendance Summary on WhatsApp">
+                            💬 WhatsApp
+                          </button>
+
+                          <!-- STATUS BADGE -->
+                          <span class="badge ${isQuotaBlocked ? 'badge-danger' : 'badge-success'}" style="font-size:11.5px; padding:5px 10px; font-weight:800;">
+                            ${isQuotaBlocked ? '🛑 60m Expired' : 'Active Practicing'}
+                          </span>
+
+                          <!-- CARD EXPAND / COLLAPSE -->
+                          <button type="button" class="btn btn-outline" onclick="toggleAccordion('${studentCollapseId}')" style="padding:4px 8px; font-size:12px;" title="Toggle Full Metrics">
+                            ▾
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- COLLAPSIBLE METRICS GRID -->
+                      <div id="${studentCollapseId}" style="display:block;">
+                        <!-- SECTION A: TODAY-ONLY METRICS -->
+                        <div class="att-grid-stats">
+                          <div class="att-metric-box att-today-highlight">
+                            <div class="att-metric-label">🕒 First Entry Time (Today)</div>
+                            <div class="att-metric-value">${firstEntryToday}</div>
+                          </div>
+
+                          <div class="att-metric-box att-today-highlight">
+                            <div class="att-metric-label">🚪 Last Exit Time (Today)</div>
+                            <div class="att-metric-value">${lastExitToday}</div>
+                          </div>
+
+                          <div class="att-metric-box att-today-highlight">
+                            <div class="att-metric-label">⏱️ Cumulative Usage (Today)</div>
+                            <div class="att-metric-value" style="color:#059669;">${cumulativeUsageToday}</div>
+                          </div>
+
+                          <div class="att-metric-box att-today-highlight">
+                            <div class="att-metric-label">⏳ Time Left Today (60m Max)</div>
+                            <div class="att-metric-value" style="color:${isQuotaBlocked ? '#ef4444' : '#d97706'};">${timeLeftToday}</div>
+                          </div>
+
+                          <div class="att-metric-box att-today-highlight">
+                            <div class="att-metric-label">✍️ Questions Attended (Today)</div>
+                            <div class="att-metric-value" style="color:#2563eb;">${stData.questionsAttended} Qs</div>
+                          </div>
+
+                          <div class="att-metric-box att-today-highlight" style="grid-column: span 1 / -1;">
+                            <div class="att-metric-label">📖 Activities Covered (Today)</div>
+                            <div class="att-metric-value" style="font-size:12.5px; font-weight:700; color:#1e293b;">${escapeHtml(activitiesConsolidation)}</div>
+                          </div>
+                        </div>
+
+                        <!-- SECTION B: ALL-DAY (LIFETIME) VERIFIED PORTFOLIO METRICS -->
+                        <div class="att-grid-stats" style="margin-top:10px;">
+                          <div class="att-metric-box">
+                            <div class="att-metric-label">📅 Active Attendance Days (All Day)</div>
+                            <div class="att-metric-value" style="color:#10b981;">${lifetime.activeDaysCount} Days</div>
+                          </div>
+
+                          <div class="att-metric-box">
+                            <div class="att-metric-label">⌛ Total Time Practiced (All Day)</div>
+                            <div class="att-metric-value" style="color:var(--primary);">${lifetime.totalTimePracticedText}</div>
+                          </div>
+
+                          <div class="att-metric-box">
+                            <div class="att-metric-label">🏆 Total Questions Attended (All Day)</div>
+                            <div class="att-metric-value" style="color:#7c3aed;">${lifetime.totalQuestionsAttendedAllDay} Total Qs</div>
+                          </div>
+
+                          <!-- ACTION BUTTON: RESTORE QUOTA (SHOWN ONLY ON PRESENT DAY) -->
+                          <div class="att-metric-box" style="display:flex; align-items:center; justify-content:center; background:#fff;">
+                            ${isToday ? `
+                              <button onclick="adminResetStudentQuota('${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.name || u.username)}')" 
+                                      class="btn btn-outline" 
+                                      style="width:100%; height:100%; padding:8px 12px; font-size:12px; font-weight:800; color:var(--primary); border-color:#93c5fd; background:#eff6ff; border-radius:8px;">
+                                🔄 Restore 60m Quota
+                              </button>
+                            ` : `
+                              <span style="font-size:12px; font-weight:700; color:var(--text-muted);">Session Finalized</span>
+                            `}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = fullHTML;
       }
 
       // -----------------------------------------------------------------------
