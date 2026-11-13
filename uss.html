@@ -763,7 +763,12 @@
       </div>
     </div>
 
-    <div class="sub-header-right">
+    <div class="sub-header-right" style="flex-wrap: wrap; justify-content: flex-end; gap: 8px;">
+      <div id="header-consumed-pill" class="status-pill" style="background: rgba(59, 130, 246, 0.22); border-color: #60a5fa; color: #bfdbfe;">
+        <span>⏱️</span>
+        <span id="header-consumed-text">0m 00s used</span>
+      </div>
+
       <div id="header-quota-pill" class="status-pill" style="background: rgba(254, 243, 199, 0.18); border-color: #f59e0b; color: #fef08a;">
         <span>⏳</span>
         <span id="header-quota-text">60m 00s left</span>
@@ -2461,14 +2466,17 @@ function getTodayElapsedSeconds(phoneOrUser) {
   clearInterval(globalQuotaInterval);
   if (!currentUser) return;
 
+  const consumedPill = document.getElementById('header-consumed-pill');
   const quotaPill = document.getElementById('header-quota-pill');
 
   // Hide daily limit completely for staff/admins
   if (isStaffOrAdminUser(currentUser)) {
+    if (consumedPill) consumedPill.style.display = 'none';
     if (quotaPill) quotaPill.style.display = 'none';
     return;
   }
 
+  if (consumedPill) consumedPill.style.display = 'inline-flex';
   if (quotaPill) quotaPill.style.display = 'inline-flex';
 
   // 1. Fetch cross-device authoritative usage from Supabase
@@ -2499,18 +2507,31 @@ function getTodayElapsedSeconds(phoneOrUser) {
 }
 
     function updatePausedQuotaUI() {
-      const elapsedSec = getTodayElapsedSeconds();
+      const elapsedSec = Math.min(DAILY_MAX_QUOTA_SECONDS, Math.max(0, getTodayElapsedSeconds()));
+      const usedMins = Math.floor(elapsedSec / 60);
+      const usedSecs = elapsedSec % 60;
+
       const remainingSec = Math.max(0, DAILY_MAX_QUOTA_SECONDS - elapsedSec);
       const remMins = Math.floor(remainingSec / 60);
       const remSecs = remainingSec % 60;
 
+      const consumedPill = document.getElementById('header-consumed-pill');
+      const consumedText = document.getElementById('header-consumed-text');
       const quotaPill = document.getElementById('header-quota-pill');
       const quotaText = document.getElementById('header-quota-text');
+
+      if (consumedText) {
+        consumedText.innerText = `${usedMins}m ${String(usedSecs).padStart(2, '0')}s used`;
+      }
+      if (consumedPill) {
+        consumedPill.style.background = 'rgba(148, 163, 184, 0.2)';
+        consumedPill.style.borderColor = '#94a3b8';
+        consumedPill.style.color = '#cbd5e1';
+      }
 
       if (quotaText) {
         quotaText.innerText = `${remMins}m ${String(remSecs).padStart(2, '0')}s (Paused)`;
       }
-
       if (quotaPill) {
         quotaPill.style.background = 'rgba(148, 163, 184, 0.2)';
         quotaPill.style.borderColor = '#94a3b8';
@@ -2521,10 +2542,31 @@ function getTodayElapsedSeconds(phoneOrUser) {
     function checkAndEnforceQuota(elapsedSec) {
       if (isStaffOrAdminUser(currentUser)) return;
 
-      const remainingSec = Math.max(0, DAILY_MAX_QUOTA_SECONDS - elapsedSec);
+      const usedSec = Math.min(DAILY_MAX_QUOTA_SECONDS, Math.max(0, Number(elapsedSec) || 0));
+      const usedMins = Math.floor(usedSec / 60);
+      const usedSecs = usedSec % 60;
+      const usedStr = `${usedMins}m ${String(usedSecs).padStart(2, '0')}s used`;
+
+      const remainingSec = Math.max(0, DAILY_MAX_QUOTA_SECONDS - usedSec);
       const remMins = Math.floor(remainingSec / 60);
       const remSecs = remainingSec % 60;
       const timeStr = `${remMins}m ${String(remSecs).padStart(2, '0')}s left`;
+
+      const consumedPill = document.getElementById('header-consumed-pill');
+      const consumedText = document.getElementById('header-consumed-text');
+      if (consumedText) consumedText.innerText = usedStr;
+
+      if (consumedPill) {
+        if (remainingSec <= 600) {
+          consumedPill.style.background = 'rgba(239, 68, 68, 0.25)';
+          consumedPill.style.borderColor = '#ef4444';
+          consumedPill.style.color = '#fca5a5';
+        } else {
+          consumedPill.style.background = 'rgba(59, 130, 246, 0.22)';
+          consumedPill.style.borderColor = '#60a5fa';
+          consumedPill.style.color = '#bfdbfe';
+        }
+      }
 
       const quotaPill = document.getElementById('header-quota-pill');
       const quotaText = document.getElementById('header-quota-text');
@@ -2560,8 +2602,23 @@ function getTodayElapsedSeconds(phoneOrUser) {
       document.getElementById('tab-bar-container').style.display = 'none';
       document.getElementById('sticky-sub-header').style.display = 'none';
 
+      const consumedPill = document.getElementById('header-consumed-pill');
+      const consumedText = document.getElementById('header-consumed-text');
+      if (consumedText) consumedText.innerText = '60m 00s used';
+      if (consumedPill) {
+        consumedPill.style.background = 'rgba(239, 68, 68, 0.25)';
+        consumedPill.style.borderColor = '#ef4444';
+        consumedPill.style.color = '#fca5a5';
+      }
+
+      const quotaPill = document.getElementById('header-quota-pill');
       const quotaText = document.getElementById('header-quota-text');
       if (quotaText) quotaText.innerText = '0m 00s (Expired)';
+      if (quotaPill) {
+        quotaPill.style.background = 'rgba(239, 68, 68, 0.25)';
+        quotaPill.style.borderColor = '#ef4444';
+        quotaPill.style.color = '#fca5a5';
+      }
     }
 
     // =========================================================================
@@ -2585,10 +2642,10 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
     division: String(currentUser.division || 'A'),
     date: cleanDate,
     timestamp: formatDateStrict(new Date().toISOString()),
-    activity: isTrialMode ? 'Trial Exam Mode' : (sessionAnswersLog[0]?.Subject ? `Subject Practice (${sessionAnswersLog[0].Subject})` : 'Daily USS Training Session'),
+    activity: 'Daily Quota Heartbeat',
     duration_seconds: totalSecondsToday,
     duration_text: `${mins}m ${String(secs).padStart(2, '0')}s`,
-    questions_attended: sessionAnswersLog.length || 0,
+    questions_attended: 0,
     score: `${mins}m / 60m used`
   };
 
@@ -4887,13 +4944,13 @@ async function saveCompletedSessionOnExit() {
         .or(`phone.eq."${studentPhone}",phone.ilike."%${clean10}%",student_name.ilike."%${studentName}%"`)
         .order('id', { ascending: false });
 
-      // 3. Fetch Attendance Logs (Clean 10-digit and username matching, no query-string breakage)
+      // 3. Fetch Attendance Logs (Strict username & 10-digit phone matching)
       let attendanceList = [];
       try {
         const { data: dbAtt } = await supabaseClient
           .from('attendance')
           .select('*')
-          .or(`username.ilike.${studentUsername},phone.ilike.%${clean10}%,student_name.ilike.%${studentName.split(' ')[0]}%`)
+          .or(`username.ilike.${studentUsername},phone.ilike.%${clean10}%`)
           .order('id', { ascending: false });
         attendanceList = dbAtt || [];
       } catch (e) {
@@ -4926,6 +4983,8 @@ async function saveCompletedSessionOnExit() {
       const studentMetrics = getStudentUniqueAnswerRecords(studentPhone, answers, trials, studentUsername, studentName, offlineExams);
 
       // 6. Render Attendance Summary
+      cachedAdminData = cachedAdminData || {};
+      cachedAdminData.allAnswers = answers || [];
       renderStudentAttendance(attendanceList, studentMetrics.total);
 
       // ... [offline exams table rendering remains unchanged] ...
@@ -5017,13 +5076,11 @@ async function saveCompletedSessionOnExit() {
       const findActualDurationFromHistory = (item, dKey) => {
         if (studentHistorySessions.length === 0) return 0;
 
-        // 1. Exact timestamp match
         if (item.timestamp) {
           const exact = studentHistorySessions.find(h => h.timestamp === item.timestamp && extractHistoryDurationSecs(h) > 0);
           if (exact) return extractHistoryDurationSecs(exact);
         }
 
-        // 2. Match by normalized date + subject/activity + closest timestamp
         const actLower = String(item.activity || '').toLowerCase();
         let subHint = '';
         if (actLower.includes('trial')) subHint = 'trial';
@@ -5053,16 +5110,84 @@ async function saveCompletedSessionOnExit() {
         return extractHistoryDurationSecs(candidates[0]);
       };
 
-      // Sort logs chronologically descending
-      const sortedLogs = [...(validLogs || [])].sort((a, b) => {
+      // 1. Clean & sort logs chronologically descending (prefer real live sessions over -SYNC rows)
+      const cleanedLogs = (validLogs || []).filter(item => {
+        const attId = String(item.attendance_id || '');
+        const act = String(item.activity || '').toLowerCase();
+        const sc = String(item.score || '').toLowerCase();
+
+        // Never display background quota heartbeat or admin quota-restore rows in session log
+        if (attId.includes('-DAILY')) return false;
+        if (act.includes('quota restored') || act.includes('daily quota heartbeat') || sc.includes('60m used') || sc === 'active') return false;
+        return true;
+      }).sort((a, b) => {
+        const aSync = String(a.attendance_id || '').includes('-SYNC') ? 1 : 0;
+        const bSync = String(b.attendance_id || '').includes('-SYNC') ? 1 : 0;
+        if (aSync !== bSync) return aSync - bSync; // Real sessions first
         const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
         const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
         return timeB - timeA;
       });
 
-      // Group by Date
+      // 2. Prevent repeating/duplicate records
+      const seenIds = new Set();
+      const seenExactKeys = new Set();
+      const dedupedLogs = [];
+
+      cleanedLogs.forEach(item => {
+        const attId = String(item.attendance_id || '').trim();
+        if (attId) {
+          if (seenIds.has(attId)) return;
+          seenIds.add(attId);
+        }
+
+        const dateStr = normalizeDateStr(item.date, item.timestamp);
+        const normAct = String(item.activity || 'Practice Session').trim().toLowerCase();
+        const qNum = Number(item.questions_attended) || 0;
+        const normScore = String(item.score || '').trim().toLowerCase();
+        const tsStr = String(item.timestamp || '').trim();
+        const itemMs = parseCustomDate(item.timestamp || item.date)?.getTime() || 0;
+        const isSync = attId.includes('-SYNC');
+
+        // Exact timestamp + activity + questions duplicate check
+        const exactKey = `${dateStr}__${tsStr}__${normAct}__${qNum}`;
+        if (seenExactKeys.has(exactKey)) return;
+
+        // If this is a -SYNC row and a real session already exists for the same date & activity, skip it
+        if (isSync) {
+          const hasRealForDateAct = dedupedLogs.some(existing =>
+            !String(existing.attendance_id || '').includes('-SYNC') &&
+            normalizeDateStr(existing.date, existing.timestamp) === dateStr &&
+            String(existing.activity || 'Practice Session').trim().toLowerCase() === normAct
+          );
+          if (hasRealForDateAct) return;
+        }
+
+        // Prevent near-duplicate double-saves of the exact same session within 2 minutes
+        const isNearDup = dedupedLogs.some(existing => {
+          if (normalizeDateStr(existing.date, existing.timestamp) !== dateStr) return false;
+          if (String(existing.activity || 'Practice Session').trim().toLowerCase() !== normAct) return false;
+          if ((Number(existing.questions_attended) || 0) !== qNum) return false;
+          if (String(existing.score || '').trim().toLowerCase() !== normScore) return false;
+          const exMs = parseCustomDate(existing.timestamp || existing.date)?.getTime() || 0;
+          return (itemMs === 0 || exMs === 0 || Math.abs(itemMs - exMs) <= 120000);
+        });
+        if (isNearDup) return;
+
+        seenExactKeys.add(exactKey);
+        dedupedLogs.push(item);
+      });
+
+      // Re-sort deduped logs strictly newest first
+      dedupedLogs.sort((a, b) => {
+        const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
+        const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
+        return timeB - timeA;
+      });
+
+      // 3. Group by Date
       const dateGroups = {};
-      sortedLogs.forEach(item => {
+      dedupedLogs.forEach(item => {
         const dateStr = normalizeDateStr(item.date, item.timestamp);
         if (!dateStr) return;
         if (!dateGroups[dateStr]) dateGroups[dateStr] = [];
@@ -5146,7 +5271,7 @@ async function saveCompletedSessionOnExit() {
           `;
         });
 
-        // Reconcile any unlogged questions on this date using this student's portal_history duration (no fabrication)
+        // Reconcile any unlogged questions on this date using this student's portal_history duration
         if (actualAnswersOnDate > dayTotalQuestions) {
           const unloggedQs = actualAnswersOnDate - dayTotalQuestions;
           let unloggedSec = 0;
@@ -5184,27 +5309,25 @@ async function saveCompletedSessionOnExit() {
           todayTotalSec = dayTotalSec;
         }
 
-        // Subtotal row for each date
         html += `
           <tr style="background:#f1f5f9; font-weight:700; border-top:1.5px solid #cbd5e1; border-bottom:1.5px solid #cbd5e1;">
             <td colspan="3" style="text-align:right; color:#1e40af; font-size:12.5px;">
               📊 <b>Total for ${escapeHtml(dKey)}:</b>
             </td>
             <td style="color:#1e40af; font-size:13px;"><b>${formatSecs(dayTotalSec)}</b></td>
-            <td style="color:#1e40af; font-size:13px;"><b>${dayTotalQuestions} Qs</b></td>
+            <td style="color:#1e40af; font-size:13px;"><b>${dayTotalQuestions} </b></td>
             <td><span class="badge" style="background:#e2e8f0; color:#334155; font-size:11px;">Day Total</span></td>
           </tr>
         `;
       });
 
-      // GRAND TOTAL ROW
       html += `
         <tr style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); font-weight:800; border-top:2px solid var(--primary) !important; font-size:13.5px;">
           <td colspan="3" style="text-align:right; color:#1e3a8a;">
             🏆 <b>GRAND TOTAL:</b>
           </td>
           <td style="color:var(--primary); font-size:14px;"><b>${formatSecs(grandTotalSec)}</b></td>
-          <td style="color:var(--primary); font-size:14px;"><b style="color:var(--primary);">${grandTotalQuestions} Qs</b></td>
+          <td style="color:var(--primary); font-size:14px;"><b style="color:var(--primary);">${grandTotalQuestions} </b></td>
           <td><span class="badge badge-success" style="font-size:11.5px;">All Sessions</span></td>
         </tr>
       `;
@@ -5228,22 +5351,22 @@ async function saveCompletedSessionOnExit() {
       const totalDaysEl = document.getElementById('att-total-days');
       const tbody = document.getElementById('portfolio-attendance-body');
 
-      // Filter: Strictly attended sessions
+      // Filter: Strictly completed practice/trial sessions (always exclude -DAILY heartbeat rows)
       const validLogs = (attLogs || []).filter(item => {
-        const act = String(item.activity || '').toLowerCase();
-        const isPracticeOrTrial = act.includes('practice') || act.includes('trial') || (Number(item.questions_attended) || 0) > 0;
         const isDailyHeartbeat = String(item.attendance_id || '').includes('-DAILY');
+        if (isDailyHeartbeat) return false;
 
-        if (isDailyHeartbeat && (Number(item.questions_attended) || 0) === 0) return false;
-        return isPracticeOrTrial;
+        const act = String(item.activity || '').toLowerCase();
+        return act.includes('practice') || act.includes('trial') || (Number(item.questions_attended) || 0) > 0;
       });
 
-      // 1. Build the Detailed Attendance Log
+      // 1. Build the Detailed Attendance Log (automatically deduplicated)
       const logData = buildDetailedAttendanceLogHTML(
         validLogs, 
         currentUser?.phone, 
         currentUser?.name, 
-        cachedAdminData?.allAnswers || []
+        cachedAdminData?.allAnswers || [],
+        currentUser?.username || ''
       );
 
       // 2. Render table
@@ -5251,18 +5374,13 @@ async function saveCompletedSessionOnExit() {
         tbody.innerHTML = logData.html;
       }
 
-      // 3. SET CARDS: EXACT EQUIVALENCE WITH DETAILED LOG TOTALS
-      // Card 1: Exactly equals "Total for 13/11/2026 (today)" in the table
+      // 3. Set cards to strictly match Detailed Attendance Log totals
       if (todayTimeEl) {
         todayTimeEl.innerText = formatSecs(logData.todayTotalSec);
       }
-
-      // Card 2: Exactly equals "GRAND TOTAL" in the table
       if (totalTimeEl) {
         totalTimeEl.innerText = formatSecs(logData.grandTotalSec);
       }
-
-      // Card 3: Active Days count
       if (totalDaysEl) {
         totalDaysEl.innerText = `${logData.activeDaysCount} Day${logData.activeDaysCount !== 1 ? 's' : ''}`;
       }
