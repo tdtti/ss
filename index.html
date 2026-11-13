@@ -19,7 +19,8 @@
     <!-- Firebase SDK (Compat Version) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
+    
+    
     <!-- EARLY LOGIN TRIGGER HANDLER (Prevents ReferenceError on fast clicks) -->
     <script>
         let loginHoldTimer = null;
@@ -489,6 +490,92 @@
         .social-btn.reacted-like { color: #0866FF !important; }
         .social-btn.reacted-love { color: #ef4444 !important; }
         .social-btn.reacted-clap { color: #f59e0b !important; }
+
+      /* === SCHOOL RADIO HEADER WIDGET === */
+        .profile-pic-container { justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        .profile-left-wrap { display: flex; align-items: flex-end; }
+        .school-radio-widget {
+            margin-left: auto;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #0f172a, #1e3a8a);
+            color: #ffffff;
+            padding: 8px 14px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 14px rgba(8, 102, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .radio-label {
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .radio-live-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #22c55e; display: inline-block;
+            opacity: 0.4;
+        }
+        .radio-live-dot.playing {
+            opacity: 1;
+            animation: livePulse 1.4s infinite;
+        }
+        .radio-ctrl-btn {
+            width: 34px; height: 34px; border-radius: 50%;
+            border: none; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 0.9rem; font-weight: 800;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        .radio-ctrl-btn:hover { transform: scale(1.08); }
+        .btn-radio-play { background: #22c55e; color: #ffffff; }
+        .btn-radio-play.is-playing { background: #ef4444; }
+        .btn-radio-plus { background: rgba(255, 255, 255, 0.2); color: #ffffff; font-size: 1.1rem; }
+        .btn-radio-plus:hover { background: rgba(255, 255, 255, 0.35); }
+
+        @media (max-width: 650px) {
+            .profile-left-wrap { flex-direction: column; align-items: center; width: 100%; }
+            .school-radio-widget { margin: 12px auto 0 auto; }
+        }
+
+        /* === SCHOOL RADIO PLAYLIST MODAL === */
+        .radio-playlist-search {
+            width: 100%; padding: 10px 14px; border-radius: 20px;
+            border: 1px solid #cbd5e1; background: #f8fafc;
+            font-family: inherit; font-size: 0.88rem; margin-bottom: 12px; outline: none;
+        }
+        .radio-playlist-search:focus { border-color: var(--accent-blue); background: #fff; }
+        .radio-playlist-items {
+            max-height: 360px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+        }
+        .radio-track-card {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0;
+            background: #f8fafc; cursor: pointer; transition: all 0.15s ease;
+        }
+        .radio-track-card:hover { border-color: var(--accent-blue); background: #eff6ff; }
+        .radio-track-card.active-track {
+            border-color: var(--accent-blue);
+            background: #dbeafe;
+            box-shadow: 0 2px 8px rgba(8, 102, 255, 0.15);
+        }
+        .radio-track-meta h4 { margin: 0 0 3px 0; font-size: 0.92rem; font-weight: 800; color: #0f172a; }
+        .radio-track-meta p { margin: 0; font-size: 0.76rem; color: #475569; font-weight: 600; line-height: 1.4; }
+        .radio-source-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+        .radio-source-tab {
+            flex: 1; padding: 8px 6px; border-radius: 8px; border: 1px solid #cbd5e1;
+            background: #f8fafc; font-size: 0.78rem; font-weight: 700; cursor: pointer; text-align: center;
+        }
+        .radio-source-tab.active {
+            background: var(--accent-blue); color: #ffffff; border-color: var(--accent-blue);
+        }
+        .bg-cyan { background: linear-gradient(135deg, #06b6d4, #0284c7); color: white; }
+
     </style>
 </head>
 <body class="web-protected">
@@ -551,9 +638,26 @@
         <img src="https://via.placeholder.com/1200x300.png?text=Loading+Cover..." class="cover-photo" id="ui-cover" decoding="async">
         
         <div class="profile-pic-container">
-            <img src="" class="profile-pic" id="ui-profile" onclick="window.location.reload();" title="tdtti" decoding="async">
-            <h2 class="school-slogan">Empowering Minds..<br>Shaping Futures...</h2>
+            <div class="profile-left-wrap">
+                <img src="" class="profile-pic" id="ui-profile" onclick="window.location.reload();" title="tdtti" decoding="async">
+                <h2 class="school-slogan">Empowering Minds..<br>Shaping Futures...</h2>
+            </div>
+
+            <!-- SCHOOL RADIO WIDGET (Play/Pause + Playlist Button) -->
+            <div class="school-radio-widget" id="schoolRadioWidget">
+                <div class="radio-label">
+                    <span class="radio-live-dot" id="radioLiveDot"></span>
+                    <span>📻 School Radio</span>
+                </div>
+                <button type="button" class="radio-ctrl-btn btn-radio-play" id="radioMainPlayBtn" onclick="toggleSchoolRadio()" title="Play / Pause School Radio">
+                    <i class="fa-solid fa-play" id="radioPlayIcon"></i>
+                </button>
+                <button type="button" class="radio-ctrl-btn btn-radio-plus" onclick="openRadioPlaylistModal()" title="Open School Radio Playlist">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
         </div>
+
     </header>
 
     <nav class="nav-wrapper">
@@ -605,6 +709,28 @@
                 <span>Loading page inside app...</span>
             </div>
             <iframe id="inAppBrowserIframe" src="" frameborder="0" allowfullscreen allow="geolocation; camera; microphone"></iframe>
+        </div>
+    </div>
+    <!-- HIDDEN AUDIO & AUDIO-ONLY YOUTUBE PLAYERS FOR SCHOOL RADIO -->
+    <audio id="html5RadioAudio" preload="metadata" playsinline></audio>
+    <div id="ytRadioHiddenPlayerWrap" style="position:fixed; bottom:0; right:0; width:240px; height:135px; opacity:0.01; pointer-events:none; z-index:-1; overflow:hidden;">
+        <div id="ytRadioPlayer"></div>
+    </div>
+
+    <!-- EXPANDED SCHOOL RADIO PLAYLIST MODAL -->
+    <div class="modal-overlay" id="radioPlaylistModal" style="z-index: 15000;">
+        <div class="modal-box" style="max-width: 520px;">
+            <button class="close-modal" onclick="closeRadioPlaylistModal()">&times;</button>
+            <h2 style="margin-bottom: 4px; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                📻 School Radio Playlist
+            </h2>
+            <p id="radioNowPlayingBanner" style="font-size: 0.78rem; color: var(--accent-blue); font-weight: 700; margin-bottom: 12px;">
+                Ready to play latest broadcast
+            </p>
+            <input type="text" id="radioPlaylistSearch" class="radio-playlist-search" placeholder="🔍 Search by Date, Theme, Author, Class or Div..." oninput="renderRadioPlaylist()">
+            <div class="radio-playlist-items" id="radioPlaylistContainer">
+                <p style="text-align: center; color: #64748b; padding: 20px;">Loading radio tracks...</p>
+            </div>
         </div>
     </div>
 
@@ -735,6 +861,10 @@
                             <div class="app-icon-box bg-emerald">✏️</div>
                             <span>Edit / Delete</span>
                         </div>
+                        <div class="admin-app-icon" onclick="openAdminSection('school_radio')">
+                            <div class="app-icon-box bg-cyan">📻</div>
+                            <span>School Radio</span>
+                        </div>
                         <div class="admin-app-icon" onclick="openAdminSection('settings')">
                             <div class="app-icon-box bg-amber">🖼️</div>
                             <span>Profile & Cover</span>
@@ -824,6 +954,76 @@
                                 <button type="button" class="btn-submit" style="background: #dc2626; margin: 0; flex: 1;" onclick="setWebProtection(false)">🔓 Disable Protection</button>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- School Radio Upload & Management Section -->
+                    <div id="schoolRadioSection" style="display: none; width: 100%; margin-bottom: 15px;">
+                        <div style="background: #f0f9ff; border: 1px solid #bae6fd; padding: 16px; border-radius: 10px; margin-bottom: 16px;">
+                            <strong style="color: #0369a1; font-size: 0.95rem; display: block; margin-bottom: 12px;">🎙️ Upload New School Radio Broadcast</strong>
+
+                            <div class="form-group">
+                                <label>📅 Date (DD:MM:YYYY)</label>
+                                <input type="text" id="radioDate" class="form-control" placeholder="DD:MM:YYYY" maxlength="10">
+                            </div>
+                            <div class="form-group">
+                                <label>🎯 Theme / Program Title</label>
+                                <input type="text" id="radioTheme" class="form-control" placeholder="e.g. Morning Assembly Thought / Quiz">
+                            </div>
+                            <div class="form-group">
+                                <label>🎤 Author / Presenter</label>
+                                <input type="text" id="radioAuthor" class="form-control" placeholder="e.g. Ananya S / Admin Desk">
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <div class="form-group" style="flex: 1;">
+                                    <label>🏫 Class</label>
+                                    <input type="text" id="radioClass" class="form-control" placeholder="e.g. 7">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label>🏷️ Division</label>
+                                    <input type="text" id="radioDiv" class="form-control" placeholder="e.g. A">
+                                </div>
+                            </div>
+
+                            <!-- 3 Source Tabs -->
+                            <label style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 0.86rem;">🎧 Select Audio Source</label>
+                            <div class="radio-source-tabs">
+                                <button type="button" class="radio-source-tab active" id="tabRadioYt" onclick="switchRadioSourceTab('youtube')">▶️ YouTube (Audio Only)</button>
+                                <button type="button" class="radio-source-tab" id="tabRadioRec" onclick="switchRadioSourceTab('record')">🎙️ Record Direct</button>
+                                <button type="button" class="radio-source-tab" id="tabRadioFile" onclick="switchRadioSourceTab('file')">📁 Upload File</button>
+                            </div>
+
+                            <!-- Option 1: YouTube Link -->
+                            <div id="radioSrcYoutube" class="form-group">
+                                <input type="url" id="radioYtUrl" class="form-control" placeholder="Paste YouTube video/shorts/live link (plays Audio Only)">
+                                <span style="font-size: 0.74rem; color: #0369a1; display: block; margin-top: 4px;">ℹ️ Video is hidden automatically; only audio streams in School Radio.</span>
+                            </div>
+
+                            <!-- Option 2: Direct Microphone Recorder -->
+                            <div id="radioSrcRecord" class="form-group" style="display: none; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; text-align: center;">
+                                <div id="radioRecTimer" style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-bottom: 8px;">00:00</div>
+                                <div style="display: flex; gap: 8px; justify-content: center;">
+                                    <button type="button" id="btnStartRec" class="btn-submit" style="width: auto; margin: 0; background: #ef4444; padding: 8px 16px;" onclick="startRadioRecording()">● Start Recording</button>
+                                    <button type="button" id="btnStopRec" class="btn-submit" style="width: auto; margin: 0; background: #0f172a; padding: 8px 16px; display: none;" onclick="stopRadioRecording()">■ Stop Recording</button>
+                                </div>
+                                <div id="radioRecStatus" style="font-size: 0.76rem; color: #475569; margin-top: 8px;">Tap Start Recording to record from your phone or PC mic.</div>
+                            </div>
+
+                            <!-- Option 3: Upload Audio File -->
+                            <div id="radioSrcFile" class="form-group" style="display: none; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
+                                <input type="file" id="radioAudioFileInput" class="form-control" accept="audio/*" onchange="handleRadioFileSelect(this)">
+                                <div id="radioFileStatus" style="font-size: 0.76rem; color: #475569; margin-top: 6px;">Supported: MP3, M4A, OGG, WAV (Max ~700 KB for Firestore Spark storage).</div>
+                            </div>
+
+                            <!-- Preview & Upload Buttons -->
+                            <div style="display: flex; gap: 10px; margin-top: 12px;">
+                                <button type="button" id="btnPreviewRadio" class="btn-submit" style="background: #f59e0b; margin: 0; flex: 1;" onclick="previewRadioDraft()">▶ Preview Audio</button>
+                                <button type="button" id="btnUploadRadio" class="btn-submit" style="background: #0866FF; margin: 0; flex: 1;" onclick="uploadRadioTrack()">📤 Upload to Radio</button>
+                            </div>
+                            <audio id="radioAdminPreviewPlayer" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
+                        </div>
+
+                        <strong style="display: block; font-size: 0.88rem; margin-bottom: 8px; color: var(--text-dark);">Uploaded Radio Playlist Tracks:</strong>
+                        <div id="adminRadioTrackList" style="display: flex; flex-direction: column; gap: 8px;">Loading tracks...</div>
                     </div>
 
                     <!-- Bulk Import Birthdays -->
@@ -1489,6 +1689,13 @@
         const setCard = document.getElementById('previewSettingsCard');
         
         if (!postCard || !bdayCard || !setCard) return;
+        if (currentAdminMode === 'school_radio') {
+            if (badgeEl) badgeEl.innerText = "SCHOOL RADIO";
+            postCard.style.display = 'none';
+            bdayCard.style.display = 'none';
+            setCard.style.display = 'none';
+            return;
+        }
 
         const sec = document.getElementById('sectionSelect') ? document.getElementById('sectionSelect').value : "Scrolling";
         const titleVal = document.getElementById('postTitle') ? document.getElementById('postTitle').value.trim() : "";
@@ -1787,6 +1994,32 @@
                 renderSuperAdminActivity();
             }
         }, (error) => {});
+
+        db.collection('school_radio').onSnapshot((snapshot) => {
+            globalRadioTracks = [];
+            snapshot.forEach((doc) => {
+                globalRadioTracks.push({ id: doc.id, ...doc.data() });
+            });
+            // Sort so the LAST uploaded file is always first (index 0)
+            globalRadioTracks.sort((a, b) => {
+                let ca = (a.createdAt && a.createdAt.seconds) ? a.createdAt.seconds * 1000 : (a.uploadedAtMs || 0);
+                let cb = (b.createdAt && b.createdAt.seconds) ? b.createdAt.seconds * 1000 : (b.uploadedAtMs || 0);
+                return cb - ca;
+            });
+            renderRadioPlaylist();
+            renderAdminRadioList();
+            if (!isRadioPlaying && globalRadioTracks.length > 0 && globalRadioTracks[0].sourceType === 'youtube') {
+                const firstVid = extractYtVideoId(globalRadioTracks[0].mediaUrl);
+                if (firstVid && ytRadioPlayer && ytPlayerReady && !currentLoadedRadioId) {
+                    ytRadioPlayer.cueVideoById(firstVid);
+                    currentLoadedRadioId = globalRadioTracks[0].id;
+                }
+            }
+        }, (error) => {
+            console.error("Firestore Radio Error:", error);
+        });
+
+        
     }
 
     function getMediaItems(item) {
@@ -2769,6 +3002,7 @@
         const sectionTitles = {
             'create': '📝 Create Post',
             'edit': '✏️ Edit / Delete Posts',
+            'school_radio': '📻 School Radio Manager',
             'settings': '🖼️ Profile & Cover Photos',
             'bulk_birthdays': '📦 Bulk Import Birthdays',
             'bulk_today': '📜 Bulk Import Today in History',
@@ -2783,6 +3017,9 @@
     }
 
     function closeAdminSection() {
+        stopRadioPreview();
+        const radioSec = document.getElementById('schoolRadioSection');
+        if (radioSec) radioSec.style.display = 'none';
         document.getElementById('uploadForm').style.display = 'none';
         document.getElementById('superUsersSection').style.display = 'none';
         document.getElementById('superActivitySection').style.display = 'none';
@@ -2812,11 +3049,23 @@
         if (superActSec) superActSec.style.display = 'none';
         if (superSecSec) superSecSec.style.display = 'none';
 
+        const radioSec = document.getElementById('schoolRadioSection');
+        if (radioSec) radioSec.style.display = 'none';
+
         if (currentAdminMode === 'super_users') {
             uploadForm.style.display = 'none';
             superUsersSec.style.display = 'block';
             renderSuperAdminUsers();
         }
+
+        else if (currentAdminMode === 'school_radio') {
+            uploadForm.style.display = 'none';
+            if (radioSec) radioSec.style.display = 'block';
+            const rDate = document.getElementById('radioDate');
+            if (rDate && !rDate.value) rDate.value = getTodayDateStr();
+            renderAdminRadioList();
+        }
+
         else if (currentAdminMode === 'super_activity') {
             uploadForm.style.display = 'none';
             superActSec.style.display = 'block';
@@ -4061,6 +4310,640 @@
         closePwaGuideBanner();
         showCustomAlert("✅ Notice dismissed. You can launch the app directly from your home screen anytime.");
     }
+
+    // =========================================================================
+    // 📻 SCHOOL RADIO (AUDIO-ONLY, BACKGROUND PLAYABLE, PLAYLIST & RECORDER)
+    // =========================================================================
+    let globalRadioTracks = [];
+    let currentRadioIndex = 0;
+    let isRadioPlaying = false;
+
+    let ytApiReady = false;
+    
+
+    // Called automatically by YouTube IFrame API when loaded
+    function onYouTubeIframeAPIReady() {
+        ytApiReady = true;
+        ytRadioPlayer = new YT.Player('ytRadioPlayer', {
+            height: '1',
+            width: '1',
+            videoId: '',
+            playerVars: { autoplay: 0, controls: 0, playsinline: 1 },
+            events: {
+                onReady: () => {
+                    if (pendingYtVideoId) {
+                        ytRadioPlayer.loadVideoById(pendingYtVideoId);
+                        pendingYtVideoId = null;
+                    }
+                },
+                onStateChange: (event) => {
+                    if (event.data === YT.PlayerState.ENDED) {
+                        playNextRadioTrack();
+                    } else if (event.data === YT.PlayerState.PLAYING) {
+                        setRadioUiPlaying(true);
+                    } else if (event.data === YT.PlayerState.PAUSED) {
+                        setRadioUiPlaying(false);
+                    }
+                }
+            }
+        });
+    }
+
+    function extractYtVideoId(url) {
+        if (!url) return null;
+        let clean = url.trim();
+        if (clean.includes('youtu.be/')) return clean.split('youtu.be/')[1].split(/[?&#]/)[0];
+        if (clean.includes('youtube.com/shorts/')) return clean.split('youtube.com/shorts/')[1].split(/[?&#]/)[0];
+        if (clean.includes('youtube.com/live/')) return clean.split('youtube.com/live/')[1].split(/[?&#]/)[0];
+        if (clean.includes('youtube.com/embed/')) return clean.split('youtube.com/embed/')[1].split(/[?&#]/)[0];
+        if (clean.includes('v=')) return clean.split('v=')[1].split('&')[0];
+        return null;
+    }
+
+    function setRadioUiPlaying(playing) {
+        isRadioPlaying = playing;
+        const btn = document.getElementById('radioMainPlayBtn');
+        const icon = document.getElementById('radioPlayIcon');
+        const dot = document.getElementById('radioLiveDot');
+        if (btn) btn.classList.toggle('is-playing', playing);
+        if (icon) icon.className = playing ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+        if (dot) dot.classList.toggle('playing', playing);
+
+        const track = globalRadioTracks[currentRadioIndex];
+        const banner = document.getElementById('radioNowPlayingBanner');
+        if (banner && track) {
+            banner.innerText = playing
+                ? `🔊 Now Playing: ${track.theme} (${track.author})`
+                : `⏸ Paused: ${track.theme}`;
+        }
+        renderRadioPlaylist();
+    }
+
+    function toggleSchoolRadio() {
+        if (globalRadioTracks.length === 0) {
+            showCustomAlert("📻 No audio broadcasts uploaded to School Radio yet.");
+            return;
+        }
+
+        const audioEl = document.getElementById('html5RadioAudio');
+        const track = globalRadioTracks[currentRadioIndex] || globalRadioTracks[0];
+
+        if (isRadioPlaying) {
+            if (track.sourceType === 'youtube') {
+                if (ytRadioPlayer && typeof ytRadioPlayer.pauseVideo === 'function') ytRadioPlayer.pauseVideo();
+            } else {
+                audioEl.pause();
+            }
+            setRadioUiPlaying(false);
+        } else {
+            // If nothing loaded yet, load index 0 (latest uploaded)
+            if (track.sourceType === 'youtube') {
+                playRadioTrackAtIndex(currentRadioIndex);
+            } else if (!audioEl.src) {
+                playRadioTrackAtIndex(currentRadioIndex);
+            } else {
+                audioEl.play().then(() => setRadioUiPlaying(true)).catch(() => playRadioTrackAtIndex(currentRadioIndex));
+            }
+        }
+    }
+
+    let ytRadioPlayer = null;
+    let ytPlayerReady = false;
+    let pendingYtVideoId = null;
+    let currentLoadedRadioId = null;
+
+    let radioSourceMode = 'youtube'; 
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let radioDraftAudioData = "";
+    let recInterval = null;
+    let recSeconds = 0;
+
+    // 1. Safe loader: works whether iframe_api loaded early or late
+    function ensureYouTubeApiAndInit(initialVideoId = '') {
+        if (initialVideoId) pendingYtVideoId = initialVideoId;
+
+        if (window.YT && window.YT.Player) {
+            initYouTubeRadioPlayer();
+            return;
+        }
+
+        // Only inject script once if not already present
+        if (!document.getElementById('yt-iframe-api-script')) {
+            const tag = document.createElement('script');
+            tag.id = 'yt-iframe-api-script';
+            tag.src = "https://www.youtube.com/iframe_api";
+            document.head.appendChild(tag);
+        }
+    }
+
+    window.onYouTubeIframeAPIReady = function() {
+        initYouTubeRadioPlayer();
+    };
+
+    function initYouTubeRadioPlayer() {
+        if (ytRadioPlayer) return;
+        if (!window.YT || !window.YT.Player) return;
+        const container = document.getElementById('ytRadioPlayer');
+        if (!container) return;
+
+        const pVars = {
+            autoplay: 0,
+            controls: 0,
+            playsinline: 1,
+            enablejsapi: 1,
+            rel: 0
+        };
+        if (window.location.protocol.startsWith('http')) {
+            pVars.origin = window.location.origin;
+        }
+
+        ytRadioPlayer = new YT.Player('ytRadioPlayer', {
+            height: '135',
+            width: '240',
+            videoId: pendingYtVideoId || '',
+            playerVars: pVars,
+            events: {
+                onReady: (event) => {
+                    ytPlayerReady = true;
+                    event.target.unMute();
+                    event.target.setVolume(100);
+
+                    if (pendingYtVideoId) {
+                        event.target.loadVideoById(pendingYtVideoId);
+                        event.target.unMute();
+                        event.target.setVolume(100);
+                        event.target.playVideo();
+                        pendingYtVideoId = null;
+                    } else if (!isRadioPlaying && globalRadioTracks.length > 0 && globalRadioTracks[0].sourceType === 'youtube') {
+                        const firstVid = extractYtVideoId(globalRadioTracks[0].mediaUrl);
+                        if (firstVid) {
+                            event.target.cueVideoById(firstVid);
+                            currentLoadedRadioId = globalRadioTracks[0].id;
+                        }
+                    }
+                },
+                onStateChange: (event) => {
+                    if (event.data === YT.PlayerState.ENDED) {
+                        playNextRadioTrack();
+                    } else if (event.data === YT.PlayerState.PLAYING) {
+                        event.target.unMute();
+                        event.target.setVolume(100);
+                        setRadioUiPlaying(true);
+                    } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.CUED) {
+                        setRadioUiPlaying(false);
+                    }
+                },
+                onError: (e) => {
+                    console.warn("YouTube Radio Player Error:", e.data);
+                    setRadioUiPlaying(false);
+                    showCustomAlert("⚠️ This YouTube video cannot be embedded or has audio restrictions (Error " + e.data + "). Try another YouTube link or upload an MP3/recording.");
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        ensureYouTubeApiAndInit();
+        const audioEl = document.getElementById('html5RadioAudio');
+        if (audioEl) {
+            audioEl.muted = false;
+            audioEl.volume = 1.0;
+            audioEl.addEventListener('ended', playNextRadioTrack);
+            audioEl.addEventListener('pause', () => {
+                const t = globalRadioTracks[currentRadioIndex];
+                if (t && t.sourceType !== 'youtube') setRadioUiPlaying(false);
+            });
+            audioEl.addEventListener('play', () => {
+                audioEl.muted = false;
+                audioEl.volume = 1.0;
+                setRadioUiPlaying(true);
+            });
+            audioEl.addEventListener('error', () => {
+                setRadioUiPlaying(false);
+                showCustomAlert("⚠️ Audio format could not be played on this device/browser.");
+            });
+        }
+    });
+
+    // Initialize YouTube API right after DOM is ready (fixes race condition)
+    document.addEventListener('DOMContentLoaded', () => {
+        ensureYouTubeApiAndInit();
+    });
+
+    function extractYtVideoId(url) {
+        if (!url) return null;
+        let clean = url.trim();
+        if (clean.includes('youtu.be/')) return clean.split('youtu.be/')[1].split(/[?&#]/)[0];
+        if (clean.includes('youtube.com/shorts/')) return clean.split('youtube.com/shorts/')[1].split(/[?&#]/)[0];
+        if (clean.includes('youtube.com/live/')) return clean.split('youtube.com/live/')[1].split(/[?&#]/)[0];
+        if (clean.includes('youtube.com/embed/')) return clean.split('youtube.com/embed/')[1].split(/[?&#]/)[0];
+        if (clean.includes('v=')) return clean.split('v=')[1].split('&')[0];
+        return null;
+    }
+
+    function setRadioUiPlaying(playing) {
+        isRadioPlaying = playing;
+        const btn = document.getElementById('radioMainPlayBtn');
+        const icon = document.getElementById('radioPlayIcon');
+        const dot = document.getElementById('radioLiveDot');
+        if (btn) btn.classList.toggle('is-playing', playing);
+        if (icon) icon.className = playing ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+        if (dot) dot.classList.toggle('playing', playing);
+
+        const track = globalRadioTracks[currentRadioIndex];
+        const banner = document.getElementById('radioNowPlayingBanner');
+        if (banner && track) {
+            banner.innerText = playing
+                ? `🔊 Now Playing: ${track.theme} (${track.author})`
+                : `⏸ Paused: ${track.theme}`;
+        }
+        renderRadioPlaylist();
+    }
+
+    function toggleSchoolRadio() {
+        if (globalRadioTracks.length === 0) {
+            showCustomAlert("📻 No audio broadcasts uploaded to School Radio yet.");
+            return;
+        }
+
+        const audioEl = document.getElementById('html5RadioAudio');
+        const track = globalRadioTracks[currentRadioIndex] || globalRadioTracks[0];
+
+        if (isRadioPlaying) {
+            if (track.sourceType === 'youtube') {
+                if (ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.pauseVideo === 'function') {
+                    ytRadioPlayer.pauseVideo();
+                }
+            } else {
+                audioEl.pause();
+            }
+            setRadioUiPlaying(false);
+        } else {
+            // Resume if same track is already loaded, otherwise start from beginning
+            if (track.sourceType === 'youtube') {
+                if (currentLoadedRadioId === track.id && ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.playVideo === 'function') {
+                    ytRadioPlayer.playVideo();
+                    setRadioUiPlaying(true);
+                } else {
+                    playRadioTrackAtIndex(currentRadioIndex);
+                }
+            } else if (currentLoadedRadioId === track.id && audioEl.src) {
+                audioEl.play().then(() => setRadioUiPlaying(true)).catch(() => playRadioTrackAtIndex(currentRadioIndex));
+            } else {
+                playRadioTrackAtIndex(currentRadioIndex);
+            }
+        }
+    }
+
+    function playRadioTrackAtIndex(idx) {
+        if (!globalRadioTracks[idx]) return;
+        currentRadioIndex = idx;
+        const track = globalRadioTracks[idx];
+        currentLoadedRadioId = track.id;
+        const audioEl = document.getElementById('html5RadioAudio');
+
+        audioEl.pause();
+        if (ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.stopVideo === 'function' && track.sourceType !== 'youtube') {
+            try { ytRadioPlayer.stopVideo(); } catch(e) {}
+        }
+
+        if (track.sourceType === 'youtube') {
+            if (window.location.protocol === 'file:') {
+                showCustomAlert("⚠️ YouTube audio requires hosting on https:// or http:// (it does not play from local file:// storage).");
+                return;
+            }
+            const vidId = extractYtVideoId(track.mediaUrl);
+            if (!vidId) {
+                showCustomAlert("⚠️ Invalid YouTube link for this track.");
+                return;
+            }
+            if (ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.loadVideoById === 'function') {
+                ytRadioPlayer.unMute();
+                ytRadioPlayer.setVolume(100);
+                ytRadioPlayer.loadVideoById(vidId);
+                ytRadioPlayer.playVideo();
+            } else {
+                ensureYouTubeApiAndInit(vidId);
+            }
+        } else {
+            audioEl.src = track.mediaUrl;
+            audioEl.muted = false;
+            audioEl.volume = 1.0;
+            audioEl.play().then(() => {
+                setRadioUiPlaying(true);
+                setupRadioMediaSession(track);
+            }).catch(err => {
+                setRadioUiPlaying(false);
+                showCustomAlert("⚠️ Unable to play audio: " + err.message);
+            });
+        }
+    }
+
+    function playNextRadioTrack() {
+        if (globalRadioTracks.length === 0) return;
+        const nextIdx = (currentRadioIndex + 1) % globalRadioTracks.length;
+        playRadioTrackAtIndex(nextIdx);
+    }
+
+    // Enables Background & Lock-screen Controls on Mobile/Desktop
+    function setupRadioMediaSession(track) {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: track.theme || 'School Radio',
+                artist: `${track.author || 'TDTTI'} • Class ${track.studentClass || ''}${track.division || ''}`,
+                album: 'TDTTI School Radio',
+                artwork: [{ src: PWA_LOGO_URL, sizes: '512x512', type: 'image/png' }]
+            });
+            navigator.mediaSession.setActionHandler('play', () => toggleSchoolRadio());
+            navigator.mediaSession.setActionHandler('pause', () => toggleSchoolRadio());
+            navigator.mediaSession.setActionHandler('nexttrack', () => playNextRadioTrack());
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                const prev = (currentRadioIndex - 1 + globalRadioTracks.length) % globalRadioTracks.length;
+                playRadioTrackAtIndex(prev);
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const audioEl = document.getElementById('html5RadioAudio');
+        if (audioEl) {
+            audioEl.addEventListener('ended', playNextRadioTrack);
+            audioEl.addEventListener('pause', () => {
+                const t = globalRadioTracks[currentRadioIndex];
+                if (t && t.sourceType !== 'youtube') setRadioUiPlaying(false);
+            });
+            audioEl.addEventListener('play', () => setRadioUiPlaying(true));
+        }
+    });
+
+    function openRadioPlaylistModal() {
+        renderRadioPlaylist();
+        document.getElementById('radioPlaylistModal').classList.add('active');
+    }
+
+    function closeRadioPlaylistModal() {
+        document.getElementById('radioPlaylistModal').classList.remove('active');
+    }
+
+    function renderRadioPlaylist() {
+        const container = document.getElementById('radioPlaylistContainer');
+        if (!container) return;
+        const q = (document.getElementById('radioPlaylistSearch')?.value || '').toLowerCase().trim();
+
+        const filtered = globalRadioTracks
+            .map((t, idx) => ({ ...t, origIndex: idx }))
+            .filter(t => {
+                if (!q) return true;
+                const hay = `${t.date} ${t.theme} ${t.author} ${t.studentClass} ${t.division}`.toLowerCase();
+                return hay.includes(q);
+            });
+
+        if (filtered.length === 0) {
+            container.innerHTML = `<p style="text-align:center; color:#64748b; padding:18px; font-size:0.86rem;">No matching broadcasts found.</p>`;
+            return;
+        }
+
+        container.innerHTML = filtered.map(t => {
+            const isCurrent = (t.origIndex === currentRadioIndex);
+            const srcBadge = t.sourceType === 'youtube' ? '▶️ YT Audio' : (t.sourceType === 'record' ? '🎙️ Recorded' : '🎵 Audio File');
+            return `
+            <div class="radio-track-card ${isCurrent ? 'active-track' : ''}" onclick="playRadioTrackAtIndex(${t.origIndex})">
+                <div class="radio-track-meta">
+                    <h4>${t.theme || 'Untitled Broadcast'}</h4>
+                    <p>📅 ${t.date || ''} • 🎤 ${t.author || 'Admin'}</p>
+                    <p>🏫 Class: ${t.studentClass || '-'} ${t.division ? '• Div: ' + t.division : ''} • ${srcBadge}</p>
+                </div>
+                <button type="button" class="radio-ctrl-btn ${isCurrent && isRadioPlaying ? 'btn-radio-play is-playing' : 'btn-radio-play'}" style="flex-shrink:0;">
+                    <i class="fa-solid ${isCurrent && isRadioPlaying ? 'fa-pause' : 'fa-play'}"></i>
+                </button>
+            </div>`;
+        }).join('');
+    }
+
+    // === ADMIN RADIO UPLOAD & RECORDING LOGIC ===
+    function switchRadioSourceTab(mode) {
+        radioSourceMode = mode;
+        document.getElementById('tabRadioYt').classList.toggle('active', mode === 'youtube');
+        document.getElementById('tabRadioRec').classList.toggle('active', mode === 'record');
+        document.getElementById('tabRadioFile').classList.toggle('active', mode === 'file');
+
+        document.getElementById('radioSrcYoutube').style.display = (mode === 'youtube') ? 'block' : 'none';
+        document.getElementById('radioSrcRecord').style.display = (mode === 'record') ? 'block' : 'none';
+        document.getElementById('radioSrcFile').style.display = (mode === 'file') ? 'block' : 'none';
+        stopRadioPreview();
+    }
+
+    async function startRadioRecording() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showCustomAlert("❌ Microphone recording is not supported on this browser/connection (HTTPS required).");
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+                ? { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 24000 }
+                : { audioBitsPerSecond: 24000 };
+
+            mediaRecorder = new MediaRecorder(stream, options);
+            recordedChunks = [];
+            radioDraftAudioData = "";
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+            mediaRecorder.onstop = () => {
+                stream.getTracks().forEach(t => t.stop());
+                const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    radioDraftAudioData = reader.result;
+                    const kb = Math.round(blob.size / 1024);
+                    document.getElementById('radioRecStatus').innerHTML = `✅ Recorded (${kb} KB). Ready to preview & upload!`;
+                };
+                reader.readAsDataURL(blob);
+            };
+
+            mediaRecorder.start();
+            recSeconds = 0;
+            document.getElementById('radioRecTimer').innerText = "00:00";
+            document.getElementById('btnStartRec').style.display = 'none';
+            document.getElementById('btnStopRec').style.display = 'inline-block';
+            document.getElementById('radioRecStatus').innerText = "🔴 Recording in progress...";
+
+            clearInterval(recInterval);
+            recInterval = setInterval(() => {
+                recSeconds++;
+                const mins = String(Math.floor(recSeconds / 60)).padStart(2, '0');
+                const secs = String(recSeconds % 60).padStart(2, '0');
+                document.getElementById('radioRecTimer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        } catch (err) {
+            showCustomAlert("⚠️ Microphone access denied: " + err.message);
+        }
+    }
+
+    function stopRadioRecording() {
+        clearInterval(recInterval);
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        document.getElementById('btnStartRec').style.display = 'inline-block';
+        document.getElementById('btnStopRec').style.display = 'none';
+    }
+
+    function handleRadioFileSelect(input) {
+        const status = document.getElementById('radioFileStatus');
+        radioDraftAudioData = "";
+        if (!input.files || input.files.length === 0) return;
+
+        const file = input.files[0];
+        if (file.size > 720 * 1024) {
+            showCustomAlert("⚠️ Audio file is larger than 700 KB. Firestore Spark storage supports up to 700 KB per file. Please compress the audio or use a YouTube link.");
+            input.value = "";
+            status.innerText = "❌ File too large (> 700 KB).";
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            radioDraftAudioData = e.target.result;
+            status.innerHTML = `✅ Ready: <b>${file.name}</b> (${(file.size / 1024).toFixed(1)} KB)`;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function previewRadioDraft() {
+        const previewAudio = document.getElementById('radioAdminPreviewPlayer');
+        if (radioSourceMode === 'youtube') {
+            const url = document.getElementById('radioYtUrl').value.trim();
+            const vidId = extractYtVideoId(url);
+            if (!vidId) { showCustomAlert("Please paste a valid YouTube URL first."); return; }
+            previewAudio.style.display = 'none';
+            currentLoadedRadioId = 'preview';
+            if (ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.loadVideoById === 'function') {
+                ytRadioPlayer.loadVideoById(vidId);
+                ytRadioPlayer.playVideo();
+                setRadioUiPlaying(true);
+            } else {
+                ensureYouTubeApiAndInit(vidId);
+                setRadioUiPlaying(true);
+            }
+        } else {
+            if (!radioDraftAudioData) {
+                showCustomAlert("Please record or select an audio file first.");
+                return;
+            }
+            previewAudio.src = radioDraftAudioData;
+            previewAudio.style.display = 'block';
+            previewAudio.play();
+        }
+    }
+
+    function stopRadioPreview() {
+        const previewAudio = document.getElementById('radioAdminPreviewPlayer');
+        if (previewAudio) {
+            previewAudio.pause();
+            previewAudio.src = "";
+            previewAudio.style.display = 'none';
+        }
+    }
+
+    async function uploadRadioTrack() {
+        const dateVal = document.getElementById('radioDate').value.trim() || getTodayDateStr();
+        const themeVal = document.getElementById('radioTheme').value.trim();
+        const authorVal = document.getElementById('radioAuthor').value.trim() || currentAdminName;
+        const classVal = document.getElementById('radioClass').value.trim();
+        const divVal = document.getElementById('radioDiv').value.trim();
+
+        if (!themeVal) {
+            showCustomAlert("Please enter a Theme / Program Title.");
+            return;
+        }
+
+        let finalMediaUrl = "";
+        if (radioSourceMode === 'youtube') {
+            const ytRaw = document.getElementById('radioYtUrl').value.trim();
+            if (!extractYtVideoId(ytRaw)) {
+                showCustomAlert("Please enter a valid YouTube link.");
+                return;
+            }
+            finalMediaUrl = ytRaw;
+        } else {
+            if (!radioDraftAudioData) {
+                showCustomAlert(radioSourceMode === 'record' ? "Please record an audio clip first." : "Please select an audio file first.");
+                return;
+            }
+            finalMediaUrl = radioDraftAudioData;
+        }
+
+        startYtLoader(35);
+        try {
+            await db.collection('school_radio').add({
+                date: dateVal.replace(/[-/]/g, ':'),
+                theme: themeVal,
+                author: authorVal,
+                studentClass: classVal,
+                division: divVal,
+                sourceType: radioSourceMode,
+                mediaUrl: finalMediaUrl,
+                uploadedAtMs: Date.now(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            recordAdminActivity(currentAdminName, `Uploaded School Radio: "${themeVal}"`);
+            finishYtLoader();
+            stopRadioPreview();
+
+            // Reset inputs
+            document.getElementById('radioTheme').value = "";
+            document.getElementById('radioYtUrl').value = "";
+            document.getElementById('radioAudioFileInput').value = "";
+            document.getElementById('radioRecTimer').innerText = "00:00";
+            document.getElementById('radioRecStatus').innerText = "Tap Start Recording to record from your phone or PC mic.";
+            document.getElementById('radioFileStatus').innerText = "Supported: MP3, M4A, OGG, WAV (Max ~700 KB for Firestore Spark storage).";
+            radioDraftAudioData = "";
+            currentRadioIndex = 0; // Set latest track as default
+
+            showCustomAlert("✅ Uploaded to School Radio successfully! It is now the default first track.");
+        } catch (err) {
+            finishYtLoader();
+            showCustomAlert("❌ Upload Error: " + err.message);
+        }
+    }
+
+    function renderAdminRadioList() {
+        const container = document.getElementById('adminRadioTrackList');
+        if (!container) return;
+        if (globalRadioTracks.length === 0) {
+            container.innerHTML = `<p style="font-size:0.82rem; color:#64748b;">No radio tracks uploaded yet.</p>`;
+            return;
+        }
+        container.innerHTML = globalRadioTracks.map(t => `
+            <div class="super-user-card">
+                <div style="font-size:0.8rem;">
+                    <strong>${t.theme}</strong>
+                    <div style="color:#64748b;">📅 ${t.date} • 🎤 ${t.author} • Class ${t.studentClass || '-'}${t.division || ''}</div>
+                </div>
+                <button type="button" class="admin-icon-btn btn-icon-delete" title="Delete Track" onclick="deleteRadioTrack('${t.id}', '${(t.theme || '').replace(/'/g, "\\'")}')">🗑️</button>
+            </div>
+        `).join('');
+    }
+
+    function deleteRadioTrack(docId, themeName) {
+        showCustomConfirm(`Delete School Radio track "${themeName}"?`, async () => {
+            startYtLoader(40);
+            try {
+                await db.collection('school_radio').doc(docId).delete();
+                recordAdminActivity(currentAdminName, `Deleted School Radio track "${themeName}"`);
+                finishYtLoader();
+                showCustomAlert("✅ Radio track deleted.");
+            } catch (e) {
+                finishYtLoader();
+                showCustomAlert("Error: " + e.message);
+            }
+        });
+    }
+
     </script>
 </body>
 </html>
