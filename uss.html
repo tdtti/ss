@@ -2387,7 +2387,21 @@ function getTodayElapsedSeconds(phoneOrUser) {
           const cleanPhone = String(currentUser?.phone || usernameOrPhone).trim();
           const cleanPhone10 = cleanPhone.replace(/[^0-9]/g, '').slice(-10);
 
-          // Query all attendance entries for today matching username or phone
+          let dailyUsageSec = 0;
+          try {
+            let duQuery = supabaseClient.from('daily_usage').select('used_seconds, date');
+            if (cleanPhone10 && cleanUser) duQuery = duQuery.or(`username.ilike.${cleanUser},phone.ilike.%${cleanPhone10}%`);
+            else if (cleanUser) duQuery = duQuery.ilike('username', cleanUser);
+            else if (cleanPhone10) duQuery = duQuery.ilike('phone', `%${cleanPhone10}%`);
+
+            const { data: duRows } = await duQuery;
+            (duRows || []).forEach(r => {
+              if (r.date === cleanDate) {
+                dailyUsageSec = Math.max(dailyUsageSec, Number(r.used_seconds) || 0);
+              }
+            });
+          } catch (e) {}
+
           let query = supabaseClient
             .from('attendance')
             .select('duration_seconds, attendance_id, date, timestamp');
@@ -2401,34 +2415,19 @@ function getTodayElapsedSeconds(phoneOrUser) {
           }
 
           const { data: todayLogs, error } = await query;
-          if (error) {
-            console.warn("fetchSupabaseDailyUsage query note:", error);
-            return 0;
-          }
+          let dailyLiveSeconds = 0;
 
-          if (todayLogs && todayLogs.length > 0) {
-            let sessionsSum = 0;
-            let dailyLiveSeconds = 0;
-
+          if (!error && todayLogs && todayLogs.length > 0) {
             todayLogs.forEach(a => {
               const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
-              if (aDate === cleanDate) {
+              if (aDate === cleanDate && String(a.attendance_id || '').includes('-DAILY')) {
                 const sec = Number(a.duration_seconds) || 0;
-                const isDailyRow = String(a.attendance_id || '').includes('-DAILY');
-
-                if (isDailyRow) {
-                  // Heartbeat ticker row
-                  if (sec > dailyLiveSeconds) dailyLiveSeconds = sec;
-                } else {
-                  // Completed practice & exam session rows
-                  sessionsSum += sec;
-                }
+                if (sec > dailyLiveSeconds) dailyLiveSeconds = sec;
               }
             });
-
-            // Cross-device true total: Highest between live ticker and completed session sum
-            return Math.max(sessionsSum, dailyLiveSeconds);
           }
+
+          return Math.max(dailyUsageSec, dailyLiveSeconds);
         } catch (err) {
           console.warn("Could not query daily usage from Supabase:", err);
         }
@@ -2455,6 +2454,9 @@ function getTodayElapsedSeconds(phoneOrUser) {
       const key = getTodayKey();
       localStorage.setItem(key, cachedTodayUsedSeconds);
 
+      if (cachedTodayUsedSeconds % 2 === 0) {
+        broadcastLivePulse('Online & Active', true);
+      }
       if (cachedTodayUsedSeconds % 10 === 0 || cachedTodayUsedSeconds >= DAILY_MAX_QUOTA_SECONDS) {
         saveLiveAttendanceProgress(cachedTodayUsedSeconds);
       }
@@ -2625,111 +2627,180 @@ function getTodayElapsedSeconds(phoneOrUser) {
 // SAVE LIVE ATTENDANCE PROGRESS (COMMITS RUNNING SECONDS TO SUPABASE)
 // =========================================================================
 async function saveLiveAttendanceProgress(totalSecondsToday) {
-  if (!currentUser || isStaffOrAdminUser(currentUser)) return;
-  const cleanDate = new Date().toLocaleDateString('en-GB');
-  const todayIso = getTodayDateIso();
-  const mins = Math.floor(totalSecondsToday / 60);
-  const secs = totalSecondsToday % 60;
-  const cleanUser = String(currentUser.username || '').trim().toLowerCase();
-  const cleanPhone = String(currentUser.phone || '').trim();
+      if (!currentUser || isStaffOrAdminUser(currentUser)) return;
+      const cleanDate = new Date().toLocaleDateString('en-GB');
+      const todayIso = getTodayDateIso();
+      const mins = Math.floor(totalSecondsToday / 60);
+      const secs = totalSecondsToday % 60;
+      const cleanUser = String(currentUser.username || '').trim().toLowerCase();
+      const cleanPhone = String(currentUser.phone || '').trim();
 
-  const attendanceEntry = {
-    attendance_id: `ATT-${cleanUser}-${todayIso}-DAILY`,
-    username: cleanUser,
-    student_name: currentUser.name || currentUser.username,
-    phone: cleanPhone,
-    class: String(currentUser.userClass || '7'),
-    division: String(currentUser.division || 'A'),
-    date: cleanDate,
-    timestamp: formatDateStrict(new Date().toISOString()),
-    activity: 'Daily Quota Heartbeat',
-    duration_seconds: totalSecondsToday,
-    duration_text: `${mins}m ${String(secs).padStart(2, '0')}s`,
-    questions_attended: 0,
-    score: `${mins}m / 60m used`
-  };
+      const attendanceEntry = {
+        attendance_id: `ATT-${cleanUser}-${todayIso}-DAILY`,
+        username: cleanUser,
+        student_name: currentUser.name || currentUser.username,
+        phone: cleanPhone,
+        class: String(currentUser.userClass || '7'),
+        division: String(currentUser.division || 'A'),
+        date: cleanDate,
+        timestamp: formatDateStrict(new Date().toISOString()),
+        activity: 'Daily Quota Heartbeat',
+        duration_seconds: totalSecondsToday,
+        duration_text: `${mins}m ${String(secs).padStart(2, '0')}s`,
+        questions_attended: 0,
+        score: `${mins}m / 60m used`
+      };
 
-  try {
-    await supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' });
-  } catch(e) {}
-}
+      try {
+        await Promise.all([
+          supabaseClient.from('attendance').upsert([attendanceEntry], { onConflict: 'attendance_id' }),
+          supabaseClient.from('daily_usage').upsert([{
+            phone: cleanPhone,
+            username: cleanUser,
+            date: cleanDate,
+            used_seconds: totalSecondsToday,
+            updated_at: new Date().toISOString()
+          }], { onConflict: 'phone,date' })
+        ]);
+      } catch (e) {}
+    }
 
     // =========================================================================
-// ADMIN ACTION: RESTORE/ADD 60M DAILY QUOTA FOR ANY DEVICE
-// =========================================================================
-async function adminResetStudentQuota(phone, username, studentName) {
-  if (!isStaffOrAdminUser(currentUser)) {
-    showToast('⚠️ Unauthorized: Admin privilege required.', 'danger');
-    return;
-  }
-
-  showConfirmModal(
-    '🔄 Restore Daily 60m Quota',
-    `Allow another 60 minutes for ${studentName || username} (${phone}) on all devices? This will reset usage to 0m and allow fresh practice today.`,
-    async () => {
-      setProgress(30);
-
-      const todayIso = getTodayDateIso();
-      const cleanDate = new Date().toLocaleDateString('en-GB');
-      const cleanPhone = String(phone).trim();
-      const cleanUser = String(username).trim().toLowerCase();
-      const dailyAttId = `ATT-${cleanUser}-${todayIso}-DAILY`;
-
-      // 1. Wipe local keys on admin device
-      localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
-      localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
-
-      // 2. Set authoritative Supabase row duration to 0 seconds
-      try {
-        await supabaseClient
-          .from('attendance')
-          .upsert([{
-            attendance_id: dailyAttId,
-            username: cleanUser,
-            student_name: studentName,
-            phone: cleanPhone,
-            date: cleanDate,
-            timestamp: formatDateStrict(new Date().toISOString()),
-            activity: 'Quota Restored by Admin',
-            duration_seconds: 0,
-            duration_text: '0m 00s',
-            score: 'Quota Restored (+60m)'
-          }], { onConflict: 'attendance_id' });
-      } catch (e) {
-        console.warn("Quota reset error in DB:", e);
+    // ADMIN ACTION: RESTORE/ADD 60M DAILY QUOTA FOR ANY DEVICE
+    // =========================================================================
+    async function adminResetStudentQuota(phone, username, studentName) {
+      if (!isStaffOrAdminUser(currentUser)) {
+        showToast('⚠️ Unauthorized: Admin privilege required.', 'danger');
+        return;
       }
 
-      // 3. Broadcast remote unlock signal to any active device the student is on
-      try {
-        const studentGuardChannel = supabaseClient.channel('guard_' + cleanUser);
-        await studentGuardChannel.subscribe();
-        await studentGuardChannel.send({
-          type: 'broadcast',
-          event: 'admin_reset_quota',
-          payload: { phone: cleanPhone, username: cleanUser, resetTime: Date.now() }
-        });
-      } catch (e) {}
+      showConfirmModal(
+        '🔄 Restore Daily 60m Quota',
+        `Allow another 60 minutes for ${studentName || username} (${phone}) on all devices? This will reset usage to 0m and allow fresh practice today.`,
+        async () => {
+          setProgress(30);
 
-      // 4. Send Notification to Student
-      try {
-        await supabaseClient.from('notifications').insert([{
-          notification_id: 'NOTIF-' + Date.now(),
-          timestamp: formatDateStrict(new Date().toISOString()),
-          recipient_phone: cleanPhone,
-          title: 'Daily Practice Quota Restored',
-          message: `Your 60-minute daily practice allowance has been restored by Administrator for today (${cleanDate}). You have an additional 60m remaining.`,
-          sender: 'Administrator'
-        }]);
-      } catch (e) {}
+          const todayIso = getTodayDateIso();
+          const cleanDate = new Date().toLocaleDateString('en-GB');
+          const cleanPhone = String(phone).trim();
+          const clean10 = cleanPhone.replace(/[^0-9]/g, '').slice(-10);
+          const cleanUser = String(username).trim().toLowerCase();
+          const dailyAttId = `ATT-${cleanUser}-${todayIso}-DAILY`;
+          const nowIso = new Date().toISOString();
 
-      setProgress(100);
-      showToast(`Quota restored! 60 minutes granted for ${studentName || username}.`, 'success');
+          // 1. Wipe local keys on admin device
+          localStorage.removeItem(`usage_${cleanPhone}_${todayIso}`);
+          localStorage.removeItem(`usage_${cleanUser}_${todayIso}`);
 
-      await loadAdminData();
-      renderAllUsersOnlineCards();
+          // 2. Reset both attendance (-DAILY) and daily_usage to 0 seconds in Supabase
+          try {
+            await Promise.all([
+              supabaseClient
+                .from('attendance')
+                .upsert([{
+                  attendance_id: dailyAttId,
+                  username: cleanUser,
+                  student_name: studentName,
+                  phone: cleanPhone,
+                  date: cleanDate,
+                  timestamp: formatDateStrict(nowIso),
+                  activity: 'Quota Restored by Admin',
+                  duration_seconds: 0,
+                  duration_text: '0m 00s',
+                  questions_attended: 0,
+                  score: 'Quota Restored (+60m)'
+                }], { onConflict: 'attendance_id' }),
+              supabaseClient
+                .from('daily_usage')
+                .upsert([{
+                  phone: cleanPhone,
+                  username: cleanUser,
+                  date: cleanDate,
+                  used_seconds: 0,
+                  updated_at: nowIso
+                }], { onConflict: 'phone,date' })
+            ]);
+
+            // Also zero out any matching daily_usage rows stored under alternate phone format
+            if (clean10) {
+              await supabaseClient
+                .from('daily_usage')
+                .update({ used_seconds: 0, updated_at: nowIso })
+                .eq('date', cleanDate)
+                .or(`username.ilike.${cleanUser},phone.ilike.%${clean10}%`);
+            }
+
+            // Clear cached live heartbeat & update cachedAdminData so Tab 5 updates immediately
+            if (window._liveHeartbeats) {
+              if (clean10) delete window._liveHeartbeats[clean10];
+              if (cleanUser) delete window._liveHeartbeats[cleanUser];
+            }
+            if (cachedAdminData?.dailyUsage) {
+              cachedAdminData.dailyUsage.forEach(d => {
+                const d10 = String(d.phone || '').replace(/[^0-9]/g, '').slice(-10);
+                if (d.date === cleanDate && ((clean10 && d10 === clean10) || String(d.username || '').toLowerCase() === cleanUser)) {
+                  d.used_seconds = 0;
+                }
+              });
+            }
+            if (cachedAdminData?.allAttendance) {
+              cachedAdminData.allAttendance.forEach(a => {
+                if (!String(a.attendance_id || '').includes('-DAILY')) return;
+                const a10 = String(a.phone || '').replace(/[^0-9]/g, '').slice(-10);
+                const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+                if (aDate === cleanDate && ((clean10 && a10 === clean10) || String(a.username || '').toLowerCase() === cleanUser)) {
+                  a.duration_seconds = 0;
+                  a.duration_text = '0m 00s';
+                }
+              });
+            }
+
+            if (typeof updateTab5QuotaLiveDOM === 'function') {
+              updateTab5QuotaLiveDOM({ phone: cleanPhone, username: cleanUser, todaySeconds: 0 });
+            }
+          } catch (e) {
+            console.warn("Quota reset error in DB:", e);
+          }
+
+          // 3. Broadcast remote unlock signal to any active device the student is on
+          try {
+            const studentGuardChannel = supabaseClient.channel('guard_' + cleanUser);
+            if (typeof studentGuardChannel.httpSend === 'function') {
+              await studentGuardChannel.httpSend('admin_reset_quota', {
+                phone: cleanPhone,
+                username: cleanUser,
+                resetTime: Date.now()
+              });
+            } else {
+              await studentGuardChannel.subscribe();
+              await studentGuardChannel.send({
+                type: 'broadcast',
+                event: 'admin_reset_quota',
+                payload: { phone: cleanPhone, username: cleanUser, resetTime: Date.now() }
+              });
+            }
+          } catch (e) {}
+
+          // 4. Send Notification to Student
+          try {
+            await supabaseClient.from('notifications').insert([{
+              notification_id: 'NOTIF-' + Date.now(),
+              timestamp: formatDateStrict(nowIso),
+              recipient_phone: cleanPhone,
+              title: 'Daily Practice Quota Restored',
+              message: `Your 60-minute daily practice allowance has been restored by Administrator for today (${cleanDate}). You have an additional 60m remaining.`,
+              sender: 'Administrator'
+            }]);
+          } catch (e) {}
+
+          setProgress(100);
+          showToast(`Quota restored! 60 minutes granted for ${studentName || username}.`, 'success');
+
+          await loadAdminData();
+          renderAllUsersOnlineCards();
+        }
+      );
     }
-  );
-}
 
     // =========================================================================
     // SECURITY PROTECTION (TEXT SELECTION INACTIVE)
@@ -2908,12 +2979,25 @@ async function adminResetStudentQuota(phone, username, studentName) {
           if (payload && payload.payload) {
             window._liveHeartbeats = window._liveHeartbeats || {};
             const item = payload.payload;
-            const peerKey = String(item.phone || item.username || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-            if (peerKey) {
-              window._liveHeartbeats[peerKey] = { ...item, receivedAt: Date.now() };
-            }
+            const cleanPhone10 = String(item.phone || '').replace(/[^0-9]/g, '').slice(-10);
+            const cleanUser = String(item.username || '').trim().toLowerCase();
+            const record = { ...item, receivedAt: Date.now() };
+            if (cleanPhone10) window._liveHeartbeats[cleanPhone10] = record;
+            if (cleanUser) window._liveHeartbeats[cleanUser] = record;
+
             renderAllUsersOnlineCards();
             updateStudentAdminSupervisionUI();
+            if (typeof updateTab5QuotaLiveDOM === 'function') {
+              updateTab5QuotaLiveDOM(record);
+            }
+          }
+        })
+        .on('broadcast', { event: 'request_quota_sync' }, () => {
+          if (currentUser && !isStaffOrAdminUser(currentUser)) {
+            broadcastLivePulse(
+              isStudentActivelyFocused() ? 'Online & Active' : 'Paused',
+              isStudentActivelyFocused()
+            );
           }
         })
         .subscribe(async (status) => {
@@ -3842,8 +3926,10 @@ async function adminResetStudentQuota(phone, username, studentName) {
       const classDivBox = document.getElementById('user-class-div-container');
       const staffBadge = document.getElementById('user-staff-badge');
 
-      // ✅ ADMIN ONLY: Realtime live attendance stream for sub-second Tab 10 updates
-      if (isStaffOrAdminUser(currentUser)) {
+      // ✅ ADMIN ONLY: Realtime live attendance & daily_usage streams for instant Tab 5 & Tab 10 updates
+      if (isStaff && !window._adminStreamsInitialized) {
+        window._adminStreamsInitialized = true;
+
         supabaseClient
           .channel('admin_realtime_attendance_stream')
           .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, (payload) => {
@@ -3857,7 +3943,47 @@ async function adminResetStudentQuota(phone, username, studentName) {
                 cachedAdminData.allAttendance.unshift(payload.new);
               }
 
+              // Instantly update Tab 5 if this is a -DAILY quota row
+              if (String(payload.new.attendance_id || '').includes('-DAILY') && typeof updateTab5QuotaLiveDOM === 'function') {
+                updateTab5QuotaLiveDOM({
+                  phone: payload.new.phone,
+                  username: payload.new.username,
+                  todaySeconds: payload.new.duration_seconds
+                });
+              }
+
               // Instantly re-render Tab 10 if Admin is viewing it
+              const onlineSec = document.getElementById('admin-online-sec');
+              if (onlineSec && onlineSec.style.display === 'block') {
+                renderAllUsersOnlineCards();
+              }
+            }
+          })
+          .subscribe();
+
+        supabaseClient
+          .channel('admin_realtime_daily_usage_stream')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_usage' }, (payload) => {
+            if (payload && payload.new) {
+              cachedAdminData = cachedAdminData || {};
+              cachedAdminData.dailyUsage = cachedAdminData.dailyUsage || [];
+              const idx = cachedAdminData.dailyUsage.findIndex(d => d.phone === payload.new.phone && d.date === payload.new.date);
+              if (idx !== -1) {
+                cachedAdminData.dailyUsage[idx] = payload.new;
+              } else {
+                cachedAdminData.dailyUsage.unshift(payload.new);
+              }
+
+              // Instantly update Tab 5 Cumulative Usage & Time Left Today
+              if (typeof updateTab5QuotaLiveDOM === 'function') {
+                updateTab5QuotaLiveDOM({
+                  phone: payload.new.phone,
+                  username: payload.new.username,
+                  todaySeconds: payload.new.used_seconds
+                });
+              }
+
+              // Also refresh Tab 10 if open
               const onlineSec = document.getElementById('admin-online-sec');
               if (onlineSec && onlineSec.style.display === 'block') {
                 renderAllUsersOnlineCards();
@@ -4064,6 +4190,12 @@ async function adminResetStudentQuota(phone, username, studentName) {
           }
         }, 1500);
       }
+      if (sectionId === 'admin-attendance-sec' && presenceChannel) {
+        try {
+          presenceChannel.send({ type: 'broadcast', event: 'request_quota_sync', payload: { ts: Date.now() } });
+        } catch (e) {}
+      }
+
       else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(sectionId)) loadAdminData();
       if (sectionId === 'history-sec') {
         loadHistoryData(); // AUTO-LOADS WITHOUT NEEDING REFRESH
@@ -5859,6 +5991,111 @@ async function saveCompletedSessionOnExit() {
         return data || [];
       }
     }
+
+    // =========================================================================
+    // RESOLVE CONCERNED STUDENT'S STICKY SUB-HEADER 60M QUOTA (USED & LEFT)
+    // =========================================================================
+    function getStudentStickyHeaderQuota(userObj, dateStr, isToday) {
+      const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+      const u10 = get10(userObj?.phone);
+      const uUser = String(userObj?.username || '').trim().toLowerCase();
+      const maxDailySec = DAILY_MAX_QUOTA_SECONDS; // 3600s (60m)
+
+      let dbDailyUsageSec = 0;
+      const dUsageRow = (cachedAdminData?.dailyUsage || []).find(d => {
+        const d10 = get10(d.phone);
+        const dUser = String(d.username || '').trim().toLowerCase();
+        const matchUser = (u10 && d10 === u10) || (uUser && dUser === uUser);
+        return matchUser && d.date === dateStr;
+      });
+      if (dUsageRow) dbDailyUsageSec = Number(dUsageRow.used_seconds) || 0;
+
+      let dbDailyAttSec = 0;
+      (cachedAdminData?.allAttendance || []).forEach(a => {
+        if (!String(a.attendance_id || '').includes('-DAILY')) return;
+        const a10 = get10(a.phone);
+        const aUser = String(a.username || '').trim().toLowerCase();
+        const matchUser = (u10 && a10 === u10) || (uUser && aUser === uUser);
+        const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
+        if (matchUser && aDate === dateStr) {
+          dbDailyAttSec = Math.max(dbDailyAttSec, Number(a.duration_seconds) || 0);
+        }
+      });
+
+      let liveStickySec = 0;
+      if (isToday) {
+        // 1. Check live WebSocket broadcast pings from student's sticky sub-header
+        const pings = window._liveHeartbeats || {};
+        const pingMatch = pings[u10] || pings[uUser];
+        if (pingMatch && (Date.now() - pingMatch.receivedAt < 60000)) {
+          liveStickySec = Math.max(liveStickySec, Number(pingMatch.todaySeconds) || 0);
+        }
+
+        // 2. Check Presence state
+        try {
+          if (presenceChannel) {
+            const state = presenceChannel.presenceState();
+            for (const key in state) {
+              const list = state[key];
+              const p = list && list[list.length - 1];
+              if (p && ((u10 && get10(p.phone) === u10) || (uUser && String(p.username || '').toLowerCase() === uUser))) {
+                liveStickySec = Math.max(liveStickySec, Number(p.todaySeconds) || 0);
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      const usedSec = Math.min(maxDailySec, Math.max(dbDailyUsageSec, dbDailyAttSec, liveStickySec));
+      const remainingSec = Math.max(0, maxDailySec - usedSec);
+      const isQuotaBlocked = usedSec >= maxDailySec;
+
+      const usedM = Math.floor(usedSec / 60);
+      const usedS = usedSec % 60;
+      const remM = Math.floor(remainingSec / 60);
+      const remS = remainingSec % 60;
+
+      return {
+        usedSec,
+        remainingSec,
+        isQuotaBlocked,
+        usedFormatted: `${usedM}m ${String(usedS).padStart(2, '0')}s`,
+        timeLeftFormatted: isQuotaBlocked ? '0m 00s (Expired)' : `${remM}m ${String(remS).padStart(2, '0')}s left`
+      };
+    }
+
+    // Live in-place DOM updater for Tab 5 when student sticky sub-header ticks
+    function updateTab5QuotaLiveDOM(item) {
+      const attSec = document.getElementById('admin-attendance-sec');
+      if (!attSec || attSec.style.display !== 'block' || !item) return;
+
+      const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+      const p10 = get10(item.phone);
+      const pUser = String(item.username || '').trim().toLowerCase();
+      const key = p10 || pUser;
+      if (!key) return;
+
+      const usedEl = document.querySelector(`[data-att-used-today="${key}"]`);
+      const leftEl = document.querySelector(`[data-att-left-today="${key}"]`);
+      const badgeEl = document.querySelector(`[data-att-badge-today="${key}"]`);
+      if (!usedEl && !leftEl) return;
+
+      const quota = getStudentStickyHeaderQuota(
+        { phone: item.phone, username: item.username },
+        new Date().toLocaleDateString('en-GB'),
+        true
+      );
+
+      if (usedEl) usedEl.innerText = quota.usedFormatted;
+      if (leftEl) {
+        leftEl.innerText = quota.timeLeftFormatted;
+        leftEl.className = `num-chip ${quota.isQuotaBlocked ? 'num-chip-red' : 'num-chip-amber'}`;
+      }
+      if (badgeEl) {
+        badgeEl.className = `badge ${quota.isQuotaBlocked ? 'badge-danger' : 'badge-success'}`;
+        badgeEl.innerText = quota.isQuotaBlocked ? '🛑 60m Quota Expired' : 'Active Practicing';
+      }
+    }
     
     // =========================================================================
     // FULL UPDATED LOAD ADMIN DATA (ALL TABS SYNCHRONIZED & ERROR-FREE)
@@ -6095,11 +6332,11 @@ async function saveCompletedSessionOnExit() {
           }
         });
 
-        // 3. Catch today's active practicing students
+        // 3. Catch today's active students (including live sticky sub-header usage)
         enrolledStudents.forEach(st => {
           const st10 = get10(st.phone);
           const stKey = st10 || String(st.username).toLowerCase();
-          const liveSecToday = getTodayElapsedSeconds(st.phone || st.username);
+          const liveQuotaToday = getStudentStickyHeaderQuota(st, cleanToday, true);
 
           const todayQs = allAnswers.filter(ans => {
             let aD = ans.timestamp ? ans.timestamp.split(',')[0].trim() : '';
@@ -6110,7 +6347,7 @@ async function saveCompletedSessionOnExit() {
             return (st10 && get10(ans.phone) === st10) && (aD === cleanToday);
           }).length;
 
-          if (todayQs > 0 || liveSecToday > 0) {
+          if (todayQs > 0 || liveQuotaToday.usedSec > 0) {
             if (!datewiseMap.has(cleanToday)) datewiseMap.set(cleanToday, new Map());
             const todaySts = datewiseMap.get(cleanToday);
             if (!todaySts.has(stKey)) {
@@ -6118,14 +6355,15 @@ async function saveCompletedSessionOnExit() {
                 user: st,
                 date: cleanToday,
                 sessions: [],
-                activitiesSet: new Set(['Subject Practice & Training']),
+                activitiesSet: new Set([todayQs > 0 ? 'Subject Practice & Training' : 'Active in Portal']),
                 questionsAttended: todayQs,
-                totalDurationSeconds: liveSecToday
+                totalDurationSeconds: liveQuotaToday.usedSec,
+                quotaUsedSeconds: liveQuotaToday.usedSec
               });
             } else {
               const entry = todaySts.get(stKey);
               entry.questionsAttended = Math.max(entry.questionsAttended, todayQs);
-              entry.totalDurationSeconds = Math.max(entry.totalDurationSeconds, liveSecToday);
+              entry.quotaUsedSeconds = liveQuotaToday.usedSec;
             }
           }
         });
@@ -6152,7 +6390,8 @@ async function saveCompletedSessionOnExit() {
           const rawStudents = Array.from(studentsMap.values());
 
           // ONLY SHOW STUDENTS WHO ATTENDED (>0 Qs or >0 duration)
-          const attendedStudents = rawStudents.filter(s => (s.questionsAttended > 0 || s.totalDurationSeconds > 0));
+          // Show students who attended questions OR have active quota usage
+          const attendedStudents = rawStudents.filter(s => (s.questionsAttended > 0 || s.totalDurationSeconds > 0 || (s.quotaUsedSeconds || 0) > 0));
           if (attendedStudents.length === 0) return;
 
           attendedStudents.sort((a, b) => (b.questionsAttended - a.questionsAttended) || (b.totalDurationSeconds - a.totalDurationSeconds));
@@ -6201,28 +6440,11 @@ async function saveCompletedSessionOnExit() {
                   const verifiedQsOnDate = getStudentQuestionsCountForDate(u.phone, u.username, u.name, dateStr, allAnswers, allTrialExams);
                   stData.questionsAttended = Math.max(stData.questionsAttended, verifiedQsOnDate);
 
-                  // 1. Check true authoritative usage from daily_usage table
-                  const dUsageRow = (cachedAdminData?.dailyUsage || []).find(d => 
-                    (u10 && get10(d.phone) === u10) && (d.date === dateStr || d.date === cleanToday)
-                  );
-                  const dbUsedSec = dUsageRow ? (Number(dUsageRow.used_seconds) || 0) : 0;
-
-                  // 2. Resolve true practice seconds (e.g. 100s = 1m 40s)
-                  let practicedSec = Math.max(stData.totalDurationSeconds, dbUsedSec);
-
-                  // If student has answered questions today, ensure duration is at least matching active questions
-                  if (stData.questionsAttended > 0 && practicedSec < 60) {
-                    practicedSec = Math.max(practicedSec, 100); // 100s = 1m 40s
-                  }
-
-                  const cumulativeUsageToday = formatSecs(practicedSec); // 1m 40s
-                  const maxDailySec = 3600;
-                  const remainingSec = Math.max(0, maxDailySec - practicedSec); // 3600 - 100 = 3500s
-                  const isQuotaBlocked = (practicedSec >= maxDailySec);
-
-                  const remM = Math.floor(remainingSec / 60); // 58
-                  const remS = remainingSec % 60; // 20
-                  const timeLeftToday = isQuotaBlocked ? '0m 00s (Expired)' : `${remM}m ${String(remS).padStart(2, '0')}s left`; // 58m 20s left
+                  // Strictly fetch from concerned student's sticky sub-header 60m quota (no fabrication)
+                  const quota = getStudentStickyHeaderQuota(u, dateStr, isToday);
+                  const cumulativeUsageToday = quota.usedFormatted;
+                  const timeLeftToday = quota.timeLeftFormatted;
+                  const isQuotaBlocked = quota.isQuotaBlocked;
 
                   // First Entry & Last Exit for Today
                   let firstEntryToday = '-';
@@ -6294,7 +6516,7 @@ async function saveCompletedSessionOnExit() {
                             💬 WhatsApp
                           </button>
 
-                          <span class="badge ${isQuotaBlocked ? 'badge-danger' : 'badge-success'}" style="font-size:12px; padding:6px 12px; font-weight:800;">
+                          <span ${isToday ? `data-att-badge-today="${uKey}"` : ''} class="badge ${isQuotaBlocked ? 'badge-danger' : 'badge-success'}" style="font-size:12px; padding:6px 12px; font-weight:800;">
                             ${isQuotaBlocked ? '🛑 60m Quota Expired' : 'Active Practicing'}
                           </span>
 
@@ -6335,14 +6557,14 @@ async function saveCompletedSessionOnExit() {
                               <div class="att-tile">
                                 <span class="att-tile-label">⏱️ Cumulative Usage</span>
                                 <div>
-                                  <span class="num-chip num-chip-green">${cumulativeUsageToday}</span>
+                                  <span ${isToday ? `data-att-used-today="${uKey}"` : ''} class="num-chip num-chip-green">${cumulativeUsageToday}</span>
                                 </div>
                               </div>
 
                               <div class="att-tile">
                                 <span class="att-tile-label">⏳ Time Left Today</span>
                                 <div>
-                                  <span class="num-chip ${isQuotaBlocked ? 'num-chip-red' : 'num-chip-amber'}">${timeLeftToday}</span>
+                                  <span ${isToday ? `data-att-left-today="${uKey}"` : ''} class="num-chip ${isQuotaBlocked ? 'num-chip-red' : 'num-chip-amber'}">${timeLeftToday}</span>
                                 </div>
                               </div>
 
