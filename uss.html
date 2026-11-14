@@ -1239,7 +1239,10 @@
           </div>
         </div>
 
-        <h4 style="margin:16px 0 8px 0; color:var(--text-main); font-size:14px;">Detailed Attendance Log</h4>
+        <h4 style="margin:16px 0 4px 0; color:var(--text-main); font-size:14px;">Detailed Attendance Log (Session-Wise)</h4>
+        <p style="margin:0 0 10px 0; font-size:12px; color:var(--text-muted); font-weight:600;">
+          Every attended Practice &amp; Trial Exam session (source of <b>Total Questions Attended</b> &amp; <b>Practice Time</b>).
+        </p>
         <div class="table-responsive" style="margin-top:0;">
           <table class="data-table">
             <thead>
@@ -1310,11 +1313,14 @@
         </div>
       </div>
 
-      <h3 style="margin-top:30px; color:var(--primary);">Subject Overview</h3> 
-      <div class="table-responsive">
+      <h3 style="margin-top:30px; margin-bottom:4px; color:var(--primary);">Subject Overview (Unique Question Mastery)</h3>
+      <p style="margin:0 0 12px 0; font-size:12px; color:var(--text-muted); font-weight:600;">
+        Cumulative accuracy across <b>unique questions</b> answered (Trial Exam questions are split into their individual subjects; reset/re-practiced questions are not double-counted).
+      </p>
+      <div class="table-responsive" style="margin-top:0;">
         <table class="data-table">
           <thead>
-            <tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr>
+            <tr><th>Subject</th><th>Unique Qs</th><th>Correct</th><th>Wrong</th><th>Accuracy</th><th>Last Attended</th></tr>
           </thead>
           <tbody id="portfolio-overview-body"></tbody>
         </table>
@@ -3736,8 +3742,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
     async function handleLogin(e) {
       e.preventDefault();
       clearDailyLocalStorage(false);
-      logPortalActivity('LOGIN', 'Logged into portal', getDeviceInfo());
-
+      
       const usernameInput = document.getElementById('login-username').value.trim();
       const passwordInput = document.getElementById('login-password').value.trim();
       setProgress(50);
@@ -3859,6 +3864,12 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
           sessionId: newSessionId,
           logId: logId
         };
+
+        await logPortalActivity(
+          'LOGIN',
+          'Logged into portal',
+          `• Logged In Time: ${nowStr} • Device: ${deviceStr}`
+        );
 
         // 7. Prompt mandatory password change if still using default credentials
         if (isDefaultPass) {
@@ -5109,6 +5120,8 @@ async function saveCompletedSessionOnExit() {
       // 6. Render Attendance Summary
       cachedAdminData = cachedAdminData || {};
       cachedAdminData.allAnswers = answers || [];
+      cachedAdminData.allTrialExams = trials || [];
+      const attLogData = renderStudentAttendance(attendanceList, studentMetrics.total);
       renderStudentAttendance(attendanceList, studentMetrics.total);
 
       // ... [offline exams table rendering remains unchanged] ...
@@ -5130,7 +5143,9 @@ async function saveCompletedSessionOnExit() {
           TotalQuestions: t.total_questions,
           AnswersJson: t.answers_json
         })),
-        offlineExams: offlineExams || []
+        offlineExams: [],
+        attendanceGrandTotal: attLogData ? attLogData.grandTotalQuestions : 0,
+        attendanceTodayTotal: attLogData ? attLogData.todayTotalQuestions : 0
       };
 
       // 9. Render Dashboard
@@ -5152,7 +5167,6 @@ async function saveCompletedSessionOnExit() {
         ? allAnswersList 
         : (cachedAdminData?.allAnswers || []);
 
-      const trialsPool = cachedAdminData?.allTrialExams || [];
       const historyPool = cachedAdminData?.portalHistory || [];
       const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
       const st10 = get10(studentPhone);
@@ -5240,20 +5254,21 @@ async function saveCompletedSessionOnExit() {
         const act = String(item.activity || '').toLowerCase();
         const sc = String(item.score || '').toLowerCase();
 
-        // Never display background quota heartbeat or admin quota-restore rows in session log
+        // Exclude background quota heartbeat, admin quota-restore, and Live Direct Log rows
         if (attId.includes('-DAILY')) return false;
         if (act.includes('quota restored') || act.includes('daily quota heartbeat') || sc.includes('60m used') || sc === 'active') return false;
+        if (act.includes('live direct log') || act.includes('live session')) return false;
         return true;
       }).sort((a, b) => {
         const aSync = String(a.attendance_id || '').includes('-SYNC') ? 1 : 0;
         const bSync = String(b.attendance_id || '').includes('-SYNC') ? 1 : 0;
-        if (aSync !== bSync) return aSync - bSync; // Real sessions first
+        if (aSync !== bSync) return aSync - bSync;
         const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
         const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
         return timeB - timeA;
       });
 
-      // 2. Prevent repeating/duplicate records
+      // 2. Deduplicate records
       const seenIds = new Set();
       const seenExactKeys = new Set();
       const dedupedLogs = [];
@@ -5273,11 +5288,9 @@ async function saveCompletedSessionOnExit() {
         const itemMs = parseCustomDate(item.timestamp || item.date)?.getTime() || 0;
         const isSync = attId.includes('-SYNC');
 
-        // Exact timestamp + activity + questions duplicate check
         const exactKey = `${dateStr}__${tsStr}__${normAct}__${qNum}`;
         if (seenExactKeys.has(exactKey)) return;
 
-        // If this is a -SYNC row and a real session already exists for the same date & activity, skip it
         if (isSync) {
           const hasRealForDateAct = dedupedLogs.some(existing =>
             !String(existing.attendance_id || '').includes('-SYNC') &&
@@ -5287,7 +5300,6 @@ async function saveCompletedSessionOnExit() {
           if (hasRealForDateAct) return;
         }
 
-        // Prevent near-duplicate double-saves of the exact same session within 2 minutes
         const isNearDup = dedupedLogs.some(existing => {
           if (normalizeDateStr(existing.date, existing.timestamp) !== dateStr) return false;
           if (String(existing.activity || 'Practice Session').trim().toLowerCase() !== normAct) return false;
@@ -5302,28 +5314,19 @@ async function saveCompletedSessionOnExit() {
         dedupedLogs.push(item);
       });
 
-      // Re-sort deduped logs strictly newest first
       dedupedLogs.sort((a, b) => {
         const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
         const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
         return timeB - timeA;
       });
 
-      // 3. Group by Date
+      // 3. Group strictly by actual Supabase attendance rows per Date
       const dateGroups = {};
       dedupedLogs.forEach(item => {
         const dateStr = normalizeDateStr(item.date, item.timestamp);
         if (!dateStr) return;
         if (!dateGroups[dateStr]) dateGroups[dateStr] = [];
         dateGroups[dateStr].push(item);
-      });
-
-      // Ensure dates from student_answers are also represented
-      (answersPool || []).forEach(ans => {
-        if (isStudentMatch(ans.phone, ans.username, ans.student_name)) {
-          const aDate = normalizeDateStr(ans.date, ans.timestamp);
-          if (aDate && !dateGroups[aDate]) dateGroups[aDate] = [];
-        }
       });
 
       const sortedDates = Object.keys(dateGroups).sort((a, b) => {
@@ -5335,7 +5338,10 @@ async function saveCompletedSessionOnExit() {
           html: '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--text-muted); font-size:13px;">No past attendance records found. Practice sessions will appear here!</td></tr>',
           todayTotalSec: 0,
           grandTotalSec: 0,
+          todayTotalQuestions: 0,
+          grandTotalQuestions: 0,
           activeDaysCount: 0,
+          dayTotalsMap: {},
           toString() { return this.html; }
         };
       }
@@ -5343,6 +5349,8 @@ async function saveCompletedSessionOnExit() {
       let grandTotalSec = 0;
       let grandTotalQuestions = 0;
       let todayTotalSec = 0;
+      let todayTotalQuestions = 0;
+      const dayTotalsMap = {};
       let html = '';
 
       sortedDates.forEach(dKey => {
@@ -5350,14 +5358,11 @@ async function saveCompletedSessionOnExit() {
         let dayTotalSec = 0;
         let dayTotalQuestions = 0;
 
-        const actualAnswersOnDate = getStudentQuestionsCountForDate(studentPhone, studentUsername, studentName, dKey, answersPool, trialsPool);
-
         dayItems.forEach(item => {
           const parts = (item.timestamp || '').split(',');
           const dateFormatted = dKey;
           const timeFormatted = parts[1] ? parts[1].trim() : '-';
 
-          // Prioritize actual attending duration from portal_history; fallback to attendance row duration
           const historySec = findActualDurationFromHistory(item, dKey);
           const sec = historySec > 0 ? historySec : parseSecs(item.duration_seconds, item.duration_text);
 
@@ -5366,11 +5371,9 @@ async function saveCompletedSessionOnExit() {
           grandTotalSec += sec;
 
           const displayScore = resolveAttendanceRowScore(item, studentPhone, studentName, answersPool);
-          let qCount = Number(item.questions_attended) || 0;
-          if (displayScore.includes('/')) {
-            const den = parseInt(displayScore.split('/')[1], 10);
-            if (!isNaN(den) && den > 0) qCount = Math.max(qCount, den);
-          }
+
+          // Strictly use actual questions_attended from Supabase attendance record
+          const qCount = Number(item.questions_attended) || 0;
 
           dayTotalQuestions += qCount;
           grandTotalQuestions += qCount;
@@ -5395,43 +5398,15 @@ async function saveCompletedSessionOnExit() {
           `;
         });
 
-        // Reconcile any unlogged questions on this date using this student's portal_history duration
-        if (actualAnswersOnDate > dayTotalQuestions) {
-          const unloggedQs = actualAnswersOnDate - dayTotalQuestions;
-          let unloggedSec = 0;
-          const hAct = studentHistorySessions.find(h => normalizeDateStr(h.date, h.timestamp) === dKey && extractHistoryDurationSecs(h) > 0);
-          if (hAct) unloggedSec = extractHistoryDurationSecs(hAct);
-
-          dayTotalQuestions += unloggedQs;
-          grandTotalQuestions += unloggedQs;
-          dayTotalSec += unloggedSec;
-          grandTotalSec += unloggedSec;
-
-          const dateAnswers = answersPool.filter(ans => {
-            return isStudentMatch(ans.phone, ans.username, ans.student_name) && normalizeDateStr(ans.date, ans.timestamp) === dKey;
-          });
-          const correctCount = dateAnswers.filter(a => a.is_correct === 'YES' || a.is_correct === true || a.is_correct === 'true').length;
-          const pct = unloggedQs > 0 ? Math.round((correctCount / unloggedQs) * 100) : 0;
-
-          html += `
-            <tr style="background:#fafafa;">
-              <td><b>${escapeHtml(dKey)}</b></td>
-              <td><small style="color:var(--text-muted); font-weight:700;">Live Session</small></td>
-              <td><span class="badge" style="background:#ecfdf5; color:#065f46;">Subject Practice (Live Direct Log)</span></td>
-              <td><b>${formatSecs(unloggedSec)}</b></td>
-              <td><b>${unloggedQs}</b></td>
-              <td>
-                <span class="badge badge-success" style="font-size:12px; font-weight:800; padding:4px 9px;">
-                  ${correctCount} / ${unloggedQs} (${pct}%)
-                </span>
-              </td>
-            </tr>
-          `;
-        }
-
         if (dKey === cleanToday) {
           todayTotalSec = dayTotalSec;
+          todayTotalQuestions = dayTotalQuestions;
         }
+
+        dayTotalsMap[dKey] = {
+          totalSec: dayTotalSec,
+          totalQuestions: dayTotalQuestions
+        };
 
         html += `
           <tr style="background:#f1f5f9; font-weight:700; border-top:1.5px solid #cbd5e1; border-bottom:1.5px solid #cbd5e1;">
@@ -5460,7 +5435,10 @@ async function saveCompletedSessionOnExit() {
         html: html,
         todayTotalSec: todayTotalSec,
         grandTotalSec: grandTotalSec,
+        todayTotalQuestions: todayTotalQuestions,
+        grandTotalQuestions: grandTotalQuestions,
         activeDaysCount: sortedDates.length,
+        dayTotalsMap: dayTotalsMap,
         toString() { return this.html; }
       };
     }
@@ -5508,6 +5486,8 @@ async function saveCompletedSessionOnExit() {
       if (totalDaysEl) {
         totalDaysEl.innerText = `${logData.activeDaysCount} Day${logData.activeDaysCount !== 1 ? 's' : ''}`;
       }
+
+      return logData;
     }
 
     // =========================================================================
@@ -5515,13 +5495,14 @@ async function saveCompletedSessionOnExit() {
     // =========================================================================
     function renderStudentDashboardAndOverview(resData, totalElId, accElId, strongContainerId, weakContainerId, overviewTbodyId, trialBoxId, trialContainerId, auditTbodyId) {
       const combinedAnswers = resData.detailedAnswers || [];
-      const offlineExams = resData.offlineExams || [];
+      const isPortfolioView = (overviewTbodyId === 'portfolio-overview-body' || totalElId === 'stat-total');
+      const offlineExams = isPortfolioView ? [] : (resData.offlineExams || []);
 
       // 1. Online Practice + Trial Exam Totals
       let totalAnswered = combinedAnswers.length;
       let totalCorrect = combinedAnswers.filter(a => a.IsCorrect).length;
 
-      // 2. Add Offline Exam Questions & Scores to Grand Total
+      // 2. Add Offline Exam Questions & Scores to Grand Total (Non-Portfolio Admin Views Only)
       if (offlineExams.length > 0) {
         offlineExams.forEach(ex => {
           totalAnswered += Number(ex.total_outof || 0);
@@ -5529,11 +5510,10 @@ async function saveCompletedSessionOnExit() {
         });
       }
 
-      // 3. Overall Accuracy Rate (Across All Practice, Trials, and Offline Exams)
+      // 3. Overall Accuracy Rate
       const overallAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
 
-      
-      // 4. Update Header Cards (Today Questions, Total Answered Questions & Overall Accuracy Rate)
+      // 4. Update Header Cards (Today Questions, Total Questions Attended & Overall Accuracy Rate)
       const cleanToday = new Date().toLocaleDateString('en-GB');
       let todayQuestionsCount = 0;
       combinedAnswers.forEach(ans => {
@@ -5546,19 +5526,25 @@ async function saveCompletedSessionOnExit() {
       });
 
       const todayTotEl = document.getElementById('stat-today-total');
-      if (todayTotEl) todayTotEl.innerText = todayQuestionsCount;
+      if (todayTotEl && isPortfolioView) {
+        todayTotEl.innerText = (resData.attendanceTodayTotal !== undefined)
+          ? resData.attendanceTodayTotal
+          : todayQuestionsCount;
+      }
 
       if (document.getElementById(totalElId)) {
-        const totalAttempts = Math.max(totalAnswered, (resData.allAttemptsCount || totalAnswered));
+        const totalAttempts = (isPortfolioView && resData.attendanceGrandTotal !== undefined)
+          ? resData.attendanceGrandTotal
+          : Math.max(totalAnswered, (resData.allAttemptsCount || totalAnswered));
         document.getElementById(totalElId).innerText = totalAttempts;
 
         const totalCardP = document.getElementById(totalElId).previousElementSibling;
         if (totalCardP) {
-          totalCardP.innerText = `Total Questions Attended (${combinedAnswers.length} Unique Mastered)`;
+          totalCardP.innerText = 'Total Questions Attended';
         }
       }
       if (document.getElementById(accElId)) document.getElementById(accElId).innerText = `${overallAccuracy}%`;
-      
+
       // 5. Build Subject-Wise Stats for Overview, Strengths, and Priorities
       const subjectStats = {};
 
@@ -5571,10 +5557,13 @@ async function saveCompletedSessionOnExit() {
         subjectStats[sName].total++;
         if (a.IsCorrect) subjectStats[sName].correct++;
         else subjectStats[sName].wrong++;
-        if (a.Timestamp > subjectStats[sName].lastDate) subjectStats[sName].lastDate = a.Timestamp;
+
+        const curMs = parseCustomDate(a.Timestamp)?.getTime() || 0;
+        const prevMs = parseCustomDate(subjectStats[sName].lastDate)?.getTime() || 0;
+        if (curMs > prevMs) subjectStats[sName].lastDate = a.Timestamp;
       });
 
-      // B. Merge Offline Exam Subject Marks into Subject Breakdown
+      // B. Merge Offline Exam Subject Marks into Subject Breakdown (Non-Portfolio Views Only)
       if (offlineExams.length > 0) {
         offlineExams.forEach(ex => {
           const subMaps = [
@@ -5603,7 +5592,7 @@ async function saveCompletedSessionOnExit() {
         });
       }
 
-      // 6. Render 🌟 Strengths (≥70%) & ⚠️ Priorities (<70%)
+      // 6. Render Strengths (>=70%) & Priorities (<70%)
       let strongHTML = '';
       let weakHTML = '';
 
@@ -5632,7 +5621,7 @@ async function saveCompletedSessionOnExit() {
         document.getElementById(weakContainerId).innerHTML = weakHTML || '<p style="font-size:13px; color:var(--text-muted); margin:0;">No priority areas (<70%) identified!</p>';
       }
 
-      // 7. Render Subject Overview Table (Including Grand Total Row)
+      // 7. Render Subject Overview Table (Hide duplicate GRAND TOTAL row in Portfolio)
       if (document.getElementById(overviewTbodyId)) {
         const overviewBody = document.getElementById(overviewTbodyId);
         let gTotal = 0, gCorrect = 0, gWrong = 0;
@@ -5642,6 +5631,7 @@ async function saveCompletedSessionOnExit() {
           gTotal += st.total;
           gCorrect += st.correct;
           gWrong += st.wrong;
+          const subAcc = st.total > 0 ? Math.round((st.correct / st.total) * 100) : 0;
 
           return `
             <tr>
@@ -5649,12 +5639,13 @@ async function saveCompletedSessionOnExit() {
               <td>${st.total}</td>
               <td><b style="color:var(--success);">${st.correct}</b></td>
               <td><b style="color:var(--danger);">${st.wrong}</b></td>
+              ${isPortfolioView ? `<td><span class="badge ${subAcc >= 70 ? 'badge-success' : 'badge-warning'}">${subAcc}%</span></td>` : ''}
               <td>${formatDateStrict(st.lastDate)}</td>
             </tr>
           `;
         }).join('');
 
-        if (Object.keys(subjectStats).length > 0) {
+        if (Object.keys(subjectStats).length > 0 && !isPortfolioView) {
           rowsHTML += `
             <tr style="font-weight:800; background:#eff6ff; border-top:2px solid var(--primary) !important;">
               <td>GRAND TOTAL</td>
@@ -5665,7 +5656,7 @@ async function saveCompletedSessionOnExit() {
             </tr>
           `;
         }
-        overviewBody.innerHTML = rowsHTML || '<tr><td colspan="5">No subject overview data available.</td></tr>';
+        overviewBody.innerHTML = rowsHTML || `<tr><td colspan="${isPortfolioView ? 6 : 5}">No subject overview data available.</td></tr>`;
       }
 
       // 8. Render Trial Exam Consolidations (If available)
@@ -6219,6 +6210,7 @@ async function saveCompletedSessionOnExit() {
 
         // 1. Calculate Lifetime metrics (All Day) strictly matching Portfolio Tab
         const studentLifetimeMap = new Map();
+        const studentPortfolioLogMap = new Map();
 
         enrolledStudents.forEach(st => {
           const st10 = get10(st.phone);
@@ -6255,6 +6247,12 @@ async function saveCompletedSessionOnExit() {
           if (liveSecToday > 0) lifetimeDaysSet.add(cleanToday);
 
           const lm = Math.round(finalSec / 60);
+          const practiceAttForLog = validStudentAtt.filter(a => {
+            const act = String(a.activity || '').toLowerCase();
+            return act.includes('practice') || act.includes('trial') || (Number(a.questions_attended) || 0) > 0;
+          });
+          const stLogData = buildDetailedAttendanceLogHTML(practiceAttForLog, st.phone, st.name, allAnswers, st.username);
+          studentPortfolioLogMap.set(st10 || stUser, stLogData);
           studentLifetimeMap.set(st10 || stUser, {
             activeDaysCount: lifetimeDaysSet.size,
             totalTimePracticedText: lm > 0 ? `${lm} mins` : `${finalSec}s`,
@@ -6432,43 +6430,168 @@ async function saveCompletedSessionOnExit() {
                   const verifiedQsOnDate = getStudentQuestionsCountForDate(u.phone, u.username, u.name, dateStr, allAnswers, allTrialExams);
                   stData.questionsAttended = Math.max(stData.questionsAttended, verifiedQsOnDate);
 
-                  // Strictly fetch from concerned student's sticky sub-header 60m quota (no fabrication)
+                  
+                  // For Previous Days: use exact cumulative usage of that day as per Portfolio (60m 00s - used)
                   const quota = getStudentStickyHeaderQuota(u, dateStr, isToday);
-                  const cumulativeUsageToday = quota.usedFormatted;
-                  const timeLeftToday = quota.timeLeftFormatted;
-                  const isQuotaBlocked = quota.isQuotaBlocked;
+                  const stLogData = studentPortfolioLogMap.get(uKey);
+                  const portfolioDaySec = stLogData?.dayTotalsMap?.[dateStr]?.totalSec || 0;
 
-                  // First Entry & Last Exit for Today
-                  let firstEntryToday = '-';
-                  let lastExitToday = '-';
+                  let cumulativeUsageToday = quota.usedFormatted;
+                  let timeLeftToday = quota.timeLeftFormatted;
+                  let isQuotaBlocked = quota.isQuotaBlocked;
 
-                  if (isToday) {
-                    const userLogs = logs.filter(l => {
-                      const lId = String(l.identifier || '').trim().toLowerCase();
-                      return lId === String(u.username).toLowerCase() || (u10 && get10(l.identifier) === u10);
-                    });
+                  if (!isToday) {
+                    const pastUsedSec = Math.min(
+                      DAILY_MAX_QUOTA_SECONDS,
+                      portfolioDaySec > 0 ? portfolioDaySec : quota.usedSec
+                    );
+                    const pastRemSec = Math.max(0, DAILY_MAX_QUOTA_SECONDS - pastUsedSec);
 
-                    if (userLogs.length > 0) {
-                      const sortedLogs = [...userLogs].sort((x, y) => 
-                        (parseCustomDate(x.login_time || x.timestamp)?.getTime() || 0) - (parseCustomDate(y.login_time || y.timestamp)?.getTime() || 0)
-                      );
-                      firstEntryToday = sortedLogs[0]?.login_time ? (sortedLogs[0].login_time.split(',')[1] || sortedLogs[0].login_time).trim() : '-';
-                      
-                      const latestLog = sortedLogs[sortedLogs.length - 1];
-                      if (latestLog?.logout_time === 'Active Now') {
-                        lastExitToday = '<span class="badge badge-success" style="font-size:11px;">Active Now</span>';
-                      } else if (latestLog?.logout_time && latestLog.logout_time !== '-') {
-                        lastExitToday = (latestLog.logout_time.split(',')[1] || latestLog.logout_time).trim();
+                    const puM = Math.floor(pastUsedSec / 60);
+                    const puS = pastUsedSec % 60;
+                    const prM = Math.floor(pastRemSec / 60);
+                    const prS = pastRemSec % 60;
+
+                    cumulativeUsageToday = `${puM}m ${String(puS).padStart(2, '0')}s`;
+                    isQuotaBlocked = pastUsedSec >= DAILY_MAX_QUOTA_SECONDS;
+                    timeLeftToday = isQuotaBlocked
+                      ? '0m 00s (Expired)'
+                      : `${prM}m ${String(prS).padStart(2, '0')}s left`;
+                  }
+
+                  // First Entry & Last Exit from History / Users History (Actual Time for Today & All Past Dates)
+                  const getNormDateStr = (rawD, rawTs) => {
+                    const dStr = rawD || (rawTs ? String(rawTs).split(',')[0].trim() : '');
+                    const pD = parseCustomDate(dStr) || parseCustomDate(rawTs);
+                    if (pD && !isNaN(pD.getTime())) {
+                      return `${String(pD.getDate()).padStart(2, '0')}/${String(pD.getMonth() + 1).padStart(2, '0')}/${pD.getFullYear()}`;
+                    }
+                    return dStr;
+                  };
+
+                  const formatHistoryTimeOnly = (ts) => {
+                    if (!ts) return '-';
+                    const d = parseCustomDate(ts);
+                    if (d && !isNaN(d.getTime())) {
+                      let hrs = d.getHours();
+                      const mins = String(d.getMinutes()).padStart(2, '0');
+                      const secs = String(d.getSeconds()).padStart(2, '0');
+                      const ampm = hrs >= 12 ? 'PM' : 'AM';
+                      hrs = hrs % 12;
+                      hrs = hrs ? hrs : 12;
+                      return `${String(hrs).padStart(2, '0')}:${mins}:${secs} ${ampm}`;
+                    }
+                    const s = String(ts);
+                    if (s.includes(',')) return s.split(',')[1].replace(/\(.*?\)/g, '').trim() || '-';
+                    return '-';
+                  };
+
+                  const uUserLower = String(u.username || '').trim().toLowerCase();
+                  const uNameLower = String(u.name || '').trim().toLowerCase();
+
+                  const isSameStudentHistory = (itemPhone, itemUser, itemName) => {
+                    const i10 = get10(itemPhone);
+                    const iUser = String(itemUser || '').trim().toLowerCase();
+                    const iName = String(itemName || '').trim().toLowerCase();
+                    return (u10 && i10 && u10 === i10) ||
+                           (uUserLower && iUser && uUserLower === iUser) ||
+                           (uNameLower && iName && uNameLower === iName);
+                  };
+
+                  // 1. Collect all History (portal_history) events for this student on dateStr
+                  const dayHistoryEvents = (cachedAdminData?.portalHistory || []).filter(h =>
+                    isSameStudentHistory(h.phone, h.username, h.student_name) &&
+                    getNormDateStr(h.date, h.timestamp) === dateStr
+                  );
+
+                  // 2. Collect all SUCCESS audit logs for this student on dateStr
+                  const dayLogs = (logs || []).filter(l => {
+                    const lId = String(l.identifier || '').trim().toLowerCase();
+                    const matchU = (uUserLower && lId === uUserLower) ||
+                                   (uNameLower && lId === uNameLower) ||
+                                   (u10 && get10(l.identifier) === u10);
+                    if (!matchU) return false;
+                    return getNormDateStr('', l.login_time || l.timestamp) === dateStr;
+                  });
+
+                  // 3. Build Entry & Exit timestamp pools (with millisecond precision for sorting)
+                  const entryCandidates = [];
+                  const explicitExitCandidates = [];
+                  const allActivityTimestamps = [];
+
+                  dayHistoryEvents.forEach(h => {
+                    const ts = h.timestamp;
+                    const pD = parseCustomDate(ts);
+                    if (!pD || isNaN(pD.getTime())) return;
+                    const ms = pD.getTime();
+                    const type = String(h.activity_type || '').toUpperCase();
+
+                    allActivityTimestamps.push({ ts, ms, type });
+                    if (type === 'LOGIN' || type === 'ACTIVE') {
+                      entryCandidates.push({ ts, ms });
+                    }
+                    if (type === 'INACTIVE') {
+                      explicitExitCandidates.push({ ts, ms });
+                    }
+                  });
+
+                  dayLogs.forEach(l => {
+                    const loginTs = l.login_time || l.timestamp;
+                    const pLogin = parseCustomDate(loginTs);
+                    if (pLogin && !isNaN(pLogin.getTime())) {
+                      entryCandidates.push({ ts: loginTs, ms: pLogin.getTime() });
+                      allActivityTimestamps.push({ ts: loginTs, ms: pLogin.getTime(), type: 'LOGIN' });
+                    }
+
+                    if (l.logout_time && l.logout_time !== 'Active Now' && l.logout_time !== '-' && !String(l.logout_time).startsWith('Auto')) {
+                      const pLogout = parseCustomDate(l.logout_time);
+                      if (pLogout && !isNaN(pLogout.getTime()) && getNormDateStr('', l.logout_time) === dateStr) {
+                        explicitExitCandidates.push({ ts: l.logout_time, ms: pLogout.getTime() });
+                        allActivityTimestamps.push({ ts: l.logout_time, ms: pLogout.getTime(), type: 'INACTIVE' });
                       }
                     }
+                  });
 
-                    if (firstEntryToday === '-' && stData.sessions.length > 0) {
-                      const t = stData.sessions[0].timestamp || '';
-                      if (t.includes(',')) firstEntryToday = t.split(',')[1].trim();
+                  stData.sessions.forEach(sess => {
+                    if (sess.timestamp && String(sess.timestamp).includes(',')) {
+                      const pS = parseCustomDate(sess.timestamp);
+                      if (pS && !isNaN(pS.getTime()) && getNormDateStr('', sess.timestamp) === dateStr) {
+                        allActivityTimestamps.push({ ts: sess.timestamp, ms: pS.getTime(), type: 'SESSION' });
+                      }
                     }
-                  } else {
-                    firstEntryToday = 'Historical';
-                    lastExitToday = 'Logged Out';
+                  });
+
+                  // 4. Resolve First Entry Time (Earliest entry or earliest recorded history activity on dateStr)
+                  let firstEntryToday = '-';
+                  const entryPool = entryCandidates.length > 0 ? entryCandidates : allActivityTimestamps;
+                  if (entryPool.length > 0) {
+                    entryPool.sort((a, b) => a.ms - b.ms);
+                    firstEntryToday = formatHistoryTimeOnly(entryPool[0].ts);
+                  }
+
+                  // 5. Resolve Last Exit Time (Latest exit/inactive or latest activity time on dateStr — NEVER 'Historical' or 'Logged Out')
+                  let lastExitToday = '-';
+                  const hasActiveNowToday = isToday && dayLogs.some(l => l.logout_time === 'Active Now');
+
+                  if (explicitExitCandidates.length > 0) {
+                    explicitExitCandidates.sort((a, b) => b.ms - a.ms);
+                    const latestExit = explicitExitCandidates[0];
+
+                    // Check if student came back Active/Logged In AFTER the latest exit today
+                    const latestEntryMs = entryCandidates.length > 0
+                      ? Math.max(...entryCandidates.map(e => e.ms))
+                      : 0;
+
+                    if (isToday && hasActiveNowToday && latestEntryMs > latestExit.ms) {
+                      lastExitToday = '<span class="badge badge-success" style="font-size:11px;">Active Now</span>';
+                    } else {
+                      lastExitToday = formatHistoryTimeOnly(latestExit.ts);
+                    }
+                  } else if (hasActiveNowToday) {
+                    lastExitToday = '<span class="badge badge-success" style="font-size:11px;">Active Now</span>';
+                  } else if (allActivityTimestamps.length > 0) {
+                    allActivityTimestamps.sort((a, b) => b.ms - a.ms);
+                    lastExitToday = formatHistoryTimeOnly(allActivityTimestamps[0].ts);
                   }
 
                   const activitiesConsolidation = Array.from(stData.activitiesSet).join(', ') || 'Subject Practice Session';
@@ -9126,6 +9249,12 @@ async function saveCompletedSessionOnExit() {
           device: getDeviceInfo() 
         }]);
 
+        await logPortalActivity(
+          'LOGIN',
+          'Logged into portal (Session Resumed)',
+          `• Logged In Time: ${nowStr} • Device: ${deviceStr}`
+        );
+
         // 4. Send Welcome notification to the student's Notification Center
         await supabaseClient.from('notifications').insert([{
           notification_id: 'NOTIF-' + Date.now(),
@@ -9154,6 +9283,11 @@ async function saveCompletedSessionOnExit() {
         };
 
         localStorage.setItem('USS_USER', JSON.stringify(currentUser));
+        await logPortalActivity(
+          'LOGIN',
+          'Registered & Logged into portal',
+          `• Logged In Time: ${nowStr} • Device: ${getDeviceInfo()}`
+        );
 
         setProgress(100);
         showToast(`Welcome, ${name}! Registration successful.`, 'success');
@@ -9584,30 +9718,80 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
 
       setProgress(30);
 
-      // Fetch verified history directly from Supabase (paginated up to 2000 records)
-      let historyQuery = supabaseClient
-        .from('portal_history')
-        .select('*')
-        .order('id', { ascending: false })
-        .limit(2000);
-
-      // If student, query only their own records directly from the database
-      if (!isPrivileged) {
-        const myPhone10 = String(currentUser.phone || '').replace(/[^0-9]/g, '').slice(-10);
-        const myUser = String(currentUser.username || '').trim().toLowerCase();
-        historyQuery = historyQuery.or(`username.ilike.${myUser},phone.ilike.%${myPhone10}%`);
-      }
-
-      const { data: dbHistory, error } = await historyQuery;
-
-      // Also ensure users list is available for accordion headers
+      // Ensure users list is available for matching
       if (!cachedAdminData?.users || cachedAdminData.users.length === 0) {
         const { data: uList } = await supabaseClient.from('users').select('*');
         cachedAdminData = cachedAdminData || {};
         cachedAdminData.users = uList || [];
       }
 
-      const pureHistoryRecords = dbHistory || [];
+      const myPhone10 = String(currentUser.phone || '').replace(/[^0-9]/g, '').slice(-10);
+      const myUser = String(currentUser.username || '').trim().toLowerCase();
+
+      // 1. Query portal_history
+      let historyQuery = supabaseClient
+        .from('portal_history')
+        .select('*')
+        .order('id', { ascending: false })
+        .limit(2000);
+
+      if (!isPrivileged) {
+        if (myPhone10 && myUser) {
+          historyQuery = historyQuery.or(`username.ilike.${myUser},phone.ilike.%${myPhone10}%`);
+        } else if (myUser) {
+          historyQuery = historyQuery.ilike('username', myUser);
+        }
+      }
+
+      // 2. Also query successful logins from logs table so past logins always show
+      let logsQuery = supabaseClient
+        .from('logs')
+        .select('*')
+        .eq('login_status', 'SUCCESS')
+        .order('id', { ascending: false })
+        .limit(1000);
+
+      if (!isPrivileged && myUser) {
+        logsQuery = logsQuery.ilike('identifier', myUser);
+      }
+
+      const [{ data: dbHistory }, { data: dbLogs }] = await Promise.all([historyQuery, logsQuery]);
+
+      const pureHistoryRecords = [...(dbHistory || [])];
+      const existingLoginKeys = new Set(
+        pureHistoryRecords
+          .filter(h => String(h.activity_type || '').toUpperCase() === 'LOGIN')
+          .map(h => `${String(h.username || '').trim().toLowerCase()}__${formatDateStrict(h.timestamp)}`)
+      );
+
+      // Merge any SUCCESS logs not already stored in portal_history
+      (dbLogs || []).forEach(l => {
+        const rawIdent = String(l.identifier || '').trim().toLowerCase();
+        const matchedUser = (cachedAdminData?.users || []).find(u =>
+          String(u.username || '').trim().toLowerCase() === rawIdent ||
+          String(u.name || '').trim().toLowerCase() === rawIdent
+        );
+        const uName = matchedUser ? String(matchedUser.username || '').trim().toLowerCase() : rawIdent;
+        const loginTimeStr = formatDateStrict(l.login_time || l.timestamp);
+        const key = `${uName}__${loginTimeStr}`;
+
+        if (!existingLoginKeys.has(key)) {
+          existingLoginKeys.add(key);
+          const dateOnly = loginTimeStr.includes(',') ? loginTimeStr.split(',')[0].trim() : (l.timestamp ? l.timestamp.split(',')[0].trim() : '');
+          pureHistoryRecords.push({
+            username: uName,
+            student_name: matchedUser?.name || l.identifier,
+            phone: matchedUser?.phone || '',
+            class: matchedUser?.class || '7',
+            division: matchedUser?.division || 'A',
+            date: dateOnly,
+            timestamp: loginTimeStr,
+            activity_type: 'LOGIN',
+            title: 'Logged into portal',
+            details: `• Logged In Time: ${loginTimeStr} • Device: ${l.device || 'Browser'}`
+          });
+        }
+      });
       setProgress(100);
 
       if (isPrivileged) {
@@ -9936,7 +10120,7 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
                         <strong style="color:#0f172a; font-size:13.5px;">${escapeHtml(ev.title)}</strong>
                       </span>
                       <span style="font-weight:700; background:${badgeBg}; color:${badgeColor}; padding:3px 8px; border-radius:6px;">
-                      ⏱️ ${formatDateStrict(ev.timestamp || ev.date)}
+                      ${ev.activity_type === 'LOGIN' ? '🔑 Logged In:' : '⏱️'} ${formatDateStrict(ev.timestamp || ev.date)}
                       </span>
                     </div>
 
