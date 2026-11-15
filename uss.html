@@ -2759,6 +2759,11 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
             if (typeof updateTab5QuotaLiveDOM === 'function') {
               updateTab5QuotaLiveDOM({ phone: cleanPhone, username: cleanUser, todaySeconds: 0 });
             }
+
+            if (typeof updateReportsAndUsersLiveDOM === 'function') {
+              updateReportsAndUsersLiveDOM({ phone: cleanPhone, username: cleanUser, todaySeconds: 0 });
+            }
+
           } catch (e) {
             console.warn("Quota reset error in DB:", e);
           }
@@ -6209,6 +6214,36 @@ async function saveCompletedSessionOnExit() {
       }
     }
 
+    function formatTimerHMS(totalSec) {
+      const n = Math.max(0, Math.floor(Number(totalSec) || 0));
+      const h = String(Math.floor(n / 3600)).padStart(2, '0');
+      const m = String(Math.floor((n % 3600) / 60)).padStart(2, '0');
+      const s = String(n % 60).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function getQuotaPillStyles(quota, isPaused = false) {
+      if (isPaused && !quota.isQuotaBlocked) {
+        return {
+          usedStyle: 'background:#f1f5f9; border:1.5px solid #94a3b8; color:#475569;',
+          leftStyle: 'background:#f1f5f9; border:1.5px solid #94a3b8; color:#475569;',
+          usedText: `${formatTimerHMS(quota.usedSec)} used`,
+          leftText: `${formatTimerHMS(quota.remainingSec)} (Paused)`
+        };
+      }
+      const isDanger = quota.isQuotaBlocked || quota.remainingSec <= 600;
+      return {
+        usedStyle: isDanger
+          ? 'background:#fee2e2; border:1.5px solid #ef4444; color:#991b1b;'
+          : 'background:#eff6ff; border:1.5px solid #60a5fa; color:#1e40af;',
+        leftStyle: isDanger
+          ? 'background:#fee2e2; border:1.5px solid #ef4444; color:#991b1b;'
+          : 'background:#fef3c7; border:1.5px solid #f59e0b; color:#92400e;',
+        usedText: `${formatTimerHMS(quota.usedSec)} used`,
+        leftText: quota.isQuotaBlocked ? '00:00:00 (Expired)' : `${formatTimerHMS(quota.remainingSec)} left`
+      };
+    }
+
     // Instant in-place DOM updater for Tab 6 (Reports), Tab 9 (Users), and Tab 5 Lifetime Time
     function updateReportsAndUsersLiveDOM(item) {
       if (!item) return;
@@ -6223,26 +6258,49 @@ async function saveCompletedSessionOnExit() {
         new Date().toLocaleDateString('en-GB'),
         true
       );
+      const isPaused = (item.isGreen === false);
+      const pillInfo = getQuotaPillStyles(quota, isPaused);
 
       const applyTimeToElements = (todaySel, totalSel) => {
-        document.querySelectorAll(todaySel).forEach(el => {
-          const baseTodayLogSec = Number(el.getAttribute('data-base-today-log-sec')) || 0;
-          const todayActualSec = Math.max(baseTodayLogSec, quota.usedSec);
-          el.innerText = formatSecs(todayActualSec);
+        if (todaySel) {
+          document.querySelectorAll(todaySel).forEach(el => {
+            const baseTodayLogSec = Number(el.getAttribute('data-base-today-log-sec')) || 0;
+            const todayActualSec = Math.max(baseTodayLogSec, quota.usedSec);
+            el.innerText = formatSecs(todayActualSec);
+          });
+        }
+        if (totalSel) {
+          document.querySelectorAll(totalSel).forEach(el => {
+            const baseTodayLogSec = Number(el.getAttribute('data-base-today-log-sec')) || 0;
+            const baseOtherSec = Number(el.getAttribute('data-base-other-sec')) || 0;
+            const todayActualSec = Math.max(baseTodayLogSec, quota.usedSec);
+            el.innerText = formatSecs(baseOtherSec + todayActualSec);
+          });
+        }
+      };
+
+      const applyQuotaPills = (usedSel, leftSel) => {
+        document.querySelectorAll(usedSel).forEach(pill => {
+          pill.setAttribute('style', `display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:800; ${pillInfo.usedStyle}`);
+          const txt = pill.querySelector('.quota-pill-text');
+          if (txt) txt.innerText = pillInfo.usedText;
         });
-        document.querySelectorAll(totalSel).forEach(el => {
-          const baseTodayLogSec = Number(el.getAttribute('data-base-today-log-sec')) || 0;
-          const baseOtherSec = Number(el.getAttribute('data-base-other-sec')) || 0;
-          const todayActualSec = Math.max(baseTodayLogSec, quota.usedSec);
-          el.innerText = formatSecs(baseOtherSec + todayActualSec);
+        document.querySelectorAll(leftSel).forEach(pill => {
+          pill.setAttribute('style', `display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:800; ${pillInfo.leftStyle}`);
+          const txt = pill.querySelector('.quota-pill-text');
+          if (txt) txt.innerText = pillInfo.leftText;
         });
       };
 
       applyTimeToElements(`[data-rep-today-time="${key}"]`, `[data-rep-total-time="${key}"]`);
       applyTimeToElements(`[data-opt-today-time="${key}"]`, `[data-opt-total-time="${key}"]`);
       applyTimeToElements(null, `[data-att-lifetime-time="${key}"]`);
+
+      applyQuotaPills(`[data-rep-quota-used="${key}"]`, `[data-rep-quota-left="${key}"]`);
+      applyQuotaPills(`[data-opt-quota-used="${key}"]`, `[data-opt-quota-left="${key}"]`);
     }
 
+    
     // Silent debounced refresh for Tab 5 / Tab 6 / Tab 9 when answers, trials, or attendance change
     function scheduleSilentAdminRefresh() {
       if (!isStaffOrAdminUser(currentUser)) return;
@@ -7073,6 +7131,7 @@ async function saveCompletedSessionOnExit() {
               const logData = buildDetailedAttendanceLogHTML(practiceAtt, st.phone, st.name, allAnswers, st.username);
               const repKey = st10 || stUserLower;
               const todayQuota = getStudentStickyHeaderQuota(st, cleanToday, true);
+              const repPillInfo = getQuotaPillStyles(todayQuota, false);
               const baseTodayLogSec = logData.todayTotalSec || 0;
               const todayActualSec = Math.max(baseTodayLogSec, todayQuota.usedSec);
               const otherDaysSec = Math.max(0, (logData.grandTotalSec || 0) - baseTodayLogSec);
@@ -7087,9 +7146,21 @@ async function saveCompletedSessionOnExit() {
               if (repContainer) {
                 repContainer.innerHTML = `
                   <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
-                    <h4 style="margin-top:0; color:var(--primary); font-size:15px; display:flex; align-items:center; gap:8px;">
-                      📅 Attendance & Practice Time
-                    </h4>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+                      <h4 style="margin:0; color:var(--primary); font-size:15px; display:flex; align-items:center; gap:8px;">
+                        📅 Attendance & Practice Time
+                      </h4>
+                      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span data-rep-quota-used="${repKey}" style="display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:800; ${repPillInfo.usedStyle}">
+                          <span>⏱️</span>
+                          <span class="quota-pill-text">${repPillInfo.usedText}</span>
+                        </span>
+                        <span data-rep-quota-left="${repKey}" style="display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:800; ${repPillInfo.leftStyle}">
+                          <span>⏳</span>
+                          <span class="quota-pill-text">${repPillInfo.leftText}</span>
+                        </span>
+                      </div>
+                    </div>
                     <div class="stats-grid" style="margin-bottom:16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced Today</p>
@@ -7276,6 +7347,7 @@ async function saveCompletedSessionOnExit() {
               const logData = buildDetailedAttendanceLogHTML(practiceAtt, item.user.phone, item.user.name, allAnswers, item.user.username);
               const optKey = st10 || stUserLower;
               const todayQuota = getStudentStickyHeaderQuota(item.user, cleanToday, true);
+              const optPillInfo = getQuotaPillStyles(todayQuota, false);
               const baseTodayLogSec = logData.todayTotalSec || 0;
               const todayActualSec = Math.max(baseTodayLogSec, todayQuota.usedSec);
               const otherDaysSec = Math.max(0, (logData.grandTotalSec || 0) - baseTodayLogSec);
@@ -7330,9 +7402,21 @@ async function saveCompletedSessionOnExit() {
 
                   <div class="accordion-body" id="opt-acc-${idx}" style="padding:20px; background:#ffffff;">
                     <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
-                      <h4 style="margin-top:0; color:var(--primary); font-size:15px; display:flex; align-items:center; gap:8px;">
-                        📅 Attendance & Practice Time
-                      </h4>
+                      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+                        <h4 style="margin:0; color:var(--primary); font-size:15px; display:flex; align-items:center; gap:8px;">
+                          📅 Attendance & Practice Time
+                        </h4>
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                          <span data-opt-quota-used="${optKey}" style="display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:800; ${optPillInfo.usedStyle}">
+                            <span>⏱️</span>
+                            <span class="quota-pill-text">${optPillInfo.usedText}</span>
+                          </span>
+                          <span data-opt-quota-left="${optKey}" style="display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:800; ${optPillInfo.leftStyle}">
+                            <span>⏳</span>
+                            <span class="quota-pill-text">${optPillInfo.leftText}</span>
+                          </span>
+                        </div>
+                      </div>
                       <div class="stats-grid" style="margin-bottom:16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced Today</p>
