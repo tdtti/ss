@@ -3280,21 +3280,26 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
             : Promise.resolve({ data: cachedAdminData.users }),
           supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(50),
           supabaseClient.from('attendance').select('*').eq('date', cleanDate).order('id', { ascending: false }),
-          supabaseClient.from('daily_usage').select('*').eq('date', cleanDate)
-        ]).then(([usersRes, logsRes, attRes, duRes]) => {
+          supabaseClient.from('daily_usage').select('*').eq('date', cleanDate),
+          supabaseClient.from('portal_history').select('*').eq('date', cleanDate).order('id', { ascending: false })
+        ]).then(([usersRes, logsRes, attRes, duRes, histRes]) => {
           const hadUsersBefore = Boolean(cachedAdminData?.users && cachedAdminData.users.length > 0);
           cachedAdminData = cachedAdminData || {};
           if (usersRes?.data && usersRes.data.length > 0) cachedAdminData.users = usersRes.data;
           if (logsRes?.data) cachedAdminData.logs = logsRes.data;
           if (attRes?.data) cachedAdminData.allAttendance = attRes.data;
           if (duRes?.data) cachedAdminData.dailyUsage = duRes.data;
+          if (histRes?.data) {
+            const existingIds = new Set((cachedAdminData.portalHistory || []).map(h => h.id));
+            const merged = [...(cachedAdminData.portalHistory || [])];
+            histRes.data.forEach(h => { if (!existingIds.has(h.id)) merged.unshift(h); });
+            cachedAdminData.portalHistory = merged;
+          }
 
           if (!hadUsersBefore && document.getElementById('admin-online-sec')?.style.display === 'block') {
             renderAllUsersOnlineCards();
           }
-        }).catch((err) => {
-          console.warn('Online cards fetch error:', err);
-        }).finally(() => {
+        }).catch(() => {}).finally(() => {
           window._isFetchingOnlineCards = false;
         });
       }
@@ -3366,56 +3371,33 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
         );
 
         // -------------------------------------------------------------------
-        // 3. ACTUAL TIME CALCULATION (SESSIONS + LIVE DAILY + WEBSOCKET TICKER)
+        // 3. AUTHORITATIVE QUOTA & TIME CALCULATION (MATCHES TAB 5, 6, 9 & HISTORY)
         // -------------------------------------------------------------------
-        let sessionsSum = 0;
-        let dailyLiveSec = 0;
         let latestActivityTimeMs = 0;
-
         studentAttLogs.forEach(a => {
           const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
-          if (aDate === cleanDate) {
-            const sec = Number(a.duration_seconds) || 0;
-            const isDaily = String(a.attendance_id || '').includes('-DAILY');
-            if (isDaily) {
-              if (sec > dailyLiveSec) dailyLiveSec = sec;
-            } else {
-              sessionsSum += sec;
-            }
-
-            if (a.timestamp) {
-              const parsed = parseCustomDate(a.timestamp);
-              if (parsed && parsed.getTime() > latestActivityTimeMs) {
-                latestActivityTimeMs = parsed.getTime();
-              }
+          if (aDate === cleanDate && a.timestamp) {
+            const parsed = parseCustomDate(a.timestamp);
+            if (parsed && parsed.getTime() > latestActivityTimeMs) {
+              latestActivityTimeMs = parsed.getTime();
             }
           }
         });
 
-        // Exact maximum across completed tests, daily DB heartbeat, and active stream
-        const liveStreamSec = Number(pres?.todaySeconds || 0);
-        const usedSeconds = Math.max(sessionsSum, dailyLiveSec, liveStreamSec);
+        const quota = getStudentStickyHeaderQuota(u, cleanDate, true);
+        const usedSeconds = quota.usedSec;
+        const remainingSec = quota.remainingSec;
+        const timeLeftFormatted = quota.timeLeftFormatted;
+        const usedFormatted = quota.usedFormatted;
 
-        // Strict 60-minute countdown (3600 seconds)
-        const maxDailySec = 3600;
-        const remainingSec = Math.max(0, maxDailySec - usedSeconds);
-        const remMins = Math.floor(remainingSec / 60);
-        const remSecs = remainingSec % 60;
-
-        let timeLeftFormatted = `${remMins}m ${String(remSecs).padStart(2, '0')}s left`;
         let timeLeftBadgeClass = 'badge-success';
-
-        if (usedSeconds >= maxDailySec) {
-          timeLeftFormatted = '0m 00s (Expired)';
+        if (quota.isQuotaBlocked) {
           timeLeftBadgeClass = 'badge-danger';
         } else if (remainingSec <= 600) {
           timeLeftBadgeClass = 'badge-danger';
         } else if (remainingSec <= 1800) {
           timeLeftBadgeClass = 'badge-warning';
         }
-
-        const usedMins = Math.floor(usedSeconds / 60);
-        const usedFormatted = `${usedMins}m ${String(usedSeconds % 60).padStart(2, '0')}s`;
 
         // -------------------------------------------------------------------
         // 4. INSTANT ACTIVE DETECTION (SUB-SECOND INACTIVE RECOGNITION)
@@ -4180,6 +4162,21 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
           presenceChannel.untrack().catch(() => {});
         }
       } catch (e) {}
+
+      if (forced && savedUser && !isStaffOrAdminUser(savedUser)) {
+        try {
+          await Promise.race([
+            supabaseClient.from('daily_usage').upsert([{
+              phone: String(savedUser.phone || '').trim(),
+              username: String(savedUser.username || '').trim().toLowerCase(),
+              date: new Date().toLocaleDateString('en-GB'),
+              used_seconds: DAILY_MAX_QUOTA_SECONDS,
+              updated_at: new Date().toISOString()
+            }], { onConflict: 'phone,date' }),
+            new Promise(resolve => setTimeout(resolve, 400))
+          ]);
+        } catch (e) {}
+      }
 
       // Await database write with a 400ms timeout race so location.reload() never aborts it
       if (savedUser && (savedUser.logId || savedUser.username)) {
