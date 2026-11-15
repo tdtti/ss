@@ -2990,9 +2990,13 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
             updateStudentAdminSupervisionUI();
             if (typeof updateTab5QuotaLiveDOM === 'function') {
               updateTab5QuotaLiveDOM(record);
+            if (typeof updateReportsAndUsersLiveDOM === 'function') {
+              updateReportsAndUsersLiveDOM(record);
+            }  
             }
           }
         })
+        
         .on('broadcast', { event: 'request_quota_sync' }, () => {
           if (currentUser && !isStaffOrAdminUser(currentUser)) {
             broadcastLivePulse(
@@ -3614,37 +3618,50 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
                (targetName && itemN && (targetName === itemN || (targetName.length >= 4 && itemN.length >= 4 && (targetName.includes(itemN) || itemN.includes(targetName)))));
       };
 
-      let count = 0;
+      const normalizeDate = (rawD, rawTs) => {
+        let dStr = rawD || (rawTs ? String(rawTs).split(',')[0].trim() : '');
+        const pD = parseCustomDate(dStr) || parseCustomDate(rawTs);
+        if (pD && !isNaN(pD.getTime())) {
+          dStr = `${String(pD.getDate()).padStart(2, '0')}/${String(pD.getMonth() + 1).padStart(2, '0')}/${pD.getFullYear()}`;
+        }
+        return dStr;
+      };
 
-      // 1. Authoritative count from student_answers on targetDateStr
+      const seenQKeys = new Set();
+      let extraUnlistedTrialCount = 0;
+
+      // 1. Authoritative deduplicated count from student_answers on targetDateStr
       (allAnswersList || []).forEach(ans => {
         if (isMatch(ans.phone, ans.username, ans.student_name)) {
-          let aDate = ans.date || (ans.timestamp ? ans.timestamp.split(',')[0].trim() : '');
-          const pD = parseCustomDate(aDate) || parseCustomDate(ans.timestamp);
-          if (pD && !isNaN(pD.getTime())) {
-            aDate = `${String(pD.getDate()).padStart(2, '0')}/${String(pD.getMonth() + 1).padStart(2, '0')}/${pD.getFullYear()}`;
-          }
-          if (aDate === targetDateStr) {
-            count++;
+          if (normalizeDate(ans.date, ans.timestamp) === targetDateStr) {
+            const key = `${ans.question_id || ans.question_text}`;
+            seenQKeys.add(key);
           }
         }
       });
 
-      // 2. Count from trial_exams on targetDateStr
+      // 2. Deduplicated count from trial_exams on targetDateStr (never double-count questions already in student_answers)
       (allTrialsList || []).forEach(tr => {
         if (isMatch(tr.phone, tr.username, tr.student_name)) {
-          let tDate = tr.date || (tr.timestamp ? tr.timestamp.split(',')[0].trim() : '');
-          const pD = parseCustomDate(tDate) || parseCustomDate(tr.timestamp);
-          if (pD && !isNaN(pD.getTime())) {
-            tDate = `${String(pD.getDate()).padStart(2, '0')}/${String(pD.getMonth() + 1).padStart(2, '0')}/${pD.getFullYear()}`;
-          }
-          if (tDate === targetDateStr) {
-            count += (Number(tr.total_questions) || 0);
+          if (normalizeDate(tr.date, tr.timestamp) === targetDateStr) {
+            let tAns = [];
+            try {
+              tAns = typeof tr.answers_json === 'string' ? JSON.parse(tr.answers_json || '[]') : (tr.answers_json || []);
+            } catch (e) { tAns = []; }
+
+            if (Array.isArray(tAns) && tAns.length > 0) {
+              tAns.forEach(ta => {
+                const key = `${ta.QuestionID || ta.question_id || ta.QuestionText || ta.question_text}`;
+                if (key) seenQKeys.add(key);
+              });
+            } else {
+              extraUnlistedTrialCount += (Number(tr.total_questions) || 0);
+            }
           }
         }
       });
 
-      return count;
+      return seenQKeys.size + extraUnlistedTrialCount;
     }
 
     // =========================================================================
@@ -3987,7 +4004,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
       const classDivBox = document.getElementById('user-class-div-container');
       const staffBadge = document.getElementById('user-staff-badge');
 
-      // ✅ ADMIN ONLY: Realtime live attendance & daily_usage streams for instant Tab 5 & Tab 10 updates
+      // ADMIN ONLY: Realtime live attendance, daily_usage, student_answers & trial_exams streams
       if (isStaff && !window._adminStreamsInitialized) {
         window._adminStreamsInitialized = true;
 
@@ -4004,16 +4021,25 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
                 cachedAdminData.allAttendance.unshift(payload.new);
               }
 
-              // Instantly update Tab 5 if this is a -DAILY quota row
-              if (String(payload.new.attendance_id || '').includes('-DAILY') && typeof updateTab5QuotaLiveDOM === 'function') {
-                updateTab5QuotaLiveDOM({
-                  phone: payload.new.phone,
-                  username: payload.new.username,
-                  todaySeconds: payload.new.duration_seconds
-                });
+              if (String(payload.new.attendance_id || '').includes('-DAILY')) {
+                if (typeof updateTab5QuotaLiveDOM === 'function') {
+                  updateTab5QuotaLiveDOM({
+                    phone: payload.new.phone,
+                    username: payload.new.username,
+                    todaySeconds: payload.new.duration_seconds
+                  });
+                }
+                if (typeof updateReportsAndUsersLiveDOM === 'function') {
+                  updateReportsAndUsersLiveDOM({
+                    phone: payload.new.phone,
+                    username: payload.new.username,
+                    todaySeconds: payload.new.duration_seconds
+                  });
+                }
+              } else if (typeof scheduleSilentAdminRefresh === 'function') {
+                scheduleSilentAdminRefresh();
               }
 
-              // Instantly re-render Tab 10 if Admin is viewing it
               const onlineSec = document.getElementById('admin-online-sec');
               if (onlineSec && onlineSec.style.display === 'block') {
                 renderAllUsersOnlineCards();
@@ -4035,7 +4061,6 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
                 cachedAdminData.dailyUsage.unshift(payload.new);
               }
 
-              // Instantly update Tab 5 Cumulative Usage & Time Left Today
               if (typeof updateTab5QuotaLiveDOM === 'function') {
                 updateTab5QuotaLiveDOM({
                   phone: payload.new.phone,
@@ -4044,12 +4069,29 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
                 });
               }
 
-              // Also refresh Tab 10 if open
+              if (typeof updateReportsAndUsersLiveDOM === 'function') {
+                updateReportsAndUsersLiveDOM({
+                  phone: payload.new.phone,
+                  username: payload.new.username,
+                  todaySeconds: payload.new.used_seconds
+                });
+              }
+
               const onlineSec = document.getElementById('admin-online-sec');
               if (onlineSec && onlineSec.style.display === 'block') {
                 renderAllUsersOnlineCards();
               }
             }
+          })
+          .subscribe();
+
+        supabaseClient
+          .channel('admin_realtime_answers_stream')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'student_answers' }, () => {
+            if (typeof scheduleSilentAdminRefresh === 'function') scheduleSilentAdminRefresh();
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'trial_exams' }, () => {
+            if (typeof scheduleSilentAdminRefresh === 'function') scheduleSilentAdminRefresh();
           })
           .subscribe();
       }
@@ -4246,7 +4288,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
         document.getElementById(tabMap[sectionId]).classList.add('active');
       }
 
-      if (sectionId === 'admin-attendance-sec' && presenceChannel) {
+      if (['admin-attendance-sec', 'admin-report-sec', 'manage-users-sec'].includes(sectionId) && presenceChannel) {
         try {
           presenceChannel.send({ type: 'broadcast', event: 'request_quota_sync', payload: { ts: Date.now() } });
         } catch (e) {}
@@ -5286,33 +5328,30 @@ async function saveCompletedSessionOnExit() {
           if (exact) return extractHistoryDurationSecs(exact);
         }
 
+        const itemMs = parseCustomDate(item.timestamp)?.getTime() || 0;
+        if (!itemMs) return 0;
+
         const actLower = String(item.activity || '').toLowerCase();
         let subHint = '';
         if (actLower.includes('trial')) subHint = 'trial';
         else if (actLower.includes('(')) subHint = actLower.split('(')[1].replace(')', '').trim();
 
-        const sameDateHist = studentHistorySessions.filter(h => {
-          const hDate = normalizeDateStr(h.date, h.timestamp);
-          return hDate === dKey && extractHistoryDurationSecs(h) > 0;
+        // Strictly match only a history entry created within 15 seconds of this attendance row
+        const nearMatches = studentHistorySessions.filter(h => {
+          if (normalizeDateStr(h.date, h.timestamp) !== dKey) return false;
+          if (extractHistoryDurationSecs(h) <= 0) return false;
+          const hMs = parseCustomDate(h.timestamp)?.getTime() || 0;
+          if (!hMs || Math.abs(hMs - itemMs) > 15000) return false;
+          if (subHint && !`${h.title || ''} ${h.details || ''}`.toLowerCase().includes(subHint)) return false;
+          return true;
         });
 
-        if (sameDateHist.length === 0) return 0;
-
-        const subMatched = subHint
-          ? sameDateHist.filter(h => `${h.title || ''} ${h.details || ''}`.toLowerCase().includes(subHint))
-          : sameDateHist;
-
-        const candidates = subMatched.length > 0 ? subMatched : sameDateHist;
-        const itemMs = parseCustomDate(item.timestamp)?.getTime() || 0;
-
-        if (itemMs > 0) {
-          candidates.sort((a, b) => {
-            const aDiff = Math.abs((parseCustomDate(a.timestamp)?.getTime() || 0) - itemMs);
-            const bDiff = Math.abs((parseCustomDate(b.timestamp)?.getTime() || 0) - itemMs);
-            return aDiff - bDiff;
-          });
-        }
-        return extractHistoryDurationSecs(candidates[0]);
+        if (nearMatches.length === 0) return 0;
+        nearMatches.sort((a, b) =>
+          Math.abs((parseCustomDate(a.timestamp)?.getTime() || 0) - itemMs) -
+          Math.abs((parseCustomDate(b.timestamp)?.getTime() || 0) - itemMs)
+        );
+        return extractHistoryDurationSecs(nearMatches[0]);
       };
 
       // 1. Clean & sort logs chronologically descending (prefer real live sessions over -SYNC rows)
@@ -5439,8 +5478,11 @@ async function saveCompletedSessionOnExit() {
 
           const displayScore = resolveAttendanceRowScore(item, studentPhone, studentName, answersPool);
 
-          // Strictly use actual questions_attended from Supabase attendance record
-          const qCount = Number(item.questions_attended) || 0;
+          // Use the session's own score denominator (e.g. 9 / 25 -> 25) or attendance.questions_attended
+          const rawScoreMatch = String(item.score || '').match(/\/\s*(\d+)/);
+          const qCount = rawScoreMatch
+            ? parseInt(rawScoreMatch[1], 10)
+            : (Number(item.questions_attended) || 0);
 
           dayTotalQuestions += qCount;
           grandTotalQuestions += qCount;
@@ -6042,9 +6084,6 @@ async function saveCompletedSessionOnExit() {
       }
     }
 
-    // =========================================================================
-    // RESOLVE CONCERNED STUDENT'S STICKY SUB-HEADER 60M QUOTA (USED & LEFT)
-    // =========================================================================
     function getStudentStickyHeaderQuota(userObj, dateStr, isToday) {
       const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
       const u10 = get10(userObj?.phone);
@@ -6052,13 +6091,18 @@ async function saveCompletedSessionOnExit() {
       const maxDailySec = DAILY_MAX_QUOTA_SECONDS; // 3600s (60m)
 
       let dbDailyUsageSec = 0;
-      const dUsageRow = (cachedAdminData?.dailyUsage || []).find(d => {
+      let latestQuotaUpdatedMs = 0;
+      (cachedAdminData?.dailyUsage || []).forEach(d => {
         const d10 = get10(d.phone);
         const dUser = String(d.username || '').trim().toLowerCase();
         const matchUser = (u10 && d10 === u10) || (uUser && dUser === uUser);
-        return matchUser && d.date === dateStr;
+        if (matchUser && d.date === dateStr) {
+          const sec = Number(d.used_seconds) || 0;
+          if (sec > dbDailyUsageSec) dbDailyUsageSec = sec;
+          const upMs = d.updated_at ? new Date(d.updated_at).getTime() : 0;
+          if (upMs > latestQuotaUpdatedMs) latestQuotaUpdatedMs = upMs;
+        }
       });
-      if (dUsageRow) dbDailyUsageSec = Number(dUsageRow.used_seconds) || 0;
 
       let dbDailyAttSec = 0;
       (cachedAdminData?.allAttendance || []).forEach(a => {
@@ -6072,16 +6116,37 @@ async function saveCompletedSessionOnExit() {
         }
       });
 
+      // Check portal_history for Quota Expired on dateStr (unless Admin restored quota after it)
+      let historyQuotaExpiredSec = 0;
+      (cachedAdminData?.portalHistory || []).forEach(h => {
+        const h10 = get10(h.phone);
+        const hUser = String(h.username || '').trim().toLowerCase();
+        const matchUser = (u10 && h10 === u10) || (uUser && hUser === uUser);
+        let hDate = h.date || (h.timestamp ? String(h.timestamp).split(',')[0].trim() : '');
+        const pD = parseCustomDate(hDate) || parseCustomDate(h.timestamp);
+        if (pD && !isNaN(pD.getTime())) {
+          hDate = `${String(pD.getDate()).padStart(2, '0')}/${String(pD.getMonth() + 1).padStart(2, '0')}/${pD.getFullYear()}`;
+        }
+        if (matchUser && hDate === dateStr) {
+          const txt = `${h.title || ''} ${h.details || ''}`.toLowerCase();
+          if (txt.includes('quota expired')) {
+            const expMs = parseCustomDate(h.timestamp)?.getTime() || 0;
+            // Only apply if daily_usage wasn't explicitly reset to 0 after the expiration
+            if (!(dbDailyUsageSec === 0 && latestQuotaUpdatedMs > expMs)) {
+              historyQuotaExpiredSec = maxDailySec;
+            }
+          }
+        }
+      });
+
       let liveStickySec = 0;
       if (isToday) {
-        // 1. Check live WebSocket broadcast pings from student's sticky sub-header
         const pings = window._liveHeartbeats || {};
         const pingMatch = pings[u10] || pings[uUser];
         if (pingMatch && (Date.now() - pingMatch.receivedAt < 60000)) {
           liveStickySec = Math.max(liveStickySec, Number(pingMatch.todaySeconds) || 0);
         }
 
-        // 2. Check Presence state
         try {
           if (presenceChannel) {
             const state = presenceChannel.presenceState();
@@ -6096,7 +6161,7 @@ async function saveCompletedSessionOnExit() {
         } catch (e) {}
       }
 
-      const usedSec = Math.min(maxDailySec, Math.max(dbDailyUsageSec, dbDailyAttSec, liveStickySec));
+      const usedSec = Math.min(maxDailySec, Math.max(dbDailyUsageSec, dbDailyAttSec, historyQuotaExpiredSec, liveStickySec));
       const remainingSec = Math.max(0, maxDailySec - usedSec);
       const isQuotaBlocked = usedSec >= maxDailySec;
 
@@ -6146,6 +6211,65 @@ async function saveCompletedSessionOnExit() {
         badgeEl.innerText = quota.isQuotaBlocked ? '🛑 60m Quota Expired' : 'Active Practicing';
       }
     }
+
+    // Instant in-place DOM updater for Tab 6 (Reports), Tab 9 (Users), and Tab 5 Lifetime Time
+    function updateReportsAndUsersLiveDOM(item) {
+      if (!item) return;
+      const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+      const p10 = get10(item.phone);
+      const pUser = String(item.username || '').trim().toLowerCase();
+      const key = p10 || pUser;
+      if (!key) return;
+
+      const quota = getStudentStickyHeaderQuota(
+        { phone: item.phone, username: item.username },
+        new Date().toLocaleDateString('en-GB'),
+        true
+      );
+
+      const applyTimeToElements = (todaySel, totalSel) => {
+        document.querySelectorAll(todaySel).forEach(el => {
+          const baseTodayLogSec = Number(el.getAttribute('data-base-today-log-sec')) || 0;
+          const todayActualSec = Math.max(baseTodayLogSec, quota.usedSec);
+          el.innerText = formatSecs(todayActualSec);
+        });
+        document.querySelectorAll(totalSel).forEach(el => {
+          const baseTodayLogSec = Number(el.getAttribute('data-base-today-log-sec')) || 0;
+          const baseOtherSec = Number(el.getAttribute('data-base-other-sec')) || 0;
+          const todayActualSec = Math.max(baseTodayLogSec, quota.usedSec);
+          el.innerText = formatSecs(baseOtherSec + todayActualSec);
+        });
+      };
+
+      applyTimeToElements(`[data-rep-today-time="${key}"]`, `[data-rep-total-time="${key}"]`);
+      applyTimeToElements(`[data-opt-today-time="${key}"]`, `[data-opt-total-time="${key}"]`);
+      applyTimeToElements(null, `[data-att-lifetime-time="${key}"]`);
+    }
+
+    // Silent debounced refresh for Tab 5 / Tab 6 / Tab 9 when answers, trials, or attendance change
+    function scheduleSilentAdminRefresh() {
+      if (!isStaffOrAdminUser(currentUser)) return;
+      clearTimeout(window._silentAdminRefreshTimer);
+      window._silentAdminRefreshTimer = setTimeout(async () => {
+        const visibleAdminTabs = ['admin-attendance-sec', 'admin-report-sec', 'manage-users-sec'];
+        const isViewingAdminTab = visibleAdminTabs.some(id => document.getElementById(id)?.style.display === 'block');
+        if (!isViewingAdminTab) return;
+
+        // Preserve currently open accordions so admin view never collapses during live updates
+        const openIds = [];
+        document.querySelectorAll('[id^="report-acc-"], [id^="opt-acc-"], [id^="att-date-group-"], [id^="att-detail-card-"]').forEach(el => {
+          if (el.style.display === 'block') openIds.push(el.id);
+        });
+
+        await loadAdminData();
+
+        openIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'block';
+        });
+      }, 800);
+    }
+
     
     // =========================================================================
     // FULL UPDATED LOAD ADMIN DATA (ALL TABS SYNCHRONIZED & ERROR-RESILIENT)
@@ -6344,14 +6468,17 @@ async function saveCompletedSessionOnExit() {
                 if (dStr) lifetimeDaysSet.add(dStr);
               });
 
-              const liveSecToday = getTodayElapsedSeconds(st.phone || st.username);
-              const finalSec = Math.max(lifetimeSec, stLogData.grandTotalSec || 0, liveSecToday);
-              if (liveSecToday > 0) lifetimeDaysSet.add(cleanToday);
+              const todayQuota = getStudentStickyHeaderQuota(st, cleanToday, true);
+              const baseTodayLogSec = stLogData.todayTotalSec || 0;
+              const todayActualSec = Math.max(baseTodayLogSec, todayQuota.usedSec);
+              const otherDaysSec = Math.max(0, (stLogData.grandTotalSec || 0) - baseTodayLogSec);
+              const totalActualSec = otherDaysSec + todayActualSec;
 
-              const lm = Math.round(finalSec / 60);
               studentLifetimeMap.set(st10 || stUser, {
-                activeDaysCount: Math.max(lifetimeDaysSet.size, stLogData.activeDaysCount || 0),
-                totalTimePracticedText: lm > 0 ? `${lm} mins` : `${finalSec}s`,
+                activeDaysCount: (stLogData.activeDaysCount || 0) + (todayActualSec > 0 && baseTodayLogSec === 0 ? 1 : 0),
+                totalTimePracticedText: formatSecs(totalActualSec),
+                baseTodayLogSec,
+                otherDaysSec,
                 totalQuestionsAttendedAllDay: metrics.total
               });
             });
@@ -6516,13 +6643,14 @@ async function saveCompletedSessionOnExit() {
                           totalQuestionsAttendedAllDay: stData.questionsAttended
                         };
 
+                        const stLogData = studentPortfolioLogMap.get(uKey);
+                        const attDayQs = stLogData?.dayTotalsMap?.[dateStr]?.totalQuestions ?? stData.questionsAttended;
                         const verifiedQsOnDate = getStudentQuestionsCountForDate(u.phone, u.username, u.name, dateStr, allAnswers, allTrialExams);
-                        stData.questionsAttended = Math.max(stData.questionsAttended, verifiedQsOnDate);
+                        stData.questionsAttended = Math.max(attDayQs, verifiedQsOnDate);
 
                         // Today: live sticky sub-header 60m quota
                         // Previous days: actual cumulative usage of that day as per Portfolio (60m 00s - used)
                         const quota = getStudentStickyHeaderQuota(u, dateStr, isToday);
-                        const stLogData = studentPortfolioLogMap.get(uKey);
                         const portfolioDaySec = stLogData?.dayTotalsMap?.[dateStr]?.totalSec || 0;
 
                         let cumulativeUsageToday = quota.usedFormatted;
@@ -6793,7 +6921,7 @@ async function saveCompletedSessionOnExit() {
                                     <div class="att-tile">
                                       <span class="att-tile-label">⌛ Total Time Practiced</span>
                                       <div>
-                                        <span class="num-chip num-chip-blue">${lifetime.totalTimePracticedText}</span>
+                                        <span data-att-lifetime-time="${uKey}" data-base-today-log-sec="${lifetime.baseTodayLogSec || 0}" data-base-other-sec="${lifetime.otherDaysSec || 0}" class="num-chip num-chip-blue">${lifetime.totalTimePracticedText}</span>
                                       </div>
                                     </div>
 
@@ -6946,9 +7074,16 @@ async function saveCompletedSessionOnExit() {
               });
 
               const logData = buildDetailedAttendanceLogHTML(practiceAtt, st.phone, st.name, allAnswers, st.username);
-              const todayDurationFormatted = formatSecs(logData.todayTotalSec);
-              const durationFormatted = formatSecs(logData.grandTotalSec);
-              const activeDaysCount = logData.activeDaysCount;
+              const repKey = st10 || stUserLower;
+              const todayQuota = getStudentStickyHeaderQuota(st, cleanToday, true);
+              const baseTodayLogSec = logData.todayTotalSec || 0;
+              const todayActualSec = Math.max(baseTodayLogSec, todayQuota.usedSec);
+              const otherDaysSec = Math.max(0, (logData.grandTotalSec || 0) - baseTodayLogSec);
+              const totalActualSec = otherDaysSec + todayActualSec;
+
+              const todayDurationFormatted = formatSecs(todayActualSec);
+              const durationFormatted = formatSecs(totalActualSec);
+              const activeDaysCount = (logData.activeDaysCount || 0) + (todayActualSec > 0 && baseTodayLogSec === 0 ? 1 : 0);
               const todayQuestionsCount = getStudentQuestionsCountForDate(st.phone, st.username, st.name, cleanToday, allAnswers, allTrialExams);
 
               const repContainer = document.getElementById(`admin-rep-container-${idx}`);
@@ -6961,11 +7096,11 @@ async function saveCompletedSessionOnExit() {
                     <div class="stats-grid" style="margin-bottom:16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced Today</p>
-                        <h3 style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
+                        <h3 data-rep-today-time="${repKey}" data-base-today-log-sec="${baseTodayLogSec}" style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
                       </div>
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced</p>
-                        <h3 style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
+                        <h3 data-rep-total-time="${repKey}" data-base-today-log-sec="${baseTodayLogSec}" data-base-other-sec="${otherDaysSec}" style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
                       </div>
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Active Attendance Days</p>
@@ -7142,9 +7277,16 @@ async function saveCompletedSessionOnExit() {
               });
 
               const logData = buildDetailedAttendanceLogHTML(practiceAtt, item.user.phone, item.user.name, allAnswers, item.user.username);
-              const todayDurationFormatted = formatSecs(logData.todayTotalSec);
-              const durationFormatted = formatSecs(logData.grandTotalSec);
-              const activeDaysCount = logData.activeDaysCount;
+              const optKey = st10 || stUserLower;
+              const todayQuota = getStudentStickyHeaderQuota(item.user, cleanToday, true);
+              const baseTodayLogSec = logData.todayTotalSec || 0;
+              const todayActualSec = Math.max(baseTodayLogSec, todayQuota.usedSec);
+              const otherDaysSec = Math.max(0, (logData.grandTotalSec || 0) - baseTodayLogSec);
+              const totalActualSec = otherDaysSec + todayActualSec;
+
+              const todayDurationFormatted = formatSecs(todayActualSec);
+              const durationFormatted = formatSecs(totalActualSec);
+              const activeDaysCount = (logData.activeDaysCount || 0) + (todayActualSec > 0 && baseTodayLogSec === 0 ? 1 : 0);
 
               const todayQuestionsCount = getStudentQuestionsCountForDate(
                 item.user.phone,
@@ -7197,11 +7339,11 @@ async function saveCompletedSessionOnExit() {
                       <div class="stats-grid" style="margin-bottom:16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced Today</p>
-                          <h3 style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
+                          <h3 data-opt-today-time="${optKey}" data-base-today-log-sec="${baseTodayLogSec}" style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
                         </div>
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced</p>
-                          <h3 style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
+                          <h3 data-opt-total-time="${optKey}" data-base-today-log-sec="${baseTodayLogSec}" data-base-other-sec="${otherDaysSec}" style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
                         </div>
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Active Attendance Days</p>
