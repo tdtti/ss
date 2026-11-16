@@ -494,9 +494,44 @@
       /* === SCHOOL RADIO HEADER WIDGET === */
         .profile-pic-container { justify-content: space-between; gap: 16px; flex-wrap: wrap; }
         .profile-left-wrap { display: flex; align-items: flex-end; }
-        .school-radio-widget {
+        .school-radio-outer-wrap {
             margin-left: auto;
             margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 100%;
+        }
+        .radio-playing-theme {
+            display: none;
+            width: 240px;
+            max-width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            margin-bottom: 4px;
+            color: #000080;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-align: center;
+            background: transparent;
+        }
+        .radio-playing-theme.visible {
+            display: block;
+        }
+        .radio-playing-theme span {
+            display: inline-block;
+            padding-left: 100%;
+            animation: radioThemeScroll 10s linear infinite;
+        }
+        @keyframes radioThemeScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+        @keyframes radioThemeFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+        .school-radio-widget {
             background: linear-gradient(135deg, #0f172a, #1e3a8a);
             color: #ffffff;
             padding: 8px 14px;
@@ -540,7 +575,7 @@
 
         @media (max-width: 650px) {
             .profile-left-wrap { flex-direction: column; align-items: center; width: 100%; }
-            .school-radio-widget { margin: 12px auto 0 auto; }
+            .school-radio-outer-wrap { margin: 12px auto 0 auto; }
         }
 
         /* === SCHOOL RADIO PLAYLIST MODAL === */
@@ -643,18 +678,23 @@
                 <h2 class="school-slogan">Empowering Minds..<br>Shaping Futures...</h2>
             </div>
 
-            <!-- SCHOOL RADIO WIDGET (Play/Pause + Playlist Button) -->
-            <div class="school-radio-widget" id="schoolRadioWidget">
-                <div class="radio-label">
-                    <span class="radio-live-dot" id="radioLiveDot"></span>
-                    <span>📻 School Radio</span>
+            <!-- SCHOOL RADIO OUTER WRAPPER -->
+            <div class="school-radio-outer-wrap">
+                <div id="radioNowPlayingTheme" class="radio-playing-theme"><span></span></div>
+
+                <!-- SCHOOL RADIO WIDGET (Play/Pause + Playlist Button) -->
+                <div class="school-radio-widget" id="schoolRadioWidget">
+                    <div class="radio-label">
+                        <span class="radio-live-dot" id="radioLiveDot"></span>
+                        <span>📻 School Radio</span>
+                    </div>
+                    <button type="button" class="radio-ctrl-btn btn-radio-play" id="radioMainPlayBtn" onclick="toggleSchoolRadio()" title="Play / Pause School Radio">
+                        <i class="fa-solid fa-play" id="radioPlayIcon"></i>
+                    </button>
+                    <button type="button" class="radio-ctrl-btn btn-radio-plus" onclick="openRadioPlaylistModal()" title="Open School Radio Playlist">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
                 </div>
-                <button type="button" class="radio-ctrl-btn btn-radio-play" id="radioMainPlayBtn" onclick="toggleSchoolRadio()" title="Play / Pause School Radio">
-                    <i class="fa-solid fa-play" id="radioPlayIcon"></i>
-                </button>
-                <button type="button" class="radio-ctrl-btn btn-radio-plus" onclick="openRadioPlaylistModal()" title="Open School Radio Playlist">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
             </div>
         </div>
 
@@ -2008,13 +2048,7 @@
             });
             renderRadioPlaylist();
             renderAdminRadioList();
-            if (!isRadioPlaying && globalRadioTracks.length > 0 && globalRadioTracks[0].sourceType === 'youtube') {
-                const firstVid = extractYtVideoId(globalRadioTracks[0].mediaUrl);
-                if (firstVid && ytRadioPlayer && ytPlayerReady && !currentLoadedRadioId) {
-                    ytRadioPlayer.cueVideoById(firstVid);
-                    currentLoadedRadioId = globalRadioTracks[0].id;
-                }
-            }
+            tryAutoPlayRadioOnLoad();
         }, (error) => {
             console.error("Firestore Radio Error:", error);
         });
@@ -3682,7 +3716,7 @@
                 resetBdayFields();
             }
         }
-    }
+        }
 
     function autoFillStudent() {
         const searchInput = document.getElementById('bdayStudentSearch');
@@ -4318,99 +4352,16 @@
     let currentRadioIndex = 0;
     let isRadioPlaying = false;
 
-    let ytApiReady = false;
-    
-
-    // Called automatically by YouTube IFrame API when loaded
-    function onYouTubeIframeAPIReady() {
-        ytApiReady = true;
-        ytRadioPlayer = new YT.Player('ytRadioPlayer', {
-            height: '1',
-            width: '1',
-            videoId: '',
-            playerVars: { autoplay: 0, controls: 0, playsinline: 1 },
-            events: {
-                onReady: () => {
-                    if (pendingYtVideoId) {
-                        ytRadioPlayer.loadVideoById(pendingYtVideoId);
-                        pendingYtVideoId = null;
-                    }
-                },
-                onStateChange: (event) => {
-                    if (event.data === YT.PlayerState.ENDED) {
-                        playNextRadioTrack();
-                    } else if (event.data === YT.PlayerState.PLAYING) {
-                        setRadioUiPlaying(true);
-                    } else if (event.data === YT.PlayerState.PAUSED) {
-                        setRadioUiPlaying(false);
-                    }
-                }
-            }
-        });
-    }
-
-    function extractYtVideoId(url) {
-        if (!url) return null;
-        let clean = url.trim();
-        if (clean.includes('youtu.be/')) return clean.split('youtu.be/')[1].split(/[?&#]/)[0];
-        if (clean.includes('youtube.com/shorts/')) return clean.split('youtube.com/shorts/')[1].split(/[?&#]/)[0];
-        if (clean.includes('youtube.com/live/')) return clean.split('youtube.com/live/')[1].split(/[?&#]/)[0];
-        if (clean.includes('youtube.com/embed/')) return clean.split('youtube.com/embed/')[1].split(/[?&#]/)[0];
-        if (clean.includes('v=')) return clean.split('v=')[1].split('&')[0];
-        return null;
-    }
-
-    function setRadioUiPlaying(playing) {
-        isRadioPlaying = playing;
-        const btn = document.getElementById('radioMainPlayBtn');
-        const icon = document.getElementById('radioPlayIcon');
-        const dot = document.getElementById('radioLiveDot');
-        if (btn) btn.classList.toggle('is-playing', playing);
-        if (icon) icon.className = playing ? 'fa-solid fa-pause' : 'fa-solid fa-play';
-        if (dot) dot.classList.toggle('playing', playing);
-
-        const track = globalRadioTracks[currentRadioIndex];
-        const banner = document.getElementById('radioNowPlayingBanner');
-        if (banner && track) {
-            banner.innerText = playing
-                ? `🔊 Now Playing: ${track.theme} (${track.author})`
-                : `⏸ Paused: ${track.theme}`;
-        }
-        renderRadioPlaylist();
-    }
-
-    function toggleSchoolRadio() {
-        if (globalRadioTracks.length === 0) {
-            showCustomAlert("📻 No audio broadcasts uploaded to School Radio yet.");
-            return;
-        }
-
-        const audioEl = document.getElementById('html5RadioAudio');
-        const track = globalRadioTracks[currentRadioIndex] || globalRadioTracks[0];
-
-        if (isRadioPlaying) {
-            if (track.sourceType === 'youtube') {
-                if (ytRadioPlayer && typeof ytRadioPlayer.pauseVideo === 'function') ytRadioPlayer.pauseVideo();
-            } else {
-                audioEl.pause();
-            }
-            setRadioUiPlaying(false);
-        } else {
-            // If nothing loaded yet, load index 0 (latest uploaded)
-            if (track.sourceType === 'youtube') {
-                playRadioTrackAtIndex(currentRadioIndex);
-            } else if (!audioEl.src) {
-                playRadioTrackAtIndex(currentRadioIndex);
-            } else {
-                audioEl.play().then(() => setRadioUiPlaying(true)).catch(() => playRadioTrackAtIndex(currentRadioIndex));
-            }
-        }
-    }
-
     let ytRadioPlayer = null;
     let ytPlayerReady = false;
     let pendingYtVideoId = null;
+    let pendingYtAutoPlay = false;
     let currentLoadedRadioId = null;
+
+    let isPageFullyLoaded = false;
+    let hasAttemptedAutoPlay = false;
+    let hasUserPausedRadio = false;
+    let unlockFallbackAttached = false;
 
     let radioSourceMode = 'youtube'; 
     let mediaRecorder = null;
@@ -4470,17 +4421,21 @@
                     event.target.setVolume(100);
 
                     if (pendingYtVideoId) {
+                        const wasAuto = pendingYtAutoPlay;
                         event.target.loadVideoById(pendingYtVideoId);
                         event.target.unMute();
                         event.target.setVolume(100);
                         event.target.playVideo();
                         pendingYtVideoId = null;
-                    } else if (!isRadioPlaying && globalRadioTracks.length > 0 && globalRadioTracks[0].sourceType === 'youtube') {
-                        const firstVid = extractYtVideoId(globalRadioTracks[0].mediaUrl);
-                        if (firstVid) {
-                            event.target.cueVideoById(firstVid);
-                            currentLoadedRadioId = globalRadioTracks[0].id;
+                        pendingYtAutoPlay = false;
+
+                        if (wasAuto) {
+                            setTimeout(() => {
+                                if (!isRadioPlaying && !hasUserPausedRadio) attachAutoPlayUnlockFallback();
+                            }, 1500);
                         }
+                    } else if (!isRadioPlaying && !hasAttemptedAutoPlay) {
+                        tryAutoPlayRadioOnLoad();
                     }
                 },
                 onStateChange: (event) => {
@@ -4490,6 +4445,9 @@
                         event.target.unMute();
                         event.target.setVolume(100);
                         setRadioUiPlaying(true);
+                        if (globalRadioTracks[currentRadioIndex]) {
+                            setupRadioMediaSession(globalRadioTracks[currentRadioIndex]);
+                        }
                     } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.CUED) {
                         setRadioUiPlaying(false);
                     }
@@ -4501,6 +4459,46 @@
                 }
             }
         });
+    }
+
+    window.addEventListener('load', () => {
+        isPageFullyLoaded = true;
+        tryAutoPlayRadioOnLoad();
+    });
+
+    function tryAutoPlayRadioOnLoad() {
+        if (!isPageFullyLoaded || hasAttemptedAutoPlay || hasUserPausedRadio) return;
+        if (!globalRadioTracks || globalRadioTracks.length === 0) return;
+
+        hasAttemptedAutoPlay = true;
+        playRadioTrackAtIndex(0, true);
+    }
+
+    function attachAutoPlayUnlockFallback() {
+        if (unlockFallbackAttached) return;
+        unlockFallbackAttached = true;
+
+        const cleanupUnlock = () => {
+            unlockFallbackAttached = false;
+            document.removeEventListener('click', unlockHandler);
+            document.removeEventListener('touchstart', unlockHandler);
+            document.removeEventListener('keydown', unlockHandler);
+        };
+
+        const unlockHandler = (e) => {
+            if (e && e.target && e.target.closest('#schoolRadioWidget')) {
+                cleanupUnlock();
+                return;
+            }
+            cleanupUnlock();
+            if (!isRadioPlaying && !hasUserPausedRadio && globalRadioTracks.length > 0) {
+                playRadioTrackAtIndex(currentRadioIndex, false);
+            }
+        };
+
+        document.addEventListener('click', unlockHandler);
+        document.addEventListener('touchstart', unlockHandler);
+        document.addEventListener('keydown', unlockHandler);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -4524,11 +4522,6 @@
                 showCustomAlert("⚠️ Audio format could not be played on this device/browser.");
             });
         }
-    });
-
-    // Initialize YouTube API right after DOM is ready (fixes race condition)
-    document.addEventListener('DOMContentLoaded', () => {
-        ensureYouTubeApiAndInit();
     });
 
     function extractYtVideoId(url) {
@@ -4558,6 +4551,18 @@
                 ? `🔊 Now Playing: ${track.theme} (${track.author})`
                 : `⏸ Paused: ${track.theme}`;
         }
+
+        const themeBox = document.getElementById('radioNowPlayingTheme');
+        if (themeBox) {
+            const themeSpan = themeBox.querySelector('span');
+            if (playing && track && track.theme) {
+                if (themeSpan) themeSpan.textContent = track.theme;
+                themeBox.classList.add('visible');
+            } else {
+                themeBox.classList.remove('visible');
+            }
+        }
+
         renderRadioPlaylist();
     }
 
@@ -4571,6 +4576,7 @@
         const track = globalRadioTracks[currentRadioIndex] || globalRadioTracks[0];
 
         if (isRadioPlaying) {
+            hasUserPausedRadio = true;
             if (track.sourceType === 'youtube') {
                 if (ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.pauseVideo === 'function') {
                     ytRadioPlayer.pauseVideo();
@@ -4580,24 +4586,27 @@
             }
             setRadioUiPlaying(false);
         } else {
+            hasUserPausedRadio = false;
             // Resume if same track is already loaded, otherwise start from beginning
             if (track.sourceType === 'youtube') {
                 if (currentLoadedRadioId === track.id && ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.playVideo === 'function') {
                     ytRadioPlayer.playVideo();
                     setRadioUiPlaying(true);
                 } else {
-                    playRadioTrackAtIndex(currentRadioIndex);
+                    playRadioTrackAtIndex(currentRadioIndex, false);
                 }
             } else if (currentLoadedRadioId === track.id && audioEl.src) {
-                audioEl.play().then(() => setRadioUiPlaying(true)).catch(() => playRadioTrackAtIndex(currentRadioIndex));
+                audioEl.play().then(() => setRadioUiPlaying(true)).catch(() => playRadioTrackAtIndex(currentRadioIndex, false));
             } else {
-                playRadioTrackAtIndex(currentRadioIndex);
+                playRadioTrackAtIndex(currentRadioIndex, false);
             }
         }
     }
 
-    function playRadioTrackAtIndex(idx) {
+    function playRadioTrackAtIndex(idx, isAutoPlay = false) {
         if (!globalRadioTracks[idx]) return;
+        if (!isAutoPlay) hasUserPausedRadio = false;
+
         currentRadioIndex = idx;
         const track = globalRadioTracks[idx];
         currentLoadedRadioId = track.id;
@@ -4610,12 +4619,14 @@
 
         if (track.sourceType === 'youtube') {
             if (window.location.protocol === 'file:') {
-                showCustomAlert("⚠️ YouTube audio requires hosting on https:// or http:// (it does not play from local file:// storage).");
+                if (!isAutoPlay) {
+                    showCustomAlert("⚠️ YouTube audio requires hosting on https:// or http:// (it does not play from local file:// storage).");
+                }
                 return;
             }
             const vidId = extractYtVideoId(track.mediaUrl);
             if (!vidId) {
-                showCustomAlert("⚠️ Invalid YouTube link for this track.");
+                if (!isAutoPlay) showCustomAlert("⚠️ Invalid YouTube link for this track.");
                 return;
             }
             if (ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.loadVideoById === 'function') {
@@ -4623,7 +4634,14 @@
                 ytRadioPlayer.setVolume(100);
                 ytRadioPlayer.loadVideoById(vidId);
                 ytRadioPlayer.playVideo();
+
+                if (isAutoPlay) {
+                    setTimeout(() => {
+                        if (!isRadioPlaying && !hasUserPausedRadio) attachAutoPlayUnlockFallback();
+                    }, 1500);
+                }
             } else {
+                pendingYtAutoPlay = isAutoPlay;
                 ensureYouTubeApiAndInit(vidId);
             }
         } else {
@@ -4635,7 +4653,11 @@
                 setupRadioMediaSession(track);
             }).catch(err => {
                 setRadioUiPlaying(false);
-                showCustomAlert("⚠️ Unable to play audio: " + err.message);
+                if (isAutoPlay) {
+                    attachAutoPlayUnlockFallback();
+                } else {
+                    showCustomAlert("⚠️ Unable to play audio: " + err.message);
+                }
             });
         }
     }
@@ -4643,39 +4665,29 @@
     function playNextRadioTrack() {
         if (globalRadioTracks.length === 0) return;
         const nextIdx = (currentRadioIndex + 1) % globalRadioTracks.length;
-        playRadioTrackAtIndex(nextIdx);
+        playRadioTrackAtIndex(nextIdx, false);
     }
 
     // Enables Background & Lock-screen Controls on Mobile/Desktop
     function setupRadioMediaSession(track) {
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: track.theme || 'School Radio',
-                artist: `${track.author || 'TDTTI'} • Class ${track.studentClass || ''}${track.division || ''}`,
-                album: 'TDTTI School Radio',
-                artwork: [{ src: PWA_LOGO_URL, sizes: '512x512', type: 'image/png' }]
-            });
-            navigator.mediaSession.setActionHandler('play', () => toggleSchoolRadio());
-            navigator.mediaSession.setActionHandler('pause', () => toggleSchoolRadio());
-            navigator.mediaSession.setActionHandler('nexttrack', () => playNextRadioTrack());
-            navigator.mediaSession.setActionHandler('previoustrack', () => {
-                const prev = (currentRadioIndex - 1 + globalRadioTracks.length) % globalRadioTracks.length;
-                playRadioTrackAtIndex(prev);
-            });
+        if ('mediaSession' in navigator && track) {
+            try {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: track.theme || 'School Radio',
+                    artist: `${track.author || 'TDTTI'} • Class ${track.studentClass || ''}${track.division || ''}`,
+                    album: 'TDTTI School Radio',
+                    artwork: [{ src: PWA_LOGO_URL, sizes: '512x512', type: 'image/png' }]
+                });
+                navigator.mediaSession.setActionHandler('play', () => toggleSchoolRadio());
+                navigator.mediaSession.setActionHandler('pause', () => toggleSchoolRadio());
+                navigator.mediaSession.setActionHandler('nexttrack', () => playNextRadioTrack());
+                navigator.mediaSession.setActionHandler('previoustrack', () => {
+                    const prev = (currentRadioIndex - 1 + globalRadioTracks.length) % globalRadioTracks.length;
+                    playRadioTrackAtIndex(prev, false);
+                });
+            } catch(e) {}
         }
     }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const audioEl = document.getElementById('html5RadioAudio');
-        if (audioEl) {
-            audioEl.addEventListener('ended', playNextRadioTrack);
-            audioEl.addEventListener('pause', () => {
-                const t = globalRadioTracks[currentRadioIndex];
-                if (t && t.sourceType !== 'youtube') setRadioUiPlaying(false);
-            });
-            audioEl.addEventListener('play', () => setRadioUiPlaying(true));
-        }
-    });
 
     function openRadioPlaylistModal() {
         renderRadioPlaylist();
