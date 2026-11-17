@@ -6557,9 +6557,6 @@ async function saveCompletedSessionOnExit() {
     }
 
     
-    // =========================================================================
-    // FULL UPDATED LOAD ADMIN DATA (ALL TABS SYNCHRONIZED & ERROR-RESILIENT)
-    // =========================================================================
     async function loadAdminData() {
       setProgress(30);
 
@@ -6568,37 +6565,76 @@ async function saveCompletedSessionOnExit() {
         return { data: [], error: err };
       });
 
+      // Paginated fetcher to avoid Supabase's 1,000-row default cap on growing tables
+      const fetchAllTableRows = async (tableName, orderCol = 'id', ascending = false) => {
+        try {
+          const batchSize = 1000;
+          const { count, error: countErr } = await supabaseClient
+            .from(tableName)
+            .select('*', { count: 'exact', head: true });
+
+          if (countErr || !count || count <= batchSize) {
+            const { data } = await supabaseClient
+              .from(tableName)
+              .select('*')
+              .order(orderCol, { ascending });
+            return data || [];
+          }
+
+          const totalBatches = Math.ceil(count / batchSize);
+          const promises = [];
+          for (let b = 0; b < totalBatches; b++) {
+            const from = b * batchSize;
+            const to = from + batchSize - 1;
+            promises.push(
+              supabaseClient
+                .from(tableName)
+                .select('*')
+                .order(orderCol, { ascending })
+                .range(from, to)
+            );
+          }
+          const responses = await Promise.all(promises);
+          let combined = [];
+          responses.forEach(r => {
+            if (r && Array.isArray(r.data)) combined = combined.concat(r.data);
+          });
+          return combined;
+        } catch (err) {
+          console.warn(`Paginated fetch failed for ${tableName}:`, err);
+          const { data } = await supabaseClient.from(tableName).select('*').order(orderCol, { ascending }).limit(1000);
+          return data || [];
+        }
+      };
+
       try {
-        // 1. Fetch all questions with pagination + all required tables safely
+        // 1. Fetch all required tables without 1,000-row truncation
         const [
           usersRes,
           allQuestionsList,
-          logsRes,
-          answersRes,
-          trialsRes,
+          logs,
+          allAnswers,
+          allTrialExams,
           resetsRes,
-          attRes,
+          attList,
           offlineRes,
           dailyUsageRes,
-          historyRes
+          histList
         ] = await Promise.all([
           safeQuery(supabaseClient.from('users').select('*')),
           fetchAllQuestionsFromSupabase().catch(err => { console.warn('Questions fetch error:', err); return []; }),
-          safeQuery(supabaseClient.from('logs').select('*').order('created_at', { ascending: false }).limit(1000)),
-          safeQuery(supabaseClient.from('student_answers').select('*').order('created_at', { ascending: false })),
-          safeQuery(supabaseClient.from('trial_exams').select('*').order('created_at', { ascending: false })),
+          fetchAllTableRows('logs', 'created_at', false),
+          fetchAllTableRows('student_answers', 'created_at', false),
+          fetchAllTableRows('trial_exams', 'created_at', false),
           safeQuery(supabaseClient.from('reset_requests').select('*').order('created_at', { ascending: false })),
-          safeQuery(supabaseClient.from('attendance').select('*').order('id', { ascending: false })),
+          fetchAllTableRows('attendance', 'id', false),
           safeQuery(supabaseClient.from('offline_exams').select('*').order('id', { ascending: false })),
           safeQuery(supabaseClient.from('daily_usage').select('*')),
-          safeQuery(supabaseClient.from('portal_history').select('*').order('id', { ascending: false }).limit(2000))
+          fetchAllTableRows('portal_history', 'id', false)
         ]);
 
         const users = usersRes.data || [];
         const questions = allQuestionsList || [];
-        const logs = logsRes.data || [];
-        const histList = historyRes.data || [];
-        const attList = attRes.data || [];
 
         // Auto-heal stale "Active Now" (>90m) or legacy "Auto ..." logs using actual Date & Time
         const nowMs = Date.now();
@@ -6645,8 +6681,6 @@ async function saveCompletedSessionOnExit() {
           }
         });
 
-        const allAnswers = answersRes.data || [];
-        const allTrialExams = trialsRes.data || [];
         const resetRequests = resetsRes.data || [];
         const allAttendance = attList;
         const allOfflineExams = offlineRes.data || [];
@@ -6665,18 +6699,30 @@ async function saveCompletedSessionOnExit() {
           portalHistory: histList
         };
 
+        // Sync Tab 7 pending alert dot
+        const resetBadge = document.getElementById('reset-badge-dot');
+        if (resetBadge) {
+          const hasPendingResets = resetRequests.some(r => String(r.status || '').toLowerCase() === 'pending');
+          resetBadge.style.display = hasPendingResets ? 'block' : 'none';
+        }
+
         const studentsOnly = users.filter(u => !isStaffOrAdminUser(u));
+        const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+        const cleanToday = new Date().toLocaleDateString('en-GB');
 
         // ---------------------------------------------------------------------
-        // TAB 3: NOTIFICATION COMPOSER STUDENT CHIPS
+        // TAB 3: NOTIFICATION COMPOSER STUDENT CHIPS (ALPHABETICAL)
         // ---------------------------------------------------------------------
         try {
           const studentChipsContainer = document.getElementById('student-chips-container');
           if (studentChipsContainer) {
             studentChipsContainer.innerHTML = '';
-            studentsOnly.forEach(s => {
+            const sortedChipStudents = [...studentsOnly].sort((a, b) =>
+              String(a.name || a.username).trim().localeCompare(String(b.name || b.username).trim())
+            );
+            sortedChipStudents.forEach(s => {
               const chip = document.createElement('div');
-              chip.className = 'student-chip';
+              chip.className = 'student-chip' + (selectedStudentPhones.has(s.phone) ? ' selected' : '');
               chip.innerText = `${s.name} (${s.class || '7'}-${s.division || 'A'}) [${s.phone}]`;
               chip.onclick = () => {
                 if (selectedStudentPhones.has(s.phone)) {
@@ -6695,52 +6741,104 @@ async function saveCompletedSessionOnExit() {
         }
 
         // ---------------------------------------------------------------------
+        // PRE-COMPUTE PER-STUDENT PORTFOLIO LOGS & METRICS (SHARED BY TABS 5, 6, 9)
+        // ---------------------------------------------------------------------
+        const studentComputedMap = new Map();
+
+        studentsOnly.forEach(st => {
+          const st10 = get10(st.phone);
+          const stUser = String(st.username || '').trim().toLowerCase();
+          const stKey = stUser || st10;
+
+          const stOffline = allOfflineExams.filter(o =>
+            isExactStudentRecordMatch(o, st.phone, st.username, st.name)
+          ).sort((a, b) => {
+            const timeA = parseCustomDate(a.timestamp || a.exam_date)?.getTime() || 0;
+            const timeB = parseCustomDate(b.timestamp || b.exam_date)?.getTime() || 0;
+            return timeB - timeA;
+          });
+
+          const stTrials = allTrialExams.filter(t =>
+            isExactStudentRecordMatch(t, st.phone, st.username, st.name)
+          ).map(t => ({
+            Timestamp: t.timestamp,
+            Score: t.score,
+            TotalQuestions: t.total_questions,
+            AnswersJson: t.answers_json
+          }));
+
+          const metrics = getStudentUniqueAnswerRecords(
+            st.phone,
+            allAnswers,
+            allTrialExams,
+            st.username,
+            st.name,
+            stOffline
+          );
+
+          const validAtt = allAttendance.filter(a => {
+            if (!isExactStudentRecordMatch(a, st.phone, st.username, st.name)) return false;
+            if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
+            return true;
+          }).sort((a, b) => {
+            const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
+            const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
+            return timeB - timeA;
+          });
+
+          const practiceAtt = validAtt.filter(a => {
+            const act = String(a.activity || '').toLowerCase();
+            return act.includes('practice') || act.includes('trial') || (Number(a.questions_attended) || 0) > 0;
+          });
+
+          const logData = buildDetailedAttendanceLogHTML(practiceAtt, st.phone, st.name, allAnswers, st.username);
+
+          // Combine Offline Exam scores when present so Tab 6, Tab 9 & Consolidated match
+          let offlineTot = 0;
+          let offlineCor = 0;
+          stOffline.forEach(ex => {
+            offlineTot += Number(ex.total_outof || 0);
+            offlineCor += Number(ex.total_score || 0);
+          });
+
+          const baseOnlineTotal = logData.grandTotalQuestions > 0 ? logData.grandTotalQuestions : metrics.total;
+          const baseOnlineScored = logData.grandScoredQuestions > 0 ? logData.grandScoredQuestions : metrics.total;
+          const baseOnlineCorrect = logData.grandScoredQuestions > 0 ? logData.grandTotalCorrect : metrics.correct;
+
+          const totalQs = baseOnlineTotal + offlineTot;
+          const totalScored = baseOnlineScored + offlineTot;
+          const totalCorrect = baseOnlineCorrect + offlineCor;
+          const accuracyPct = totalScored > 0
+            ? Math.round((totalCorrect / totalScored) * 100)
+            : metrics.accuracy;
+
+          studentComputedMap.set(stKey, {
+            st,
+            st10,
+            stUser,
+            stKey,
+            domKey: st10 || stUser,
+            stOffline,
+            stTrials,
+            metrics,
+            logData,
+            totalQs,
+            totalScored,
+            totalCorrect,
+            accuracyPct
+          });
+        });
+
+        // ---------------------------------------------------------------------
         // TAB 5: 100% WIDTH STUDENT DAILY ATTENDANCE TRACKER
         // ---------------------------------------------------------------------
         try {
           const container = document.getElementById('admin-attendance-cards-container');
           if (container) {
-            const cleanToday = new Date().toLocaleDateString('en-GB');
-            const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
-
-            const enrolledStudents = users.filter(u => !isStaffOrAdminUser(u));
-
-            // 1. Calculate Lifetime metrics & Portfolio log totals per student
-            const studentLifetimeMap = new Map();
-            const studentPortfolioLogMap = new Map();
-
-            enrolledStudents.forEach(st => {
-              const st10 = get10(st.phone);
-              const stUser = String(st.username || '').trim().toLowerCase();
-              const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
-
-              const validStudentAtt = allAttendance.filter(a => {
-                if (!isExactStudentRecordMatch(a, st.phone, st.username, st.name)) return false;
-                if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
-                return true;
-              });
-
-              const practiceAttForLog = validStudentAtt.filter(a => {
-                const act = String(a.activity || '').toLowerCase();
-                return act.includes('practice') || act.includes('trial') || (Number(a.questions_attended) || 0) > 0;
-              });
-              const stLogData = buildDetailedAttendanceLogHTML(practiceAttForLog, st.phone, st.name, allAnswers, st.username);
-              studentPortfolioLogMap.set(st10 || stUser, stLogData);
-
-              studentLifetimeMap.set(st10 || stUser, {
-                activeDaysCount: stLogData.activeDaysCount || 0,
-                totalTimePracticedText: formatSecs(stLogData.grandTotalSec || 0),
-                baseTodayLogSec: stLogData.todayTotalSec || 0,
-                otherDaysSec: Math.max(0, (stLogData.grandTotalSec || 0) - (stLogData.todayTotalSec || 0)),
-                totalQuestionsAttendedAllDay: stLogData.grandTotalQuestions || metrics.total
-              });
-            });
-
-            // 2. Group attendance records by Date
             const datewiseMap = new Map();
 
             allAttendance.forEach(att => {
-              const matchedUser = enrolledStudents.find(u =>
+              const matchedUser = studentsOnly.find(u =>
                 isExactStudentRecordMatch(att, u.phone, u.username, u.name)
               );
               if (!matchedUser) return;
@@ -6754,12 +6852,14 @@ async function saveCompletedSessionOnExit() {
 
               const isDaily = String(att.attendance_id || '').includes('-DAILY');
               const isSync = String(att.attendance_id || '').includes('-SYNC');
-              const phone10 = get10(matchedUser.phone);
 
               if (isSync) {
                 const hasLive = allAttendance.some(o =>
-                  o !== att && isExactStudentRecordMatch(o, matchedUser.phone, matchedUser.username, matchedUser.name) &&
-                  o.date === dateStr && !String(o.attendance_id || '').includes('-SYNC') && (Number(o.questions_attended) || 0) > 0
+                  o !== att &&
+                  isExactStudentRecordMatch(o, matchedUser.phone, matchedUser.username, matchedUser.name) &&
+                  o.date === dateStr &&
+                  !String(o.attendance_id || '').includes('-SYNC') &&
+                  (Number(o.questions_attended) || 0) > 0
                 );
                 if (hasLive) return;
               }
@@ -6769,11 +6869,13 @@ async function saveCompletedSessionOnExit() {
               if (!datewiseMap.has(dateStr)) datewiseMap.set(dateStr, new Map());
 
               const stMap = datewiseMap.get(dateStr);
-              const stKey = phone10 || String(matchedUser.username).toLowerCase();
+              // Key strictly by username first so siblings sharing a phone never collide
+              const stKey = String(matchedUser.username || '').trim().toLowerCase() || get10(matchedUser.phone);
 
               if (!stMap.has(stKey)) {
                 stMap.set(stKey, {
                   user: matchedUser,
+                  stKey,
                   date: dateStr,
                   sessions: [],
                   activitiesSet: new Set(),
@@ -6792,12 +6894,10 @@ async function saveCompletedSessionOnExit() {
               }
             });
 
-            // 3. Catch today's students ONLY if they answered > 0 questions
-            enrolledStudents.forEach(st => {
-              const st10 = get10(st.phone);
-              const stKey = st10 || String(st.username).toLowerCase();
+            // Catch today's students who answered > 0 questions
+            studentsOnly.forEach(st => {
+              const stKey = String(st.username || '').trim().toLowerCase() || get10(st.phone);
               const liveQuotaToday = getStudentStickyHeaderQuota(st, cleanToday, true);
-
               const todayQs = getStudentQuestionsCountForDate(st.phone, st.username, st.name, cleanToday, allAnswers, allTrialExams);
 
               if (todayQs > 0) {
@@ -6806,6 +6906,7 @@ async function saveCompletedSessionOnExit() {
                 if (!todaySts.has(stKey)) {
                   todaySts.set(stKey, {
                     user: st,
+                    stKey,
                     date: cleanToday,
                     sessions: [],
                     activitiesSet: new Set(['Subject Practice & Training']),
@@ -6840,13 +6941,10 @@ async function saveCompletedSessionOnExit() {
                 const studentsMap = datewiseMap.get(dateStr);
                 const rawStudents = Array.from(studentsMap.values());
 
-                // Resolve deduplicated questions count first, then strictly require > 0 Qs
                 const attendedStudents = rawStudents.map(stData => {
                   const u = stData.user;
-                  const u10 = get10(u.phone);
-                  const uKey = u10 || String(u.username).toLowerCase();
-                  const stLogData = studentPortfolioLogMap.get(uKey);
-                  const attDayQs = stLogData?.dayTotalsMap?.[dateStr]?.totalQuestions ?? stData.questionsAttended;
+                  const computed = studentComputedMap.get(stData.stKey);
+                  const attDayQs = computed?.logData?.dayTotalsMap?.[dateStr]?.totalQuestions ?? stData.questionsAttended;
                   const verifiedQsOnDate = getStudentQuestionsCountForDate(u.phone, u.username, u.name, dateStr, allAnswers, allTrialExams);
                   stData.questionsAttended = Math.max(attDayQs, verifiedQsOnDate);
                   return stData;
@@ -6872,9 +6970,9 @@ async function saveCompletedSessionOnExit() {
                       </div>
 
                       <div style="display:flex; align-items:center; gap:10px;">
-                        <button type="button" 
-                                onclick="copyDailyAttendedStudentNames(event, '${escapeHtml(dateStr)}')" 
-                                class="btn btn-outline no-print" 
+                        <button type="button"
+                                onclick="copyDailyAttendedStudentNames(event, '${escapeHtml(dateStr)}')"
+                                class="btn btn-outline no-print"
                                 style="padding:4px 12px; font-size:12px; font-weight:700; background:#ffffff; color:var(--primary); border-radius:8px;">
                           📋 Copy Names
                         </button>
@@ -6886,19 +6984,17 @@ async function saveCompletedSessionOnExit() {
                       ${attendedStudents.map((stData, sIdx) => {
                         const u = stData.user;
                         const u10 = get10(u.phone);
-                        const uKey = u10 || String(u.username).toLowerCase();
+                        const uKey = u10 || String(u.username || '').trim().toLowerCase();
+                        const computed = studentComputedMap.get(stData.stKey);
+                        const stLogData = computed?.logData;
 
-                        const lifetime = studentLifetimeMap.get(uKey) || {
-                          activeDaysCount: 1,
-                          totalTimePracticedText: '0s',
-                          baseTodayLogSec: 0,
-                          otherDaysSec: 0,
-                          totalQuestionsAttendedAllDay: stData.questionsAttended
-                        };
+                        const activeDaysCount = stLogData?.activeDaysCount || 1;
+                        const totalTimePracticedText = formatSecs(stLogData?.grandTotalSec || 0);
+                        const baseTodayLogSec = stLogData?.todayTotalSec || 0;
+                        const baseOtherSec = Math.max(0, (stLogData?.grandTotalSec || 0) - baseTodayLogSec);
+                        const totalQuestionsAttendedAllDay = stLogData?.grandTotalQuestions || computed?.metrics?.total || stData.questionsAttended;
 
-                        // Today: live 60m quota | Previous days: exact cumulative usage of that day as per Portfolio
                         const quota = getStudentStickyHeaderQuota(u, dateStr, isToday);
-                        const stLogData = studentPortfolioLogMap.get(uKey);
                         const portfolioDaySec = stLogData?.dayTotalsMap?.[dateStr]?.totalSec || 0;
 
                         let cumulativeUsageToday = quota.usedFormatted;
@@ -6924,7 +7020,6 @@ async function saveCompletedSessionOnExit() {
                             : `${prM}m ${String(prS).padStart(2, '0')}s left`;
                         }
 
-                        // First Entry & Last Exit from History / Users History (Actual HH:MM:SS for Today & All Past Dates)
                         const getNormDateStr = (rawD, rawTs) => {
                           const dStr = rawD || (rawTs ? String(rawTs).split(',')[0].trim() : '');
                           const pD = parseCustomDate(dStr) || parseCustomDate(rawTs);
@@ -6980,12 +7075,8 @@ async function saveCompletedSessionOnExit() {
                           const type = String(h.activity_type || '').toUpperCase();
 
                           allActivityTimestamps.push({ ts, ms, type });
-                          if (type === 'LOGIN' || type === 'ACTIVE') {
-                            entryCandidates.push({ ts, ms });
-                          }
-                          if (type === 'INACTIVE' || type === 'LOGOUT') {
-                            explicitExitCandidates.push({ ts, ms });
-                          }
+                          if (type === 'LOGIN' || type === 'ACTIVE') entryCandidates.push({ ts, ms });
+                          if (type === 'INACTIVE' || type === 'LOGOUT') explicitExitCandidates.push({ ts, ms });
                         });
 
                         dayLogs.forEach(l => {
@@ -7057,7 +7148,7 @@ async function saveCompletedSessionOnExit() {
                                     Class ${escapeHtml(u.class || '7')}-${escapeHtml(u.division || 'A')}
                                   </span>
                                   <span class="badge badge-success" style="margin-left:4px; font-size:11px; font-weight:800;">
-                                    ${u.first_language || 'MI'}
+                                    ${escapeHtml(u.first_language || 'MI')}
                                   </span>
                                 </div>
                               </div>
@@ -7067,9 +7158,9 @@ async function saveCompletedSessionOnExit() {
                                   ✍️ <span style="font-size:14px; font-weight:900;">${stData.questionsAttended}</span> Qs
                                 </span>
 
-                                <button onclick="event.stopPropagation(); sendAttendanceWhatsappAlert('${escapeHtml(u.name || u.username)}', '${u.phone}', '${dateStr}', '${escapeHtml(activitiesConsolidation)}', '${cumulativeUsageToday}', '${timeLeftToday}', '${stData.questionsAttended}')" 
-                                        class="btn btn-outline" 
-                                        style="padding:5px 12px; font-size:13px; font-weight:700; background:#dcfce7; color:#15803d; border-color:#86efac; border-radius:20px;" 
+                                <button onclick="event.stopPropagation(); sendAttendanceWhatsappAlert('${escapeHtml(u.name || u.username)}', '${escapeHtml(u.phone)}', '${escapeHtml(dateStr)}', '${escapeHtml(activitiesConsolidation)}', '${escapeHtml(cumulativeUsageToday)}', '${escapeHtml(timeLeftToday)}', '${stData.questionsAttended}')"
+                                        class="btn btn-outline"
+                                        style="padding:5px 12px; font-size:13px; font-weight:700; background:#dcfce7; color:#15803d; border-color:#86efac; border-radius:20px;"
                                         title="Send WhatsApp Report">
                                   💬 WhatsApp
                                 </button>
@@ -7151,7 +7242,7 @@ async function saveCompletedSessionOnExit() {
                                       <span class="att-tile-label">📅 Active Attendance Days</span>
                                       <div>
                                         <span class="num-chip num-chip-green">
-                                          <span style="font-size:17px; font-weight:900;">${lifetime.activeDaysCount}</span>
+                                          <span style="font-size:17px; font-weight:900;">${activeDaysCount}</span>
                                           <span style="font-size:12px; font-weight:700; opacity:0.85;">Days</span>
                                         </span>
                                       </div>
@@ -7160,7 +7251,10 @@ async function saveCompletedSessionOnExit() {
                                     <div class="att-tile">
                                       <span class="att-tile-label">⌛ Total Time Practiced</span>
                                       <div>
-                                        <span class="num-chip num-chip-blue">${lifetime.totalTimePracticedText}</span>
+                                        <span data-att-lifetime-time="${uKey}"
+                                              data-base-today-log-sec="${baseTodayLogSec}"
+                                              data-base-other-sec="${baseOtherSec}"
+                                              class="num-chip num-chip-blue">${totalTimePracticedText}</span>
                                       </div>
                                     </div>
 
@@ -7168,7 +7262,7 @@ async function saveCompletedSessionOnExit() {
                                       <span class="att-tile-label">📚 Uptodate Questions</span>
                                       <div>
                                         <span class="num-chip num-chip-purple">
-                                          <span style="font-size:17px; font-weight:900;">${lifetime.totalQuestionsAttendedAllDay}</span>
+                                          <span style="font-size:17px; font-weight:900;">${totalQuestionsAttendedAllDay}</span>
                                           <span style="font-size:12px; font-weight:700; opacity:0.85;">Total Qs</span>
                                         </span>
                                       </div>
@@ -7177,9 +7271,9 @@ async function saveCompletedSessionOnExit() {
 
                                   <div style="margin-top:auto; padding-top:8px;">
                                     ${isToday ? `
-                                      <button onclick="adminResetStudentQuota('${u.phone}', '${escapeHtml(u.username)}', '${escapeHtml(u.name || u.username)}')" 
-                                              class="btn btn-outline" 
-                                              style="width:100%; padding:9px 14px; font-size:12.5px; font-weight:800; color:var(--primary); border-color:#93c5fd; background:#ffffff; border-radius:10px;" 
+                                      <button onclick="adminResetStudentQuota('${escapeHtml(u.phone)}', '${escapeHtml(u.username)}', '${escapeHtml(u.name || u.username)}')"
+                                              class="btn btn-outline"
+                                              style="width:100%; padding:9px 14px; font-size:12.5px; font-weight:800; color:var(--primary); border-color:#93c5fd; background:#ffffff; border-radius:10px;"
                                               title="Restore 60m Quota for today">
                                         🔄 Restore 60m Daily Quota
                                       </button>
@@ -7214,44 +7308,22 @@ async function saveCompletedSessionOnExit() {
         }
 
         // ---------------------------------------------------------------------
-        // TAB 6: EVALUATION REPORTS
+        // TAB 6: EVALUATION REPORTS (ALPHABETICAL ORDER)
         // ---------------------------------------------------------------------
         try {
           const reportAccordion = document.getElementById('admin-student-accordion-list');
           if (reportAccordion) {
-            const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
-            const cleanToday = new Date().toLocaleDateString('en-GB');
-
             const alphabeticalStudents = [...studentsOnly].sort((a, b) =>
               String(a.name || a.username).trim().localeCompare(String(b.name || b.username).trim())
             );
 
             const repPrepared = alphabeticalStudents.map((st, idx) => {
-              const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
-              const validAtt = allAttendance.filter(a => {
-                if (!isExactStudentRecordMatch(a, st.phone, st.username, st.name)) return false;
-                if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
-                return true;
-              }).sort((a, b) => {
-                const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
-                const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
-                return timeB - timeA;
-              });
-
-              const practiceAtt = validAtt.filter(a => {
-                const act = String(a.activity || '').toLowerCase();
-                return act.includes('practice') || act.includes('trial') || (Number(a.questions_attended) || 0) > 0;
-              });
-              const logData = buildDetailedAttendanceLogHTML(practiceAtt, st.phone, st.name, allAnswers, st.username);
-              const totalQs = logData.grandTotalQuestions > 0 ? logData.grandTotalQuestions : metrics.total;
-              const accuracyPct = logData.grandScoredQuestions > 0
-                ? Math.round((logData.grandTotalCorrect / logData.grandScoredQuestions) * 100)
-                : metrics.accuracy;
-
-              return { st, idx, metrics, logData, totalQs, accuracyPct };
+              const stKey = String(st.username || '').trim().toLowerCase() || get10(st.phone);
+              const computed = studentComputedMap.get(stKey);
+              return { ...computed, idx };
             });
 
-            reportAccordion.innerHTML = repPrepared.map(({ st, idx, totalQs, accuracyPct }) => {
+            reportAccordion.innerHTML = repPrepared.map(({ st, idx, totalQs, totalCorrect, accuracyPct }) => {
               const hasRecords = totalQs > 0;
               const cardBorderColor = hasRecords ? '#86efac' : '#fca5a5';
               const headerBgColor = hasRecords ? '#f0fdf4' : '#fff5f5';
@@ -7260,8 +7332,8 @@ async function saveCompletedSessionOnExit() {
 
               return `
                 <div class="accordion-item" style="margin-bottom:14px; border: 1.5px solid ${cardBorderColor}; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
-                  <div class="accordion-header" 
-                       onclick="toggleAccordion('report-acc-${idx}')" 
+                  <div class="accordion-header"
+                       onclick="toggleAccordion('report-acc-${idx}')"
                        style="background: ${headerBgColor}; padding: 14px 18px; transition: background 0.2s;"
                        onmouseover="this.style.background='${headerHoverColor}'"
                        onmouseout="this.style.background='${headerBgColor}'">
@@ -7278,7 +7350,7 @@ async function saveCompletedSessionOnExit() {
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                       ${hasRecords ? `
                         <span class="badge ${accuracyBadgeClass}" style="font-size:12.5px; font-weight:800; padding:4px 10px;">
-                          🎯 ${accuracyPct}% Accuracy
+                          🎯 ${accuracyPct}% Accuracy (${totalCorrect}/${totalQs})
                         </span>
                         <span class="badge" style="background:#ffffff; color:var(--primary); border:1.5px solid #93c5fd; font-size:12px; font-weight:800; padding:3px 9px;">
                           📚 ${totalQs} Qs Answered
@@ -7299,32 +7371,16 @@ async function saveCompletedSessionOnExit() {
               `;
             }).join('');
 
-            repPrepared.forEach(({ st, idx, metrics, logData, totalQs, accuracyPct }) => {
-              const st10 = get10(st.phone);
-              const stNameLower = String(st.name || '').trim().toLowerCase();
-              const stUserLower = String(st.username || '').trim().toLowerCase();
-              const repKey = st10 || stUserLower;
-
-              const stOffline = allOfflineExams.filter(o =>
-                (st10 && get10(o.phone) === st10) ||
-                (stUserLower && String(o.username || '').trim().toLowerCase() === stUserLower) ||
-                (stNameLower && String(o.student_name || '').trim().toLowerCase() === stNameLower)
-              );
-
-              const stTrials = allTrialExams.filter(t =>
-                (st10 && get10(t.phone) === st10) ||
-                (stUserLower && String(t.username || '').trim().toLowerCase() === stUserLower) ||
-                (stNameLower && String(t.student_name || '').trim().toLowerCase() === stNameLower)
-              ).map(t => ({
-                Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
-              }));
-
+            repPrepared.forEach(({ st, idx, domKey, stOffline, stTrials, metrics, logData, totalQs, totalCorrect, totalScored, accuracyPct }) => {
               const todayQuota = getStudentStickyHeaderQuota(st, cleanToday, true);
               const repPillInfo = getQuotaPillStyles(todayQuota, false);
-              const todayDurationFormatted = formatSecs(logData.todayTotalSec || 0);
+              const baseTodayLogSec = logData.todayTotalSec || 0;
+              const baseOtherSec = Math.max(0, (logData.grandTotalSec || 0) - baseTodayLogSec);
+              const todayDurationFormatted = formatSecs(baseTodayLogSec);
               const durationFormatted = formatSecs(logData.grandTotalSec || 0);
               const activeDaysCount = logData.activeDaysCount || 0;
               const todayQuestionsCount = logData.todayTotalQuestions || 0;
+              const repeatedCount = Math.max(0, (logData.grandTotalQuestions || 0) - metrics.combined.length);
 
               const repContainer = document.getElementById(`admin-rep-container-${idx}`);
               if (repContainer) {
@@ -7335,11 +7391,11 @@ async function saveCompletedSessionOnExit() {
                         📅 Attendance & Practice Time
                       </h4>
                       <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <span data-rep-quota-used="${repKey}" style="display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:800; ${repPillInfo.usedStyle}">
+                        <span data-rep-quota-used="${domKey}" style="display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:800; ${repPillInfo.usedStyle}">
                           <span>⏱️</span>
                           <span class="quota-pill-text">${repPillInfo.usedText}</span>
                         </span>
-                        <span data-rep-quota-left="${repKey}" style="display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:800; ${repPillInfo.leftStyle}">
+                        <span data-rep-quota-left="${domKey}" style="display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:12px; font-weight:800; ${repPillInfo.leftStyle}">
                           <span>⏳</span>
                           <span class="quota-pill-text">${repPillInfo.leftText}</span>
                         </span>
@@ -7349,11 +7405,11 @@ async function saveCompletedSessionOnExit() {
                     <div class="stats-grid" style="margin-bottom:16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced Today</p>
-                        <h3 data-rep-today-time="${repKey}" style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
+                        <h3 data-rep-today-time="${domKey}" data-base-today-log-sec="${baseTodayLogSec}" style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
                       </div>
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced</p>
-                        <h3 data-rep-total-time="${repKey}" style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
+                        <h3 data-rep-total-time="${domKey}" data-base-today-log-sec="${baseTodayLogSec}" data-base-other-sec="${baseOtherSec}" style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
                       </div>
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Active Attendance Days</p>
@@ -7404,9 +7460,9 @@ async function saveCompletedSessionOnExit() {
                         <tbody>
                           ${stOffline.length > 0 ? stOffline.map(o => `
                             <tr>
-                              <td>${o.exam_date}</td>
+                              <td>${escapeHtml(o.exam_date)}</td>
                               <td><b>${escapeHtml(o.exam_name)}</b></td>
-                              <td>${o.fl_score}/${o.fl_outof} <small>(${o.fl_subject})</small></td>
+                              <td>${o.fl_score}/${o.fl_outof} <small>(${escapeHtml(o.fl_subject)})</small></td>
                               <td>${o.mii_score}/${o.mii_outof}</td>
                               <td>${o.mm_score}/${o.mm_outof}</td>
                               <td>${o.eng_score}/${o.eng_outof}</td>
@@ -7421,7 +7477,10 @@ async function saveCompletedSessionOnExit() {
                   </div>
 
                   <div class="card" style="margin-bottom:20px; background:#fff;">
-                    <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📖 Subject Overview</h4>
+                    <h4 style="margin-top:0; margin-bottom:4px; color:var(--primary); font-size:15px;">📖 Subject Overview (Unique Question Mastery)</h4>
+                    <small style="display:block; margin-bottom:10px; color:var(--text-muted); font-weight:600;">
+                      Unique Question Mastery: <b>${metrics.correct}/${metrics.total} (${metrics.accuracy}%)</b>${repeatedCount > 0 ? ` · ${repeatedCount} repeated/re-attempted Qs excluded from unique count (${logData.grandTotalQuestions} total session Qs)` : ''}.
+                    </small>
                     <div class="table-responsive" style="margin:0;">
                       <table class="data-table">
                         <thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead>
@@ -7470,9 +7529,9 @@ async function saveCompletedSessionOnExit() {
                   })),
                   trialExams: stTrials,
                   offlineExams: stOffline,
-                  attendanceGrandTotal: logData.grandTotalQuestions,
-                  attendanceGrandCorrect: logData.grandTotalCorrect,
-                  attendanceGrandScored: logData.grandScoredQuestions
+                  attendanceGrandTotal: totalQs,
+                  attendanceGrandCorrect: totalCorrect,
+                  attendanceGrandScored: totalScored
                 }, `rep-tot-${idx}`, `rep-acc-${idx}`, `rep-strong-${idx}`, `rep-weak-${idx}`, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
               }
             });
@@ -7486,42 +7545,20 @@ async function saveCompletedSessionOnExit() {
         // ---------------------------------------------------------------------
         try {
           const optAccordion = document.getElementById('manage-users-analytics-accordion');
-          const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
-          const cleanToday = new Date().toLocaleDateString('en-GB');
 
-          const scoredStudents = studentsOnly.map(st => {
-            const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
-            const validAtt = allAttendance.filter(a => {
-              if (!isExactStudentRecordMatch(a, st.phone, st.username, st.name)) return false;
-              if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
-              return true;
-            }).sort((a, b) => {
-              const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
-              const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
-              return timeB - timeA;
-            });
-
-            const practiceAtt = validAtt.filter(a => {
-              const act = String(a.activity || '').toLowerCase();
-              return act.includes('practice') || act.includes('trial') || (Number(a.questions_attended) || 0) > 0;
-            });
-            const logData = buildDetailedAttendanceLogHTML(practiceAtt, st.phone, st.name, allAnswers, st.username);
-
-            const total = logData.grandTotalQuestions > 0 ? logData.grandTotalQuestions : metrics.total;
-            const correct = logData.grandScoredQuestions > 0 ? logData.grandTotalCorrect : metrics.correct;
-            const accuracy = logData.grandScoredQuestions > 0
-              ? Math.round((logData.grandTotalCorrect / logData.grandScoredQuestions) * 100)
-              : metrics.accuracy;
-
-            return {
-              user: st,
-              total,
-              correct,
-              accuracy,
-              combined: metrics.combined,
-              logData
-            };
-          }).sort((a, b) => {
+          const scoredStudents = Array.from(studentComputedMap.values()).map(c => ({
+            user: c.st,
+            domKey: c.domKey,
+            total: c.totalQs,
+            scoredTotal: c.totalScored,
+            correct: c.totalCorrect,
+            accuracy: c.accuracyPct,
+            combined: c.metrics.combined,
+            metrics: c.metrics,
+            logData: c.logData,
+            stTrials: c.stTrials,
+            stOffline: c.stOffline
+          })).sort((a, b) => {
             if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
             if (b.total !== a.total) return b.total - a.total;
             return String(a.user.name || '').localeCompare(String(b.user.name || ''));
@@ -7529,32 +7566,19 @@ async function saveCompletedSessionOnExit() {
 
           if (optAccordion) {
             optAccordion.innerHTML = scoredStudents.map((item, idx) => {
-              const st10 = get10(item.user.phone);
-              const stNameLower = String(item.user.name || '').trim().toLowerCase();
-              const stUserLower = String(item.user.username || '').trim().toLowerCase();
-              const optKey = st10 || stUserLower;
-
+              const optKey = item.domKey;
               const logData = item.logData;
               const todayQuota = getStudentStickyHeaderQuota(item.user, cleanToday, true);
               const optPillInfo = getQuotaPillStyles(todayQuota, false);
 
-              const todayDurationFormatted = formatSecs(logData.todayTotalSec || 0);
+              const baseTodayLogSec = logData.todayTotalSec || 0;
+              const baseOtherSec = Math.max(0, (logData.grandTotalSec || 0) - baseTodayLogSec);
+              const todayDurationFormatted = formatSecs(baseTodayLogSec);
               const durationFormatted = formatSecs(logData.grandTotalSec || 0);
               const activeDaysCount = logData.activeDaysCount || 0;
               const todayQuestionsCount = logData.todayTotalQuestions || 0;
-
-              const stOffline = allOfflineExams.filter(o => {
-                const o10 = get10(o.phone);
-                const oName = String(o.student_name || '').trim().toLowerCase();
-                const oUser = String(o.username || '').trim().toLowerCase();
-                return (st10 && o10 === st10) ||
-                       (stUserLower && oUser === stUserLower) ||
-                       (stNameLower && (oName === stNameLower || oName.includes(stNameLower) || stNameLower.includes(oName)));
-              }).sort((a, b) => {
-                const timeA = parseCustomDate(a.timestamp || a.exam_date)?.getTime() || 0;
-                const timeB = parseCustomDate(b.timestamp || b.exam_date)?.getTime() || 0;
-                return timeB - timeA;
-              });
+              const stOffline = item.stOffline;
+              const repeatedCount = Math.max(0, (logData.grandTotalQuestions || 0) - item.combined.length);
 
               return `
                 <div class="accordion-item" style="margin-bottom:14px; border:1.5px solid var(--border-color); border-radius:14px; overflow:hidden;">
@@ -7565,13 +7589,13 @@ async function saveCompletedSessionOnExit() {
                       </span>
                       <strong style="font-size:15px; color:#0f172a;">${escapeHtml(item.user.name)}</strong>
                       <span class="badge" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; font-size:11px;">
-                        Class ${item.user.class || '7'}-${item.user.division || 'A'}
+                        Class ${escapeHtml(item.user.class || '7')}-${escapeHtml(item.user.division || 'A')}
                       </span>
-                      <span class="badge badge-success" style="font-size:12px; font-weight:800;">
+                      <span class="badge ${item.accuracy >= 70 ? 'badge-success' : (item.accuracy >= 50 ? 'badge-warning' : 'badge-danger')}" style="font-size:12px; font-weight:800;">
                         Accuracy: ${item.accuracy}%
                       </span>
                       <span style="font-size:12px; color:var(--text-muted); font-weight:700;">
-                        (${item.correct}/${item.total} Correct)
+                        (${item.correct}/${item.scoredTotal} Correct)
                       </span>
                     </div>
                     <div>▾</div>
@@ -7598,11 +7622,11 @@ async function saveCompletedSessionOnExit() {
                       <div class="stats-grid" style="margin-bottom:16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced Today</p>
-                          <h3 data-opt-today-time="${optKey}" style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
+                          <h3 data-opt-today-time="${optKey}" data-base-today-log-sec="${baseTodayLogSec}" style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
                         </div>
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced</p>
-                          <h3 data-opt-total-time="${optKey}" style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
+                          <h3 data-opt-total-time="${optKey}" data-base-today-log-sec="${baseTodayLogSec}" data-base-other-sec="${baseOtherSec}" style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
                         </div>
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Active Attendance Days</p>
@@ -7622,7 +7646,7 @@ async function saveCompletedSessionOnExit() {
                     </div>
 
                     <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
-                      <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📊 My Performance Dashboard</h4>
+                      <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📊 Performance Dashboard</h4>
                       <div class="stats-grid" style="margin-bottom:14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Questions Attended Today</p>
@@ -7667,9 +7691,9 @@ async function saveCompletedSessionOnExit() {
                           <tbody>
                             ${stOffline.length > 0 ? stOffline.map(o => `
                               <tr>
-                                <td>${o.exam_date || o.timestamp}</td>
+                                <td>${escapeHtml(o.exam_date || o.timestamp)}</td>
                                 <td><b>${escapeHtml(o.exam_name)}</b></td>
-                                <td>${o.fl_score}/${o.fl_outof} <small>(${o.fl_subject})</small></td>
+                                <td>${o.fl_score}/${o.fl_outof} <small>(${escapeHtml(o.fl_subject)})</small></td>
                                 <td>${o.mii_score}/${o.mii_outof}</td>
                                 <td>${o.mm_score}/${o.mm_outof}</td>
                                 <td>${o.eng_score}/${o.eng_outof}</td>
@@ -7685,7 +7709,10 @@ async function saveCompletedSessionOnExit() {
                     </div>
 
                     <div class="card" style="margin-bottom:20px; background:#fff; border:1px solid var(--border-color);">
-                      <h4 style="margin-top:0; color:var(--primary); font-size:15px;">📖 Subject Overview</h4>
+                      <h4 style="margin-top:0; margin-bottom:4px; color:var(--primary); font-size:15px;">📖 Subject Overview (Unique Question Mastery)</h4>
+                      <small style="display:block; margin-bottom:10px; color:var(--text-muted); font-weight:600;">
+                        Unique Question Mastery: <b>${item.metrics.correct}/${item.metrics.total} (${item.metrics.accuracy}%)</b>${repeatedCount > 0 ? ` · ${repeatedCount} repeated/re-attempted Qs excluded from unique count (${logData.grandTotalQuestions} total session Qs)` : ''}.
+                      </small>
                       <div class="table-responsive" style="margin:0;">
                         <table class="data-table">
                           <thead><tr><th>Subject</th><th>Total</th><th>Correct</th><th>Wrong</th><th>Last Attended</th></tr></thead>
@@ -7714,33 +7741,6 @@ async function saveCompletedSessionOnExit() {
             }).join('');
 
             scoredStudents.forEach((item, idx) => {
-              const st10 = get10(item.user.phone);
-              const stNameLower = String(item.user.name || '').trim().toLowerCase();
-              const stUserLower = String(item.user.username || '').trim().toLowerCase();
-
-              const stTrials = allTrialExams.filter(t => {
-                const t10 = get10(t.phone);
-                const tName = String(t.student_name || '').trim().toLowerCase();
-                const tUser = String(t.username || '').trim().toLowerCase();
-                return (st10 && t10 === st10) ||
-                       (stUserLower && tUser === stUserLower) ||
-                       (stNameLower && (tName === stNameLower || tName.includes(stNameLower) || stNameLower.includes(tName)));
-              }).map(t => ({
-                Timestamp: t.timestamp,
-                Score: t.score,
-                TotalQuestions: t.total_questions,
-                AnswersJson: t.answers_json
-              }));
-
-              const stOffline = allOfflineExams.filter(o => {
-                const o10 = get10(o.phone);
-                const oName = String(o.student_name || '').trim().toLowerCase();
-                const oUser = String(o.username || '').trim().toLowerCase();
-                return (st10 && o10 === st10) ||
-                       (stUserLower && oUser === stUserLower) ||
-                       (stNameLower && (oName === stNameLower || oName.includes(stNameLower) || stNameLower.includes(oName)));
-              });
-
               renderStudentDashboardAndOverview(
                 {
                   detailedAnswers: item.combined.map(c => ({
@@ -7752,11 +7752,11 @@ async function saveCompletedSessionOnExit() {
                     IsCorrect: c.is_correct,
                     Timestamp: c.timestamp
                   })),
-                  trialExams: stTrials,
-                  offlineExams: stOffline,
-                  attendanceGrandTotal: item.logData ? item.logData.grandTotalQuestions : item.total,
-                  attendanceGrandCorrect: item.logData ? item.logData.grandTotalCorrect : item.correct,
-                  attendanceGrandScored: item.logData ? item.logData.grandScoredQuestions : item.total
+                  trialExams: item.stTrials,
+                  offlineExams: item.stOffline,
+                  attendanceGrandTotal: item.total,
+                  attendanceGrandCorrect: item.correct,
+                  attendanceGrandScored: item.scoredTotal
                 },
                 `opt-tot-${idx}`,
                 `opt-acc-val-${idx}`,
@@ -7782,8 +7782,11 @@ async function saveCompletedSessionOnExit() {
             totalAttempted: item.total
           }));
 
-          sortColumn = 'name';
-          sortAscending = true;
+          // Preserve user's active sort column/direction instead of forcing reset on refresh
+          if (!sortColumn) {
+            sortColumn = 'name';
+            sortAscending = true;
+          }
           renderConsolidatedTable();
         } catch (err) {
           console.error('Tab 9 Analytics & Consolidated error:', err);
@@ -7797,17 +7800,17 @@ async function saveCompletedSessionOnExit() {
           if (resetBody) {
             resetBody.innerHTML = resetRequests.map(r => `
               <tr>
-                <td><small>${r.request_id}</small></td>
+                <td><small>${escapeHtml(r.request_id)}</small></td>
                 <td>${formatDateStrict(r.timestamp)}</td>
                 <td><b>${escapeHtml(r.student_name)}</b></td>
-                <td>${r.class || '7'}-${r.division || 'A'}</td>
-                <td>${r.phone}</td>
-                <td><span class="badge">${r.subject}</span></td>
-                <td><b>${r.status}</b></td>
+                <td>${escapeHtml(r.class || '7')}-${escapeHtml(r.division || 'A')}</td>
+                <td>${escapeHtml(r.phone)}</td>
+                <td><span class="badge">${escapeHtml(r.subject)}</span></td>
+                <td><b>${escapeHtml(r.status)}</b></td>
                 <td>
                   ${r.status === 'Pending' ? `
-                    <button onclick="handleReset('${r.request_id}', 'Accepted', '${r.phone}', '${r.subject}')" class="btn btn-primary" style="padding:4px 8px; font-size:12px;">Accept</button>
-                    <button onclick="handleReset('${r.request_id}', 'Rejected', '${r.phone}', '${r.subject}')" class="btn btn-danger" style="padding:4px 8px; font-size:12px;">Reject</button>
+                    <button onclick="handleReset('${escapeHtml(r.request_id)}', 'Accepted', '${escapeHtml(r.phone)}', '${escapeHtml(r.subject)}')" class="btn btn-primary" style="padding:4px 8px; font-size:12px;">Accept</button>
+                    <button onclick="handleReset('${escapeHtml(r.request_id)}', 'Rejected', '${escapeHtml(r.phone)}', '${escapeHtml(r.subject)}')" class="btn btn-danger" style="padding:4px 8px; font-size:12px;">Reject</button>
                   ` : '-'}
                 </td>
               </tr>
