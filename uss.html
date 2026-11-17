@@ -2596,6 +2596,9 @@ function getTodayElapsedSeconds(phoneOrUser) {
 
     function triggerAppLockout() {
       saveLiveAttendanceProgress(DAILY_MAX_QUOTA_SECONDS);
+      if (sessionAnswersLog.length > 0 && !window._isSavingSessionLock) {
+        saveCompletedSessionOnExit();
+      }
 
       document.getElementById('locked-student-name').innerText = currentUser?.name || currentUser?.username || 'Student';
       document.getElementById('locked-today-date').innerText = new Date().toLocaleDateString('en-GB');
@@ -2953,7 +2956,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
     }
 
     // =========================================================================
-    // STUDENT CLIENT PRESENCE TRACKER (WITH ENTRY & EXIT SOUND CHIMES)
+    // STUDENT CLIENT PRESENCE TRACKER (WITH ENTRY/EXIT CHIMES & RELIABLE EXIT)
     // =========================================================================
     function setupPresenceTracker() {
       if (!currentUser) return;
@@ -2995,13 +2998,12 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
             updateStudentAdminSupervisionUI();
             if (typeof updateTab5QuotaLiveDOM === 'function') {
               updateTab5QuotaLiveDOM(record);
+            }
             if (typeof updateReportsAndUsersLiveDOM === 'function') {
               updateReportsAndUsersLiveDOM(record);
-            }  
             }
           }
         })
-        
         .on('broadcast', { event: 'request_quota_sync' }, () => {
           if (currentUser && !isStaffOrAdminUser(currentUser)) {
             broadcastLivePulse(
@@ -3014,26 +3016,26 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
           if (status === 'SUBSCRIBED') {
             await updatePresenceLiveState('Online & Active');
 
-            // Play ENTRY sound upon entering the portal
+            // Play ENTRY sound & log initial ACTIVE upon entering the portal
             triggerStudentEntryAlert();
-            
+
             clearInterval(presenceHeartbeatInterval);
             presenceHeartbeatInterval = setInterval(() => {
               if (navigator.onLine && !isUserCurrentlyIdle && document.visibilityState === 'visible' && isWindowCurrentlyFocused) {
                 broadcastLivePulse('Online & Active', true);
                 updatePresenceLiveState('Online & Active');
               }
-            }, 5000); // ⚡ Runs every 5 seconds for instant detection
+            }, 5000); // Runs every 5 seconds for instant detection
           }
         });
 
-      // Track student state to prevent redundant duplicate sound triggers
+      // Track student state (start false so initial portal entry logs ACTIVE)
       let isStudentCurrentlyActive = false;
 
       function triggerStudentEntryAlert() {
         if (!isStudentCurrentlyActive) {
           isStudentCurrentlyActive = true;
-          playEntryChime(); // 🎵 Ding-dong Entry Chime
+          playEntryChime(); // Ding-dong Entry Chime
           logStudentPresenceTransition('ACTIVE', 'Resumed Interaction');
         }
       }
@@ -3041,7 +3043,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
       function triggerStudentExitAlert(reason = 'Away from portal') {
         if (isStudentCurrentlyActive) {
           isStudentCurrentlyActive = false;
-          playExitChime(); // 🎵 Descending Exit Chime
+          playExitChime(); // Descending Exit Chime
           logStudentPresenceTransition('INACTIVE', reason);
         }
       }
@@ -3084,7 +3086,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
       });
 
       // 4. USER INACTIVITY / IDLE DETECTOR (TRIGGERS INACTIVE AFTER 35 SECONDS OF INACTION)
-      const IDLE_TIMEOUT_MS = 35000; // 35 seconds
+      const IDLE_TIMEOUT_MS = 35000;
 
       function resetIdleTimer() {
         if (isUserCurrentlyIdle && document.visibilityState === 'visible' && isWindowCurrentlyFocused) {
@@ -3114,8 +3116,15 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
       // 5. CLOSING PORTAL OR NAVIGATION AWAY (RELIABLE KEEPALIVE ON MOBILE)
       const handleAppExit = () => {
         if (!currentUser) return;
+        if (window._appExitHandledAt && (Date.now() - window._appExitHandledAt < 3000)) return;
+        window._appExitHandledAt = Date.now();
+
         const exitTimeStr = formatDateStrict(new Date().toISOString());
         const exitDateStr = new Date().toLocaleDateString('en-GB');
+
+        if (sessionAnswersLog.length > 0 && !window._isSavingSessionLock && typeof syncInProgressAttendanceSession === 'function') {
+          syncInProgressAttendanceSession(true);
+        }
 
         triggerStudentExitAlert('Left / Closed the Portal');
         broadcastLivePulse('Offline (Left Portal)', false);
@@ -3164,7 +3173,9 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
         }
 
         try {
-          if (presenceChannel) presenceChannel.untrack();
+          if (presenceChannel) {
+            presenceChannel.untrack();
+          }
         } catch (e) {}
       };
 
@@ -4531,10 +4542,71 @@ async function syncPastActivitiesToSupabase() {
     showToast('Failed to sync: ' + err.message, 'danger');
   }
 }
+// Progressively sync active practice/trial session to attendance after every question
+    // (Uses the exact same attendance_id as saveCompletedSessionOnExit so there are zero duplicates)
+    function syncInProgressAttendanceSession(useKeepalive = false) {
+      if (!currentUser || !sessionAnswersLog || sessionAnswersLog.length === 0) return;
 
-    // =========================================================================
-// FULL UPDATED: SAVE COMPLETED SESSION (DO NOT WIPE sessionAnswersLog PREMATURELY)
-// =========================================================================
+      const total = sessionAnswersLog.length;
+      const score = sessionAnswersLog.filter(a =>
+        a.IsCorrect === true || a.is_correct === true || a.is_correct === 'YES' || a.IsCorrect === 'YES'
+      ).length;
+      const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+
+      const cleanDate = new Date().toLocaleDateString('en-GB');
+      const now = new Date();
+      const formattedDT = formatDateStrict(now.toISOString());
+      const studentPhone = String(currentUser.phone || '').trim();
+      const studentUsername = String(currentUser.username || '').trim().toLowerCase();
+
+      const isTrial = (isTrialMode === true);
+      const subjectCode = isTrial ? 'TRIAL' : (sessionAnswersLog[0]?.SubjectCode || 'General');
+      const subjectName = isTrial ? 'Trial Exam' : (sessionAnswersLog[0]?.Subject || getFullSubjectName(subjectCode));
+      const sessionActivity = isTrial ? 'Trial Exam Mode' : `Subject Practice (${subjectName})`;
+
+      const stableSessionKey = sessionStartTime || now.getTime();
+      const attId = `ATT-${studentPhone}-${cleanDate.replace(/\//g, '')}-${subjectCode}-${stableSessionKey}`;
+
+      const durationSeconds = Math.max(1, Math.round((now.getTime() - (sessionStartTime || now.getTime())) / 1000));
+      const minutes = Math.floor(durationSeconds / 60);
+      const seconds = durationSeconds % 60;
+      const durationText = minutes > 0 ? `${minutes}m ${String(seconds).padStart(2, '0')}s` : `${seconds}s`;
+
+      const row = {
+        attendance_id: attId,
+        username: studentUsername,
+        student_name: currentUser.name || currentUser.username,
+        phone: studentPhone,
+        class: String(currentUser.userClass || '7'),
+        division: String(currentUser.division || 'A'),
+        date: cleanDate,
+        timestamp: formattedDT,
+        activity: sessionActivity,
+        duration_seconds: durationSeconds,
+        duration_text: durationText,
+        questions_attended: total,
+        score: `${score} / ${total} (${pct}%)`
+      };
+
+      if (useKeepalive) {
+        try {
+          fetch(`${SUPABASE_URL}/rest/v1/attendance?on_conflict=attendance_id`, {
+            method: 'POST',
+            keepalive: true,
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'Prefer': 'resolution=merge-duplicates,return=minimal'
+            },
+            body: JSON.stringify([row])
+          }).catch(() => {});
+        } catch (e) {}
+      } else {
+        supabaseClient.from('attendance').upsert([row], { onConflict: 'attendance_id' }).then(() => {});
+      }
+    }
+
 // =========================================================================
 // SAVE COMPLETED SESSION (LOCKED TO sessionStartTime TO PREVENT DUPLICATES)
 // =========================================================================
@@ -4949,7 +5021,8 @@ async function saveCompletedSessionOnExit() {
           }], { onConflict: 'phone,question_id' });
         } catch (e) {
           console.warn("Could not save timed-out answer:", e);
-        }
+        } 
+        syncInProgressAttendanceSession(false);
       }
 
       // 3. Move to next question or conclude quiz
@@ -5053,6 +5126,7 @@ async function saveCompletedSessionOnExit() {
           is_correct: isCorrect ? 'YES' : 'NO'
         }], { onConflict: 'phone,question_id' });
       }
+        syncInProgressAttendanceSession(false);
 
       if (qIndex + 1 < currentQuestions.length) {
         qIndex++;
