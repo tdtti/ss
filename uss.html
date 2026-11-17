@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-  <title>TDTTI USS TRAINING PORTAL 2026-27</title>
+  <title>TDTTI CM KIDS TRAINING PORTAL 2026-27</title>
 
   <!-- SUPABASE JS LIBRARY -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -732,7 +732,7 @@
   <!-- Top Navbar -->
   <nav class="top-navbar" id="top-navbar" style="display: none;">
     <div class="brand-logo">
-      <span>🎓 TDTTI USS PORTAL</span>
+      <span>🎓 TDTTI CM KIDS PORTAL</span>
     </div>
 
     <div style="display: flex; align-items: center; gap: 12px;">
@@ -840,8 +840,8 @@
     <section id="login-sec">
       <div class="login-hero-header">
         <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS6dWKvrSQKybNS-C8s5KIFwaCI7GbTTMt1QavDq1yKrA&s=10" alt="School Logo" class="school-logo-img">
-        <h2 class="login-hero-title">TDTTI USS TRAINING PORTAL</h2>
-        <span class="login-hero-subtitle">ACADEMIC SESSION 2026-27</span>
+        <h2 class="login-hero-title">TDTTI CM KIDS TRAINING PORTAL</h2>
+        <span class="login-hero-subtitle">2026-27</span>
       </div>
 
       <!-- AUTH MODE SWITCHER (SIGN IN vs REGISTER) -->
@@ -3572,7 +3572,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
       let text = '';
 
       if (isActive) {
-        text = `🌟 *TDTTI USS TRAINING PORTAL*
+        text = `🌟 *TDTTI CM KIDS TRAINING PORTAL 2026-27*
 
       Dear *${name}*,
       Great job! You are currently *ACTIVE* and practicing in:
@@ -3581,7 +3581,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
 
       Keep up the steady focus toward your USS Exam success! 🚀📚`;
       } else {
-        text = `⚠️ *TDTTI USS PORTAL - URGENT PRACTICE REMINDER*
+        text = `⚠️ *TDTTI CM KIDS PORTAL - URGENT PRACTICE REMINDER*
 
       Dear *${name}*,
       You are currently *INACTIVE* on the USS Training Portal (${context || 'Last seen recently'}).
@@ -8035,7 +8035,7 @@ async function saveCompletedSessionOnExit() {
       const portalUrl = window.location.href.split('#')[0];
       const validPhone = getCleanWhatsappPhone(phone);
 
-      const text = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*\n📋 *YOUR LOGIN CREDENTIALS*\n\nDear *${name}*,\nHere are your credentials to access the USS Training Portal:\n\n👤 *Username:* ${username}\n🔑 *Password:* ${password}\n🏫 *Class & Div:* ${userClass}-${div}\n🌐 *Portal URL:* ${portalUrl}\n\n⚠️ *Daily Practice Notice:*\nThe portal allows up to 60 minutes of practice daily. Please log in every day to complete your sessions and prepare for the USS Examination! ✨`;
+      const text = `🎓 *TDTTI CM KIDS TRAINING PORTAL 2026-27*\n📋 *YOUR LOGIN CREDENTIALS*\n\nDear *${name}*,\nHere are your credentials to access the USS Training Portal:\n\n👤 *Username:* ${username}\n🔑 *Password:* ${password}\n🏫 *Class & Div:* ${userClass}-${div}\n🌐 *Portal URL:* ${portalUrl}\n\n⚠️ *Daily Practice Notice:*\nThe portal allows up to 60 minutes of practice daily. Please log in every day to complete your sessions and prepare for the USS Examination! ✨`;
 
       const url = validPhone
         ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(validPhone)}&text=${encodeURIComponent(text)}`
@@ -8349,7 +8349,7 @@ async function saveCompletedSessionOnExit() {
         }
       });
 
-      let msg = `🎓 *TDTTI USS TRAINING PORTAL 2026-27*\n📊 *CONSOLIDATED PERFORMANCE REPORT*\n\nStudent: *${name}*\nClass & Div: ${userClass}-${div}\nPhone: ${phone}\n─────────────────────────\n🏆 Overall Score: *${metrics.correct}/${metrics.total} (${metrics.accuracy}%)*\n\n📖 *SUBJECT PRACTICE BREAKDOWN:*\n`;
+      let msg = `🎓 *TDTTI CM KIDS TRAINING PORTAL 2026-27*\n📊 *CONSOLIDATED PERFORMANCE REPORT*\n\nStudent: *${name}*\nClass & Div: ${userClass}-${div}\nPhone: ${phone}\n─────────────────────────\n🏆 Overall Score: *${metrics.correct}/${metrics.total} (${metrics.accuracy}%)*\n\n📖 *SUBJECT PRACTICE BREAKDOWN:*\n`;
       msg += subPracticeLines.length > 0 ? subPracticeLines.join('\n') + '\n' : '• No subject practice recorded yet.\n';
       msg += `\n⭐ *TRIAL EXAM SUMMARY:*\n• Total Trials Taken: ${metrics.trialsCount}\n─────────────────────────\nKeep practicing daily to secure top honors in USS 2026-27!`;
 
@@ -8363,7 +8363,7 @@ async function saveCompletedSessionOnExit() {
 
     function sendAttendanceWhatsappAlert(name, phone, date, activities, duration, remaining, questions) {
       const validPhone = getCleanWhatsappPhone(phone);
-      const text = `Hi ${name}!\nHere is your TDTTI USS Training Portal Daily Attendance Report for ${date}:\n• Activities: ${activities}\n• Daily Practice Time: ${duration}\n• Remaining Allowance Today: ${remaining}\n• Questions Practiced: ${questions}\n\nKeep up the daily practice!`;
+      const text = `Hi ${name}!\nHere is your TDTTI CM KIDS TRAINING PORTAL 2026-27 Daily Attendance Report for ${date}:\n• Activities: ${activities}\n• Daily Practice Time: ${duration}\n• Remaining Allowance Today: ${remaining}\n• Questions Practiced: ${questions}\n\nKeep up the daily practice!`;
 
       const url = validPhone
         ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(validPhone)}&text=${encodeURIComponent(text)}`
@@ -9665,8 +9665,8 @@ async function saveCompletedSessionOnExit() {
           notification_id: 'NOTIF-' + Date.now(),
           timestamp: nowStr,
           recipient_phone: formattedPhone,
-          title: '🎓 Welcome to TDTTI USS Training Portal!',
-          message: `Dear ${name},\nWelcome to the TDTTI USS Training Portal 2026-27!\n\nYour account has been registered successfully.\n• Class: ${userClass}-${division}\n• First Language: ${firstLang}\n• Daily Practice Quota: 60 minutes\n\nPracticing every day is the key to qualifying for the USS Scholarship. Best wishes!`,
+          title: '🎓 Welcome to TDTTI CM KIDS TRAINING PORTAL 2026-27!',
+          message: `Dear ${name},\nWelcome to the TDTTI CM KIDS TRAINING PORTAL 2026-27!\n\nYour account has been registered successfully.\n• Class: ${userClass}-${division}\n• First Language: ${firstLang}\n• Daily Practice Quota: 60 minutes\n\nPracticing every day is the key to qualifying for the USS Scholarship. Best wishes!`,
           sender: 'TDTTI Administration'
         }]);
 
@@ -10047,7 +10047,7 @@ function fallbackCopyText(text, count, prevSecurityState) {
 
       // 3. Format with Serial Numbers (1. NAME, 2. NAME ...)
       const formattedLines = sortedNames.map((name, idx) => `${idx + 1}. ${name}`);
-      const clipboardText = `📅 Attendance List (${dateStr}):\n` + formattedLines.join('\n');
+      const clipboardText = `📅 2026-27 CM KIDS PORTAL ATTENDANCE LIST  (${dateStr}):\n` + formattedLines.join('\n');
 
       // 4. Temporarily bypass portal security restriction
       const prevSecurityState = securityProtectionActive;
