@@ -6565,7 +6565,7 @@ async function saveCompletedSessionOnExit() {
         return { data: [], error: err };
       });
 
-      // Paginated fetcher to avoid Supabase's 1,000-row default cap on growing tables
+      // Paginated fetcher so Supabase never silently caps tables at 1,000 rows
       const fetchAllTableRows = async (tableName, orderCol = 'id', ascending = false) => {
         try {
           const batchSize = 1000;
@@ -6685,7 +6685,7 @@ async function saveCompletedSessionOnExit() {
         const allAttendance = attList;
         const allOfflineExams = offlineRes.data || [];
 
-        // Cache globally for fast in-memory lookups
+        // Cache raw tables globally (keeps -DAILY rows intact for quota calculations)
         cachedAdminData = {
           users,
           questions,
@@ -6709,6 +6709,96 @@ async function saveCompletedSessionOnExit() {
         const studentsOnly = users.filter(u => !isStaffOrAdminUser(u));
         const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
         const cleanToday = new Date().toLocaleDateString('en-GB');
+
+        // ---------------------------------------------------------------------
+        // SANITIZE SESSION ATTENDANCE SO SYNC / REFRESH NEVER INFLATES COUNTS OR DURATIONS
+        // ---------------------------------------------------------------------
+        const normAttDate = (rawD, rawTs) => {
+          let dStr = rawD || (rawTs ? String(rawTs).split(',')[0].trim() : '');
+          const pD = parseCustomDate(dStr) || parseCustomDate(rawTs);
+          if (pD && !isNaN(pD.getTime())) {
+            dStr = `${String(pD.getDate()).padStart(2, '0')}/${String(pD.getMonth() + 1).padStart(2, '0')}/${pD.getFullYear()}`;
+          }
+          return dStr || cleanToday;
+        };
+
+        const isSyncTrialAtt = (attId) => /-TRIAL-\d{1,5}$/i.test(String(attId || '').trim());
+        const isSyncOrReconAtt = (attId) => {
+          const s = String(attId || '').trim().toUpperCase();
+          return s.includes('-SYNC') || s.includes('-RECON');
+        };
+        const isDailyAtt = (attId) => String(attId || '').trim().toUpperCase().includes('-DAILY');
+
+        // Identify genuine live session rows per (student, date)
+        const realSessionsByStudentDate = new Map();
+        (allAttendance || []).forEach(att => {
+          const attId = String(att.attendance_id || '').trim();
+          if (isDailyAtt(attId) || isSyncOrReconAtt(attId) || isSyncTrialAtt(attId)) return;
+          if ((Number(att.questions_attended) || 0) <= 0) return;
+
+          const matchedUser = studentsOnly.find(u =>
+            isExactStudentRecordMatch(att, u.phone, u.username, u.name)
+          );
+          if (!matchedUser) return;
+
+          const stKey = String(matchedUser.username || '').trim().toLowerCase() || get10(matchedUser.phone);
+          const dKey = normAttDate(att.date, att.timestamp);
+          const sdKey = `${stKey}__${dKey}`;
+          if (!realSessionsByStudentDate.has(sdKey)) realSessionsByStudentDate.set(sdKey, []);
+          realSessionsByStudentDate.get(sdKey).push(att);
+        });
+
+        // Strip phantom -SYNC / -RECON rows on dates with real sessions, and drop duplicate 5m 00s -TRIAL-<idx> rows
+        const cleanSessionAttendance = (allAttendance || []).filter(att => {
+          const attId = String(att.attendance_id || '').trim();
+          if (isDailyAtt(attId)) return false;
+
+          const actLower = String(att.activity || '').toLowerCase();
+          if (
+            actLower.includes('quota restored') ||
+            actLower.includes('daily quota heartbeat') ||
+            actLower.includes('live direct log') ||
+            actLower.includes('live session')
+          ) {
+            return false;
+          }
+          if ((Number(att.questions_attended) || 0) <= 0) return false;
+
+          const matchedUser = studentsOnly.find(u =>
+            isExactStudentRecordMatch(att, u.phone, u.username, u.name)
+          );
+          if (!matchedUser) return false;
+
+          const stKey = String(matchedUser.username || '').trim().toLowerCase() || get10(matchedUser.phone);
+          const dKey = normAttDate(att.date, att.timestamp);
+          const sdKey = `${stKey}__${dKey}`;
+          const realList = realSessionsByStudentDate.get(sdKey) || [];
+
+          // Ignore synthetic -SYNC / -RECON rows whenever real sessions exist for that date
+          if (isSyncOrReconAtt(attId) && realList.length > 0) {
+            return false;
+          }
+
+          // Ignore -TRIAL-<idx> sync rows (5m 00s) whenever a real Trial Exam session exists on that date
+          if (isSyncTrialAtt(attId)) {
+            const qAtt = Number(att.questions_attended) || 0;
+            const attScore = String(att.score || '').trim().toLowerCase();
+            const attMs = parseCustomDate(att.timestamp)?.getTime() || 0;
+
+            const hasRealMatchingTrial = realList.some(r => {
+              if (!String(r.activity || '').toLowerCase().includes('trial')) return false;
+              const sameScoreAndQ =
+                (Number(r.questions_attended) || 0) === qAtt &&
+                String(r.score || '').trim().toLowerCase() === attScore;
+              const rMs = parseCustomDate(r.timestamp)?.getTime() || 0;
+              const nearInTime = attMs > 0 && rMs > 0 && Math.abs(attMs - rMs) <= 180000;
+              return sameScoreAndQ || nearInTime;
+            });
+            if (hasRealMatchingTrial) return false;
+          }
+
+          return true;
+        });
 
         // ---------------------------------------------------------------------
         // TAB 3: NOTIFICATION COMPOSER STUDENT CHIPS (ALPHABETICAL)
@@ -6741,7 +6831,7 @@ async function saveCompletedSessionOnExit() {
         }
 
         // ---------------------------------------------------------------------
-        // PRE-COMPUTE PER-STUDENT PORTFOLIO LOGS & METRICS (SHARED BY TABS 5, 6, 9)
+        // PRE-COMPUTE AUTHORITATIVE METRICS & LOGS PER STUDENT (TABS 5, 6 & 9)
         // ---------------------------------------------------------------------
         const studentComputedMap = new Map();
 
@@ -6776,24 +6866,16 @@ async function saveCompletedSessionOnExit() {
             stOffline
           );
 
-          const validAtt = allAttendance.filter(a => {
-            if (!isExactStudentRecordMatch(a, st.phone, st.username, st.name)) return false;
-            if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
-            return true;
-          }).sort((a, b) => {
+          const validAtt = cleanSessionAttendance.filter(a =>
+            isExactStudentRecordMatch(a, st.phone, st.username, st.name)
+          ).sort((a, b) => {
             const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
             const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
             return timeB - timeA;
           });
 
-          const practiceAtt = validAtt.filter(a => {
-            const act = String(a.activity || '').toLowerCase();
-            return act.includes('practice') || act.includes('trial') || (Number(a.questions_attended) || 0) > 0;
-          });
+          const logData = buildDetailedAttendanceLogHTML(validAtt, st.phone, st.name, allAnswers, st.username);
 
-          const logData = buildDetailedAttendanceLogHTML(practiceAtt, st.phone, st.name, allAnswers, st.username);
-
-          // Combine Offline Exam scores when present so Tab 6, Tab 9 & Consolidated match
           let offlineTot = 0;
           let offlineCor = 0;
           stOffline.forEach(ex => {
@@ -6837,39 +6919,16 @@ async function saveCompletedSessionOnExit() {
           if (container) {
             const datewiseMap = new Map();
 
-            allAttendance.forEach(att => {
+            cleanSessionAttendance.forEach(att => {
               const matchedUser = studentsOnly.find(u =>
                 isExactStudentRecordMatch(att, u.phone, u.username, u.name)
               );
               if (!matchedUser) return;
 
-              let dateStr = att.date || (att.timestamp ? att.timestamp.split(',')[0].trim() : '');
-              const parsedD = parseCustomDate(dateStr) || parseCustomDate(att.timestamp);
-              if (parsedD && !isNaN(parsedD.getTime())) {
-                dateStr = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
-              }
-              if (!dateStr) dateStr = cleanToday;
-
-              const isDaily = String(att.attendance_id || '').includes('-DAILY');
-              const isSync = String(att.attendance_id || '').includes('-SYNC');
-
-              if (isSync) {
-                const hasLive = allAttendance.some(o =>
-                  o !== att &&
-                  isExactStudentRecordMatch(o, matchedUser.phone, matchedUser.username, matchedUser.name) &&
-                  o.date === dateStr &&
-                  !String(o.attendance_id || '').includes('-SYNC') &&
-                  (Number(o.questions_attended) || 0) > 0
-                );
-                if (hasLive) return;
-              }
-
-              if (isDaily && (Number(att.questions_attended) || 0) === 0) return;
-
+              const dateStr = normAttDate(att.date, att.timestamp);
               if (!datewiseMap.has(dateStr)) datewiseMap.set(dateStr, new Map());
 
               const stMap = datewiseMap.get(dateStr);
-              // Key strictly by username first so siblings sharing a phone never collide
               const stKey = String(matchedUser.username || '').trim().toLowerCase() || get10(matchedUser.phone);
 
               if (!stMap.has(stKey)) {
@@ -6894,7 +6953,7 @@ async function saveCompletedSessionOnExit() {
               }
             });
 
-            // Catch today's students who answered > 0 questions
+            // Catch today's in-progress students who answered > 0 questions
             studentsOnly.forEach(st => {
               const stKey = String(st.username || '').trim().toLowerCase() || get10(st.phone);
               const liveQuotaToday = getStudentStickyHeaderQuota(st, cleanToday, true);
@@ -6941,12 +7000,17 @@ async function saveCompletedSessionOnExit() {
                 const studentsMap = datewiseMap.get(dateStr);
                 const rawStudents = Array.from(studentsMap.values());
 
+                // Lock questionsAttended to the deduplicated logData day total (never inflated by Sync/Refresh)
                 const attendedStudents = rawStudents.map(stData => {
                   const u = stData.user;
                   const computed = studentComputedMap.get(stData.stKey);
-                  const attDayQs = computed?.logData?.dayTotalsMap?.[dateStr]?.totalQuestions ?? stData.questionsAttended;
-                  const verifiedQsOnDate = getStudentQuestionsCountForDate(u.phone, u.username, u.name, dateStr, allAnswers, allTrialExams);
-                  stData.questionsAttended = Math.max(attDayQs, verifiedQsOnDate);
+                  const attDayQs = computed?.logData?.dayTotalsMap?.[dateStr]?.totalQuestions;
+                  if (attDayQs !== undefined) {
+                    stData.questionsAttended = attDayQs;
+                  } else {
+                    const verifiedQsOnDate = getStudentQuestionsCountForDate(u.phone, u.username, u.name, dateStr, allAnswers, allTrialExams);
+                    stData.questionsAttended = Math.max(stData.questionsAttended, verifiedQsOnDate);
+                  }
                   return stData;
                 }).filter(s => s.questionsAttended > 0);
 
@@ -7020,15 +7084,6 @@ async function saveCompletedSessionOnExit() {
                             : `${prM}m ${String(prS).padStart(2, '0')}s left`;
                         }
 
-                        const getNormDateStr = (rawD, rawTs) => {
-                          const dStr = rawD || (rawTs ? String(rawTs).split(',')[0].trim() : '');
-                          const pD = parseCustomDate(dStr) || parseCustomDate(rawTs);
-                          if (pD && !isNaN(pD.getTime())) {
-                            return `${String(pD.getDate()).padStart(2, '0')}/${String(pD.getMonth() + 1).padStart(2, '0')}/${pD.getFullYear()}`;
-                          }
-                          return dStr;
-                        };
-
                         const formatHistoryTimeOnly = (ts) => {
                           if (!ts) return '-';
                           const d = parseCustomDate(ts);
@@ -7051,7 +7106,7 @@ async function saveCompletedSessionOnExit() {
 
                         const dayHistoryEvents = (cachedAdminData?.portalHistory || []).filter(h =>
                           isExactStudentRecordMatch(h, u.phone, u.username, u.name) &&
-                          getNormDateStr(h.date, h.timestamp) === dateStr
+                          normAttDate(h.date, h.timestamp) === dateStr
                         );
 
                         const dayLogs = (logs || []).filter(l => {
@@ -7060,7 +7115,7 @@ async function saveCompletedSessionOnExit() {
                                          (uNameLower && lId === uNameLower) ||
                                          (u10 && get10(l.identifier) === u10);
                           if (!matchU) return false;
-                          return getNormDateStr('', l.login_time || l.timestamp) === dateStr;
+                          return normAttDate('', l.login_time || l.timestamp) === dateStr;
                         });
 
                         const entryCandidates = [];
@@ -7089,7 +7144,7 @@ async function saveCompletedSessionOnExit() {
 
                           if (l.logout_time && l.logout_time !== 'Active Now' && l.logout_time !== '-' && !String(l.logout_time).startsWith('Auto')) {
                             const pLogout = parseCustomDate(l.logout_time);
-                            if (pLogout && !isNaN(pLogout.getTime()) && getNormDateStr('', l.logout_time) === dateStr) {
+                            if (pLogout && !isNaN(pLogout.getTime()) && normAttDate('', l.logout_time) === dateStr) {
                               explicitExitCandidates.push({ ts: l.logout_time, ms: pLogout.getTime() });
                               allActivityTimestamps.push({ ts: l.logout_time, ms: pLogout.getTime(), type: 'INACTIVE' });
                             }
@@ -7099,7 +7154,7 @@ async function saveCompletedSessionOnExit() {
                         stData.sessions.forEach(sess => {
                           if (sess.timestamp && String(sess.timestamp).includes(',')) {
                             const pS = parseCustomDate(sess.timestamp);
-                            if (pS && !isNaN(pS.getTime()) && getNormDateStr('', sess.timestamp) === dateStr) {
+                            if (pS && !isNaN(pS.getTime()) && normAttDate('', sess.timestamp) === dateStr) {
                               allActivityTimestamps.push({ ts: sess.timestamp, ms: pS.getTime(), type: 'SESSION' });
                             }
                           }
@@ -7323,7 +7378,7 @@ async function saveCompletedSessionOnExit() {
               return { ...computed, idx };
             });
 
-            reportAccordion.innerHTML = repPrepared.map(({ st, idx, totalQs, totalCorrect, accuracyPct }) => {
+            reportAccordion.innerHTML = repPrepared.map(({ st, idx, totalQs, totalCorrect, totalScored, accuracyPct }) => {
               const hasRecords = totalQs > 0;
               const cardBorderColor = hasRecords ? '#86efac' : '#fca5a5';
               const headerBgColor = hasRecords ? '#f0fdf4' : '#fff5f5';
@@ -7350,7 +7405,7 @@ async function saveCompletedSessionOnExit() {
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                       ${hasRecords ? `
                         <span class="badge ${accuracyBadgeClass}" style="font-size:12.5px; font-weight:800; padding:4px 10px;">
-                          🎯 ${accuracyPct}% Accuracy (${totalCorrect}/${totalQs})
+                          🎯 ${accuracyPct}% Accuracy (${totalCorrect}/${totalScored})
                         </span>
                         <span class="badge" style="background:#ffffff; color:var(--primary); border:1.5px solid #93c5fd; font-size:12px; font-weight:800; padding:3px 9px;">
                           📚 ${totalQs} Qs Answered
@@ -7782,7 +7837,6 @@ async function saveCompletedSessionOnExit() {
             totalAttempted: item.total
           }));
 
-          // Preserve user's active sort column/direction instead of forcing reset on refresh
           if (!sortColumn) {
             sortColumn = 'name';
             sortAscending = true;
