@@ -5273,6 +5273,9 @@ async function saveCompletedSessionOnExit() {
           .or(`username.ilike.${studentUsername},phone.ilike.%${clean10}%`)
           .order('id', { ascending: false });
         attendanceList = dbAtt || [];
+        attendanceList = attendanceList.filter(a =>
+        isExactStudentRecordMatch(a, studentPhone, studentUsername, studentName)
+      );
       } catch (e) {
         console.warn("Could not fetch attendance logs:", e);
       }
@@ -5347,6 +5350,30 @@ async function saveCompletedSessionOnExit() {
       );
     }
 
+    function isExactStudentRecordMatch(record, studentPhone, studentUsername, studentName) {
+      const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+      const st10 = get10(studentPhone);
+      const stUser = String(studentUsername || '').trim().toLowerCase();
+      const stName = String(studentName || '').trim().toLowerCase();
+
+      const r10 = get10(record?.phone);
+      const rUser = String(record?.username || '').trim().toLowerCase();
+      const rName = String(record?.student_name || '').trim().toLowerCase();
+
+      // 1. If both have usernames, username is the strict owner (prevents shared-phone / sibling mixing)
+      if (stUser && rUser) {
+        return stUser === rUser;
+      }
+
+      // 2. Legacy rows without username: match by exact 10-digit phone
+      if (st10 && r10) {
+        return st10 === r10;
+      }
+
+      // 3. Final fallback: exact full name match only (never partial .includes)
+      return Boolean(stName && rName && stName === rName);
+    }
+
     function buildDetailedAttendanceLogHTML(validLogs, studentPhone, studentName, allAnswersList, studentUsername = '') {
       const answersPool = (allAnswersList && allAnswersList.length > 0) 
         ? allAnswersList 
@@ -5359,14 +5386,8 @@ async function saveCompletedSessionOnExit() {
       const stUserLower = String(studentUsername || '').trim().toLowerCase();
       const cleanToday = new Date().toLocaleDateString('en-GB');
 
-      const isStudentMatch = (itemPhone, itemUser, itemName) => {
-        const i10 = get10(itemPhone);
-        const iU = String(itemUser || '').trim().toLowerCase();
-        const iN = String(itemName || '').trim().toLowerCase();
-        return (st10 && i10 && st10 === i10) ||
-               (stUserLower && iU && stUserLower === iU) ||
-               (stNameLower && iN && (stNameLower === iN || (stNameLower.length >= 4 && iN.length >= 4 && (stNameLower.includes(iN) || iN.includes(stNameLower)))));
-      };
+      const isStudentMatch = (itemPhone, itemUser, itemName) =>
+        isExactStudentRecordMatch({ phone: itemPhone, username: itemUser, student_name: itemName }, studentPhone, studentUsername, studentName);
 
       const normalizeDateStr = (rawD, rawTs) => {
         let dStr = rawD || (rawTs ? String(rawTs).split(',')[0].trim() : '');
@@ -5432,6 +5453,7 @@ async function saveCompletedSessionOnExit() {
 
       // 1. Clean & sort logs chronologically descending (prefer real live sessions over -SYNC rows)
       const cleanedLogs = (validLogs || []).filter(item => {
+        if (!isExactStudentRecordMatch(item, studentPhone, studentUsername, studentName)) return false;
         const attId = String(item.attendance_id || '');
         const act = String(item.activity || '').toLowerCase();
         const sc = String(item.score || '').toLowerCase();
@@ -6566,13 +6588,7 @@ async function saveCompletedSessionOnExit() {
               const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
 
               const validStudentAtt = allAttendance.filter(a => {
-                const a10 = get10(a.phone);
-                const aUser = String(a.username || '').trim().toLowerCase();
-                const aName = String(a.student_name || '').trim().toLowerCase();
-                const isMatch = (st10 && a10 && st10 === a10) ||
-                                (stUser && aUser && stUser === aUser) ||
-                                (aName && aName === String(st.name || '').trim().toLowerCase());
-                if (!isMatch) return false;
+                if (!isExactStudentRecordMatch(a, st.phone, st.username, st.name)) return false;
                 if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
                 return true;
               });
@@ -7181,14 +7197,7 @@ async function saveCompletedSessionOnExit() {
               const stUserLower = String(st.username || '').trim().toLowerCase();
 
               const validAtt = allAttendance.filter(a => {
-                const a10 = get10(a.phone);
-                const aName = String(a.student_name || '').trim().toLowerCase();
-                const aUser = String(a.username || '').trim().toLowerCase();
-
-                const matchUser = (st10 && a10 && st10 === a10) ||
-                                  (stUserLower && aUser && stUserLower === aUser) ||
-                                  (stNameLower && aName && (aName === stNameLower || (aName.length >= 4 && stNameLower.length >= 4 && (stNameLower.includes(aName) || aName.includes(stNameLower)))));
-                if (!matchUser) return false;
+                if (!isExactStudentRecordMatch(a, st.phone, st.username, st.name)) return false;
                 if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
                 return true;
               }).sort((a, b) => {
@@ -7412,14 +7421,7 @@ async function saveCompletedSessionOnExit() {
               const stUserLower = String(item.user.username || '').trim().toLowerCase();
 
               const validAtt = allAttendance.filter(a => {
-                const a10 = get10(a.phone);
-                const aName = String(a.student_name || '').trim().toLowerCase();
-                const aUser = String(a.username || '').trim().toLowerCase();
-
-                const matchUser = (st10 && a10 && st10 === a10) ||
-                                  (stUserLower && aUser && stUserLower === aUser) ||
-                                  (stNameLower && aName && (aName === stNameLower || (aName.length >= 4 && stNameLower.length >= 4 && (stNameLower.includes(aName) || aName.includes(stNameLower)))));
-                if (!matchUser) return false;
+                if (!isExactStudentRecordMatch(a, item.user.phone, item.user.username, item.user.name)) return false;
                 if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
                 return true;
               }).sort((a, b) => {
