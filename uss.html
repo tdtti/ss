@@ -9376,6 +9376,9 @@ async function saveCompletedSessionOnExit() {
     // =========================================================================
     // HANDLE NEW STUDENT REGISTRATION
     // =========================================================================
+    // =========================================================================
+    // HANDLE NEW STUDENT REGISTRATION
+    // =========================================================================
     async function handleStudentRegistration(e) {
       e.preventDefault();
 
@@ -9384,7 +9387,7 @@ async function saveCompletedSessionOnExit() {
       const gender = document.getElementById('reg-gender').value;
       const userClass = document.getElementById('reg-class').value.trim() || '7';
       const firstLang = document.getElementById('reg-first-lang').value;
-      
+
       // 1. STRICT DIVISION VALIDATION (A, B, C, D ONLY)
       const allowedDivisions = ['A', 'B', 'C', 'D'];
       if (!allowedDivisions.includes(division)) {
@@ -9459,35 +9462,28 @@ async function saveCompletedSessionOnExit() {
 
         if (regErr) throw regErr;
 
-        // ... rest of handleStudentRegistration (logging, session establishment) remains unchanged
-
         // 3. Log initial registration entry
         const nowStr = formatDateStrict(new Date().toISOString());
         const logId = 'LOG-' + Date.now();
         const newSessionId = 'SESS-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+        const deviceStr = getDeviceInfo();
 
-        await supabaseClient.from('logs').insert([{ 
-          timestamp: nowStr, 
-          log_id: logId, 
-          identifier: username, 
-          role: '1,2,3,4', 
-          login_status: 'SUCCESS', 
-          login_time: nowStr, 
-          logout_time: 'Active Now', 
-          device: getDeviceInfo() 
+        await supabaseClient.from('logs').insert([{
+          timestamp: nowStr,
+          log_id: logId,
+          identifier: username,
+          role: '1,2,3,4',
+          login_status: 'SUCCESS',
+          login_time: nowStr,
+          logout_time: 'Active Now',
+          device: deviceStr
         }]);
-
-        await logPortalActivity(
-          'LOGIN',
-          'Logged into portal (Session Resumed)',
-          `• Logged In Time: ${nowStr} • Device: ${deviceStr}`
-        );
 
         // 4. Send Welcome notification to the student's Notification Center
         await supabaseClient.from('notifications').insert([{
           notification_id: 'NOTIF-' + Date.now(),
           timestamp: nowStr,
-          recipient_phone: phone,
+          recipient_phone: formattedPhone,
           title: '🎓 Welcome to TDTTI USS Training Portal!',
           message: `Dear ${name},\nWelcome to the TDTTI USS Training Portal 2026-27!\n\nYour account has been registered successfully.\n• Class: ${userClass}-${division}\n• First Language: ${firstLang}\n• Daily Practice Quota: 60 minutes\n\nPracticing every day is the key to qualifying for the USS Scholarship. Best wishes!`,
           sender: 'TDTTI Administration'
@@ -9500,7 +9496,7 @@ async function saveCompletedSessionOnExit() {
           userClass: userClass,
           division: division,
           firstLanguage: firstLang,
-          phone: phone,
+          phone: formattedPhone,
           role: '1,2,3,4',
           tabAccess: '1,2,3,4',
           username: username,
@@ -9511,10 +9507,11 @@ async function saveCompletedSessionOnExit() {
         };
 
         localStorage.setItem('USS_USER', JSON.stringify(currentUser));
+
         await logPortalActivity(
           'LOGIN',
           'Registered & Logged into portal',
-          `• Logged In Time: ${nowStr} • Device: ${getDeviceInfo()}`
+          `• Logged In Time: ${nowStr} • Device: ${deviceStr}`
         );
 
         setProgress(100);
