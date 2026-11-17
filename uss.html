@@ -5333,7 +5333,9 @@ async function saveCompletedSessionOnExit() {
         })),
         offlineExams: [],
         attendanceGrandTotal: attLogData ? attLogData.grandTotalQuestions : 0,
-        attendanceTodayTotal: attLogData ? attLogData.todayTotalQuestions : 0
+        attendanceTodayTotal: attLogData ? attLogData.todayTotalQuestions : 0,
+        attendanceGrandCorrect: attLogData ? attLogData.grandTotalCorrect : 0,
+        attendanceGrandScored: attLogData ? attLogData.grandScoredQuestions : 0
       };
 
       // 9. Render Dashboard
@@ -5552,6 +5554,8 @@ async function saveCompletedSessionOnExit() {
 
       let grandTotalSec = 0;
       let grandTotalQuestions = 0;
+      let grandTotalCorrect = 0;
+      let grandScoredQuestions = 0;
       let todayTotalSec = 0;
       let todayTotalQuestions = 0;
       const dayTotalsMap = {};
@@ -5584,6 +5588,11 @@ async function saveCompletedSessionOnExit() {
 
           dayTotalQuestions += qCount;
           grandTotalQuestions += qCount;
+          const scorePartsMatch = String(displayScore || '').match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+)/);
+          if (scorePartsMatch) {
+            grandTotalCorrect += Math.round(parseFloat(scorePartsMatch[1]));
+            grandScoredQuestions += parseInt(scorePartsMatch[2], 10);
+          }
 
           const isFraction = displayScore.includes('/');
           const isPassing = isFraction && !displayScore.startsWith('0');
@@ -5644,6 +5653,8 @@ async function saveCompletedSessionOnExit() {
         grandTotalSec: grandTotalSec,
         todayTotalQuestions: todayTotalQuestions,
         grandTotalQuestions: grandTotalQuestions,
+        grandTotalCorrect: grandTotalCorrect,
+        grandScoredQuestions: grandScoredQuestions,
         activeDaysCount: sortedDates.length,
         dayTotalsMap: dayTotalsMap,
         toString() { return this.html; }
@@ -5717,8 +5728,10 @@ async function saveCompletedSessionOnExit() {
         });
       }
 
-      // 3. Overall Accuracy Rate
-      const overallAccuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+      // 3. Overall Accuracy Rate (uses Detailed Attendance Log totals when provided so header, cards & log match)
+      const overallAccuracy = (resData.attendanceGrandScored > 0)
+        ? Math.round((resData.attendanceGrandCorrect / resData.attendanceGrandScored) * 100)
+        : (totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0);
 
       // 4. Update Header Cards (Today Questions, Total Questions Attended & Overall Accuracy Rate)
       const cleanToday = new Date().toLocaleDateString('en-GB');
@@ -5740,7 +5753,7 @@ async function saveCompletedSessionOnExit() {
       }
 
       if (document.getElementById(totalElId)) {
-        const totalAttempts = (isPortfolioView && resData.attendanceGrandTotal !== undefined)
+        const totalAttempts = (resData.attendanceGrandTotal !== undefined)
           ? resData.attendanceGrandTotal
           : Math.max(totalAnswered, (resData.allAttemptsCount || totalAnswered));
         document.getElementById(totalElId).innerText = totalAttempts;
@@ -6182,6 +6195,118 @@ async function saveCompletedSessionOnExit() {
       }
     }
 
+    // Calculate actual cumulative usage on dateStr directly from History / Users History (portal_history, logs, attendance)
+    function getHistoryCumulativeUsageSeconds(userObj, dateStr, afterMs = 0) {
+      const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+      const u10 = get10(userObj?.phone);
+      const uUser = String(userObj?.username || '').trim().toLowerCase();
+      const uName = String(userObj?.name || '').trim().toLowerCase();
+
+      const normDate = (rawD, rawTs) => {
+        let dStr = rawD || (rawTs ? String(rawTs).split(',')[0].trim() : '');
+        const pD = parseCustomDate(dStr) || parseCustomDate(rawTs);
+        if (pD && !isNaN(pD.getTime())) {
+          dStr = `${String(pD.getDate()).padStart(2, '0')}/${String(pD.getMonth() + 1).padStart(2, '0')}/${pD.getFullYear()}`;
+        }
+        return dStr;
+      };
+
+      const isMatch = (itemPhone, itemUser, itemName) => {
+        const i10 = get10(itemPhone);
+        const iU = String(itemUser || '').trim().toLowerCase();
+        const iN = String(itemName || '').trim().toLowerCase();
+        if (uUser && iU) return uUser === iU;
+        if (u10 && i10) return u10 === i10;
+        return Boolean(uName && iN && uName === iN);
+      };
+
+      // 1. Collect all History events for this student on dateStr
+      const dayHistory = (cachedAdminData?.portalHistory || []).filter(h =>
+        isMatch(h.phone, h.username, h.student_name) &&
+        normDate(h.date, h.timestamp) === dateStr
+      );
+
+      // 2. Sum explicit Practice / Trial session durations from portal_history (deduplicated)
+      let historyPracticeSec = 0;
+      const seenPracticeKeys = new Set();
+      dayHistory.forEach(h => {
+        const ms = parseCustomDate(h.timestamp)?.getTime() || 0;
+        if (afterMs > 0 && ms > 0 && ms < afterMs) return;
+
+        let durSec = Number(h.metadata?.duration_seconds) || 0;
+        if (!durSec && h.details) {
+          const m = String(h.details).match(/Duration:\s*([^•\n\r]+)/i);
+          if (m) durSec = parseSecs(0, m[1].trim());
+        }
+        if (durSec > 0) {
+          const k = `${h.timestamp}__${h.title}`;
+          if (!seenPracticeKeys.has(k)) {
+            seenPracticeKeys.add(k);
+            historyPracticeSec += durSec;
+          }
+        }
+      });
+
+      // 3. Calculate active portal intervals from History (LOGIN/ACTIVE -> INACTIVE/LOGOUT)
+      const timeline = [];
+      dayHistory.forEach(h => {
+        const ms = parseCustomDate(h.timestamp)?.getTime() || 0;
+        if (!ms || (afterMs > 0 && ms < afterMs)) return;
+        timeline.push({ ms, type: String(h.activity_type || '').toUpperCase() });
+      });
+
+      (cachedAdminData?.logs || []).forEach(l => {
+        const lId = String(l.identifier || '').trim().toLowerCase();
+        if (!((uUser && lId === uUser) || (uName && lId === uName) || (u10 && get10(l.identifier) === u10))) return;
+
+        const loginTs = l.login_time || l.timestamp;
+        if (normDate('', loginTs) === dateStr) {
+          const lMs = parseCustomDate(loginTs)?.getTime() || 0;
+          if (lMs && (!afterMs || lMs >= afterMs)) timeline.push({ ms: lMs, type: 'LOGIN' });
+        }
+        if (l.logout_time && l.logout_time !== 'Active Now' && l.logout_time !== '-' && !String(l.logout_time).startsWith('Auto ')) {
+          if (normDate('', l.logout_time) === dateStr) {
+            const outMs = parseCustomDate(l.logout_time)?.getTime() || 0;
+            if (outMs && (!afterMs || outMs >= afterMs)) timeline.push({ ms: outMs, type: 'LOGOUT' });
+          }
+        }
+      });
+
+      timeline.sort((a, b) => a.ms - b.ms);
+
+      let historyIntervalSec = 0;
+      let openStartMs = null;
+      timeline.forEach(ev => {
+        if (ev.type === 'LOGIN' || ev.type === 'ACTIVE') {
+          if (openStartMs === null) openStartMs = ev.ms;
+        } else if (ev.type === 'INACTIVE' || ev.type === 'LOGOUT') {
+          if (openStartMs !== null && ev.ms >= openStartMs) {
+            // Cap a single unclosed segment without intermediate events at 60m
+            const segSec = Math.min(3600, Math.round((ev.ms - openStartMs) / 1000));
+            historyIntervalSec += segSec;
+            openStartMs = null;
+          }
+        }
+      });
+
+      // 4. Also check actual attendance session durations on dateStr (fallback if portal_history missed rows)
+      let attSessionSec = 0;
+      const seenAttIds = new Set();
+      (cachedAdminData?.allAttendance || []).forEach(a => {
+        if (String(a.attendance_id || '').includes('-DAILY')) return;
+        if (!isMatch(a.phone, a.username, a.student_name)) return;
+        if (normDate(a.date, a.timestamp) !== dateStr) return;
+        const aMs = parseCustomDate(a.timestamp)?.getTime() || 0;
+        if (afterMs > 0 && aMs > 0 && aMs < afterMs) return;
+        const idKey = String(a.attendance_id || `${a.timestamp}_${a.activity}`);
+        if (seenAttIds.has(idKey)) return;
+        seenAttIds.add(idKey);
+        attSessionSec += parseSecs(a.duration_seconds, a.duration_text);
+      });
+
+      return Math.max(historyPracticeSec, historyIntervalSec, attSessionSec);
+    }
+
     function getStudentStickyHeaderQuota(userObj, dateStr, isToday) {
       const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
       const u10 = get10(userObj?.phone);
@@ -6203,18 +6328,24 @@ async function saveCompletedSessionOnExit() {
       });
 
       let dbDailyAttSec = 0;
+      let latestAdminRestoreMs = 0;
       (cachedAdminData?.allAttendance || []).forEach(a => {
-        if (!String(a.attendance_id || '').includes('-DAILY')) return;
         const a10 = get10(a.phone);
         const aUser = String(a.username || '').trim().toLowerCase();
         const matchUser = (u10 && a10 === u10) || (uUser && aUser === uUser);
         const aDate = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
-        if (matchUser && aDate === dateStr) {
+        if (!matchUser || aDate !== dateStr) return;
+
+        if (String(a.activity || '').toLowerCase().includes('quota restored')) {
+          const rMs = parseCustomDate(a.timestamp)?.getTime() || 0;
+          if (rMs > latestAdminRestoreMs) latestAdminRestoreMs = rMs;
+        }
+        if (String(a.attendance_id || '').includes('-DAILY')) {
           dbDailyAttSec = Math.max(dbDailyAttSec, Number(a.duration_seconds) || 0);
         }
       });
 
-      // Check portal_history for Quota Expired on dateStr (unless Admin restored quota after it)
+      // Check portal_history for Quota Expired on dateStr
       let historyQuotaExpiredSec = 0;
       (cachedAdminData?.portalHistory || []).forEach(h => {
         const h10 = get10(h.phone);
@@ -6229,13 +6360,15 @@ async function saveCompletedSessionOnExit() {
           const txt = `${h.title || ''} ${h.details || ''}`.toLowerCase();
           if (txt.includes('quota expired')) {
             const expMs = parseCustomDate(h.timestamp)?.getTime() || 0;
-            // Only apply if daily_usage wasn't explicitly reset to 0 after the expiration
-            if (!(dbDailyUsageSec === 0 && latestQuotaUpdatedMs > expMs)) {
+            if (expMs > latestAdminRestoreMs && !(dbDailyUsageSec === 0 && latestQuotaUpdatedMs > expMs)) {
               historyQuotaExpiredSec = maxDailySec;
             }
           }
         }
       });
+
+      // Actual cumulative usage from History / Users History (after any Admin Quota Restore today)
+      const historyUsageSec = getHistoryCumulativeUsageSeconds(userObj, dateStr, latestAdminRestoreMs);
 
       let liveStickySec = 0;
       if (isToday) {
@@ -6259,7 +6392,10 @@ async function saveCompletedSessionOnExit() {
         } catch (e) {}
       }
 
-      const usedSec = Math.min(maxDailySec, Math.max(dbDailyUsageSec, dbDailyAttSec, historyQuotaExpiredSec, liveStickySec));
+      const usedSec = Math.min(
+        maxDailySec,
+        Math.max(dbDailyUsageSec, dbDailyAttSec, historyQuotaExpiredSec, historyUsageSec, liveStickySec)
+      );
       const remainingSec = Math.max(0, maxDailySec - usedSec);
       const isQuotaBlocked = usedSec >= maxDailySec;
 
@@ -6388,8 +6524,7 @@ async function saveCompletedSessionOnExit() {
         });
       };
 
-      applyTimeToElements(`[data-rep-today-time="${key}"]`, `[data-rep-total-time="${key}"]`);
-      applyTimeToElements(`[data-opt-today-time="${key}"]`, `[data-opt-total-time="${key}"]`);
+      
       applyTimeToElements(null, `[data-att-lifetime-time="${key}"]`);
 
       applyQuotaPills(`[data-rep-quota-used="${key}"]`, `[data-rep-quota-left="${key}"]`);
@@ -6462,12 +6597,11 @@ async function saveCompletedSessionOnExit() {
         const users = usersRes.data || [];
         const questions = allQuestionsList || [];
         const logs = logsRes.data || [];
-
-        // Auto-heal stale "Active Now" (>90m) or legacy "Auto ..." logs using actual Date & Time
-        const nowMs = Date.now();
         const histList = historyRes.data || [];
         const attList = attRes.data || [];
 
+        // Auto-heal stale "Active Now" (>90m) or legacy "Auto ..." logs using actual Date & Time
+        const nowMs = Date.now();
         (logs || []).forEach(l => {
           const isStaleActive = (l.logout_time === 'Active Now') && (() => {
             const lDate = parseCustomDate(l.login_time || l.timestamp);
@@ -6479,7 +6613,6 @@ async function saveCompletedSessionOnExit() {
             const lIdent = String(l.identifier || '').trim().toLowerCase();
             const loginMs = parseCustomDate(l.login_time || l.timestamp)?.getTime() || 0;
 
-            // Find real exit or last activity timestamp from portal_history or attendance in this session
             const userEvTimes = [];
             histList.forEach(h => {
               const hU = String(h.username || '').trim().toLowerCase();
@@ -6505,15 +6638,9 @@ async function saveCompletedSessionOnExit() {
 
             l.logout_time = resolvedExitStr;
             if (l.log_id) {
-              supabaseClient.from('logs')
-                .update({ logout_time: resolvedExitStr })
-                .eq('log_id', l.log_id)
-                .then(() => {});
+              supabaseClient.from('logs').update({ logout_time: resolvedExitStr }).eq('log_id', l.log_id).then(() => {});
             } else if (l.id) {
-              supabaseClient.from('logs')
-                .update({ logout_time: resolvedExitStr })
-                .eq('id', l.id)
-                .then(() => {});
+              supabaseClient.from('logs').update({ logout_time: resolvedExitStr }).eq('id', l.id).then(() => {});
             }
           }
         });
@@ -6521,7 +6648,7 @@ async function saveCompletedSessionOnExit() {
         const allAnswers = answersRes.data || [];
         const allTrialExams = trialsRes.data || [];
         const resetRequests = resetsRes.data || [];
-        const allAttendance = attRes.data || [];
+        const allAttendance = attList;
         const allOfflineExams = offlineRes.data || [];
 
         // Cache globally for fast in-memory lookups
@@ -6535,7 +6662,7 @@ async function saveCompletedSessionOnExit() {
           allAttendance,
           allOfflineExams,
           dailyUsage: dailyUsageRes.data || [],
-          portalHistory: historyRes.data || []
+          portalHistory: histList
         };
 
         const studentsOnly = users.filter(u => !isStaffOrAdminUser(u));
@@ -6578,7 +6705,7 @@ async function saveCompletedSessionOnExit() {
 
             const enrolledStudents = users.filter(u => !isStaffOrAdminUser(u));
 
-            // 1. Calculate Lifetime metrics & Portfolio day totals strictly matching Portfolio Tab
+            // 1. Calculate Lifetime metrics & Portfolio log totals per student
             const studentLifetimeMap = new Map();
             const studentPortfolioLogMap = new Map();
 
@@ -6600,31 +6727,12 @@ async function saveCompletedSessionOnExit() {
               const stLogData = buildDetailedAttendanceLogHTML(practiceAttForLog, st.phone, st.name, allAnswers, st.username);
               studentPortfolioLogMap.set(st10 || stUser, stLogData);
 
-              let lifetimeSec = 0;
-              const lifetimeDaysSet = new Set();
-
-              validStudentAtt.forEach(a => {
-                lifetimeSec += parseSecs(a.duration_seconds, a.duration_text);
-                let dStr = a.date || (a.timestamp ? a.timestamp.split(',')[0].trim() : '');
-                const parsedD = parseCustomDate(dStr) || parseCustomDate(a.timestamp);
-                if (parsedD && !isNaN(parsedD.getTime())) {
-                  dStr = `${String(parsedD.getDate()).padStart(2, '0')}/${String(parsedD.getMonth() + 1).padStart(2, '0')}/${parsedD.getFullYear()}`;
-                }
-                if (dStr) lifetimeDaysSet.add(dStr);
-              });
-
-              const todayQuota = getStudentStickyHeaderQuota(st, cleanToday, true);
-              const baseTodayLogSec = stLogData.todayTotalSec || 0;
-              const todayActualSec = Math.max(baseTodayLogSec, todayQuota.usedSec);
-              const otherDaysSec = Math.max(0, (stLogData.grandTotalSec || 0) - baseTodayLogSec);
-              const totalActualSec = otherDaysSec + todayActualSec;
-
               studentLifetimeMap.set(st10 || stUser, {
-                activeDaysCount: (stLogData.activeDaysCount || 0) + (todayActualSec > 0 && baseTodayLogSec === 0 ? 1 : 0),
-                totalTimePracticedText: formatSecs(totalActualSec),
-                baseTodayLogSec,
-                otherDaysSec,
-                totalQuestionsAttendedAllDay: metrics.total
+                activeDaysCount: stLogData.activeDaysCount || 0,
+                totalTimePracticedText: formatSecs(stLogData.grandTotalSec || 0),
+                baseTodayLogSec: stLogData.todayTotalSec || 0,
+                otherDaysSec: Math.max(0, (stLogData.grandTotalSec || 0) - (stLogData.todayTotalSec || 0)),
+                totalQuestionsAttendedAllDay: stLogData.grandTotalQuestions || metrics.total
               });
             });
 
@@ -6632,16 +6740,9 @@ async function saveCompletedSessionOnExit() {
             const datewiseMap = new Map();
 
             allAttendance.forEach(att => {
-              const rawPhone = String(att.phone || '').trim();
-              const phone10 = get10(rawPhone);
-
-              const matchedUser = enrolledStudents.find(u => {
-                const u10 = get10(u.phone);
-                const uUser = String(u.username || '').trim().toLowerCase();
-                const aUser = String(att.username || '').trim().toLowerCase();
-                return (phone10 && u10 && phone10 === u10) || (aUser && uUser && aUser === uUser);
-              });
-
+              const matchedUser = enrolledStudents.find(u =>
+                isExactStudentRecordMatch(att, u.phone, u.username, u.name)
+              );
               if (!matchedUser) return;
 
               let dateStr = att.date || (att.timestamp ? att.timestamp.split(',')[0].trim() : '');
@@ -6653,11 +6754,12 @@ async function saveCompletedSessionOnExit() {
 
               const isDaily = String(att.attendance_id || '').includes('-DAILY');
               const isSync = String(att.attendance_id || '').includes('-SYNC');
+              const phone10 = get10(matchedUser.phone);
 
               if (isSync) {
                 const hasLive = allAttendance.some(o =>
-                  o !== att && get10(o.phone) === phone10 && o.date === dateStr &&
-                  !String(o.attendance_id || '').includes('-SYNC') && (Number(o.questions_attended) || 0) > 0
+                  o !== att && isExactStudentRecordMatch(o, matchedUser.phone, matchedUser.username, matchedUser.name) &&
+                  o.date === dateStr && !String(o.attendance_id || '').includes('-SYNC') && (Number(o.questions_attended) || 0) > 0
                 );
                 if (hasLive) return;
               }
@@ -6690,20 +6792,13 @@ async function saveCompletedSessionOnExit() {
               }
             });
 
-            // 3. Catch today's active students (including live sticky sub-header usage)
+            // 3. Catch today's students ONLY if they answered > 0 questions
             enrolledStudents.forEach(st => {
               const st10 = get10(st.phone);
               const stKey = st10 || String(st.username).toLowerCase();
               const liveQuotaToday = getStudentStickyHeaderQuota(st, cleanToday, true);
 
-              const todayQs = allAnswers.filter(ans => {
-                let aD = ans.timestamp ? ans.timestamp.split(',')[0].trim() : '';
-                const pD = parseCustomDate(aD) || parseCustomDate(ans.timestamp);
-                if (pD && !isNaN(pD.getTime())) {
-                  aD = `${String(pD.getDate()).padStart(2, '0')}/${String(pD.getMonth() + 1).padStart(2, '0')}/${pD.getFullYear()}`;
-                }
-                return (st10 && get10(ans.phone) === st10) && (aD === cleanToday);
-              }).length;
+              const todayQs = getStudentQuestionsCountForDate(st.phone, st.username, st.name, cleanToday, allAnswers, allTrialExams);
 
               if (todayQs > 0) {
                 if (!datewiseMap.has(cleanToday)) datewiseMap.set(cleanToday, new Map());
@@ -6713,7 +6808,7 @@ async function saveCompletedSessionOnExit() {
                     user: st,
                     date: cleanToday,
                     sessions: [],
-                    activitiesSet: new Set([todayQs > 0 ? 'Subject Practice & Training' : 'Active in Portal']),
+                    activitiesSet: new Set(['Subject Practice & Training']),
                     questionsAttended: todayQs,
                     totalDurationSeconds: liveQuotaToday.usedSec,
                     quotaUsedSeconds: liveQuotaToday.usedSec
@@ -6735,7 +6830,7 @@ async function saveCompletedSessionOnExit() {
                 <div class="card" style="width:100%; text-align:center; padding:40px 20px; color:var(--text-muted);">
                   <div style="font-size:46px; margin-bottom:10px;">📅</div>
                   <h3 style="margin:0 0 6px 0; color:var(--text-main);">No Attendance Records Found</h3>
-                  <p style="margin:0; font-size:13.5px;">Student practice and exam sessions will automatically display here once attended.</p>
+                  <p style="margin:0; font-size:13.5px;">Only students who attended at least 1 question are listed here.</p>
                 </div>
               `;
             } else {
@@ -6745,7 +6840,7 @@ async function saveCompletedSessionOnExit() {
                 const studentsMap = datewiseMap.get(dateStr);
                 const rawStudents = Array.from(studentsMap.values());
 
-                // Resolve authoritative questions count first, then strictly require > 0 Qs
+                // Resolve deduplicated questions count first, then strictly require > 0 Qs
                 const attendedStudents = rawStudents.map(stData => {
                   const u = stData.user;
                   const u10 = get10(u.phone);
@@ -6795,16 +6890,15 @@ async function saveCompletedSessionOnExit() {
 
                         const lifetime = studentLifetimeMap.get(uKey) || {
                           activeDaysCount: 1,
-                          totalTimePracticedText: '0m',
+                          totalTimePracticedText: '0s',
+                          baseTodayLogSec: 0,
+                          otherDaysSec: 0,
                           totalQuestionsAttendedAllDay: stData.questionsAttended
                         };
 
-                        const stLogData = studentPortfolioLogMap.get(uKey);
-                        const attDayQs = stLogData?.dayTotalsMap?.[dateStr]?.totalQuestions ?? stData.questionsAttended;
-
-                        // Today: live sticky sub-header 60m quota
-                        // Previous days: actual cumulative usage of that day as per Portfolio (60m 00s - used)
+                        // Today: live 60m quota | Previous days: exact cumulative usage of that day as per Portfolio
                         const quota = getStudentStickyHeaderQuota(u, dateStr, isToday);
+                        const stLogData = studentPortfolioLogMap.get(uKey);
                         const portfolioDaySec = stLogData?.dayTotalsMap?.[dateStr]?.totalSec || 0;
 
                         let cumulativeUsageToday = quota.usedFormatted;
@@ -6860,17 +6954,8 @@ async function saveCompletedSessionOnExit() {
                         const uUserLower = String(u.username || '').trim().toLowerCase();
                         const uNameLower = String(u.name || '').trim().toLowerCase();
 
-                        const isSameStudentHistory = (itemPhone, itemUser, itemName) => {
-                          const i10 = get10(itemPhone);
-                          const iUser = String(itemUser || '').trim().toLowerCase();
-                          const iName = String(itemName || '').trim().toLowerCase();
-                          return (u10 && i10 && u10 === i10) ||
-                                 (uUserLower && iUser && uUserLower === iUser) ||
-                                 (uNameLower && iName && uNameLower === iName);
-                        };
-
                         const dayHistoryEvents = (cachedAdminData?.portalHistory || []).filter(h =>
-                          isSameStudentHistory(h.phone, h.username, h.student_name) &&
+                          isExactStudentRecordMatch(h, u.phone, u.username, u.name) &&
                           getNormDateStr(h.date, h.timestamp) === dateStr
                         );
 
@@ -6898,7 +6983,7 @@ async function saveCompletedSessionOnExit() {
                           if (type === 'LOGIN' || type === 'ACTIVE') {
                             entryCandidates.push({ ts, ms });
                           }
-                          if (type === 'INACTIVE') {
+                          if (type === 'INACTIVE' || type === 'LOGOUT') {
                             explicitExitCandidates.push({ ts, ms });
                           }
                         });
@@ -7075,7 +7160,7 @@ async function saveCompletedSessionOnExit() {
                                     <div class="att-tile">
                                       <span class="att-tile-label">⌛ Total Time Practiced</span>
                                       <div>
-                                        <span data-att-lifetime-time="${uKey}" data-base-today-log-sec="${lifetime.baseTodayLogSec || 0}" data-base-other-sec="${lifetime.otherDaysSec || 0}" class="num-chip num-chip-blue">${lifetime.totalTimePracticedText}</span>
+                                        <span class="num-chip num-chip-blue">${lifetime.totalTimePracticedText}</span>
                                       </div>
                                     </div>
 
@@ -7134,15 +7219,40 @@ async function saveCompletedSessionOnExit() {
         try {
           const reportAccordion = document.getElementById('admin-student-accordion-list');
           if (reportAccordion) {
+            const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+            const cleanToday = new Date().toLocaleDateString('en-GB');
+
             const alphabeticalStudents = [...studentsOnly].sort((a, b) =>
               String(a.name || a.username).trim().localeCompare(String(b.name || b.username).trim())
             );
 
-            reportAccordion.innerHTML = alphabeticalStudents.map((st, idx) => {
+            const repPrepared = alphabeticalStudents.map((st, idx) => {
               const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
-              const hasRecords = metrics.total > 0;
-              const accuracyPct = metrics.accuracy;
+              const validAtt = allAttendance.filter(a => {
+                if (!isExactStudentRecordMatch(a, st.phone, st.username, st.name)) return false;
+                if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
+                return true;
+              }).sort((a, b) => {
+                const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
+                const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
+                return timeB - timeA;
+              });
 
+              const practiceAtt = validAtt.filter(a => {
+                const act = String(a.activity || '').toLowerCase();
+                return act.includes('practice') || act.includes('trial') || (Number(a.questions_attended) || 0) > 0;
+              });
+              const logData = buildDetailedAttendanceLogHTML(practiceAtt, st.phone, st.name, allAnswers, st.username);
+              const totalQs = logData.grandTotalQuestions > 0 ? logData.grandTotalQuestions : metrics.total;
+              const accuracyPct = logData.grandScoredQuestions > 0
+                ? Math.round((logData.grandTotalCorrect / logData.grandScoredQuestions) * 100)
+                : metrics.accuracy;
+
+              return { st, idx, metrics, logData, totalQs, accuracyPct };
+            });
+
+            reportAccordion.innerHTML = repPrepared.map(({ st, idx, totalQs, accuracyPct }) => {
+              const hasRecords = totalQs > 0;
               const cardBorderColor = hasRecords ? '#86efac' : '#fca5a5';
               const headerBgColor = hasRecords ? '#f0fdf4' : '#fff5f5';
               const headerHoverColor = hasRecords ? '#dcfce7' : '#fee2e2';
@@ -7171,7 +7281,7 @@ async function saveCompletedSessionOnExit() {
                           🎯 ${accuracyPct}% Accuracy
                         </span>
                         <span class="badge" style="background:#ffffff; color:var(--primary); border:1.5px solid #93c5fd; font-size:12px; font-weight:800; padding:3px 9px;">
-                          📚 ${metrics.total} Qs Answered
+                          📚 ${totalQs} Qs Answered
                         </span>
                       ` : `
                         <span class="badge badge-danger" style="font-size:11.5px; font-weight:800; padding:4px 9px;">
@@ -7189,22 +7299,11 @@ async function saveCompletedSessionOnExit() {
               `;
             }).join('');
 
-            alphabeticalStudents.forEach((st, idx) => {
-              const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
-              const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+            repPrepared.forEach(({ st, idx, metrics, logData, totalQs, accuracyPct }) => {
               const st10 = get10(st.phone);
               const stNameLower = String(st.name || '').trim().toLowerCase();
               const stUserLower = String(st.username || '').trim().toLowerCase();
-
-              const validAtt = allAttendance.filter(a => {
-                if (!isExactStudentRecordMatch(a, st.phone, st.username, st.name)) return false;
-                if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
-                return true;
-              }).sort((a, b) => {
-                const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
-                const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
-                return timeB - timeA;
-              });
+              const repKey = st10 || stUserLower;
 
               const stOffline = allOfflineExams.filter(o =>
                 (st10 && get10(o.phone) === st10) ||
@@ -7220,25 +7319,12 @@ async function saveCompletedSessionOnExit() {
                 Timestamp: t.timestamp, Score: t.score, TotalQuestions: t.total_questions, AnswersJson: t.answers_json
               }));
 
-              const cleanToday = new Date().toLocaleDateString('en-GB');
-              const practiceAtt = validAtt.filter(a => {
-                const act = String(a.activity || '').toLowerCase();
-                return act.includes('practice') || act.includes('trial') || (Number(a.questions_attended) || 0) > 0;
-              });
-
-              const logData = buildDetailedAttendanceLogHTML(practiceAtt, st.phone, st.name, allAnswers, st.username);
-              const repKey = st10 || stUserLower;
               const todayQuota = getStudentStickyHeaderQuota(st, cleanToday, true);
               const repPillInfo = getQuotaPillStyles(todayQuota, false);
-              const baseTodayLogSec = logData.todayTotalSec || 0;
-              const todayActualSec = Math.max(baseTodayLogSec, todayQuota.usedSec);
-              const otherDaysSec = Math.max(0, (logData.grandTotalSec || 0) - baseTodayLogSec);
-              const totalActualSec = otherDaysSec + todayActualSec;
-
-              const todayDurationFormatted = formatSecs(todayActualSec);
-              const durationFormatted = formatSecs(totalActualSec);
-              const activeDaysCount = (logData.activeDaysCount || 0) + (todayActualSec > 0 && baseTodayLogSec === 0 ? 1 : 0);
-              const todayQuestionsCount = getStudentQuestionsCountForDate(st.phone, st.username, st.name, cleanToday, allAnswers, allTrialExams);
+              const todayDurationFormatted = formatSecs(logData.todayTotalSec || 0);
+              const durationFormatted = formatSecs(logData.grandTotalSec || 0);
+              const activeDaysCount = logData.activeDaysCount || 0;
+              const todayQuestionsCount = logData.todayTotalQuestions || 0;
 
               const repContainer = document.getElementById(`admin-rep-container-${idx}`);
               if (repContainer) {
@@ -7259,14 +7345,15 @@ async function saveCompletedSessionOnExit() {
                         </span>
                       </div>
                     </div>
+
                     <div class="stats-grid" style="margin-bottom:16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced Today</p>
-                        <h3 data-rep-today-time="${repKey}" data-base-today-log-sec="${baseTodayLogSec}" style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
+                        <h3 data-rep-today-time="${repKey}" style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
                       </div>
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced</p>
-                        <h3 data-rep-total-time="${repKey}" data-base-today-log-sec="${baseTodayLogSec}" data-base-other-sec="${otherDaysSec}" style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
+                        <h3 data-rep-total-time="${repKey}" style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
                       </div>
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Active Attendance Days</p>
@@ -7295,12 +7382,12 @@ async function saveCompletedSessionOnExit() {
                         <h2 style="margin:6px 0 0 0; color:#059669;">${todayQuestionsCount}</h2>
                       </div>
                       <div class="card" style="margin:0; background:#f8fafc;">
-                        <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Answered Questions</p>
-                        <h2 id="rep-tot-${idx}" style="margin:6px 0 0 0; color:var(--primary);">${metrics.total}</h2>
+                        <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Questions Attended</p>
+                        <h2 id="rep-tot-${idx}" style="margin:6px 0 0 0; color:var(--primary);">${totalQs}</h2>
                       </div>
                       <div class="card" style="margin:0; background:#f8fafc;">
                         <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Overall Accuracy Rate</p>
-                        <h2 id="rep-acc-${idx}" style="margin:6px 0 0 0; color:var(--success);">${metrics.accuracy}%</h2>
+                        <h2 id="rep-acc-${idx}" style="margin:6px 0 0 0; color:var(--success);">${accuracyPct}%</h2>
                       </div>
                     </div>
                     <div class="grid-2">
@@ -7382,7 +7469,10 @@ async function saveCompletedSessionOnExit() {
                     Timestamp: c.timestamp
                   })),
                   trialExams: stTrials,
-                  offlineExams: stOffline
+                  offlineExams: stOffline,
+                  attendanceGrandTotal: logData.grandTotalQuestions,
+                  attendanceGrandCorrect: logData.grandTotalCorrect,
+                  attendanceGrandScored: logData.grandScoredQuestions
                 }, `rep-tot-${idx}`, `rep-acc-${idx}`, `rep-strong-${idx}`, `rep-weak-${idx}`, `admin-rep-overview-${idx}`, null, null, `admin-rep-audit-${idx}`);
               }
             });
@@ -7396,66 +7486,62 @@ async function saveCompletedSessionOnExit() {
         // ---------------------------------------------------------------------
         try {
           const optAccordion = document.getElementById('manage-users-analytics-accordion');
-          if (optAccordion) {
-            const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
-            const cleanToday = new Date().toLocaleDateString('en-GB');
+          const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
+          const cleanToday = new Date().toLocaleDateString('en-GB');
 
-            const scoredStudents = studentsOnly.map(st => {
-              const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
-              return {
-                user: st,
-                total: metrics.total,
-                correct: metrics.correct,
-                accuracy: metrics.accuracy,
-                combined: metrics.combined
-              };
+          const scoredStudents = studentsOnly.map(st => {
+            const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
+            const validAtt = allAttendance.filter(a => {
+              if (!isExactStudentRecordMatch(a, st.phone, st.username, st.name)) return false;
+              if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
+              return true;
             }).sort((a, b) => {
-              if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
-              if (b.total !== a.total) return b.total - a.total;
-              return String(a.user.name || '').localeCompare(String(b.user.name || ''));
+              const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
+              const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
+              return timeB - timeA;
             });
 
+            const practiceAtt = validAtt.filter(a => {
+              const act = String(a.activity || '').toLowerCase();
+              return act.includes('practice') || act.includes('trial') || (Number(a.questions_attended) || 0) > 0;
+            });
+            const logData = buildDetailedAttendanceLogHTML(practiceAtt, st.phone, st.name, allAnswers, st.username);
+
+            const total = logData.grandTotalQuestions > 0 ? logData.grandTotalQuestions : metrics.total;
+            const correct = logData.grandScoredQuestions > 0 ? logData.grandTotalCorrect : metrics.correct;
+            const accuracy = logData.grandScoredQuestions > 0
+              ? Math.round((logData.grandTotalCorrect / logData.grandScoredQuestions) * 100)
+              : metrics.accuracy;
+
+            return {
+              user: st,
+              total,
+              correct,
+              accuracy,
+              combined: metrics.combined,
+              logData
+            };
+          }).sort((a, b) => {
+            if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+            if (b.total !== a.total) return b.total - a.total;
+            return String(a.user.name || '').localeCompare(String(b.user.name || ''));
+          });
+
+          if (optAccordion) {
             optAccordion.innerHTML = scoredStudents.map((item, idx) => {
               const st10 = get10(item.user.phone);
               const stNameLower = String(item.user.name || '').trim().toLowerCase();
               const stUserLower = String(item.user.username || '').trim().toLowerCase();
-
-              const validAtt = allAttendance.filter(a => {
-                if (!isExactStudentRecordMatch(a, item.user.phone, item.user.username, item.user.name)) return false;
-                if (String(a.attendance_id || '').includes('-DAILY') && (Number(a.questions_attended) || 0) === 0) return false;
-                return true;
-              }).sort((a, b) => {
-                const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
-                const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
-                return timeB - timeA;
-              });
-
-              const practiceAtt = validAtt.filter(a => {
-                const act = String(a.activity || '').toLowerCase();
-                return act.includes('practice') || act.includes('trial') || (Number(a.questions_attended) || 0) > 0;
-              });
-
-              const logData = buildDetailedAttendanceLogHTML(practiceAtt, item.user.phone, item.user.name, allAnswers, item.user.username);
               const optKey = st10 || stUserLower;
+
+              const logData = item.logData;
               const todayQuota = getStudentStickyHeaderQuota(item.user, cleanToday, true);
               const optPillInfo = getQuotaPillStyles(todayQuota, false);
-              const baseTodayLogSec = logData.todayTotalSec || 0;
-              const todayActualSec = Math.max(baseTodayLogSec, todayQuota.usedSec);
-              const otherDaysSec = Math.max(0, (logData.grandTotalSec || 0) - baseTodayLogSec);
-              const totalActualSec = otherDaysSec + todayActualSec;
 
-              const todayDurationFormatted = formatSecs(todayActualSec);
-              const durationFormatted = formatSecs(totalActualSec);
-              const activeDaysCount = (logData.activeDaysCount || 0) + (todayActualSec > 0 && baseTodayLogSec === 0 ? 1 : 0);
-
-              const todayQuestionsCount = getStudentQuestionsCountForDate(
-                item.user.phone,
-                item.user.username,
-                item.user.name,
-                cleanToday,
-                allAnswers,
-                allTrialExams
-              );
+              const todayDurationFormatted = formatSecs(logData.todayTotalSec || 0);
+              const durationFormatted = formatSecs(logData.grandTotalSec || 0);
+              const activeDaysCount = logData.activeDaysCount || 0;
+              const todayQuestionsCount = logData.todayTotalQuestions || 0;
 
               const stOffline = allOfflineExams.filter(o => {
                 const o10 = get10(o.phone);
@@ -7508,14 +7594,15 @@ async function saveCompletedSessionOnExit() {
                           </span>
                         </div>
                       </div>
+
                       <div class="stats-grid" style="margin-bottom:16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced Today</p>
-                          <h3 data-opt-today-time="${optKey}" data-base-today-log-sec="${baseTodayLogSec}" style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
+                          <h3 data-opt-today-time="${optKey}" style="margin:6px 0 0 0; color:#059669;">${todayDurationFormatted}</h3>
                         </div>
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Total Time Practiced</p>
-                          <h3 data-opt-total-time="${optKey}" data-base-today-log-sec="${baseTodayLogSec}" data-base-other-sec="${otherDaysSec}" style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
+                          <h3 data-opt-total-time="${optKey}" style="margin:6px 0 0 0; color:var(--primary);">${durationFormatted}</h3>
                         </div>
                         <div class="card" style="margin:0; background:#f8fafc;">
                           <p style="margin:0; color:var(--text-muted); font-size:12px; font-weight:700;">Active Attendance Days</p>
@@ -7542,7 +7629,7 @@ async function saveCompletedSessionOnExit() {
                           <h2 style="margin:6px 0 0 0; color:#059669;">${todayQuestionsCount}</h2>
                         </div>
                         <div class="card" style="margin:0; background:#f8fafc;">
-                          <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Answered Questions</p>
+                          <p style="margin:0; font-size:12px; color:var(--text-muted); font-weight:700;">Total Questions Attended</p>
                           <h2 id="opt-tot-${idx}" style="margin:6px 0 0 0; color:var(--primary);">${item.total}</h2>
                         </div>
                         <div class="card" style="margin:0; font-size:12px; background:#f8fafc;">
@@ -7666,7 +7753,10 @@ async function saveCompletedSessionOnExit() {
                     Timestamp: c.timestamp
                   })),
                   trialExams: stTrials,
-                  offlineExams: stOffline
+                  offlineExams: stOffline,
+                  attendanceGrandTotal: item.logData ? item.logData.grandTotalQuestions : item.total,
+                  attendanceGrandCorrect: item.logData ? item.logData.grandTotalCorrect : item.correct,
+                  attendanceGrandScored: item.logData ? item.logData.grandScoredQuestions : item.total
                 },
                 `opt-tot-${idx}`,
                 `opt-acc-val-${idx}`,
@@ -7680,20 +7770,17 @@ async function saveCompletedSessionOnExit() {
             });
           }
 
-          consolidatedStudentsList = studentsOnly.map((st, index) => {
-            const metrics = getStudentUniqueAnswerRecords(st.phone, allAnswers, allTrialExams, st.username, st.name, allOfflineExams);
-            return {
-              sno: index + 1,
-              name: st.name || st.username,
-              gender: st.gender || 'Male',
-              userClass: st.class || '7',
-              div: st.division || 'A',
-              firstLanguage: st.first_language || 'MI',
-              phone: st.phone,
-              accuracy: metrics.accuracy,
-              totalAttempted: metrics.total
-            };
-          });
+          consolidatedStudentsList = scoredStudents.map((item, index) => ({
+            sno: index + 1,
+            name: item.user.name || item.user.username,
+            gender: item.user.gender || 'Male',
+            userClass: item.user.class || '7',
+            div: item.user.division || 'A',
+            firstLanguage: item.user.first_language || 'MI',
+            phone: item.user.phone,
+            accuracy: item.accuracy,
+            totalAttempted: item.total
+          }));
 
           sortColumn = 'name';
           sortAscending = true;
