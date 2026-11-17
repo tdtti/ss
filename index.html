@@ -752,7 +752,7 @@
         </div>
     </div>
     <!-- HIDDEN AUDIO & AUDIO-ONLY YOUTUBE PLAYERS FOR SCHOOL RADIO -->
-    <audio id="html5RadioAudio" preload="metadata" playsinline></audio>
+    <audio id="html5RadioAudio" preload="auto" playsinline></audio>
     <div id="ytRadioHiddenPlayerWrap" style="position:fixed; bottom:0; right:0; width:240px; height:135px; opacity:0.01; pointer-events:none; z-index:-1; overflow:hidden;">
         <div id="ytRadioPlayer"></div>
     </div>
@@ -2048,6 +2048,7 @@
             });
             renderRadioPlaylist();
             renderAdminRadioList();
+            preCueFirstRadioTrack();
             tryAutoPlayRadioOnLoad();
         }, (error) => {
             console.error("Firestore Radio Error:", error);
@@ -4362,6 +4363,29 @@
     let hasAttemptedAutoPlay = false;
     let hasUserPausedRadio = false;
     let unlockFallbackAttached = false;
+    let loadedYtVideoId = null;
+
+    function preCueFirstRadioTrack() {
+        if (!globalRadioTracks || globalRadioTracks.length === 0) return;
+        if (isRadioPlaying || currentLoadedRadioId) return;
+
+        const firstTrack = globalRadioTracks[0];
+        if (firstTrack.sourceType === 'youtube') {
+            const vidId = extractYtVideoId(firstTrack.mediaUrl);
+            if (vidId && ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.cueVideoById === 'function') {
+                ytRadioPlayer.cueVideoById(vidId);
+                loadedYtVideoId = vidId;
+                currentLoadedRadioId = firstTrack.id;
+            }
+        } else if (firstTrack.mediaUrl) {
+            const audioEl = document.getElementById('html5RadioAudio');
+            if (audioEl && !audioEl.src) {
+                audioEl.src = firstTrack.mediaUrl;
+                audioEl.load();
+                currentLoadedRadioId = firstTrack.id;
+            }
+        }
+    }
 
     let radioSourceMode = 'youtube'; 
     let mediaRecorder = null;
@@ -4370,6 +4394,7 @@
     let recInterval = null;
     let recSeconds = 0;
 
+    // 1. Safe loader: works whether iframe_api loaded early or late
     // 1. Safe loader: works whether iframe_api loaded early or late
     function ensureYouTubeApiAndInit(initialVideoId = '') {
         if (initialVideoId) pendingYtVideoId = initialVideoId;
@@ -4422,6 +4447,7 @@
 
                     if (pendingYtVideoId) {
                         const wasAuto = pendingYtAutoPlay;
+                        loadedYtVideoId = pendingYtVideoId;
                         event.target.loadVideoById(pendingYtVideoId);
                         event.target.unMute();
                         event.target.setVolume(100);
@@ -4432,10 +4458,13 @@
                         if (wasAuto) {
                             setTimeout(() => {
                                 if (!isRadioPlaying && !hasUserPausedRadio) attachAutoPlayUnlockFallback();
-                            }, 1500);
+                            }, 1200);
                         }
-                    } else if (!isRadioPlaying && !hasAttemptedAutoPlay) {
-                        tryAutoPlayRadioOnLoad();
+                    } else {
+                        preCueFirstRadioTrack();
+                        if (!isRadioPlaying && !hasAttemptedAutoPlay) {
+                            tryAutoPlayRadioOnLoad();
+                        }
                     }
                 },
                 onStateChange: (event) => {
@@ -4455,7 +4484,9 @@
                 onError: (e) => {
                     console.warn("YouTube Radio Player Error:", e.data);
                     setRadioUiPlaying(false);
-                    showCustomAlert("⚠️ This YouTube video cannot be embedded or has audio restrictions (Error " + e.data + "). Try another YouTube link or upload an MP3/recording.");
+                    if (!hasAttemptedAutoPlay) {
+                        showCustomAlert("⚠️ This YouTube video cannot be embedded or has audio restrictions (Error " + e.data + "). Try another YouTube link or upload an MP3/recording.");
+                    }
                 }
             }
         });
@@ -4480,9 +4511,8 @@
 
         const cleanupUnlock = () => {
             unlockFallbackAttached = false;
-            document.removeEventListener('click', unlockHandler);
-            document.removeEventListener('touchstart', unlockHandler);
-            document.removeEventListener('keydown', unlockHandler);
+            document.removeEventListener('click', unlockHandler, true);
+            document.removeEventListener('keydown', unlockHandler, true);
         };
 
         const unlockHandler = (e) => {
@@ -4492,13 +4522,14 @@
             }
             cleanupUnlock();
             if (!isRadioPlaying && !hasUserPausedRadio && globalRadioTracks.length > 0) {
-                playRadioTrackAtIndex(currentRadioIndex, false);
+                // Silent true so if an accidental non-activating tap fails, it re-arms cleanly
+                playRadioTrackAtIndex(currentRadioIndex, true);
             }
         };
 
-        document.addEventListener('click', unlockHandler);
-        document.addEventListener('touchstart', unlockHandler);
-        document.addEventListener('keydown', unlockHandler);
+        // Use ONLY genuine taps/clicks & keys (NOT touchstart, which fires on scrolling)
+        document.addEventListener('click', unlockHandler, true);
+        document.addEventListener('keydown', unlockHandler, true);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -4519,7 +4550,9 @@
             });
             audioEl.addEventListener('error', () => {
                 setRadioUiPlaying(false);
-                showCustomAlert("⚠️ Audio format could not be played on this device/browser.");
+                if (!hasAttemptedAutoPlay) {
+                    showCustomAlert("⚠️ Audio format could not be played on this device/browser.");
+                }
             });
         }
     });
@@ -4587,28 +4620,33 @@
             setRadioUiPlaying(false);
         } else {
             hasUserPausedRadio = false;
-            // Resume if same track is already loaded, otherwise start from beginning
             if (track.sourceType === 'youtube') {
-                if (currentLoadedRadioId === track.id && ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.playVideo === 'function') {
+                const vidId = extractYtVideoId(track.mediaUrl);
+                if (loadedYtVideoId === vidId && ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.playVideo === 'function') {
+                    ytRadioPlayer.unMute();
+                    ytRadioPlayer.setVolume(100);
                     ytRadioPlayer.playVideo();
-                    setRadioUiPlaying(true);
                 } else {
                     playRadioTrackAtIndex(currentRadioIndex, false);
                 }
             } else if (currentLoadedRadioId === track.id && audioEl.src) {
-                audioEl.play().then(() => setRadioUiPlaying(true)).catch(() => playRadioTrackAtIndex(currentRadioIndex, false));
+                audioEl.play().then(() => {
+                    setRadioUiPlaying(true);
+                    setupRadioMediaSession(track);
+                }).catch(() => playRadioTrackAtIndex(currentRadioIndex, false));
             } else {
                 playRadioTrackAtIndex(currentRadioIndex, false);
             }
         }
     }
 
-    function playRadioTrackAtIndex(idx, isAutoPlay = false) {
+    function playRadioTrackAtIndex(idx, isSilentAuto = false) {
         if (!globalRadioTracks[idx]) return;
-        if (!isAutoPlay) hasUserPausedRadio = false;
+        if (!isSilentAuto) hasUserPausedRadio = false;
 
         currentRadioIndex = idx;
         const track = globalRadioTracks[idx];
+        const wasAlreadyThisTrack = (currentLoadedRadioId === track.id);
         currentLoadedRadioId = track.id;
         const audioEl = document.getElementById('html5RadioAudio');
 
@@ -4619,46 +4657,59 @@
 
         if (track.sourceType === 'youtube') {
             if (window.location.protocol === 'file:') {
-                if (!isAutoPlay) {
+                if (!isSilentAuto) {
                     showCustomAlert("⚠️ YouTube audio requires hosting on https:// or http:// (it does not play from local file:// storage).");
                 }
                 return;
             }
             const vidId = extractYtVideoId(track.mediaUrl);
             if (!vidId) {
-                if (!isAutoPlay) showCustomAlert("⚠️ Invalid YouTube link for this track.");
+                if (!isSilentAuto) showCustomAlert("⚠️ Invalid YouTube link for this track.");
                 return;
             }
-            if (ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.loadVideoById === 'function') {
+            if (ytRadioPlayer && ytPlayerReady && typeof ytRadioPlayer.playVideo === 'function') {
                 ytRadioPlayer.unMute();
                 ytRadioPlayer.setVolume(100);
-                ytRadioPlayer.loadVideoById(vidId);
-                ytRadioPlayer.playVideo();
+                // If already cued/loaded, call playVideo() synchronously so mobile keeps the user gesture
+                if (loadedYtVideoId === vidId) {
+                    ytRadioPlayer.playVideo();
+                } else {
+                    loadedYtVideoId = vidId;
+                    ytRadioPlayer.loadVideoById(vidId);
+                    ytRadioPlayer.playVideo();
+                }
 
-                if (isAutoPlay) {
+                if (isSilentAuto) {
                     setTimeout(() => {
                         if (!isRadioPlaying && !hasUserPausedRadio) attachAutoPlayUnlockFallback();
-                    }, 1500);
+                    }, 1200);
                 }
             } else {
-                pendingYtAutoPlay = isAutoPlay;
+                pendingYtAutoPlay = isSilentAuto;
                 ensureYouTubeApiAndInit(vidId);
             }
         } else {
-            audioEl.src = track.mediaUrl;
+            // Only reassign src if it changed (prevents iOS from losing synchronous gesture on preloaded audio)
+            if (!wasAlreadyThisTrack || !audioEl.src) {
+                audioEl.src = track.mediaUrl;
+            }
             audioEl.muted = false;
             audioEl.volume = 1.0;
-            audioEl.play().then(() => {
-                setRadioUiPlaying(true);
-                setupRadioMediaSession(track);
-            }).catch(err => {
-                setRadioUiPlaying(false);
-                if (isAutoPlay) {
-                    attachAutoPlayUnlockFallback();
-                } else {
-                    showCustomAlert("⚠️ Unable to play audio: " + err.message);
-                }
-            });
+
+            const playPromise = audioEl.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    setRadioUiPlaying(true);
+                    setupRadioMediaSession(track);
+                }).catch(err => {
+                    setRadioUiPlaying(false);
+                    if (isSilentAuto) {
+                        attachAutoPlayUnlockFallback();
+                    } else {
+                        showCustomAlert("⚠️ Unable to play audio: " + err.message);
+                    }
+                });
+            }
         }
     }
 
