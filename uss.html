@@ -2226,6 +2226,35 @@
       return false;
     }
 
+    // Strictly distinguishes Administrator from Staff (e.g., Question Master)
+    function isAdminOnlyUser(userObj) {
+      if (!userObj) return false;
+      const roleStr = String(userObj.role || userObj.tabAccess || userObj.tab_access || '').toLowerCase();
+      const uName = String(userObj.username || '').toLowerCase();
+      const name = String(userObj.name || '').toLowerCase();
+
+      if (uName.includes('admin') || name.includes('admin') || roleStr.includes('admin')) return true;
+
+      const tabs = parseTabAccessList(roleStr);
+      if (tabs.includes('9') || tabs.includes('11')) return true;
+      return false;
+    }
+
+
+    // Strictly distinguishes Administrator from Staff (e.g., Question Master)
+    function isAdminOnlyUser(userObj) {
+      if (!userObj) return false;
+      const roleStr = String(userObj.role || userObj.tabAccess || userObj.tab_access || '').toLowerCase();
+      const uName = String(userObj.username || '').toLowerCase();
+      const name = String(userObj.name || '').toLowerCase();
+
+      if (uName.includes('admin') || name.includes('admin') || roleStr.includes('admin')) return true;
+
+      const tabs = parseTabAccessList(roleStr);
+      if (tabs.includes('9') || tabs.includes('11')) return true;
+      return false;
+    }
+
     // =========================================================================
     // CLEAR STALE LOCAL STORAGE ON LOGIN / DAILY RESUME
     // Ensures clean slate every day and forces direct fetching from Supabase
@@ -8703,6 +8732,7 @@ async function saveCompletedSessionOnExit() {
 
       const questions = cachedAdminData?.questions || [];
       const canVerify = isStaffOrAdminUser(currentUser);
+      const isAdminUser = isAdminOnlyUser(currentUser);
 
       // Sort in canonical curriculum order (MI -> AR -> SK -> MII -> EN -> MM -> BS -> SS)
       const sortedQuestions = [...questions].sort((a, b) => {
@@ -8774,7 +8804,8 @@ async function saveCompletedSessionOnExit() {
 
       qBody.innerHTML = filtered.map((q, idx) => {
         const isVerified = Boolean(q.is_verified);
-        const isChecked = !isVerified && selectedQuestionIds.has(String(q.id));
+        const canModifyThisRow = !isVerified || isAdminUser;
+        const isChecked = canModifyThisRow && selectedQuestionIds.has(String(q.id));
 
         const verificationHTML = isVerified
           ? `
@@ -8788,6 +8819,15 @@ async function saveCompletedSessionOnExit() {
               <div style="font-size:11px; color:var(--text-muted); font-weight:600;">
                 🕒 ${escapeHtml(q.verified_at || '-')}
               </div>
+              ${isAdminUser ? `
+                <button type="button"
+                        onclick="unlockQuestionById('${escapeHtml(q.id)}')"
+                        class="btn btn-outline"
+                        style="padding:3px 9px; font-size:11px; font-weight:800; color:#92400e; border-color:#f59e0b; background:#fef3c7; margin-top:6px;"
+                        title="Admin Only: Unlock this verified question">
+                  🔓 Unlock
+                </button>
+              ` : ''}
             </div>
           `
           : `
@@ -8798,21 +8838,21 @@ async function saveCompletedSessionOnExit() {
                         onclick="verifyQuestionById('${escapeHtml(q.id)}')"
                         class="btn btn-primary"
                         style="padding:4px 10px; font-size:11.5px; font-weight:800; background:#059669;"
-                        title="Verify and permanently lock this question under your login">
+                        title="Verify and lock this question under your login">
                   ✅ Verify
                 </button>
               ` : ''}
             </div>
           `;
 
-        const actionsHTML = isVerified
-          ? `<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-size:11px; font-weight:800;" title="Locked after verification — cannot edit or delete">🔒 Locked</span>`
+        const actionsHTML = !canModifyThisRow
+          ? `<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-size:11px; font-weight:800;" title="Locked after verification — only Admin can unlock, edit, or delete">🔒 Locked</span>`
           : `
             <div style="display:flex; gap:6px; align-items:center;">
-              <button type="button" onclick="openInstantEditModalById('${escapeHtml(q.id)}')" class="btn btn-outline" style="padding:4px 8px; font-size:13px;" title="Edit Question">
+              <button type="button" onclick="openInstantEditModalById('${escapeHtml(q.id)}')" class="btn btn-outline" style="padding:4px 8px; font-size:13px;" title="${isVerified ? 'Admin Override: Edit Verified Question' : 'Edit Question'}">
                 ✏️
               </button>
-              <button type="button" onclick="confirmDeleteQuestion('${escapeHtml(q.id)}')" class="btn btn-outline" style="padding:4px 8px; font-size:13px; color:var(--danger); border-color:#fca5a5;" title="Delete Question">
+              <button type="button" onclick="confirmDeleteQuestion('${escapeHtml(q.id)}')" class="btn btn-outline" style="padding:4px 8px; font-size:13px; color:var(--danger); border-color:#fca5a5;" title="${isVerified ? 'Admin Override: Delete Verified Question' : 'Delete Question'}">
                 🗑️
               </button>
             </div>
@@ -8825,7 +8865,7 @@ async function saveCompletedSessionOnExit() {
                      class="q-checkbox"
                      data-id="${escapeHtml(q.id)}"
                      ${isChecked ? 'checked' : ''}
-                     ${isVerified ? 'disabled title="Verified question is locked"' : `onchange="toggleSelectQuestion('${escapeHtml(q.id)}', this.checked)"`}>
+                     ${!canModifyThisRow ? 'disabled title="Verified question is locked"' : `onchange="toggleSelectQuestion('${escapeHtml(q.id)}', this.checked)"`}>
             </td>
             <td style="text-align:center; font-weight:700;">${idx + 1}</td>
             <td><span class="badge">${escapeHtml(q.subject)}</span></td>
@@ -8869,13 +8909,13 @@ async function saveCompletedSessionOnExit() {
 
       showConfirmModal(
         '✅ Verify & Lock Question',
-        `Verify this ${getFullSubjectName(q.subject)} question under "${verifierName}"? Once verified, it will be permanently locked with your name, date, and time and cannot be edited or deleted.`,
+        `Verify this ${getFullSubjectName(q.subject)} question under "${verifierName}"? Once verified, it will be locked with your name, date, and time (only Administrator can unlock, edit, or delete it afterwards).`,
         async () => {
           const verifiedAt = formatDateStrict(new Date().toISOString());
           setProgress(40);
 
           try {
-            const { data, error } = await supabaseClient
+            const { error } = await supabaseClient
               .from('questions')
               .update({
                 is_verified: true,
@@ -8884,9 +8924,7 @@ async function saveCompletedSessionOnExit() {
                 verified_at: verifiedAt
               })
               .eq('id', q.id)
-              .eq('is_verified', false)
-              .select()
-              .maybeSingle();
+              .eq('is_verified', false);
 
             setProgress(100);
 
@@ -8895,7 +8933,6 @@ async function saveCompletedSessionOnExit() {
               return;
             }
 
-            // Update local cache & remove from bulk selection if selected
             q.is_verified = true;
             q.verified_by_name = verifierName;
             q.verified_by_username = verifierUsername;
@@ -8919,9 +8956,62 @@ async function saveCompletedSessionOnExit() {
       );
     }
 
+    // =========================================================================
+    // UNLOCK VERIFIED QUESTION (ADMIN ONLY)
+    // =========================================================================
+    async function unlockQuestionById(qId) {
+      if (!currentUser || !isAdminOnlyUser(currentUser)) {
+        showToast('⚠️ Unauthorized: Only Administrator can unlock verified questions.', 'danger');
+        return;
+      }
+
+      const questions = cachedAdminData?.questions || [];
+      const q = questions.find(item => String(item.id) === String(qId));
+      if (!q || !q.is_verified) return;
+
+      const prevVerifier = q.verified_by_name || q.verified_by_username || 'Staff';
+
+      showConfirmModal(
+        '🔓 Unlock Verified Question',
+        `Unlock this ${getFullSubjectName(q.subject)} question (verified by ${prevVerifier})? It will return to Pending Verification so it can be edited or re-verified.`,
+        async () => {
+          setProgress(40);
+          try {
+            const { error } = await supabaseClient.rpc('admin_unlock_question', {
+              p_question_id: q.id,
+              p_admin_username: currentUser.username
+            });
+
+            setProgress(100);
+            if (error) {
+              showToast('Failed to unlock: ' + error.message, 'danger');
+              return;
+            }
+
+            q.is_verified = false;
+            q.verified_by_name = '';
+            q.verified_by_username = '';
+            q.verified_at = '';
+
+            await logPortalActivity(
+              'QUESTION_UNLOCK',
+              `Unlocked Verified Question (${q.subject})`,
+              `• Question ID: ${q.id} • Previously Verified By: ${prevVerifier} • Unlocked By Admin: ${currentUser.name || currentUser.username}`
+            );
+
+            showToast('🔓 Question unlocked and moved back to Pending Verification.', 'success');
+            filterQuestionsBank();
+          } catch (err) {
+            setProgress(100);
+            showToast('Unlock error: ' + err.message, 'danger');
+          }
+        }
+      );
+    }
+
     function toggleSelectQuestion(id, isChecked) {
       const q = (cachedAdminData?.questions || []).find(item => String(item.id) === String(id));
-      if (q && q.is_verified) return;
+      if (q && q.is_verified && !isAdminOnlyUser(currentUser)) return;
       if (isChecked) selectedQuestionIds.add(id);
       else selectedQuestionIds.delete(id);
       updateBulkDeleteQsButton();
@@ -8951,31 +9041,56 @@ async function saveCompletedSessionOnExit() {
 
     async function deleteSelectedQuestions() {
       const questions = cachedAdminData?.questions || [];
+      const isAdminUser = isAdminOnlyUser(currentUser);
       const ids = Array.from(selectedQuestionIds).filter(id => {
         const q = questions.find(item => String(item.id) === String(id));
-        return !q || !q.is_verified;
+        return !q || !q.is_verified || isAdminUser;
       });
 
       if (ids.length === 0) {
-        showToast('🔒 Selected question(s) are verified and locked.', 'warning');
+        showToast('🔒 Selected question(s) are verified and locked. Only Administrator can delete them.', 'warning');
         selectedQuestionIds.clear();
         updateBulkDeleteQsButton();
         return;
       }
 
-      showConfirmModal('Bulk Delete Questions', `Permanently delete ${ids.length} selected unverified question(s)?`, async () => {
-        setProgress(30);
-        const { error } = await supabaseClient.from('questions').delete().in('id', ids).eq('is_verified', false);
-        setProgress(100);
-        if (!error) {
-          await logPortalActivity('QUESTION', `Bulk Deleted ${ids.length} Question(s)`, `• Deleted IDs Count: ${ids.length}`);
-          showToast(`Deleted ${ids.length} questions!`, 'success');
-          selectedQuestionIds.clear();
-          loadAdminData();
-        } else {
-          showToast('Failed: ' + error.message, 'danger');
-        }
+      const verifiedInBatch = ids.filter(id => {
+        const q = questions.find(item => String(item.id) === String(id));
+        return q && q.is_verified;
       });
+      const unverifiedInBatch = ids.filter(id => !verifiedInBatch.includes(id));
+
+      showConfirmModal(
+        'Bulk Delete Questions',
+        `Permanently delete ${ids.length} selected question(s)?${verifiedInBatch.length > 0 ? ` (Includes ${verifiedInBatch.length} verified & locked question(s) via Admin privilege.)` : ''}`,
+        async () => {
+          setProgress(30);
+          let deleteErr = null;
+
+          if (unverifiedInBatch.length > 0) {
+            const { error } = await supabaseClient.from('questions').delete().in('id', unverifiedInBatch).eq('is_verified', false);
+            if (error) deleteErr = error;
+          }
+
+          if (!deleteErr && verifiedInBatch.length > 0) {
+            const { error } = await supabaseClient.rpc('admin_delete_verified_questions', {
+              p_question_ids: verifiedInBatch,
+              p_admin_username: currentUser.username
+            });
+            if (error) deleteErr = error;
+          }
+
+          setProgress(100);
+          if (!deleteErr) {
+            await logPortalActivity('QUESTION', `Bulk Deleted ${ids.length} Question(s)`, `• Deleted Count: ${ids.length} (Verified: ${verifiedInBatch.length})`);
+            showToast(`Deleted ${ids.length} questions!`, 'success');
+            selectedQuestionIds.clear();
+            loadAdminData();
+          } else {
+            showToast('Failed: ' + deleteErr.message, 'danger');
+          }
+        }
+      );
     }
 
     function openInstantEditModalById(qId) {
@@ -8983,8 +9098,8 @@ async function saveCompletedSessionOnExit() {
       const q = questions.find(item => String(item.id) === String(qId));
       if (!q) return;
 
-      if (q.is_verified) {
-        showToast(`🔒 Verified & locked by ${q.verified_by_name || q.verified_by_username} (${q.verified_at}). Editing is disabled.`, 'danger');
+      if (q.is_verified && !isAdminOnlyUser(currentUser)) {
+        showToast(`🔒 Verified & locked by ${q.verified_by_name || q.verified_by_username} (${q.verified_at}). Only Administrator can edit.`, 'danger');
         return;
       }
 
@@ -9023,8 +9138,10 @@ async function saveCompletedSessionOnExit() {
       e.preventDefault();
       const qId = document.getElementById('modal-q-id').value;
       const existingQ = (cachedAdminData?.questions || []).find(item => String(item.id) === String(qId));
-      if (existingQ && existingQ.is_verified) {
-        showToast('🔒 Verified questions are locked and cannot be edited.', 'danger');
+      const isVerified = Boolean(existingQ && existingQ.is_verified);
+
+      if (isVerified && !isAdminOnlyUser(currentUser)) {
+        showToast('🔒 Verified questions are locked. Only Administrator can modify them.', 'danger');
         closeEditQuestionModal();
         return;
       }
@@ -9042,16 +9159,40 @@ async function saveCompletedSessionOnExit() {
       };
 
       setProgress(50);
-      const { error } = await supabaseClient.from('questions').upsert([questionData]);
+      let saveErr = null;
+
+      if (isVerified) {
+        const { error } = await supabaseClient.rpc('admin_update_verified_question', {
+          p_question_id: questionData.id,
+          p_subject: questionData.subject,
+          p_question: questionData.question,
+          p_image_url: questionData.image_url,
+          p_option_a: questionData.option_a,
+          p_option_b: questionData.option_b,
+          p_option_c: questionData.option_c,
+          p_option_d: questionData.option_d,
+          p_correct_answer: questionData.correct_answer,
+          p_admin_username: currentUser.username
+        });
+        saveErr = error;
+      } else {
+        const { error } = await supabaseClient.from('questions').upsert([questionData]);
+        saveErr = error;
+      }
+
       setProgress(100);
 
-      if (!error) {
-        await logPortalActivity('QUESTION', `Updated Question (${questionData.subject})`, `• Question ID: ${qId}`);
+      if (!saveErr) {
+        await logPortalActivity(
+          'QUESTION',
+          `${isVerified ? 'Admin Modified Verified Question' : 'Updated Question'} (${questionData.subject})`,
+          `• Question ID: ${qId}`
+        );
         showToast('Question updated successfully!', 'success');
         closeEditQuestionModal();
         loadAdminData();
       } else {
-        showToast('Failed to update question: ' + error.message, 'danger');
+        showToast('Failed to update question: ' + saveErr.message, 'danger');
       }
     }
 
@@ -9206,21 +9347,38 @@ async function saveCompletedSessionOnExit() {
 
     function confirmDeleteQuestion(id) {
       const existingQ = (cachedAdminData?.questions || []).find(item => String(item.id) === String(id));
-      if (existingQ && existingQ.is_verified) {
-        showToast(`🔒 Verified & locked by ${existingQ.verified_by_name || existingQ.verified_by_username} (${existingQ.verified_at}). Cannot delete.`, 'danger');
+      const isVerified = Boolean(existingQ && existingQ.is_verified);
+
+      if (isVerified && !isAdminOnlyUser(currentUser)) {
+        showToast(`🔒 Verified & locked by ${existingQ.verified_by_name || existingQ.verified_by_username} (${existingQ.verified_at}). Only Administrator can delete.`, 'danger');
         return;
       }
 
-      showConfirmModal('Delete Question', 'Permanently delete this question?', async () => {
-        const { error } = await supabaseClient.from('questions').delete().eq('id', id).eq('is_verified', false);
-        if (!error) {
-          await logPortalActivity('QUESTION', 'Deleted Question', `• Question ID: ${id}`);
-          showToast('Question deleted', 'info');
-          loadAdminData();
-        } else {
-          showToast('Cannot delete: ' + error.message, 'danger');
+      showConfirmModal(
+        isVerified ? '⚠️ Delete Verified Question (Admin)' : 'Delete Question',
+        isVerified ? 'This question is verified and locked. Permanently delete it using Administrator privileges?' : 'Permanently delete this question?',
+        async () => {
+          let delErr = null;
+          if (isVerified) {
+            const { error } = await supabaseClient.rpc('admin_delete_verified_questions', {
+              p_question_ids: [id],
+              p_admin_username: currentUser.username
+            });
+            delErr = error;
+          } else {
+            const { error } = await supabaseClient.from('questions').delete().eq('id', id).eq('is_verified', false);
+            delErr = error;
+          }
+
+          if (!delErr) {
+            await logPortalActivity('QUESTION', isVerified ? 'Admin Deleted Verified Question' : 'Deleted Question', `• Question ID: ${id}`);
+            showToast('Question deleted', 'info');
+            loadAdminData();
+          } else {
+            showToast('Cannot delete: ' + delErr.message, 'danger');
+          }
         }
-      });
+      );
     }
 
     // =========================================================================
@@ -10864,6 +11022,7 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
                 else if (evType === 'NAVIGATION') { icon = '🧭'; badgeBg = '#e0f2fe'; badgeColor = '#0369a1'; }
                 else if (evType === 'QUESTION') { icon = '❓'; badgeBg = '#ecfeff'; badgeColor = '#0e7490'; }
                 else if (evType === 'QUESTION_VERIFY') { icon = '✅'; badgeBg = '#dcfce7'; badgeColor = '#15803d'; }
+                else if (evType === 'QUESTION_UNLOCK') { icon = '🔓'; badgeBg = '#fef3c7'; badgeColor = '#92400e'; }
                 else if (evType === 'USER') { icon = '👤'; badgeBg = '#e0e7ff'; badgeColor = '#3730a3'; }
                 else if (evType === 'NOTIFICATION') { icon = '🔔'; badgeBg = '#fef3c7'; badgeColor = '#92400e'; }
                 else if (evType === 'QUOTA') { icon = '⏳'; badgeBg = '#ffedd5'; badgeColor = '#c2410c'; }
