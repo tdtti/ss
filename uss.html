@@ -1553,6 +1553,15 @@
             <option value="SS">SS (Social Science)</option>
           </select>
         </div>
+        <div style="flex: 1; min-width: 170px;">
+          <select id="filter-questions-verified"
+                  onchange="filterQuestionsBank()"
+                  style="padding: 10px 12px; font-size: 13px; border-radius: 10px; background: #ffffff; border: 1.5px solid var(--border-color); font-weight: 700;">
+            <option value="ALL">All Verification</option>
+            <option value="UNVERIFIED">⏳ Pending Only</option>
+            <option value="VERIFIED">🔒 Verified & Locked</option>
+          </select>
+        </div>
         <button type="button" 
                 class="btn btn-outline" 
                 onclick="resetQuestionsSearch()" 
@@ -1570,6 +1579,7 @@
               <th>Subject</th>
               <th>Question</th>
               <th>Answer</th>
+              <th style="min-width:175px;">Verification</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -2803,6 +2813,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
           } catch (e) {}
 
           setProgress(100);
+          logPortalActivity('QUOTA', `Restored 60m Quota for ${studentName || username}`, `• Phone: ${cleanPhone} • Date: ${cleanDate}`);
           showToast(`Quota restored! 60 minutes granted for ${studentName || username}.`, 'success');
 
           await loadAdminData();
@@ -2885,6 +2896,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
           description: 'Global toggle for right-click, inspect, and text selection security mode',
           updated_at: new Date().toISOString()
         }], { onConflict: 'key' });
+        logPortalActivity('SETTINGS', `Changed Security Protection Mode to ${securityProtectionActive ? 'ENABLED' : 'DISABLED'}`, '• Global System Setting');
 
         showToast(`✅ Global Security Protection is now ${securityProtectionActive ? 'ENABLED' : 'DISABLED'} across all devices!`, 'success');
       } catch (err) {
@@ -3801,6 +3813,11 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
           logout_time: 'Active Now', 
           device: deviceStr 
         }]);
+        await logPortalActivity(
+        'LOGIN',
+        'Resumed Portal Session',
+        `• Logged In Time: ${nowStr} • Device: ${deviceStr}`
+        );
       } catch (err) {
         console.warn("Could not record audit log:", err);
       }
@@ -4136,6 +4153,7 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
 
       const { error } = await supabaseClient.from('users').update({ password: newPass }).eq('username', currentUser.username);
       if (!error) {
+        logPortalActivity('SETTINGS', 'Updated Account Password', `• Username: ${currentUser.username}`);
         showToast('Password updated successfully!', 'success');
         document.getElementById('change-pass-form').reset();
         document.getElementById('settings-modal').style.display = 'none';
@@ -4271,6 +4289,12 @@ async function saveLiveAttendanceProgress(totalSecondsToday) {
       };
       currentActiveContext = sectionContextMap[sectionId] || 'Portal Dashboard';
       updatePresenceLiveState('Online & Active');
+      if (window._lastNavSection !== sectionId || (Date.now() - (window._lastNavAt || 0) > 2000)) {
+      window._lastNavSection = sectionId;
+      window._lastNavAt = Date.now();
+      logPortalActivity('NAVIGATION', `Opened ${currentActiveContext}`, `• Section: ${currentActiveContext}`);
+      }
+
 
       if (sectionId === 'practice-sec') {
         document.getElementById('practice-mode-selector').style.display = 'flex';
@@ -4517,6 +4541,7 @@ async function syncPastActivitiesToSupabase() {
 
   if (newRows.length === 0) {
     setProgress(100);
+    logPortalActivity('ATTENDANCE', 'Synced Past Activities to Attendance', `• Records Processed: ${newRows.length}`);
     showToast('No past activities found to sync.', 'info');
     return;
   }
@@ -4740,7 +4765,6 @@ async function saveCompletedSessionOnExit() {
   if (!isStaffOrAdminUser(currentUser) && getTodayElapsedSeconds() >= DAILY_MAX_QUOTA_SECONDS) {
     showToast('🛑 Daily 60-minute practice limit reached for today!', 'danger');
     triggerAppLockout();
-    logPortalActivity('PRACTICE', `Started Subject Practice: ${getFullSubjectName(subject)}`, `25 questions batch loaded`);
     return;
   }
 
@@ -4821,7 +4845,7 @@ async function saveCompletedSessionOnExit() {
       // 4. RANDOMIZE & CAP AT EXACTLY 25 UNSEEN QUESTIONS
       const shuffled = unattended.sort(() => 0.5 - Math.random());
       const selectedBatch = shuffled.slice(0, 25); // Limit 25 questions per session
-
+      logPortalActivity('PRACTICE', `Started Subject Practice: ${getFullSubjectName(subject)}`, `• ${selectedBatch.length} questions loaded`);
       currentQuestions = selectedBatch.map(q => ({
         ID: q.id,
         Subject: q.subject,
@@ -5156,7 +5180,7 @@ async function saveCompletedSessionOnExit() {
 
       // 2. Now log the activity safely
       const pTitle = isTrialMode ? 'Completed Trial Exam' : `Completed Practice: ${sessionAnswersLog[0]?.Subject || 'General'}`;
-      logPortalActivity(isTrialMode ? 'TRIAL' : 'PRACTICE', pTitle, `Score: ${score}/${total} (${victoryRate}%)`);
+      
 
       document.getElementById('summary-score-val').innerText = `${score} / ${total}`;
       document.getElementById('summary-acc-val').innerText = `${victoryRate}%`;
@@ -6059,6 +6083,7 @@ async function saveCompletedSessionOnExit() {
       });
       localStorage.setItem('read_notifs_' + currentUser.username, JSON.stringify(Array.from(readSet)));
       showToast('All notifications marked as read', 'success');
+      logPortalActivity('NOTIFICATION', 'Marked All Notifications Read', `• Count: ${cards.length}`);
       loadNotifications();
     }
 
@@ -6109,6 +6134,7 @@ async function saveCompletedSessionOnExit() {
 
       const { error } = await supabaseClient.from('notifications').insert(notifRows);
       if (!error) {
+        logPortalActivity('NOTIFICATION', `Sent Notification: ${title}`, `• Audience: ${targetMode === 'ALL' ? 'All Users' : recipients.length + ' Student(s)'}`);
         showToast('Notification sent successfully!', 'success');
         document.getElementById('send-notif-form').reset();
         selectedStudentPhones.clear();
@@ -6122,6 +6148,7 @@ async function saveCompletedSessionOnExit() {
     async function deleteSingleNotif(notifId) {
       showConfirmModal('Delete Notification', 'Permanently delete this notification?', async () => {
         await supabaseClient.from('notifications').delete().eq('notification_id', notifId);
+        logPortalActivity('NOTIFICATION', 'Deleted Notification', `• Notification ID: ${notifId}`);
         showToast('Notification deleted', 'info');
         loadNotifications();
       });
@@ -6132,6 +6159,7 @@ async function saveCompletedSessionOnExit() {
       if (ids.length === 0) return;
       showConfirmModal('Delete Notifications', `Delete ${ids.length} selected notification(s)?`, async () => {
         await supabaseClient.from('notifications').delete().in('notification_id', ids);
+        logPortalActivity('NOTIFICATION', `Deleted ${ids.length} Notification(s)`, `• IDs: ${ids.join(', ')}`);
         showToast(`${ids.length} notification(s) deleted`, 'info');
         selectedNotifIds.clear();
         loadNotifications();
@@ -7907,7 +7935,8 @@ async function saveCompletedSessionOnExit() {
 
           const currentQSearch = (document.getElementById('search-questions-input')?.value || '').trim().toLowerCase();
           const currentQSub = (document.getElementById('filter-questions-subject')?.value || 'ALL').toUpperCase();
-          renderAdminQuestionsTable(currentQSearch, currentQSub);
+          const currentQVer = (document.getElementById('filter-questions-verified')?.value || 'ALL').toUpperCase();
+          renderAdminQuestionsTable(currentQSearch, currentQSub, currentQVer);
         } catch (err) {
           console.error('Tab 8 Questions render error:', err);
         }
@@ -8102,7 +8131,7 @@ async function saveCompletedSessionOnExit() {
     
 
     // =========================================================================
-    // AUDIT ACCESS LOGS RENDERER (TAB 11) - WITH REAL-TIME RECONCILIATION
+    // AUDIT ACCESS LOGS RENDERER (TAB 11) - COLOR-CODED BY ADMIN / STAFF / STUDENT
     // =========================================================================
     function renderGroupedAuditLogs(logs) {
       const container = document.getElementById('admin-logs-cards-container');
@@ -8114,22 +8143,20 @@ async function saveCompletedSessionOnExit() {
 
       const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
 
-      // 1. Group existing logs by user identifier & FILTER OUT GHOST/UNREGISTERED USERS
+      // 1. Group existing logs by user identifier & filter out ghost users
       const grouped = {};
       const ghostLogIds = [];
 
       (logs || []).forEach(l => {
         const rawId = String(l.identifier || '').trim().toLowerCase();
-        
-        // Find if user exists in registered users table
-        const matched = allUsers.find(u => 
+
+        const matched = allUsers.find(u =>
           String(u.username || '').trim().toLowerCase() === rawId ||
           String(u.name || '').trim().toLowerCase() === rawId ||
           (u.phone && get10(u.phone) === get10(rawId))
         );
 
-        // ✅ If user does not exist in portal (e.g., karthika2014), mark for cleanup and skip
-        if (!matched && !isStaffOrAdminUser({ username: rawId })) {
+        if (!matched && !isStaffOrAdminUser({ username: rawId, role: l.role })) {
           if (l.log_id || l.id) ghostLogIds.push(l.log_id || l.id);
           return;
         }
@@ -8139,19 +8166,17 @@ async function saveCompletedSessionOnExit() {
         grouped[userKey].push(l);
       });
 
-      // Silently purge ghost logs from database
       if (ghostLogIds.length > 0) {
         supabaseClient.from('logs').delete().in('log_id', ghostLogIds).then(() => {});
       }
 
-      // 2. RECONCILE STUDENTS WITH HISTORY (Kamalesh M R, Devalakshmi S Sharma, etc.)
-      // If a student has records in attendance or history but no row in logs, auto-generate their session logs
+      // 2. Reconcile students with history/attendance who lack log rows
       allUsers.forEach(u => {
         const uUser = String(u.username || '').trim().toLowerCase();
         const uPhone10 = get10(u.phone);
         const uName = String(u.name || '').trim().toLowerCase();
 
-        const hasExistingLogs = Object.keys(grouped).some(k => 
+        const hasExistingLogs = Object.keys(grouped).some(k =>
           k === uUser || (uName && k === uName) || (uPhone10 && k.includes(uPhone10))
         );
 
@@ -8172,7 +8197,6 @@ async function saveCompletedSessionOnExit() {
 
           const syntheticLogs = [];
 
-          // Synthesize from completed attendance practice sessions
           studentAtt.forEach(a => {
             const sessionTime = a.timestamp || a.date;
             syntheticLogs.push({
@@ -8187,7 +8211,6 @@ async function saveCompletedSessionOnExit() {
             });
           });
 
-          // Synthesize from portal history logins
           studentHist.filter(h => h.activity_type === 'LOGIN').forEach(h => {
             syntheticLogs.push({
               log_id: `LOG-RECON-${h.id || Math.random().toString(36).substr(2, 6)}`,
@@ -8212,7 +8235,7 @@ async function saveCompletedSessionOnExit() {
         return;
       }
 
-      // 3. Sort individual logs inside each user group chronologically (newest at the top)
+      // 3. Sort individual logs newest first
       Object.keys(grouped).forEach(k => {
         grouped[k].sort((a, b) => {
           const timeA = parseCustomDate(a.login_time || a.timestamp)?.getTime() || 0;
@@ -8221,7 +8244,7 @@ async function saveCompletedSessionOnExit() {
         });
       });
 
-      // 4. Sort user accordion cards: user with the latest login appears at the top
+      // 4. Sort user cards by latest login
       const userKeys = Object.keys(grouped).sort((uA, uB) => {
         const timeA = parseCustomDate(grouped[uA][0]?.login_time || grouped[uA][0]?.timestamp)?.getTime() || 0;
         const timeB = parseCustomDate(grouped[uB][0]?.login_time || grouped[uB][0]?.timestamp)?.getTime() || 0;
@@ -8230,19 +8253,56 @@ async function saveCompletedSessionOnExit() {
 
       const nowMs = Date.now();
 
-      // 5. Render cards
+      // 5. Render cards with distinct color coding for Administrator, Staff, and Students
       container.innerHTML = userKeys.map((username, gIdx) => {
         const userLogs = grouped[username];
         const latestLog = userLogs[0];
 
-        // Match user details for display
-        const matchedUser = allUsers.find(u => 
+        const matchedUser = allUsers.find(u =>
           String(u.username || '').toLowerCase() === String(username).toLowerCase() ||
           String(u.name || '').toLowerCase() === String(username).toLowerCase()
         );
         const displayName = matchedUser?.name || username;
 
-        // Accurate online detection (avoid false 'Active Now' if login was > 90 minutes ago)
+        const roleTarget = matchedUser || { username, role: latestLog?.role || '' };
+        const isPrivileged = isStaffOrAdminUser(roleTarget);
+        const uLower = String(roleTarget.username || '').toLowerCase();
+        const nLower = String(roleTarget.name || '').toLowerCase();
+        const rLower = String(roleTarget.role || '').toLowerCase();
+        const tabs = parseTabAccessList(roleTarget.role || '');
+
+        const isAdminRole = isPrivileged && (
+          uLower.includes('admin') ||
+          nLower.includes('admin') ||
+          rLower.includes('admin') ||
+          tabs.includes('9') ||
+          tabs.includes('11')
+        );
+
+        let cardStyle = 'border: 1.5px solid #cbd5e1; border-left: 5px solid #2563eb;';
+        let headerStyle = 'background: #f8fafc;';
+        let nameColor = 'var(--primary)';
+        let roleBadgeHTML = matchedUser
+          ? `<span class="badge" style="margin-left:6px; font-size:11px; background:#dbeafe; color:#1e40af;">🎓 Class ${escapeHtml(matchedUser.class || '7')}-${escapeHtml(matchedUser.division || 'A')}</span>`
+          : '';
+
+        if (isAdminRole) {
+          // Administrator: Amber/Gold color theme
+          cardStyle = 'border: 1.5px solid #f59e0b; border-left: 6px solid #d97706;';
+          headerStyle = 'background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);';
+          nameColor = '#92400e';
+          roleBadgeHTML = `<span class="badge" style="margin-left:6px; font-size:11px; font-weight:800; background:#fde68a; color:#78350f; border:1px solid #f59e0b;">🛡️ ADMINISTRATOR</span>`;
+        } else if (isPrivileged) {
+          // Staff / Question Master: Violet/Purple color theme
+          cardStyle = 'border: 1.5px solid #a78bfa; border-left: 6px solid #7c3aed;';
+          headerStyle = 'background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);';
+          nameColor = '#5b21b6';
+          const staffLabel = (uLower.includes('qm') || uLower.includes('question') || nLower.includes('master'))
+            ? '👨‍🏫 STAFF · QUESTION MASTER'
+            : '👨‍🏫 STAFF';
+          roleBadgeHTML = `<span class="badge" style="margin-left:6px; font-size:11px; font-weight:800; background:#ddd6fe; color:#4c1d95; border:1px solid #8b5cf6;">${staffLabel}</span>`;
+        }
+
         let isOnlineNow = false;
         if (latestLog.logout_time === 'Active Now') {
           const lDate = parseCustomDate(latestLog.login_time || latestLog.timestamp);
@@ -8254,13 +8314,13 @@ async function saveCompletedSessionOnExit() {
         }
 
         return `
-          <div class="user-logs-card">
-            <div class="user-logs-header" onclick="toggleAccordion('log-group-${gIdx}')">
-              <div style="display:flex; align-items:center; gap:12px;">
+          <div class="user-logs-card" style="${cardStyle}">
+            <div class="user-logs-header" style="${headerStyle}" onclick="toggleAccordion('log-group-${gIdx}')">
+              <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                 <span class="led-dot ${isOnlineNow ? 'led-green' : 'led-red'}" title="${isOnlineNow ? 'Online & Active' : 'Offline'}"></span>
                 <div>
-                  <strong style="font-size:15px; color:var(--primary);">${escapeHtml(displayName)}</strong>
-                  ${matchedUser ? `<span class="badge" style="margin-left:6px; font-size:11px;">Class ${matchedUser.class || '7'}-${matchedUser.division || 'A'}</span>` : ''}
+                  <strong style="font-size:15px; color:${nameColor};">${escapeHtml(displayName)}</strong>
+                  ${roleBadgeHTML}
                   <span style="font-size:12px; color:var(--text-muted); margin-left:8px;">
                     (${userLogs.length} session${userLogs.length > 1 ? 's' : ''})
                   </span>
@@ -8268,10 +8328,10 @@ async function saveCompletedSessionOnExit() {
               </div>
 
               <div style="display:flex; align-items:center; gap:10px;">
-                <span class="badge" style="background:#f1f5f9; color:#475569; font-size:11.5px;">
+                <span class="badge" style="background:#ffffff; color:#475569; border:1px solid #cbd5e1; font-size:11.5px;">
                   Last Login: ${formatDateStrict(latestLog.login_time || latestLog.timestamp)}
                 </span>
-                <button onclick="event.stopPropagation(); deleteUserAllLogs('${escapeHtml(username)}')" class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete logs for this user">
+                <button onclick="event.stopPropagation(); deleteUserAllLogs('${escapeHtml(username)}')" class="btn btn-outline" style="padding:4px 8px; font-size:12px; color:var(--danger); background:#fff;" title="Delete logs for this user">
                   🗑️
                 </button>
                 <span>▾</span>
@@ -8322,27 +8382,6 @@ async function saveCompletedSessionOnExit() {
           </div>
         `;
       }).join('');
-    }
-
-    async function deleteUserAllLogs(username) {
-      showConfirmModal('Delete User Logs', `Permanently delete all login access logs for "${username}"?`, async () => {
-        const { error } = await supabaseClient.from('logs').delete().eq('identifier', username);
-        if (!error) {
-          showToast(`Logs for ${username} cleared!`, 'success');
-          loadAdminData();
-        } else {
-          showToast('Failed to clear user logs: ' + error.message, 'danger');
-        }
-      });
-    }
-
-    // =========================================================================
-    // PERFORMANCE CONSOLIDATED TABLE SORTING & RENDERING (TAB 9)
-    // =========================================================================
-    function sortConsolidatedTable(key) {
-      if (sortColumn === key) sortAscending = !sortAscending;
-      else { sortColumn = key; sortAscending = true; }
-      renderConsolidatedTable();
     }
 
     function renderConsolidatedTable() {
@@ -8470,6 +8509,7 @@ async function saveCompletedSessionOnExit() {
       }]);
 
       showToast(`Request ${decision}!`, 'info');
+      logPortalActivity('RESET', `${decision} Reset Request: ${getFullSubjectName(subject)}`, `• Request ID: ${requestId} • Phone: ${targetPhone}`);
       loadAdminData();
     }
 
@@ -8620,6 +8660,7 @@ async function saveCompletedSessionOnExit() {
         setProgress(100);
 
         if (!error) {
+          logPortalActivity('QUESTION', `Bulk Uploaded ${rows.length} Question(s)`, `• First Subject: ${rows[0]?.subject || '-'}`);
           showToast(`✅ Successfully uploaded ${rows.length} questions!`, 'success');
           document.getElementById('bulk-questions-textarea').value = '';
           closeBulkTextImportModal();
@@ -8637,27 +8678,31 @@ async function saveCompletedSessionOnExit() {
     
 
     // =========================================================================
-    // REAL-TIME QUESTION BANK SEARCH & FILTER
+    // REAL-TIME QUESTION BANK SEARCH, FILTER, VERIFICATION & LOCKING
     // =========================================================================
     function filterQuestionsBank() {
       const query = (document.getElementById('search-questions-input')?.value || '').trim().toLowerCase();
       const subjectFilter = (document.getElementById('filter-questions-subject')?.value || 'ALL').toUpperCase();
-      renderAdminQuestionsTable(query, subjectFilter);
+      const verifiedFilter = (document.getElementById('filter-questions-verified')?.value || 'ALL').toUpperCase();
+      renderAdminQuestionsTable(query, subjectFilter, verifiedFilter);
     }
 
     function resetQuestionsSearch() {
       const searchInput = document.getElementById('search-questions-input');
       const subjectSelect = document.getElementById('filter-questions-subject');
+      const verifiedSelect = document.getElementById('filter-questions-verified');
       if (searchInput) searchInput.value = '';
       if (subjectSelect) subjectSelect.value = 'ALL';
-      renderAdminQuestionsTable('', 'ALL');
+      if (verifiedSelect) verifiedSelect.value = 'ALL';
+      renderAdminQuestionsTable('', 'ALL', 'ALL');
     }
 
-    function renderAdminQuestionsTable(searchQuery = '', subjectFilter = 'ALL') {
+    function renderAdminQuestionsTable(searchQuery = '', subjectFilter = 'ALL', verifiedFilter = 'ALL') {
       const qBody = document.getElementById('admin-questions-body');
       if (!qBody) return;
 
       const questions = cachedAdminData?.questions || [];
+      const canVerify = isStaffOrAdminUser(currentUser);
 
       // Sort in canonical curriculum order (MI -> AR -> SK -> MII -> EN -> MM -> BS -> SS)
       const sortedQuestions = [...questions].sort((a, b) => {
@@ -8669,12 +8714,15 @@ async function saveCompletedSessionOnExit() {
         return String(a.question || '').localeCompare(String(b.question || ''));
       });
 
-      // Filter by subject and keyword
       const filtered = sortedQuestions.filter(q => {
         const qSub = String(q.subject || '').toUpperCase().trim();
         if (subjectFilter !== 'ALL' && qSub !== subjectFilter) {
           return false;
         }
+
+        const isVerified = Boolean(q.is_verified);
+        if (verifiedFilter === 'VERIFIED' && !isVerified) return false;
+        if (verifiedFilter === 'UNVERIFIED' && isVerified) return false;
 
         if (searchQuery) {
           const qText = String(q.question || '').toLowerCase();
@@ -8684,6 +8732,7 @@ async function saveCompletedSessionOnExit() {
           const optD = String(q.option_d || '').toLowerCase();
           const subName = String(getFullSubjectName(qSub)).toLowerCase();
           const qId = String(q.id || '').toLowerCase();
+          const verBy = String(q.verified_by_name || q.verified_by_username || '').toLowerCase();
 
           const match = qText.includes(searchQuery) ||
                         optA.includes(searchQuery) ||
@@ -8692,7 +8741,8 @@ async function saveCompletedSessionOnExit() {
                         optD.includes(searchQuery) ||
                         qSub.toLowerCase().includes(searchQuery) ||
                         subName.includes(searchQuery) ||
-                        qId.includes(searchQuery);
+                        qId.includes(searchQuery) ||
+                        verBy.includes(searchQuery);
 
           if (!match) return false;
         }
@@ -8700,21 +8750,22 @@ async function saveCompletedSessionOnExit() {
         return true;
       });
 
-      // Update question count badge
+      const verifiedCount = questions.filter(q => Boolean(q.is_verified)).length;
+      const pendingCount = questions.length - verifiedCount;
       const countBadge = document.getElementById('questions-filtered-count-badge');
       if (countBadge) {
-        if (searchQuery || subjectFilter !== 'ALL') {
-          countBadge.innerText = `${filtered.length} of ${questions.length} Questions`;
+        if (searchQuery || subjectFilter !== 'ALL' || verifiedFilter !== 'ALL') {
+          countBadge.innerText = `${filtered.length} of ${questions.length} Questions (${verifiedCount} Verified · ${pendingCount} Pending)`;
         } else {
-          countBadge.innerText = `${questions.length} Total Questions`;
+          countBadge.innerText = `${questions.length} Total (${verifiedCount} Verified · ${pendingCount} Pending)`;
         }
       }
 
       if (filtered.length === 0) {
         qBody.innerHTML = `
           <tr>
-            <td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted); font-size:13.5px;">
-              🔍 No questions found matching "<strong>${escapeHtml(searchQuery || subjectFilter)}</strong>". Try another keyword or clear the search.
+            <td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted); font-size:13.5px;">
+              🔍 No questions found matching your current filter. Try another keyword or clear the search.
             </td>
           </tr>
         `;
@@ -8722,11 +8773,59 @@ async function saveCompletedSessionOnExit() {
       }
 
       qBody.innerHTML = filtered.map((q, idx) => {
-        const isChecked = selectedQuestionIds.has(String(q.id));
+        const isVerified = Boolean(q.is_verified);
+        const isChecked = !isVerified && selectedQuestionIds.has(String(q.id));
+
+        const verificationHTML = isVerified
+          ? `
+            <div style="min-width:170px;">
+              <span class="badge badge-success" style="font-size:11px; font-weight:800; display:inline-flex; align-items:center; gap:4px;">
+                🔒 Verified & Locked
+              </span>
+              <div style="font-size:11.5px; color:#0f172a; font-weight:700; margin-top:4px;">
+                👤 ${escapeHtml(q.verified_by_name || q.verified_by_username || 'Staff/Admin')}
+              </div>
+              <div style="font-size:11px; color:var(--text-muted); font-weight:600;">
+                🕒 ${escapeHtml(q.verified_at || '-')}
+              </div>
+            </div>
+          `
+          : `
+            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:5px;">
+              <span class="badge badge-warning" style="font-size:11px; font-weight:800;">⏳ Pending</span>
+              ${canVerify ? `
+                <button type="button"
+                        onclick="verifyQuestionById('${escapeHtml(q.id)}')"
+                        class="btn btn-primary"
+                        style="padding:4px 10px; font-size:11.5px; font-weight:800; background:#059669;"
+                        title="Verify and permanently lock this question under your login">
+                  ✅ Verify
+                </button>
+              ` : ''}
+            </div>
+          `;
+
+        const actionsHTML = isVerified
+          ? `<span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-size:11px; font-weight:800;" title="Locked after verification — cannot edit or delete">🔒 Locked</span>`
+          : `
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button type="button" onclick="openInstantEditModalById('${escapeHtml(q.id)}')" class="btn btn-outline" style="padding:4px 8px; font-size:13px;" title="Edit Question">
+                ✏️
+              </button>
+              <button type="button" onclick="confirmDeleteQuestion('${escapeHtml(q.id)}')" class="btn btn-outline" style="padding:4px 8px; font-size:13px; color:var(--danger); border-color:#fca5a5;" title="Delete Question">
+                🗑️
+              </button>
+            </div>
+          `;
+
         return `
-          <tr>
+          <tr style="${isVerified ? 'background:#f0fdf4;' : ''}">
             <td style="text-align:center;">
-              <input type="checkbox" class="q-checkbox" data-id="${q.id}" ${isChecked ? 'checked' : ''} onchange="toggleSelectQuestion('${q.id}', this.checked)">
+              <input type="checkbox"
+                     class="q-checkbox"
+                     data-id="${escapeHtml(q.id)}"
+                     ${isChecked ? 'checked' : ''}
+                     ${isVerified ? 'disabled title="Verified question is locked"' : `onchange="toggleSelectQuestion('${escapeHtml(q.id)}', this.checked)"`}>
             </td>
             <td style="text-align:center; font-weight:700;">${idx + 1}</td>
             <td><span class="badge">${escapeHtml(q.subject)}</span></td>
@@ -8737,32 +8836,99 @@ async function saveCompletedSessionOnExit() {
               </small>
             </td>
             <td style="text-align:center;"><b style="color:var(--success); font-size:14px;">${escapeHtml(q.correct_answer)}</b></td>
-            <td>
-              <div style="display:flex; gap:6px; align-items:center;">
-                <button type="button" onclick="openInstantEditModalById('${q.id}')" class="btn btn-outline" style="padding:4px 8px; font-size:13px;" title="Edit Question">
-                  ✏️
-                </button>
-                <button type="button" onclick="confirmDeleteQuestion('${q.id}')" class="btn btn-outline" style="padding:4px 8px; font-size:13px; color:var(--danger); border-color:#fca5a5;" title="Delete Question">
-                  🗑️
-                </button>
-              </div>
-            </td>
+            <td>${verificationHTML}</td>
+            <td>${actionsHTML}</td>
           </tr>
         `;
       }).join('');
     }
 
     // =========================================================================
-    // QUESTIONS MANAGEMENT & BULK OPERATIONS (TAB 8)
+    // VERIFY & LOCK QUESTION (ONLY ADMINISTRATOR OR STAFF)
     // =========================================================================
+    async function verifyQuestionById(qId) {
+      if (!currentUser || !isStaffOrAdminUser(currentUser)) {
+        showToast('⚠️ Unauthorized: Only Administrator or Staff can verify questions.', 'danger');
+        return;
+      }
+
+      const questions = cachedAdminData?.questions || [];
+      const q = questions.find(item => String(item.id) === String(qId));
+      if (!q) {
+        showToast('Question not found.', 'danger');
+        return;
+      }
+
+      if (q.is_verified) {
+        showToast(`🔒 Already verified and locked by ${q.verified_by_name || q.verified_by_username} on ${q.verified_at}.`, 'info');
+        return;
+      }
+
+      const verifierName = String(currentUser.name || currentUser.username).trim();
+      const verifierUsername = String(currentUser.username || '').trim().toLowerCase();
+
+      showConfirmModal(
+        '✅ Verify & Lock Question',
+        `Verify this ${getFullSubjectName(q.subject)} question under "${verifierName}"? Once verified, it will be permanently locked with your name, date, and time and cannot be edited or deleted.`,
+        async () => {
+          const verifiedAt = formatDateStrict(new Date().toISOString());
+          setProgress(40);
+
+          try {
+            const { data, error } = await supabaseClient
+              .from('questions')
+              .update({
+                is_verified: true,
+                verified_by_name: verifierName,
+                verified_by_username: verifierUsername,
+                verified_at: verifiedAt
+              })
+              .eq('id', q.id)
+              .eq('is_verified', false)
+              .select()
+              .maybeSingle();
+
+            setProgress(100);
+
+            if (error) {
+              showToast('Verification failed: ' + error.message, 'danger');
+              return;
+            }
+
+            // Update local cache & remove from bulk selection if selected
+            q.is_verified = true;
+            q.verified_by_name = verifierName;
+            q.verified_by_username = verifierUsername;
+            q.verified_at = verifiedAt;
+            selectedQuestionIds.delete(String(q.id));
+            updateBulkDeleteQsButton();
+
+            await logPortalActivity(
+              'QUESTION_VERIFY',
+              `Verified & Locked Question (${q.subject})`,
+              `• Question ID: ${q.id} • Verified By: ${verifierName} (${verifierUsername}) • At: ${verifiedAt}`
+            );
+
+            showToast(`🔒 Question verified & locked by ${verifierName}!`, 'success');
+            filterQuestionsBank();
+          } catch (err) {
+            setProgress(100);
+            showToast('Verification error: ' + err.message, 'danger');
+          }
+        }
+      );
+    }
+
     function toggleSelectQuestion(id, isChecked) {
+      const q = (cachedAdminData?.questions || []).find(item => String(item.id) === String(id));
+      if (q && q.is_verified) return;
       if (isChecked) selectedQuestionIds.add(id);
       else selectedQuestionIds.delete(id);
       updateBulkDeleteQsButton();
     }
 
     function toggleSelectAllQuestions(masterCheckbox) {
-      document.querySelectorAll('.q-checkbox').forEach(cb => {
+      document.querySelectorAll('.q-checkbox:not(:disabled)').forEach(cb => {
         cb.checked = masterCheckbox.checked;
         const qId = cb.getAttribute('data-id');
         if (masterCheckbox.checked) selectedQuestionIds.add(qId);
@@ -8770,7 +8936,6 @@ async function saveCompletedSessionOnExit() {
       });
       updateBulkDeleteQsButton();
     }
-
 
     function updateBulkDeleteQsButton() {
       const btn = document.getElementById('admin-bulk-delete-qs-btn');
@@ -8785,14 +8950,25 @@ async function saveCompletedSessionOnExit() {
     }
 
     async function deleteSelectedQuestions() {
-      const ids = Array.from(selectedQuestionIds);
-      if (ids.length === 0) return;
+      const questions = cachedAdminData?.questions || [];
+      const ids = Array.from(selectedQuestionIds).filter(id => {
+        const q = questions.find(item => String(item.id) === String(id));
+        return !q || !q.is_verified;
+      });
 
-      showConfirmModal('Bulk Delete Questions', `Permanently delete ${ids.length} selected question(s)?`, async () => {
+      if (ids.length === 0) {
+        showToast('🔒 Selected question(s) are verified and locked.', 'warning');
+        selectedQuestionIds.clear();
+        updateBulkDeleteQsButton();
+        return;
+      }
+
+      showConfirmModal('Bulk Delete Questions', `Permanently delete ${ids.length} selected unverified question(s)?`, async () => {
         setProgress(30);
-        const { error } = await supabaseClient.from('questions').delete().in('id', ids);
+        const { error } = await supabaseClient.from('questions').delete().in('id', ids).eq('is_verified', false);
         setProgress(100);
         if (!error) {
+          await logPortalActivity('QUESTION', `Bulk Deleted ${ids.length} Question(s)`, `• Deleted IDs Count: ${ids.length}`);
           showToast(`Deleted ${ids.length} questions!`, 'success');
           selectedQuestionIds.clear();
           loadAdminData();
@@ -8806,6 +8982,11 @@ async function saveCompletedSessionOnExit() {
       const questions = cachedAdminData?.questions || [];
       const q = questions.find(item => String(item.id) === String(qId));
       if (!q) return;
+
+      if (q.is_verified) {
+        showToast(`🔒 Verified & locked by ${q.verified_by_name || q.verified_by_username} (${q.verified_at}). Editing is disabled.`, 'danger');
+        return;
+      }
 
       document.getElementById('modal-q-id').value = q.id;
       document.getElementById('modal-q-subject').value = q.subject;
@@ -8838,10 +9019,15 @@ async function saveCompletedSessionOnExit() {
       document.getElementById('edit-question-modal').style.display = 'none';
     }
 
-
     async function handleSaveEditedQuestionModal(e) {
       e.preventDefault();
       const qId = document.getElementById('modal-q-id').value;
+      const existingQ = (cachedAdminData?.questions || []).find(item => String(item.id) === String(qId));
+      if (existingQ && existingQ.is_verified) {
+        showToast('🔒 Verified questions are locked and cannot be edited.', 'danger');
+        closeEditQuestionModal();
+        return;
+      }
 
       const questionData = {
         id: qId,
@@ -8860,6 +9046,7 @@ async function saveCompletedSessionOnExit() {
       setProgress(100);
 
       if (!error) {
+        await logPortalActivity('QUESTION', `Updated Question (${questionData.subject})`, `• Question ID: ${qId}`);
         showToast('Question updated successfully!', 'success');
         closeEditQuestionModal();
         loadAdminData();
@@ -8887,6 +9074,7 @@ async function saveCompletedSessionOnExit() {
       preview.style.display = 'block';
       document.getElementById('modal-q-img-delete-btn').style.display = 'inline-flex';
       showToast('Diagram uploaded!', 'success');
+      logPortalActivity('QUESTION', 'Uploaded Question Diagram', `• Path: ${filePath}`);
     }
 
     async function deleteUploadedDiagramModal() {
@@ -8907,6 +9095,7 @@ async function saveCompletedSessionOnExit() {
       preview.style.display = 'none';
       document.getElementById('modal-q-img-delete-btn').style.display = 'none';
       showToast('Diagram deleted!', 'success');
+      logPortalActivity('QUESTION', 'Removed Question Diagram', `• Old URL: ${imgUrl}`);
     }
 
 
@@ -8973,7 +9162,7 @@ async function saveCompletedSessionOnExit() {
               supabaseClient.from('logs').delete().eq('identifier', username),
               supabaseClient.from('users').delete().eq('username', username)
             ]);
-
+            logPortalActivity('USER', `Deleted User & All Records: ${username}`, `• Phone: ${phone}`);
             setProgress(100);
             showToast(`User ${username} and all records permanently deleted.`, 'success');
             loadAdminData();
@@ -9005,6 +9194,7 @@ async function saveCompletedSessionOnExit() {
 
       const { error } = await supabaseClient.from('questions').upsert([questionData]);
       if (!error) {
+        logPortalActivity('QUESTION', `Added New Question (${questionData.subject})`, `• Question ID: ${qId}`);
         showToast('Question saved successfully!', 'success');
         document.getElementById('question-form').reset();
         document.getElementById('q-id').value = '';
@@ -9015,10 +9205,21 @@ async function saveCompletedSessionOnExit() {
     }
 
     function confirmDeleteQuestion(id) {
+      const existingQ = (cachedAdminData?.questions || []).find(item => String(item.id) === String(id));
+      if (existingQ && existingQ.is_verified) {
+        showToast(`🔒 Verified & locked by ${existingQ.verified_by_name || existingQ.verified_by_username} (${existingQ.verified_at}). Cannot delete.`, 'danger');
+        return;
+      }
+
       showConfirmModal('Delete Question', 'Permanently delete this question?', async () => {
-        await supabaseClient.from('questions').delete().eq('id', id);
-        showToast('Question deleted', 'info');
-        loadAdminData();
+        const { error } = await supabaseClient.from('questions').delete().eq('id', id).eq('is_verified', false);
+        if (!error) {
+          await logPortalActivity('QUESTION', 'Deleted Question', `• Question ID: ${id}`);
+          showToast('Question deleted', 'info');
+          loadAdminData();
+        } else {
+          showToast('Cannot delete: ' + error.message, 'danger');
+        }
       });
     }
 
@@ -9152,6 +9353,7 @@ async function saveCompletedSessionOnExit() {
         }
 
         showToast('✅ User credentials updated successfully in Supabase!', 'success');
+        logPortalActivity('USER', `${existingRecord ? 'Updated' : 'Created'} User: ${userData.name}`, `• Username: ${userData.username} • Role/Tabs: ${tabAccessStr} • Status: ${userData.status}`);
 
         // Reset form & state
         document.getElementById('user-form').reset();
@@ -9202,6 +9404,7 @@ async function saveCompletedSessionOnExit() {
 
       const { error } = await supabaseClient.from('users').update({ password: pass1 }).eq('username', currentUser.username);
       if (!error) {
+        logPortalActivity('SETTINGS', 'Updated Account Password', `• Username: ${currentUser.username}`);
         showToast('Password updated! Redirecting...', 'success');
         document.getElementById('first-time-pass-modal').style.display = 'none';
         localStorage.setItem('USS_USER', JSON.stringify(currentUser));
@@ -9224,6 +9427,7 @@ async function saveCompletedSessionOnExit() {
 
         const { error } = await query;
         if (!error) {
+          logPortalActivity('LOGS', 'Deleted Single Audit Log', `• Log ID: ${logId}`);
           showToast('Log deleted successfully!', 'success');
           loadAdminData();
         } else {
@@ -9236,6 +9440,7 @@ async function saveCompletedSessionOnExit() {
       showConfirmModal('Clear All Access Logs', 'Are you sure you want to permanently delete ALL access logs?', async () => {
         const { error } = await supabaseClient.from('logs').delete().neq('id', 0);
         if (!error) {
+          logPortalActivity('LOGS', 'Cleared All Audit Access Logs', '• Action: Clear All Logs');
           showToast('All access logs cleared!', 'success');
           loadAdminData();
         } else {
@@ -9263,6 +9468,7 @@ async function saveCompletedSessionOnExit() {
         else if (activeId === 'notif-sec') await loadNotifications();
         else if (activeId === 'admin-online-sec') renderAllUsersOnlineCards();
         else if (['admin-report-sec', 'admin-resets-sec', 'manage-qs-sec', 'manage-users-sec', 'admin-logs-sec', 'admin-attendance-sec'].includes(activeId)) await loadAdminData();
+        logPortalActivity('REFRESH', `Refreshed Data (${currentActiveContext})`, `• Section ID: ${activeId}`);
       } catch (err) {}
 
       setTimeout(() => {
@@ -9934,6 +10140,7 @@ function fallbackCopyText(text, count, prevSecurityState) {
           description: 'Global switch allowing new students to self-register',
           updated_at: new Date().toISOString()
         }], { onConflict: 'key' });
+        logPortalActivity('SETTINGS', `Changed Student Registration to ${isStudentRegistrationAllowed ? 'ENABLED' : 'DISABLED'}`, '• Global System Setting');
 
         showToast(`✅ Global Student Registration is now ${isStudentRegistrationAllowed ? 'ENABLED' : 'DISABLED'} across all devices!`, 'success');
       } catch (err) {
@@ -10559,7 +10766,7 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
     }
 
     // =========================================================================
-    // RENDER DATE-WISE TREE (LAST RECORD FIRST, FIRST RECORD LAST + STATUS)
+    // RENDER DATE-WISE TREE (LAST RECORD FIRST, FIRST RECORD LAST + ALL ACTIVITIES)
     // =========================================================================
     function renderDateWiseHistoryTree(targetElement, records, statusSummary = null) {
       let statusHeaderHTML = '';
@@ -10587,7 +10794,6 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
         return;
       }
 
-      // Group by Normalized Date
       const dateGroups = {};
       records.forEach(r => {
         let d = r.date || (r.timestamp ? r.timestamp.split(',')[0].trim() : 'General');
@@ -10605,16 +10811,15 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
       const sortedDates = Object.keys(dateGroups).sort((a, b) => {
         const tA = parseCustomDate(a)?.getTime() || 0;
         const tB = parseCustomDate(b)?.getTime() || 0;
-        return tB - tA; // Latest date first, oldest date last
+        return tB - tA;
       });
 
       const getEventOrderRank = (ev) => {
         const t = String(ev?.activity_type || '').toUpperCase();
-        if (t === 'LOGOUT') return 5;   // Last record of session -> First on top
+        if (t === 'LOGOUT') return 5;
         if (t === 'INACTIVE') return 4;
-        if (['PRACTICE', 'TRIAL', 'OFFLINE', 'RESET'].includes(t)) return 3;
         if (t === 'ACTIVE') return 2;
-        if (t === 'LOGIN') return 1;    // First record of session -> Last at bottom
+        if (t === 'LOGIN') return 1;
         return 3;
       };
 
@@ -10623,12 +10828,12 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
         events.sort((a, b) => {
           const timeA = parseCustomDate(a.timestamp || a.date)?.getTime() || 0;
           const timeB = parseCustomDate(b.timestamp || b.date)?.getTime() || 0;
-          if (timeB !== timeA) return timeB - timeA; // Newest timestamp first
+          if (timeB !== timeA) return timeB - timeA;
 
           const rankDiff = getEventOrderRank(b) - getEventOrderRank(a);
-          if (rankDiff !== 0) return rankDiff;       // LOGOUT before LOGIN on identical timestamp
+          if (rankDiff !== 0) return rankDiff;
 
-          return (Number(b.id) || 0) - (Number(a.id) || 0); // Latest DB row first
+          return (Number(b.id) || 0) - (Number(a.id) || 0);
         });
 
         return `
@@ -10656,6 +10861,17 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
                 else if (evType === 'TRIAL') { icon = '⭐'; badgeBg = '#fef3c7'; badgeColor = '#92400e'; }
                 else if (evType === 'OFFLINE') { icon = '📝'; badgeBg = '#ede9fe'; badgeColor = '#5b21b6'; }
                 else if (evType === 'RESET') { icon = '🔄'; badgeBg = '#fff7ed'; badgeColor = '#c2410c'; }
+                else if (evType === 'NAVIGATION') { icon = '🧭'; badgeBg = '#e0f2fe'; badgeColor = '#0369a1'; }
+                else if (evType === 'QUESTION') { icon = '❓'; badgeBg = '#ecfeff'; badgeColor = '#0e7490'; }
+                else if (evType === 'QUESTION_VERIFY') { icon = '✅'; badgeBg = '#dcfce7'; badgeColor = '#15803d'; }
+                else if (evType === 'USER') { icon = '👤'; badgeBg = '#e0e7ff'; badgeColor = '#3730a3'; }
+                else if (evType === 'NOTIFICATION') { icon = '🔔'; badgeBg = '#fef3c7'; badgeColor = '#92400e'; }
+                else if (evType === 'QUOTA') { icon = '⏳'; badgeBg = '#ffedd5'; badgeColor = '#c2410c'; }
+                else if (evType === 'ATTENDANCE') { icon = '📅'; badgeBg = '#dbeafe'; badgeColor = '#1e40af'; }
+                else if (evType === 'LOGS') { icon = '🛡️'; badgeBg = '#ffe4e6'; badgeColor = '#be123c'; }
+                else if (evType === 'SETTINGS') { icon = '⚙️'; badgeBg = '#f1f5f9'; badgeColor = '#334155'; }
+                else if (evType === 'REFRESH') { icon = '🔄'; badgeBg = '#ccfbf1'; badgeColor = '#0f766e'; }
+                else if (evType === 'HISTORY') { icon = '🕒'; badgeBg = '#ede9fe'; badgeColor = '#5b21b6'; }
 
                 let sessionStatusPill = '';
                 if (evType === 'LOGIN') {
@@ -10700,11 +10916,11 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
 
                     ${hasQAs ? `
                       <div style="padding-left: 24px; margin-top: 6px;">
-                        <button type="button" 
+                        <button type="button"
                                 data-drawer-btn="${detailId}"
                                 data-base-text="${baseBtnText}"
-                                onclick="toggleHistoryQADrawer('${detailId}')" 
-                                class="btn btn-outline" 
+                                onclick="toggleHistoryQADrawer('${detailId}')"
+                                class="btn btn-outline"
                                 style="padding: 4px 10px; font-size: 11.5px; font-weight: 700; color: var(--primary); border-color: #bfdbfe; background: #eff6ff; border-radius:8px; cursor: pointer;">
                           🔍 ${baseBtnText} ▾
                         </button>
@@ -10744,16 +10960,20 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
     }
 
     // =========================================================================
-    // ADMIN ACCORDION RENDERER (SHOWS CURRENT STATUS BADGE PER STUDENT)
+    // ADMIN ACCORDION RENDERER: STUDENTS FIRST, THEN STAFF & ADMINISTRATORS
     // =========================================================================
     function renderAdminHistoryAccordions(allHistory, allLogsList = []) {
       const container = document.getElementById('admin-history-accordion-list');
       if (!container) return;
 
-      const users = (cachedAdminData?.users || []).filter(u => !isStaffOrAdminUser(u));
-      users.sort((a, b) => String(a.name || a.username).localeCompare(String(b.name || b.username)));
+      const allUsers = cachedAdminData?.users || [];
+      const students = allUsers.filter(u => !isStaffOrAdminUser(u));
+      const staffAndAdmins = allUsers.filter(u => isStaffOrAdminUser(u));
 
-      if (users.length === 0) {
+      students.sort((a, b) => String(a.name || a.username).localeCompare(String(b.name || b.username)));
+      staffAndAdmins.sort((a, b) => String(a.name || a.username).localeCompare(String(b.name || b.username)));
+
+      if (students.length === 0 && staffAndAdmins.length === 0) {
         container.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No users registered.</p>';
         return;
       }
@@ -10761,7 +10981,7 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
       const get10 = (ph) => String(ph || '').replace(/[^0-9]/g, '').slice(-10);
       const logsPool = (allLogsList && allLogsList.length > 0) ? allLogsList : (cachedAdminData?.logs || []);
 
-      const userItems = users.map((u, uIdx) => {
+      const buildUserItems = (userList, prefix) => userList.map((u, uIdx) => {
         const uPhone10 = get10(u.phone);
         const uUser = String(u.username || '').trim().toLowerCase();
         const uName = String(u.name || '').trim().toLowerCase();
@@ -10777,32 +10997,76 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
         });
 
         const statusSummary = getUserHistoryStatusSummary(u, logsPool, userRecords);
-        return { u, uIdx, userRecords, statusSummary };
+        return { u, uIdx, prefix, userRecords, statusSummary };
       });
 
-      container.innerHTML = userItems.map(({ u, uIdx, userRecords, statusSummary }) => `
-        <div class="accordion-item" style="margin-bottom:12px;">
-          <div class="accordion-header" onclick="toggleAccordion('hist-tree-acc-${uIdx}')">
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <strong>${uIdx + 1}. ${escapeHtml(u.name || u.username)}</strong>
-              <span class="badge" style="font-size:10.5px;">Class ${u.class || '7'}-${u.division || 'A'}</span>
-              <span class="badge" style="background:${statusSummary.badgeBg}; color:${statusSummary.badgeColor}; font-size:11px; font-weight:800;">
-                ${escapeHtml(statusSummary.statusLabel)}
-              </span>
-              <span class="badge ${userRecords.length > 0 ? 'badge-success' : ''}" style="font-size:11px;">
-                ${userRecords.length} record${userRecords.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <div>▾</div>
-          </div>
-          <div class="accordion-body" id="hist-tree-acc-${uIdx}" style="padding:18px;">
-            <div id="hist-branch-${uIdx}"></div>
-          </div>
-        </div>
-      `).join('');
+      const studentItems = buildUserItems(students, 'st');
+      const staffItems = buildUserItems(staffAndAdmins, 'staff');
 
-      userItems.forEach(({ uIdx, userRecords, statusSummary }) => {
-        const branchBox = document.getElementById(`hist-branch-${uIdx}`);
+      const renderAccordionGroup = (items, isStaffSection) => items.map(({ u, uIdx, prefix, userRecords, statusSummary }) => {
+        const uLower = String(u.username || '').toLowerCase();
+        const nLower = String(u.name || '').toLowerCase();
+        const rLower = String(u.role || '').toLowerCase();
+        const tabs = parseTabAccessList(u.role || '');
+        const isAdminRole = isStaffSection && (uLower.includes('admin') || nLower.includes('admin') || rLower.includes('admin') || tabs.includes('9') || tabs.includes('11'));
+
+        const headerBg = isStaffSection ? (isAdminRole ? '#fffbeb' : '#f5f3ff') : '#f8fafc';
+        const borderCol = isStaffSection ? (isAdminRole ? '#fcd34d' : '#c4b5fd') : 'var(--border-color)';
+        const roleTag = isStaffSection
+          ? (isAdminRole
+              ? `<span class="badge" style="background:#fde68a; color:#78350f; font-size:10.5px; font-weight:800;">🛡️ Administrator</span>`
+              : `<span class="badge" style="background:#ede9fe; color:#5b21b6; font-size:10.5px; font-weight:800;">👨‍🏫 Staff</span>`)
+          : `<span class="badge" style="font-size:10.5px;">Class ${escapeHtml(u.class || '7')}-${escapeHtml(u.division || 'A')}</span>`;
+
+        return `
+          <div class="accordion-item" style="margin-bottom:12px; border-color:${borderCol};">
+            <div class="accordion-header" style="background:${headerBg};" onclick="toggleAccordion('hist-tree-acc-${prefix}-${uIdx}')">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                <strong>${uIdx + 1}. ${escapeHtml(u.name || u.username)}</strong>
+                ${roleTag}
+                <span class="badge" style="background:${statusSummary.badgeBg}; color:${statusSummary.badgeColor}; font-size:11px; font-weight:800;">
+                  ${escapeHtml(statusSummary.statusLabel)}
+                </span>
+                <span class="badge ${userRecords.length > 0 ? 'badge-success' : ''}" style="font-size:11px;">
+                  ${userRecords.length} record${userRecords.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <div>▾</div>
+            </div>
+            <div class="accordion-body" id="hist-tree-acc-${prefix}-${uIdx}" style="padding:18px;">
+              <div id="hist-branch-${prefix}-${uIdx}"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div style="margin-bottom: 28px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <span style="font-size:20px;">🎓</span>
+            <h3 style="margin:0; color:#1B257D;">Students History (${studentItems.length})</h3>
+          </div>
+          ${studentItems.length > 0 ? renderAccordionGroup(studentItems, false) : '<p style="color:var(--text-muted); font-size:13px;">No student records found.</p>'}
+        </div>
+
+        <hr style="margin:24px 0; border:none; border-top:1.5px dashed var(--border-color);">
+
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <span style="font-size:20px;">🛡️</span>
+            <h3 style="margin:0; color:#92400e;">Staff & Administrators History (${staffItems.length})</h3>
+          </div>
+          ${staffItems.length > 0 ? renderAccordionGroup(staffItems, true) : '<p style="color:var(--text-muted); font-size:13px;">No staff/administrator records found.</p>'}
+        </div>
+      `;
+
+      studentItems.forEach(({ uIdx, prefix, userRecords, statusSummary }) => {
+        const branchBox = document.getElementById(`hist-branch-${prefix}-${uIdx}`);
+        if (branchBox) renderDateWiseHistoryTree(branchBox, userRecords, statusSummary);
+      });
+
+      staffItems.forEach(({ uIdx, prefix, userRecords, statusSummary }) => {
+        const branchBox = document.getElementById(`hist-branch-${prefix}-${uIdx}`);
         if (branchBox) renderDateWiseHistoryTree(branchBox, userRecords, statusSummary);
       });
     }
@@ -11163,6 +11427,7 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
       setProgress(100);
 
       if (!error) {
+        logPortalActivity('OFFLINE', `Saved Offline Exam: ${examRecord.exam_name}`, `• Student: ${studentName} • Total: ${totalScore}/${totalOut} (${pct}%)`);
         // DISPATCH NOTIFICATION FOR THE CONCERNED STUDENT & ADMIN ONLY
         try {
           const targetRecipient = String(phone || username || '').trim();
@@ -11225,6 +11490,7 @@ async function logPortalActivity(activityType, title, details = '', metadata = n
 
     async function deleteOfflineExam(examId) {
       showConfirmModal('Delete Exam Score', 'Permanently delete this offline exam record?', async () => {
+        logPortalActivity('OFFLINE', 'Deleted Offline Exam Record', `• Exam ID: ${examId}`);
         await supabaseClient.from('offline_exams').delete().eq('exam_id', examId);
         showToast('Record deleted.', 'info');
         loadOfflineExamsAdmin();
@@ -11266,6 +11532,7 @@ async function syncPastActivitiesToHistoryTable() {
 
   if (freshRows.length === 0) {
     setProgress(100);
+    logPortalActivity('HISTORY', 'Synced Past Activities to Portal History', `• Inserted: ${insertedCount} record(s)`);
     showToast('All past activities are already synchronized!', 'success');
     return;
   }
